@@ -44,13 +44,18 @@ document.addEventListener('click', function() {
 </script>
 
 <script type="text/javascript" >
+var hasReachedScroll50 = false;
 window.addEventListener('scroll', function() {
-  var scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
-  if (scrollPercentage >= 50) {
-    ym(95211958, 'reachGoal', 'scroll');
+  if (!hasReachedScroll50) {
+    var scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+    if (scrollPercentage >= 50) {
+      ym(95211958, 'reachGoal', 'scroll50');
+      hasReachedScroll50 = true;
+    }
   }
 });
 </script>
+
 	
 </head>
 <body>
