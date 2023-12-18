@@ -22,3 +22,13 @@
   width: 33.33%;
   height: auto;
 }
+
+.rounded-left {
+  border-top-left-radius: 25px;
+  border-bottom-left-radius: 25px;
+}
+
+.rounded-right {
+  border-top-right-radius: 25px;
+  border-bottom-right-radius: 25px;
+}
