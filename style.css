@@ -37,3 +37,12 @@
       background-color: #000;
       overflow: hidden;
     }
+
+@keyframes snowfall {
+  0% {
+    transform: translateY(-50px);
+  }
+  100% {
+    transform: translateY(calc(100vh + 50px));
+  }
+}
