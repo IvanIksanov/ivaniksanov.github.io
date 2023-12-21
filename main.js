@@ -26,7 +26,9 @@ $('.row .thumbnail').click(function(){
 
 // Создаем элемент снежинки
 function createSnowflake() {
+  const snowflakeWrapper = document.createElement('div');
   const snowflake = document.createElement('div');
+  snowflakeWrapper.appendChild(snowflake);
   snowflake.innerHTML = '❄'; // Используем символ снежинки
   snowflake.style.position = 'fixed';
   snowflake.style.color = 'blue';
@@ -36,15 +38,16 @@ function createSnowflake() {
 
   // Устанавливаем случайное начальное положение снежинки
   const startX = Math.random() * window.innerWidth;
-  snowflake.style.left = startX + 'px';
-  snowflake.style.top = '-50px';
+  snowflakeWrapper.style.left = startX + 'px';
+  snowflakeWrapper.style.top = '-50px';
 
   // Устанавливаем случайную скорость падения снежинки
   const speed = Math.random() * 5 + 1;
-  snowflake.style.animation = `snowfall 3s linear infinite, rotate 3s linear infinite`;
+  snowflake.style.animation = `rotate ${speed}s linear infinite`;
+  snowflakeWrapper.style.animation = `snowfall 3s linear infinite`;
 
   // Добавляем снежинку на страницу
-  document.body.appendChild(snowflake);
+  document.body.appendChild(snowflakeWrapper);
 }
 
 // Генерируем снежинки
