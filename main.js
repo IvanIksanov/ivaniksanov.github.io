@@ -41,7 +41,7 @@ function createSnowflake() {
 
   // Устанавливаем случайную скорость падения снежинки
   const speed = Math.random() * 5 + 1;
-  snowflake.style.animation = `snowfall ${speed}s linear infinite, rotate 3s linear infinite`;
+  snowflake.style.animation = `snowfall ${speed}s linear infinite, rotate ${speed}s linear infinite`;
 
   // Добавляем снежинку на страницу
   document.body.appendChild(snowflake);
