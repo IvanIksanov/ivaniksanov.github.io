@@ -1,4 +1,4 @@
-$('.content-holder .thumbnail').each(function(i) {
+/*$('.content-holder .thumbnail').each(function(i) {
 	var item = $('<div class="item"></div>');
 	var itemDiv = $(this).parents('div');
 	var title = $(this).parent('a').attr("title");
@@ -9,7 +9,7 @@ $('.content-holder .thumbnail').each(function(i) {
 	if (i === 0) { // set first item active
 			item.addClass('active');
 	}
-});
+});*/
 
 /* activate the carousel */
 $('#modalCarousel').carousel({interval: false});
@@ -25,7 +25,7 @@ $('.row .thumbnail').click(function(){
 		var id = parseInt(idx);
 		$('#myModal').modal('show'); // show the modal
 		$('#modalCarousel').carousel(id); // slide carousel to selected
-});
+});*/
 
 // Создаем элемент снежинки
 function createSnowflake() {
