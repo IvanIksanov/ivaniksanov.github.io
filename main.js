@@ -30,7 +30,8 @@ function createSnowflake() {
   snowflake.innerHTML = '❄'; // Используем символ снежинки
   snowflake.style.position = 'fixed';
   snowflake.style.color = 'blue';
-  snowflake.style.fontSize = '100px';
+  const randomSize = Math.floor(Math.random() * (80 - 20 + 1)) + 20;
+  snowflake.style.fontSize = `${randomSize}px`;
   snowflake.style.zIndex = '999999';
 
   // Устанавливаем случайное начальное положение снежинки
@@ -48,7 +49,7 @@ function createSnowflake() {
 
 // Генерируем снежинки
 function generateSnowflakes() {
-  setInterval(createSnowflake, 500); // Создаем новую снежинку каждые 0.5 секунды
+  setInterval(createSnowflake, 2000); // Создаем новую снежинку каждые 0.5 секунды
 }
 
 // Запускаем генерацию снежинок после полной загрузки страницы
