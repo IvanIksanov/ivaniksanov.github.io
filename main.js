@@ -11,15 +11,12 @@
 	}
 });*/
 
-/* activate the carousel */
-$('#modalCarousel').carousel({interval: false});
+/*$('#modalCarousel').carousel({interval: false});
 
-/* change modal title when slide changes */
 $('#modalCarousel').on('slid.bs.carousel', function () {
 		$('.modal-title').html($(this).find('.active').attr("title"));
 });
 
-/* when clicking a thumbnail */
 $('.row .thumbnail').click(function(){
 		var idx = $(this).parents('div').index();
 		var id = parseInt(idx);
