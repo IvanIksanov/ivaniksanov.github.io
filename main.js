@@ -29,9 +29,9 @@ function createSnowflake() {
   const snowflake = document.createElement('div');
   snowflake.innerHTML = '❄'; // Используем символ снежинки
   snowflake.style.position = 'fixed';
-  snowflake.style.color = 'white';
-  snowflake.style.fontSize = '20px';
-  snowflake.style.zIndex = '9999';
+  snowflake.style.color = 'blue';
+  snowflake.style.fontSize = '100px';
+  snowflake.style.zIndex = '999999';
 
   // Устанавливаем случайное начальное положение снежинки
   const startX = Math.random() * window.innerWidth;
