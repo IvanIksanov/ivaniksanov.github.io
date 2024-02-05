@@ -25,7 +25,7 @@ $('.row .thumbnail').click(function(){
 });*/
 
 // Создаем элемент снежинки
-function createSnowflake() {
+/*function createSnowflake() {
   const snowflakeWrapper = document.createElement('div');
   const snowflake = document.createElement('div');
   snowflakeWrapper.appendChild(snowflake);
@@ -56,4 +56,4 @@ function generateSnowflakes() {
 }
 
 // Запускаем генерацию снежинок после полной загрузки страницы
-window.addEventListener('load', generateSnowflakes);
+window.addEventListener('load', generateSnowflakes);*/
