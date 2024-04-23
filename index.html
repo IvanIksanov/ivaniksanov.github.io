@@ -234,24 +234,24 @@ f.parentNode.insertBefore(j,f);
         </div>
 		<iframe width="720" height="405" src="https://rutube.ru/play/embed/36738a65e9485efb086c82a3a888b204" frameBorder="0" allow="clipboard-write; autoplay" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>
 
-        <div class="container mt-5">
-            <h3>Оставить отзыв</h3>
-			<div class="mb-3">
-                <label for="exampleFormControlInput1" class="form-label">Телефон</label>
-                <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Я позвоню тебе">
-              </div>
-            <div class="mb-3">
-                <label for="exampleFormControlInput1" class="form-label">Электронная почта</label>
-                <input type="email" class="form-control" id="exampleFormControlInput1" placeholder="Ели_Пельмени@gmail.com">
-              </div>
-              <div class="mb-3">
-                <label for="exampleFormControlTextarea1" class="form-label">Сообщение </label>
-                <textarea class="form-control" id="exampleFormControlTextarea1" placeholder="Пльмени отменные!" rows="3"></textarea>
-              </div>
-              <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" id="submitBtn">
-            Послать сову в Хогвартс
-              </button>
-        </div>
+        <form class="container mt-5" id="reviewForm">
+    <h3>Оставить отзыв</h3>
+    <div class="mb-3">
+        <label for="phone" class="form-label">Телефон</label>
+        <input type="text" class="form-control" id="phone" name="phone" placeholder="Я позвоню тебе">
+    </div>
+    <div class="mb-3">
+        <label for="email" class="form-label">Электронная почта</label>
+        <input type="email" class="form-control" id="email" name="email" placeholder="Ели_Пельмени@gmail.com">
+    </div>
+    <div class="mb-3">
+        <label for="message" class="form-label">Сообщение</label>
+        <textarea class="form-control" id="message" name="message" placeholder="Пельмени отменные!" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary" id="submitBtn">
+        Послать сову в Хогвартс
+    </button>
+</form>
 
 
         <!-- Modal -->
