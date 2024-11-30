@@ -2,97 +2,68 @@ body {
     font-family: Arial, sans-serif;
     margin: 0;
     padding: 0;
+    background-color: #F5F5F3; /* Измененный цвет фона */
+}
+
+.frame {
+    border: 2px solid #007BFF; /* Синий цвет рамки */
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
+    background-color: #FFF9F2; /* Фон для секций */
 }
 
 header {
-    background-color: #333;
-    color: #fff;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 20px;
+    text-align: center;
 }
 
-.logo {
-    font-size: 24px;
+nav ul {
+    list-style-type: none;
+    padding: 0;
 }
 
-.menu {
-    list-style: none;
-    display: flex;
-    gap: 15px;
+nav ul li {
+    display: inline;
+    margin: 0 15px;
 }
 
-.menu li a {
-    color: #fff;
-    text-decoration: none;
+main {
+    padding: 2rem;
 }
 
 .carousel {
+    display: flex;
+    align-items: center;
+}
+
+.carousel-images {
     position: relative;
-    max-width: 600px;
-    margin: 20px auto;
-    overflow: hidden;
+    width: 100%; /* Занимает всю ширину родительского элемента */
+    overflow: hidden; /* Скрывает части изображений, выходящие за пределы контейнера */
 }
 
-.slides img {
-    width: 100%;
-    display: none;
+.carousel-images img {
+    width: 100%; /* Полная ширина */
+    height: auto; /* Автоматическое изменение высоты для сохранения пропорций */
+    display: none; /* Изначально скрываем все изображения */
 }
 
-.slides img.active {
-    display: block;
+.carousel-images img.active {
+    display: block; /* Показать только активное изображение */
 }
 
-button.prev, button.next {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background-color: rgba(0, 0, 0, 0.5);
-    color: #fff;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
+.carousel-button {
+    margin: 0 10px; /* Отступ между кнопками и изображениями */
+    padding: 10px 15px;
+    font-size: 20px;
+    border-radius: 10px; /* Закругление углов кнопок */
+    background-color: #007BFF; /* Цвет фона кнопки (синий) */
+    color: #fff; /* Цвет текста кнопки (белый) */
+    border: none; /* Убирает стандартную рамку */
+    cursor: pointer; /* Указатель при наведении */
+    transition: background-color 0.3s; /* Плавный переход цвета фона */
 }
 
-button.prev {
-    left: 0;
-}
-
-button.next {
-    right: 0;
-}
-
-.contact-form {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.contact-form h2 {
-    margin-bottom: 20px;
-}
-
-.contact-form label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-.contact-form input, .contact-form textarea, .contact-form select {
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-.contact-form button {
-    background-color: #333;
-    color: #fff;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 4px;
+.carousel-button:hover {
+    background-color: #0056b3; /* Цвет фона при наведении (темно-синий) */
 }
