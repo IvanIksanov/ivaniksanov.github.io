@@ -1,21 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tetris</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
+    <title>Сайт с каруселью и формой</title>
 </head>
 <body>
-    <canvas id="gameCanvas" width="240" height="400"></canvas>
+    <header>
+        <div class="logo">Логотип</div>
+        <nav>
+            <ul class="menu">
+                <li><a href="#">Главная</a></li>
+                <li><a href="#">О нас</a></li>
+                <li><a href="#">Контакты</a></li>
+            </ul>
+        </nav>
+    </header>
 
-    <div class="image-container">
-        <img src="image1.jpg" alt="Image 1" class="image-square">
-        <img src="image2.jpg" alt="Image 2" class="image-square">
-        <img src="image3.jpg" alt="Image 3" class="image-square">
-        <img src="image4.jpg" alt="Image 4" class="image-square">
-    </div>
-    
-    <script src="game.js"></script>
+    <section class="carousel">
+        <button class="prev" onclick="prevSlide()">&#10094;</button>
+        <div class="slides">
+            <img src="image1.jpg" alt="Image 1">
+            <img src="image2.jpg" alt="Image 2">
+            <img src="image3.jpg" alt="Image 3">
+        </div>
+        <button class="next" onclick="nextSlide()">&#10095;</button>
+    </section>
+
+    <section class="contact-form">
+        <h2>Напиши письмо Деду Морозу</h2>
+        <form>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="wishes">Пожелания:</label>
+            <textarea id="wishes" name="wishes" required></textarea>
+
+            <label for="phone">Номер телефона:</label>
+            <input type="tel" id="phone" name="phone" required>
+
+            <label for="gift">Выберите подарок:</label>
+            <select id="gift" name="gift">
+                <option value="toy">Игрушка</option>
+                <option value="book">Книга</option>
+                <option value="chocolate">Шоколад</option>
+            </select>
+
+            <button type="submit">Отправить</button>
+        </form>
+    </section>
+
+    <script src="script.js"></script>
 </body>
 </html>
+
