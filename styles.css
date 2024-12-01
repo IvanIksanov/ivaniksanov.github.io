@@ -6,7 +6,7 @@ body {
 }
 
 .frame {
-    border: 2px solid #007BFF; /* Синий цвет рамки */
+    border: 2px solid #44BBC1; /* Синий цвет рамки */
     border-radius: 8px;
     padding: 1rem;
     margin: 1rem 0;
@@ -67,3 +67,54 @@ main {
 .carousel-button:hover {
     background-color: #0056b3; /* Цвет фона при наведении (темно-синий) */
 }
+
+* {
+    box-sizing: border-box; /* Добавляет управление размерами для всех элементов */
+}
+
+.frame {
+    padding: 10px; /* Отступы для контейнера */
+}
+
+h2 {
+    text-align: center; /* Центрируем заголовок */
+}
+
+#gameCanvas {
+    max-width: 100%; /* Ограничиваем ширину канваса, чтобы он не выходил за пределы экрана */
+    height: auto;     /* Высота автоматически подстраивается */
+}
+
+.controls {
+    display: flex;
+    align-items: center; /* Центрируем кнопки по горизонтали */
+    margin-top: 20px; /* Отступ сверху */
+}
+
+.control-button {
+    border: none; /* Убираем рамку */
+    border-radius: 5px; /* Скругление углов */
+    padding: 5px; /* Внутренний отступ */
+    margin: 5px; /* Отступ между кнопками */
+    cursor: pointer; /* Курсор указывает, что это кнопка */
+
+    /* Установка максимальных размеров кнопок */
+    width: 60px; /* Ширина */
+    height: 60px; /* Высота */
+}
+
+.control-button svg {
+    max-width: 100%; /* SVG подстраивается под размеры кнопки */
+    max-height: 100%; /* SVG подстраивается под размеры кнопки */
+    height: auto; /* Автоматическая высота */
+    width: auto; /* Автоматическая ширина */
+}
+
+/* Мобильные стили */
+@media (max-width: 600px) {
+    .control-button {
+        width: 50px; /* Меняем размер кнопок на мобильных устройствах */
+        height: 50px; /* Меняем размер кнопок на мобильных устройствах */
+    }
+}
+
