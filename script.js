@@ -11,34 +11,35 @@ document.getElementById('feedbackForm').addEventListener('submit', function(even
     this.reset();
 });
 
-// Карусель
-let currentIndex = 0;
-const images = document.querySelectorAll('.carousel-images img');
+document.addEventListener('DOMContentLoaded', function () {
+    let currentIndex = 0;
+    const images = document.querySelectorAll('.carousel-images img');
 
-function showImage(index) {
-    images.forEach((img, i) => {
-        img.classList.remove('active');
-        if (i === index) {
-            img.classList.add('active');
-        }
+    function showImage(index) {
+        images.forEach((img, i) => {
+            img.classList.remove('active');
+            if (i === index) {
+                img.classList.add('active');
+            }
+        });
+    }
+
+    document.getElementById('prev').addEventListener('click', function() {
+        console.log("Кнопка Назад нажата"); // Лог для отладки
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+        showImage(currentIndex);
     });
-}
 
-document.getElementById('prev').addEventListener('click', function() {
-    currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+    document.getElementById('next').addEventListener('click', function() {
+        console.log("Кнопка Вперед нажата"); // Лог для отладки
+        currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
+        showImage(currentIndex);
+    });
+
+    // Изначально показываем первое изображение
     showImage(currentIndex);
 });
 
-document.getElementById('next').addEventListener('click', function() {
-    currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
-    showImage(currentIndex);
-});
-
-// Изначально показываем первое изображение
-showImage(currentIndex);
-
-// Интерактивный счетчик
-let userCount = 0;
 
 document.getElementById('increaseCount').addEventListener('click', function() {
     userCount++;
@@ -346,6 +347,10 @@ Piece.prototype.rotate = function() {
 // Существующий код
 
 document.addEventListener("keydown", CONTROL);
+
+document.addEventListener('gesturestart', function (e) {
+    e.preventDefault();
+});
 
 function CONTROL(event) {
     // Проверяем, находится ли фокус на полях ввода
