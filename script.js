@@ -258,7 +258,7 @@ Piece.prototype.lock = function() {
         for (let c = 0; c < this.activeTetromino[r].length; c++) {
             if (this.activeTetromino[r][c]) {
                 if (this.y + r < 0) {
-                    alert("Игра окончена, но ты всё равно победитель!");
+                    alert("Игра окончена, но ты всё равно победитель! Нашел баг - напиши в канал QAtoDev");
                     gameOver = true;
                     return; // Прерываем выполнение, если игра окончена
                 }
@@ -343,6 +343,8 @@ Piece.prototype.rotate = function() {
     }
 }
 
+// Существующий код
+
 document.addEventListener("keydown", CONTROL);
 
 function CONTROL(event) {
@@ -364,6 +366,23 @@ function CONTROL(event) {
         p.moveDown();
     }
 }
+
+// Обработчики событий для кнопок
+document.getElementById('left').addEventListener('click', function() {
+    p.moveLeft();
+});
+
+document.getElementById('rotate').addEventListener('click', function() {
+    p.rotate();
+});
+
+document.getElementById('right').addEventListener('click', function() {
+    p.moveRight();
+});
+
+document.getElementById('down').addEventListener('click', function() {
+    p.moveDown();
+});
 
 let dropStart = Date.now();
 let gameOver = false;
