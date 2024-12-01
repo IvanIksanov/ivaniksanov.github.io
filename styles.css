@@ -33,33 +33,48 @@ main {
 
 .carousel {
     display: flex;
-    align-items: center;
+    flex-direction: column; /* Располагаем элементы по колонке */
+    align-items: center; /* Центрируем по горизонтали */
 }
 
 .carousel-images {
-    position: relative;
-    width: 100%; /* Занимает всю ширину родительского элемента */
-    overflow: hidden; /* Скрывает части изображений, выходящие за пределы контейнера */
+    display: flex;
+    overflow: hidden; /* Скрываем переполнение при прокрутке */
+    max-width: 100%; /* Ограничиваем ширину контейнера */
+    justify-content: center; /* Центрируем изображения */
 }
+
+.carousel-images img {
+    display: none; /* Изначально скрываем все изображения */
+}
+.carousel-images img.active {
+    display: block; /* Показываем только активное изображение */
+}
+
 
 .carousel-images img {
     width: 100%; /* Полная ширина */
     height: auto; /* Автоматическое изменение высоты для сохранения пропорций */
-    display: none; /* Изначально скрываем все изображения */
+    max-width: 400px; /* Максимальная ширина для изображений */
+    border: 2px solid #000; /* Рамка */
+    border-radius: 15px; /* Скругление углов */
+    margin: 5px; /* Отступ между изображениями */
 }
 
-.carousel-images img.active {
-    display: block; /* Показать только активное изображение */
+.carousel-controls {
+    display: flex; /* Используем Flexbox для кнопок */
+    justify-content: center; /* Центрируем кнопки */
+    margin-top: 10px; /* Отступ сверху для кнопок */
 }
 
 .carousel-button {
-    margin: 0 10px; /* Отступ между кнопками и изображениями */
+    margin: 0 10px; /* Отступ между кнопками */
     padding: 10px 15px;
     font-size: 20px;
     border-radius: 10px; /* Закругление углов кнопок */
-    background-color: #007BFF; /* Цвет фона кнопки (синий) */
-    color: #fff; /* Цвет текста кнопки (белый) */
-    border: none; /* Убирает стандартную рамку */
+    background-color: #007BFF; /* Цвет фона кнопки */
+    color: #fff; /* Цвет текста кнопки */
+    border: none; /* Убираем стандартную рамку */
     cursor: pointer; /* Указатель при наведении */
     transition: background-color 0.3s; /* Плавный переход цвета фона */
 }
@@ -68,16 +83,11 @@ main {
     background-color: #0056b3; /* Цвет фона при наведении (темно-синий) */
 }
 
-* {
-    box-sizing: border-box; /* Добавляет управление размерами для всех элементов */
-}
-
-.frame {
-    padding: 10px; /* Отступы для контейнера */
-}
-
-h2 {
-    text-align: center; /* Центрируем заголовок */
+/* Мобильные стили */
+@media (max-width: 600px) {
+    .carousel-images img {
+        max-width: 80%; /* Ограничение размера изображений для мобильных устройств */
+    }
 }
 
 #gameCanvas {
@@ -135,4 +145,3 @@ h2 {
         max-width: 80%; /* Ограничение размера SVG для мобильных устройств */
     }
 }
-
