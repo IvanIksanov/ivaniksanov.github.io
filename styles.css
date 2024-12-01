@@ -118,3 +118,21 @@ h2 {
     }
 }
 
+.responsive-title {
+    text-align: center; /* Центрируем заголовок */
+    width: 100%; /* 100% ширины родителя */
+    height: auto; /* Автоматическая высота */
+}
+
+.responsive-title svg {
+    width: 100%; /* Ширина SVG 100% от родителя */
+    height: auto; /* Высота автоматически подстраивается */
+    max-width: 600px; /* Максимальная ширина для больших экранов */
+}
+
+@media (max-width: 600px) {
+    .responsive-title svg {
+        max-width: 80%; /* Ограничение размера SVG для мобильных устройств */
+    }
+}
+
