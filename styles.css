@@ -145,3 +145,15 @@ main {
         max-width: 80%; /* Ограничение размера SVG для мобильных устройств */
     }
 }
+
+.footer {
+    border: 2px solid #44BBC1; /* Синий цвет рамки */
+    border-radius: 8px;
+    padding: 0,5rem;
+    display: flex;   /* Включаем Flexbox */
+    justify-content: center;  /* Центрируем содержимое по горизонтали */
+    align-items: center;      /* Центрируем по вертикали (если необходимо) */
+    height: 60px; /* Задайте высоту, если нужно */
+    background-color: #FFF9F2; /* Фон для секций */
+    margin: 1rem 0;
+}
