@@ -1,51 +1,3 @@
-// Отправка формы обратной связи
-document.getElementById('feedbackForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-
-    const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
-    const message = document.getElementById('message').value;
-
-    console.log(`Форма отправлена! Имя: ${name}, Email: ${email}, Сообщение: ${message}`);
-    alert('Спасибо за вашу обратную связь!');
-    this.reset();
-});
-
-document.addEventListener('DOMContentLoaded', function () {
-    let currentIndex = 0;
-    const images = document.querySelectorAll('.carousel-images img');
-
-    function showImage(index) {
-        images.forEach((img, i) => {
-            img.classList.remove('active');
-            if (i === index) {
-                img.classList.add('active');
-            }
-        });
-    }
-
-    document.getElementById('prev').addEventListener('click', function() {
-        console.log("Кнопка Назад нажата"); // Лог для отладки
-        currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
-        showImage(currentIndex);
-    });
-
-    document.getElementById('next').addEventListener('click', function() {
-        console.log("Кнопка Вперед нажата"); // Лог для отладки
-        currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
-        showImage(currentIndex);
-    });
-
-    // Изначально показываем первое изображение
-    showImage(currentIndex);
-});
-
-
-document.getElementById('increaseCount').addEventListener('click', function() {
-    userCount++;
-    document.getElementById('count').textContent = userCount;
-});
-
 // Игра Тетрис
 const cvs = document.getElementById("gameCanvas");
 const ctx = cvs.getContext("2d");
@@ -55,7 +7,19 @@ const ROWS = 20;
 const SQ = 20;
 const EMPTY = "WHITE";
 
-// Draw a square
+let score = 0; // Счет
+document.getElementById('tetris-score').textContent = `Score: ${score}`;
+
+// Динамический интервал падения
+let dropInterval = 700; // Начальная скорость в миллисекундах
+
+// Функция для обновления счета
+function updateScore(linesCleared) {
+    score += linesCleared * 100; // За каждую очищенную линию 100 очков
+    document.getElementById('tetris-score').textContent = `Score: ${score}`;
+}
+
+// Функция для отрисовки игрового поля
 function drawSquare(x, y, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x * SQ, y * SQ, SQ, SQ);
@@ -71,7 +35,9 @@ for (let r = 0; r < ROWS; r++) {
     }
 }
 
+// Функция для отрисовки всего поля
 function drawBoard() {
+    ctx.clearRect(0, 0, cvs.width, cvs.height); // Очистка холста перед отрисовкой
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             drawSquare(c, r, board[r][c]);
@@ -79,6 +45,7 @@ function drawBoard() {
     }
 }
 
+// Начальная отрисовка игрового поля
 drawBoard();
 
 const Z = [
@@ -269,6 +236,7 @@ Piece.prototype.lock = function() {
     }
 
     // Удаление полных строк
+    let linesCleared = 0; // Счетчик очищенных строк
     for (let r = ROWS - 1; r >= 0; r--) {
         let isRowFull = true;
         for (let c = 0; c < COLS; c++) {
@@ -281,10 +249,13 @@ Piece.prototype.lock = function() {
         if (isRowFull) {
             // Удаляем строку
             board.splice(r, 1); // Удаляем полную строку
-            // Добавляем новую пустую строку в начало
             board.unshift(new Array(COLS).fill(EMPTY)); // Новая пустая строка
+            linesCleared++; // Увеличиваем счетчик очищенных строк
         }
     }
+
+    // Обновляем счет
+    updateScore(linesCleared);
 
     drawBoard(); // Обновляем отрисовку доски
 }
@@ -344,10 +315,8 @@ Piece.prototype.rotate = function() {
     }
 }
 
-// Существующий код
-
+// Обработчик событий для управления игрой
 document.addEventListener("keydown", CONTROL);
-
 document.addEventListener('gesturestart', function (e) {
     e.preventDefault();
 });
@@ -389,18 +358,34 @@ document.getElementById('down').addEventListener('click', function() {
     p.moveDown();
 });
 
+// Функция для падения фигур
 let dropStart = Date.now();
 let gameOver = false;
 function drop() {
     let now = Date.now();
     let delta = now - dropStart;
-    if (delta > 1000) {
+
+   if (score > 300) {
+       dropInterval = 600; // Устанавливаем скорость 500, если score больше 700
+   } else if (score > 500) {
+       dropInterval = 400; // Устанавливаем скорость 600, если score больше 500
+   } else if (score > 800) {
+       dropInterval = 200; // Устанавливаем скорость 400, если score больше 100
+    } else if (score > 1000) {
+          dropInterval = 100; // Устанавливаем скорость 400, если score больше 100
+      }
+
+
+    // Если прошло достаточно времени, двигаем фигуру вниз
+    if (delta > dropInterval) {
         p.moveDown();
         dropStart = Date.now();
     }
+
     if (!gameOver) {
         requestAnimationFrame(drop);
     }
 }
 
+// Начинаем игру
 drop();
