@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>QA тренировочный сайт</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="QAtoDev 2.png" sizes="32x32" type="image/png">
 </head>
 <body>
 <header class="frame">
@@ -31,7 +32,7 @@
 
 <main>
     <section id="features" class="frame">
-        <h2>Особенности сайта</h2>
+        <h2>Особенности песочницы</h2>
         <p>На этом сайте вы можете практиковаться в написании автотестов для различных элементов.</p>
         <p>Есть много секций, которые вам понадобятся для тестирования.</p>
     </section>
@@ -77,7 +78,13 @@
                 <path d="M550.153 9.6V0.119998H578.593V9.6H550.153ZM540.673 47.52V9.6H550.153V47.52H540.673ZM578.593 19.08V9.6H588.073V19.08H578.593ZM578.593 47.52V38.04H588.073V47.52H578.593ZM550.153 57V47.52H578.593V57H550.153Z" fill="#F0007C"/>
             </svg>
         </h2>
-        <canvas id="gameCanvas" width="240" height="400"></canvas>
+        <div class="canvas-container">
+            <canvas id="gameCanvas" width="240" height="400"></canvas>
+
+            <div class="score-container"
+                <div id="tetris-score">Score: 0</div>
+            </div>
+        </div>
         <div class="controls">
             <button id="left" class="control-button">
                 <svg width="115" height="127" viewBox="0 0 115 127" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -118,128 +125,12 @@
         <button id="increaseCount">Увеличить количество пользователей</button>
     </section>
 
-    <!-- Интегрированная форма бронирования -->
-    <section id="booking" class="frame">
-        <h2>Форма бронирования</h2>
-        <form id="bookingForm">
-            <!--  General -->
-            <div class="form-group">
-                <h2 class="heading">Booking & contact</h2>
-                <div class="controls">
-                    <input type="text" id="name" class="floatLabel" name="name" required>
-                    <label for="name">Name</label>
-                </div>
-                <div class="controls">
-                    <input type="email" id="email" class="floatLabel" name="email" required>
-                    <label for="email">Email</label>
-                </div>
-                <div class="controls">
-                    <input type="tel" id="phone" class="floatLabel" name="phone">
-                    <label for="phone">Phone</label>
-                </div>
-                <div class="grid">
-                    <div class="col-2-3">
-                        <div class="controls">
-                            <input type="text" id="street" class="floatLabel" name="street">
-                            <label for="street">Street</label>
-                        </div>
-                    </div>
-                    <div class="col-1-3">
-                        <div class="controls">
-                            <input type="number" id="street-number" class="floatLabel" name="street-number">
-                            <label for="street-number">Number</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid">
-                    <div class="col-2-3">
-                        <div class="controls">
-                            <input type="text" id="city" class="floatLabel" name="city">
-                            <label for="city">City</label>
-                        </div>
-                    </div>
-                    <div class="col-1-3">
-                        <div class="controls">
-                            <input type="text" id="post-code" class="floatLabel" name="post-code">
-                            <label for="post-code">Post Code</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="controls">
-                    <input type="text" id="country" class="floatLabel" name="country">
-                    <label for="country">Country</label>
-                </div>
-            </div>
-            <!--  Details -->
-            <div class="form-group">
-                <h2 class="heading">Details</h2>
-                <div class="grid">
-                    <div class="col-1-4 col-1-4-sm">
-                        <div class="controls">
-                            <input type="date" id="arrive" class="floatLabel" name="arrive" required>
-                            <label for="arrive" class="label-date"><i class="fa fa-calendar"></i>&nbsp;&nbsp;Arrive</label>
-                        </div>
-                    </div>
-                    <div class="col-1-4 col-1-4-sm">
-                        <div class="controls">
-                            <input type="date" id="depart" class="floatLabel" name="depart" required>
-                            <label for="depart" class="label-date"><i class="fa fa-calendar"></i>&nbsp;&nbsp;Depart</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid">
-                    <div class="col-1-3 col-1-3-sm">
-                        <div class="controls">
-                            <select class="floatLabel" name="people" required>
-                                <option value="">Choose number of people</option>
-                                <option value="1">1</option>
-                                <option value="2" selected>2</option>
-                                <option value="3">3</option>
-                            </select>
-                            <label for="people"><i class="fa fa-male"></i>&nbsp;&nbsp;People</label>
-                        </div>
-                    </div>
-                    <div class="col-1-3 col-1-3-sm">
-                        <div class="controls">
-                            <select class="floatLabel" name="room" required>
-                                <option value="" selected>Choose room type</option>
-                                <option value="deluxe">With Bathroom</option>
-                                <option value="without">Without Bathroom</option>
-                            </select>
-                            <label for="room">Room</label>
-                        </div>
-                    </div>
-                    <div class="col-1-3 col-1-3-sm">
-                        <div class="controls">
-                            <select class="floatLabel" name="bedding" required>
-                                <option value="" selected>Choose bedding type</option>
-                                <option value="single">Zweibett</option>
-                                <option value="double" selected>Doppelbett</option>
-                            </select>
-                            <label for="bedding">Bedding</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid">
-                    <p class="info-text">Please describe your needs e.g. Extra beds, children's cots</p>
-                    <br>
-                    <div class="controls">
-                        <textarea name="comments" class="floatLabel" id="comments"></textarea>
-                        <label for="comments">Comments</label>
-                    </div>
-                    <button type="submit" class="col-1-4">Submit</button>
-                </div>
-            </div> <!-- /.form-group -->
-        </form>
-    </section>
 
-    <section id="about" class="frame">
-        <h2>О QAtoDev</h2>
-        <p>Все началось с первой статьи на Хабр, тема не была связана с тестированием - как провести незабываемую ретроспективу. Вскоре был создан телеграм канал по тестированию, а теперь уже запущена целая песочница для практики. Спасибо тем, кто поддерживает инициативу развития данного сообщества!</p>
-    </section>
+
+
 
     <section id="contact" class="frame">
-        <h2>Обратная связь</h2>
+        <h2>Практика Swagger</h2>
         <form id="feedbackForm">
             <label for="name">Имя:</label>
             <input type="text" id="name" name="name" required>
@@ -249,6 +140,13 @@
             <textarea id="message" name="message" required></textarea>
             <button type="submit">Отправить</button>
         </form>
+    </section>
+
+    <section id="about" class="frame">
+        <h2>О QAtoDev</h2>
+        <p>Всё началось с первой статьи на Хабр, тема не была связана с тестированием - «Как провести незабываемую ретроспективу».
+            Вскоре был создан телеграм канал по тестированию, а теперь уже запущена целая песочница для практики.
+            Спасибо тем, кто помогает и поддерживает инициативу развития данного сообщества!</p>
     </section>
 </main>
 <footer class="footer">
