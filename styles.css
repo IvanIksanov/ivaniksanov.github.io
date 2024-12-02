@@ -5,12 +5,27 @@ body {
     background-color: #F5F5F3; /* Измененный цвет фона */
 }
 
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #1A1A1A; /* Темный цвет фона для ночного режима */
+        color: #FFFFFF; /* Цвет текста при темном фоне */
+    }
+}
+
 .frame {
     border: 2px solid #44BBC1; /* Синий цвет рамки */
     border-radius: 8px;
     padding: 1rem;
     margin: 1rem 0;
-    background-color: #FFF9F2; /* Фон для секций */
+    background-color: #C6B2A0; /* Фон для секций */
+}
+
+@media (prefers-color-scheme: dark) {
+    .frame {
+        background-color: #1C2E40; /* Темный фон для секций в ночном режиме */
+        border: 2px solid #44BBC1; /* Цвет рамки можно оставить без изменений или изменить на более контрастный */
+        color: #FFFFFF; /* Цвет текста в секциях */
+    }
 }
 
 header {
@@ -95,22 +110,31 @@ main {
     height: auto;     /* Высота автоматически подстраивается */
 }
 
+.canvas-container {
+    display: flex;              /* Используем Flexbox для контейнера */
+    justify-content: center;    /* Центрируем по горизонтали */
+    border: 2px solid #44BBC1;  /* Добавляем рамку */
+    border-radius: 10px;        /* Закругляем углы рамки */
+    padding: 0px;              /* Добавляем внутренний отступ */
+}
+
 .controls {
     display: flex;
     align-items: center; /* Центрируем кнопки по горизонтали */
-    margin-top: 20px; /* Отступ сверху */
+    margin-top: 10px; /* Отступ сверху */
+    justify-content: center;
 }
 
 .control-button {
     border: none; /* Убираем рамку */
     border-radius: 5px; /* Скругление углов */
-    padding: 5px; /* Внутренний отступ */
+    padding: 10px; /* Внутренний отступ */
     margin: 5px; /* Отступ между кнопками */
     cursor: pointer; /* Курсор указывает, что это кнопка */
 
     /* Установка максимальных размеров кнопок */
-    width: 60px; /* Ширина */
-    height: 60px; /* Высота */
+    width: 90px; /* Ширина */
+    height: 90px; /* Высота */
 }
 
 .control-button svg {
@@ -149,7 +173,7 @@ main {
 .footer {
     border: 2px solid #44BBC1; /* Синий цвет рамки */
     border-radius: 8px;
-    padding: 0,5rem;
+    padding: 0.5rem; /* Исправленный синтаксис */
     display: flex;   /* Включаем Flexbox */
     justify-content: center;  /* Центрируем содержимое по горизонтали */
     align-items: center;      /* Центрируем по вертикали (если необходимо) */
@@ -157,3 +181,19 @@ main {
     background-color: #FFF9F2; /* Фон для секций */
     margin: 1rem 0;
 }
+
+@media (prefers-color-scheme: dark) {
+    .footer {
+        background-color: #1C2E40; /* Темный фон для секций в ночном режиме */
+        border: 2px solid #44BBC1; /* Цвет рамки можно оставить без изменений или изменить на более контрастный */
+        color: #FFFFFF; /* Цвет текста в секциях */
+    }
+}
+
+.score-container {
+    text-align: center;
+    padding: 30px;
+    font-size: 24px;
+    color: #44BBC1;
+}
+
