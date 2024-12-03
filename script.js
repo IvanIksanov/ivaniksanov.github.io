@@ -12,6 +12,31 @@ document.getElementById('feedbackForm').addEventListener('submit', function(even
 });
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Функция для расчёта оставшихся дней
+    function calculateDaysToNewYear() {
+        const today = new Date();
+        const nextYear = today.getFullYear() + 1;
+        const newYearDate = new Date(nextYear, 0, 1); // 1 января следующего года
+        const timeDifference = newYearDate - today; // Разница в миллисекундах
+        const daysLeft = Math.ceil(timeDifference / (1000 * 60 * 60 * 24)); // Перевод в дни
+        return daysLeft;
+    }
+
+    // Отображение количества дней
+    function displayDaysLeft() {
+        const daysLeft = calculateDaysToNewYear();
+        const daysLeftElement = document.getElementById('days-left');
+        daysLeftElement.textContent = `${daysLeft} дней!`;
+    }
+
+    // Инициализация счётчика
+    displayDaysLeft();
+
+    // Обновление каждые 24 часа
+    setInterval(displayDaysLeft, 24 * 60 * 60 * 1000);
+});
+
+document.addEventListener('DOMContentLoaded', function () {
     let currentIndex = 0;
     const images = document.querySelectorAll('.carousel-images img');
 
@@ -57,7 +82,7 @@ const SQ = 20;
 const EMPTY = "WHITE";
 
 let score = 0; // Счет
-document.getElementById('tetris-score').textContent = `Score: ${score}`;
+document.getElementById('tetris-score').textContent = `СЧЕТ: ${score}`;
 
 // Динамический интервал падения
 let dropInterval = 700; // Начальная скорость в миллисекундах
@@ -65,7 +90,7 @@ let dropInterval = 700; // Начальная скорость в миллисе
 // Функция для обновления счета
 function updateScore(linesCleared) {
     score += linesCleared * 100; // За каждую очищенную линию 100 очков
-    document.getElementById('tetris-score').textContent = `Score: ${score}`;
+    document.getElementById('tetris-score').textContent = `СЧЕТ: ${score}`;
 }
 
 // Функция для отрисовки игрового поля
