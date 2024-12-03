@@ -1,3 +1,52 @@
+// Отправка формы обратной связи
+document.getElementById('feedbackForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const message = document.getElementById('message').value;
+
+    console.log(`Форма отправлена! Имя: ${name}, Email: ${email}, Сообщение: ${message}`);
+    alert('Спасибо за вашу обратную связь!');
+    this.reset();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    let currentIndex = 0;
+    const images = document.querySelectorAll('.carousel-images img');
+
+    function showImage(index) {
+        images.forEach((img, i) => {
+            img.classList.remove('active');
+            if (i === index) {
+                img.classList.add('active');
+            }
+        });
+    }
+
+    document.getElementById('prev').addEventListener('click', function() {
+        console.log("Кнопка Назад нажата"); // Лог для отладки
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+        showImage(currentIndex);
+    });
+
+    document.getElementById('next').addEventListener('click', function() {
+        console.log("Кнопка Вперед нажата"); // Лог для отладки
+        currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
+        showImage(currentIndex);
+    });
+
+    // Изначально показываем первое изображение
+    showImage(currentIndex);
+});
+
+// Инициализация счетчика пользователей
+let userCount = 0;
+document.getElementById('increaseCount').addEventListener('click', function() {
+    userCount++;
+    document.getElementById('count').textContent = userCount;
+});
+
 // Игра Тетрис
 const cvs = document.getElementById("gameCanvas");
 const ctx = cvs.getContext("2d");
