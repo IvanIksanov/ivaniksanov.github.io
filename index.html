@@ -78,13 +78,14 @@
                 <path d="M550.153 9.6V0.119998H578.593V9.6H550.153ZM540.673 47.52V9.6H550.153V47.52H540.673ZM578.593 19.08V9.6H588.073V19.08H578.593ZM578.593 47.52V38.04H588.073V47.52H578.593ZM550.153 57V47.52H578.593V57H550.153Z" fill="#F0007C"/>
             </svg>
         </h2>
+        <div class="score-container">
+        <div id="tetris-score">СЧЕТ: 0</div>
+        </div>
+
         <div class="canvas-container">
             <canvas id="gameCanvas" width="240" height="400"></canvas>
-
-            <div class="score-container"
-                <div id="tetris-score">Score: 0</div>
-            </div>
         </div>
+
         <div class="controls">
             <button id="left" class="control-button">
                 <svg width="115" height="127" viewBox="0 0 115 127" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -119,15 +120,11 @@
         </ul>
     </section>
 
-    <section id="counter" class="frame">
+    <section id="counter" class="counter">
         <h2>Пользователи на сайте</h2>
         <p id="userCount">Пользователи онлайн: <span id="count">0</span></p>
-        <button id="increaseCount">Увеличить количество пользователей</button>
+        <button id="increaseCount">❤️</button>
     </section>
-
-
-
-
 
     <section id="contact" class="frame">
         <h2>Практика Swagger</h2>
