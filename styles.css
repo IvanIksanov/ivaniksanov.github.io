@@ -17,7 +17,7 @@ body {
     border-radius: 8px;
     padding: 1rem;
     margin: 1rem 0;
-    background-color: #C6B2A0; /* Фон для секций */
+    background-color: #FFE6D0; /* Фон для секций */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -170,6 +170,49 @@ main {
     }
 }
 
+.counter {
+    border: 2px solid #44BBC1; /* Синий цвет рамки */
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column; /* Вертикальное расположение элементов */
+    align-items: flex-start; /* Выровнять элементы по левому краю */
+    margin-top: 10px; /* Отступ сверху */
+    height: auto; /* Позволить высоте адаптироваться */
+    background-color: #FFE6D0;
+    padding: 15px; /* Увеличение отступов для лучшего визуального восприятия */
+    font-size: 20px; /* Размер шрифта текста */
+}
+
+#userCount {
+    margin: 10px 0; /* Отступ между текстом и кнопкой */
+}
+
+#increaseCount {
+    padding: 15px 20px; /* Увеличение размеров кнопки */
+    font-size: 34px; /* Увеличение размера шрифта для кнопки */
+    border: 2px solid #44BBC1; /* Синий цвет рамки */
+    border-radius: 8px; /* Закругление углов кнопки */
+    background-color: #FFE6D0; /* Цвет фона кнопки */
+    color: white; /* Цвет текста кнопки */
+    cursor: pointer; /* Указатель при наведении */
+    transition: background-color 0.3s; /* Плавный переход цвета фона */
+}
+
+#increaseCount:hover {
+    background-color: #3A9CA6; /* Цвет кнопки при наведении */
+}
+
+/* Адаптивные стили */
+@media (max-width: 600px) {
+    .counter {
+        font-size: 18px; /* Уменьшение размера шрифта на маленьких экранах */
+    }
+
+    #increaseCount {
+        font-size: 22px; /* Уменьшение размера шрифта кнопки на маленьких экранах */
+    }
+}
+
 .footer {
     border: 2px solid #44BBC1; /* Синий цвет рамки */
     border-radius: 8px;
@@ -178,7 +221,7 @@ main {
     justify-content: center;  /* Центрируем содержимое по горизонтали */
     align-items: center;      /* Центрируем по вертикали (если необходимо) */
     height: 60px; /* Задайте высоту, если нужно */
-    background-color: #FFF9F2; /* Фон для секций */
+    background-color: #FFE6D0; /* Фон для секций */
     margin: 1rem 0;
 }
 
@@ -192,7 +235,7 @@ main {
 
 .score-container {
     text-align: center;
-    padding: 30px;
+    padding: 5px;
     font-size: 24px;
     color: #44BBC1;
 }
