@@ -1,3 +1,53 @@
+document.getElementById('feedbackForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    // Сбор данных из формы
+    const data = JSON.stringify({
+        id: parseInt(document.getElementById('id').value),
+        username: document.getElementById('username').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value,
+        phone: document.getElementById('phone').value,
+        userStatus: parseInt(document.getElementById('userStatus').value)
+    });
+
+    // Создание и отправка запроса
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "https://petstore.swagger.io/v2/user");
+    xhr.setRequestHeader("Accept", "application/json");
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+            if (xhr.status === 200) {
+                // Успешный ответ
+                const response = JSON.parse(xhr.responseText);
+                console.log('Пользователь создан:', response);
+                alert('Пользователь успешно создан!');
+                document.getElementById('feedbackForm').reset();
+            } else {
+                // Обработка ошибок
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    console.error('Ошибка создания пользователя:', errorResponse.message);
+                    alert(`Ошибка: ${errorResponse.message}`);
+                } catch (e) {
+                    console.error('Ошибка парсинга ответа:', e);
+                    alert('Произошла ошибка при создании пользователя.');
+                }
+            }
+        }
+    };
+
+    xhr.onerror = function() {
+        alert('Произошла ошибка сети. Пожалуйста, попробуйте снова.');
+    };
+
+    xhr.send(data);
+});
+
 // Отправка формы обратной связи
 document.getElementById('feedbackForm').addEventListener('submit', function(event) {
     event.preventDefault();
@@ -300,7 +350,7 @@ Piece.prototype.lock = function() {
         for (let c = 0; c < this.activeTetromino[r].length; c++) {
             if (this.activeTetromino[r][c]) {
                 if (this.y + r < 0) {
-                    alert("Игра окончена, но ты всё равно победитель! Нашел баг - напиши в канал QAtoDev");
+                    alert("Игра Тетрис окончена, но ты всё равно победитель!\nНашел баг - напиши в канал QAtoDev");
                     gameOver = true;
                     return; // Прерываем выполнение, если игра окончена
                 }
@@ -463,3 +513,12 @@ function drop() {
 
 // Начинаем игру
 drop();
+
+const burgerMenu = document.querySelector('.burger-menu');
+const links = document.querySelectorAll('nav ul li.hidden');
+
+burgerMenu.addEventListener('click', () => {
+    links.forEach(link => {
+        link.classList.toggle('hidden'); // Переключает класс hidden
+    });
+});
