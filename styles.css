@@ -2,7 +2,7 @@ body {
     font-family: "Fira Code", monospace;
     margin: 0;
     padding: 0;
-    background-color: #E7E7E7; /* Измененный цвет фона */
+    background-color: #F1F1F1; /* Измененный цвет фона */
 }
 
 .fira-code-<uniquifier> {
