@@ -1,6 +1,6 @@
 body {
     font-family: "Fira Code", monospace;
-    margin: 0;
+    margin: 10;
     padding: 0;
     background-color: #F1F1F1; /* Измененный цвет фона */
 }
@@ -21,6 +21,7 @@ body {
 
 .frame {
     border: 2px solid #44BBC1; /* Синий цвет рамки */
+    background-color: #FAFAFA; /* Белый фон */
     padding: 1rem;
     margin: 1rem 0;
 }
@@ -28,7 +29,7 @@ body {
 @media (prefers-color-scheme: dark) {
     .frame {
         border: 2px solid #44BBC1; /* Цвет рамки можно оставить без изменений или изменить на более контрастный */
-        color: #FFFFFF; /* Цвет текста в секциях */
+        background-color: #1A1A1A;
     }
 }
 
@@ -128,6 +129,21 @@ a:hover {
     background-color: rgba(255, 255, 255, 1); /* Прозрачный фон при наведении */
 }
 
+b {
+    text-decoration: none; /* Убираем подчеркивание */
+    padding: 7px 10px; /* Высота плашек навигации в хеддере страницы */
+    border-radius: 10px; /* Закругленные углы */
+    background-color: #58BEFE; /* Цвет подложки */
+    color: #FFFFFF; /* Цвет текста */
+    transition: background-color 0.3s; /* Плавный переход цвета фона */
+    cursor: pointer;
+}
+
+b:hover {
+    background-color: rgba(255, 255, 255, 1); /* Прозрачный фон при наведении */
+    color: #1A1A1A;
+}
+
 @media only screen and (max-width: 600px) {
     ul {
         flex-direction: list; /* Переключаем на вертикальное расположение */
@@ -144,7 +160,13 @@ a:hover {
             padding: 7px 10px; /* Увеличиваем отступы вокруг ссылок */
             margin-top: 30px; /* Отступ сверху */
             margin-bottom: 7px; /* Отступ снизу */
-        }
+    }
+
+    b {
+             padding: 7px 10px; /* Увеличиваем отступы вокруг ссылок */
+             margin-top: 30px; /* Отступ сверху */
+             margin-bottom: 7px; /* Отступ снизу */
+    }
 }
 
 .burger-menu {
@@ -221,6 +243,17 @@ a:hover {
 
 .carousel-button:hover {
     background-color: rgba(255, 255, 255, 1); /* Цвет фона при наведении (темно-синий) */
+}
+
+.skills {
+    margin: 10 10px; /* Отступ между кнопками */
+    padding: 7px 10px;
+    font-size: 15px;
+    border-radius: 4px; /* Закругление углов кнопок */
+    background-color: #58BEFE; /* Цвет подложки */
+    color: #000; /* Цвет текста */
+    transition: background-color 0.3s; /* Плавный переход цвета фона */
+    border: none; /* Убираем стандартную рамку */
 }
 
 /* Мобильные стили */
@@ -445,13 +478,12 @@ a:hover {
 }
 
 :root {
-            --background-color: #f9f9f9;
             --text-color: #333;
             --input-background: #fff;
             --input-text-color: #000;
-            --border-color: #ccc;
+            --border-color: #007BFF;
             --focus-border-color: #007BFF;
-            --button-background: #007BFF;
+            --button-background-color: rgba(255, 255, 255, 0.7);
             --button-text-color: #fff;
             --justify-content: center;
         }
@@ -491,7 +523,7 @@ a:hover {
         label {
             margin-bottom: 5px;
             font-weight: bold;
-            text-align: left;
+            text-align: center; /* Название полей по центру SWAGGER*/
         }
 
         input[type="text"],
@@ -553,3 +585,78 @@ a:hover {
                 font-size: 14px;
             }
         }
+
+.card {
+  display: flex;
+  flex-direction: row; /* Расположить элементы в ряд */
+  justify-content: space-between; /* Равномерно распределить элементы по ширине */
+  align-items: center; /* Выровнять элементы по вертикали */
+  padding: 1rem; /* Внутренний отступ */
+  margin: 1rem auto; /* Отступ и автоматическое центрирование */
+  border-radius: 1px; /* Закругление углов */
+  width: 90%; /* Ширина карточки */
+  height: auto; /* Высота автоматически подстраивается */
+  background-color: #FAFAFA; /* Белый фон */
+  border: 2px solid #000000; /* Черный цвет рамки */
+}
+
+@media (prefers-color-scheme: dark)
+    {
+        .card {
+            background-color: #1A1A1A; /* Белый фон */
+            border: 2px solid #ffffff; /* Черный цвет рамки */
+        }
+    }
+
+.card-content {
+  flex: 1; /* Занять доступное пространство */
+  text-align: left; /* Выровнять текст по левому краю */
+}
+
+.card-image {
+  height: auto;
+  max-width: 100%; /* Ограничить ширину изображения */
+  flex: 0 0 auto; /* Запретить изображению занимать доступное пространство */
+  margin-left: 10px; /* Отступ между изображением и текстом */
+  border-radius: 10px; /* Закругление углов изображения */
+}
+
+/* Мобильные стили */
+@media (max-width: 1000px) {
+  .card {
+    width: 80%; /* Увеличение ширины карточки на мобильных устройствах */
+    font-size: 0.8rem; /* Уменьшение размера шрифта для мобильных устройств */
+  }
+
+  card-content {
+      font-size: 0.8rem; /* Уменьшение размера шрифта для текстового содержимого */
+    }
+
+  .card-image {
+    display: none;
+  }
+}
+
+@media only screen and (max-width: 880px) {
+    .burger-menu {
+        display: block; /* Show burger menu icon on mobile */
+    }
+
+    nav ul {
+        display: none; /* Hide navigation links by default on mobile */
+    }
+
+    nav ul.active {
+        display: flex; /* Show navigation links when active */
+        flex-direction: column; /* Stack links vertically */
+        align-items: center; /* Center links horizontally */
+    }
+
+    nav ul.active li {
+        margin-top: 10px; /* Add top margin to each link */
+        margin-bottom: 10px; /* Add bottom margin to each link */
+    }
+}
+
+
+</head>
