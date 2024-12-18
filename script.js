@@ -522,3 +522,6 @@ document.addEventListener('DOMContentLoaded', function () {
         navLinks.classList.toggle('active'); // Toggle visibility of the nav links
     });
 });
+
+
+
