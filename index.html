@@ -16,7 +16,6 @@
         for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
         k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
         (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
-
         ym(99129194, "init", {
              clickmap:true,
              trackLinks:true,
@@ -26,6 +25,333 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/99129194" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
+    <script>
+    let previousContent = ''; // Для хранения предыдущего содержимого
+
+    function openNewPage() {
+    previousContent = document.body.innerHTML; // Сохраняем текущее содержимое
+    const newContent = `
+    <div>
+        <h2>Задания на собеседованиях для QA</h2>
+        <button class="carousel-button" onclick="goBack();">Вернуться в песочницу</button>
+    </div>
+        <div class="card">
+            <div class="card-content">
+                <p>
+                        <h3>Задание 1. Сколько осталось до Нового года?</h3>
+                        Необходимо поменять количество оставшихся дней до НГ.<br>
+                        Воспользуйся DevTools, чтобы счетчик отобразил 120 дней!
+                        <h4>Шаги по воспроизведению:</h4>
+                        1. Открыть Devtools<br>
+                        2. Вкладка Elements<br>
+                        3. Нажать на "Цель"<br>
+                        4. Переместить курсор на необходимый элемент<br>
+                        5. В структуре html заменить число<br>
+                        6. Нажать Enter<br>
+                        <br>
+                        <button class="skills" ">DevTools: Elements</button>
+                </p>
+            </div>
+            <div class="card-image">
+                <img src="Задание 1.png" alt="Изображение" style="width: 600px; height: 200px;">
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <p>
+                        <h3>Задание 2. Практика Swagger</h3>
+                        Проверить ответ на API запрос после нажатия на кнопку "Отправить".
+                        <h4>Шаги по воспроизведению:</h4>
+                        1. Открыть Devtools<br>
+                        2. Вкладка Network<br>
+                        3. Очистить сетевой журнал<br>
+                        4. Заполнить необходимые поля<br>
+                        5. Нажать кнопку "Отправить"<br>
+                        6. Найти API запрос в сетевом журнале<br>
+                        7. Отобразить значение во вкладке "Respones"<br>
+                        <br>
+                        <button class="skills" ">DevTools: Network</button>
+                        <button class="skills" ">API</button>
+                </p>
+            </div>
+            <div class="card-image">
+                <img src="Задание 2.png" alt="Изображение" style="width: 720px; height: 200px;">
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <p>
+                    <h3>Задание 3. Удали лишний элемент</h3>
+                    Удали со страницы часть заголовка "ИГРА" формата .svg
+                    <h4>Шаги по воспроизведению:</h4>
+                    1. Открыть Devtools<br>
+                    2. Вкладка Elements<br>
+                    3. Нажать на "Цель"<br>
+                    4. Переместить курсор на необходимый элемент<br>
+                    5. В структуре html удали элемент<br>
+                    <br>
+                    <button class="skills" ">DevTools: Elements</button>
+                </p>
+            </div>
+            <div class="card-image">
+                <img src="Задание 3.png" alt="Изображение" style="width: 300px; height: 300px;">
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <p>
+                <h3>Задание 4. Поставь Тетрис на паузу</h3>
+                        Останови игру с помощью точки останова (breakpoint).<br>
+                        Поставить breakpoint на шаг кода, чтобы поставить игру на паузу.
+                        <h4>Шаги по воспроизведению:</h4>
+                        1. Открыть Devtools<br>
+                        2. Вкладка Source<br>
+                        3. Открыть файл script.js<br>
+                        4. Переместить курсор на строчку 362<br>
+                        5. Поставить точку останова нажав на "362"<br>
+                        6. Дождитесь падения текущей фигуры или положите её самостоятельно<br>
+                        7. Воспроизведи игру с помощью области управления breakpoint (см. Скрин)<br>
+                        НЕ ЗАБУДЬ УБРАТЬ точку останова после проверки :)<br>
+                        <br>
+                        <button class="skills" ">DevTools: Source</button>
+                        <button class="skills" ">JS: breakpoint</button>
+                        </p>
+            </div>
+            <div class="card-image">
+                <img src="Задание 4.png" alt="Изображение" style="width: 600px; height: 200px;">
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-content">
+                <p>
+                <h3>Задание 5. Открыть сайт в разных браузерах (Тестовое задание)</h3>
+                        Проверь верстку страницы на разных клиентах.<br>
+                        Важно сравнивать верстку не только на разных браузерах, но и на разных движках.<br>
+                        Не забудь про размеры экранов.<br>
+                        <h4>Шаги по воспроизведению:</h4>
+                        1. Открыть сайт в Chrome (движок Blink)<br>
+                        2. Открыть сайт в Safari (движок WebKit)<br>
+                        3. Открыть сайт в Mozilla Firefox (движок Gecko)<br>
+                        4. Открыть сайт в Internet Explorer (движок Trident)<br>
+                        5. Сравнить отрисовку элементов на странице<br>
+                        6. Проверить верстку - размер, стиль и расположение элементов<br>
+                        <br>
+                        <button class="skills" ">Кроссбраузерное тестирование</button>
+                        </p>
+            </div>
+        </div>
+        `;
+
+    document.body.innerHTML = newContent; // Заменяем содержимое body
+    }
+
+    function goBack() {
+    location.reload(); // Перезагружает текущую страницу
+    }
+    </script>
+
+    <script>
+        let previousContentBugs = ''; // Для хранения предыдущего содержимого
+
+        function openNewPageBugs() {
+        previousContentBugs = document.body.innerHTML; // Сохраняем текущее содержимое
+        const newContent = `
+        <div>
+            <h2>Список багов для воспроизведения</h2>
+            <button class="carousel-button" onclick="goBack();">Вернуться в песочницу</button>
+        </div>
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Bug_1. Зум главной страницы при быстром нажатии кнопок тетриса</h3>
+                            <h4>Предусловия:</h4>
+                            Открыть песочницу на мобильном устройстве (Например: Iphone 13 Pro - iOS 18.2)
+                            <h4>Шаги по воспроизведению:</h4>
+                            1. Перейти в блок "Тетрис"<br>
+                            2. Нажать на кнопку "Вниз" множество раз (быстро)<br>
+                            3. Сместить фокус нажатия за область кнопки<br>
+                            4. Проверить зум страницы<br>
+                            <h4>Ожидаемый результат:</h4>
+                                Масштаб страницы не изменился
+                            <h4>Фактический результат:</h4>
+                                Масштаб страницы увеличен<br>
+                                <br>
+                            <button class="skills" ">High</button>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Bug_2. Отображение полей ввода по левому краю в десктопном размере экрана</h3>
+                            <h4>Предусловия:</h4>
+                            Открыть песочницу на десктопном размере экрана
+                            <h4>Шаги по воспроизведению:</h4>
+                            1. Перейти в блок "Практика Swagger"<br>
+                            2. Проверить отображение полей ввода<br>
+                            <h4>Ожидаемый результат:</h4>
+                                Сортировка полей ввода по центру (десктопный размер экрана)
+                            <h4>Фактический результат:</h4>
+                                Сортировка полей ввода по левому краю (десктопный размер экрана)<br>
+                                <br>
+                            <button class="skills" ">low</button>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Bug_3. Отсутствие функционала удаления двух и более заполненных полос в тетрисе</h3>
+                            <h4>Предусловия:</h4>
+                            Открыть песочницу на любом устройстве (Iphone 13 Pro - iOS 18.2)
+                            <h4>Шаги по воспроизведению:</h4>
+                            1. Перейти в блок "Тетрис"<br>
+                            2. Заполнить одновременно 2-х и более полос<br>
+                            3. Проверить сгорание всех полос одновременно<br>
+                            <h4>Ожидаемый результат:</h4>
+                                При заполнении двух и более полос в тетрисе - они сгорают с начислением очков
+                            <h4>Фактический результат:</h4>
+                                При заполнении двух и более полос в тетрисе - сгорает только самая нижняя полоса с начислением очков<br>
+                                <br>
+                            <button class="skills" ">Critical</button>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Bug_4. Отсутствуют склонения слова "дней" в блоке "Сколько осталось до 2025?"</h3>
+                            <h4>Предусловия:</h4>
+                            Открыть песочницу на любом устройстве (Iphone 13 Pro - iOS 18.2)
+                            <h4>Шаги по воспроизведению:</h4>
+                            1. Перейти в блок "Сколько осталось до 2025?"<br>
+                            2. Изменить число оставшихся дней<br>
+                            3. Проверить склонение для "21 день"<br>
+                            4. Проверить склонение для "4 дня"<br>
+                            5. Проверить склонение для "13 дней"<br>
+                            <h4>Ожидаемый результат:</h4>
+                                Слово "дней" склоняется в зависимости от числа
+                            <h4>Фактический результат:</h4>
+                                Слово "дней" не склоняется в зависимости от числа<br>
+                                <br>
+                            <button class="skills" ">Critical</button>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Bug_5. Ссылка под логотипом в хэддере использует общую стилизацию плашек на странице</h3>
+                            <h4>Предусловия:</h4>
+                            Открыть песочницу на любом устройстве (Десктоп Chrome 118.0.1)
+                            <h4>Шаги по воспроизведению:</h4>
+                            1. Навести фокус на иконку над названием "Тренировочный сайт" <br>
+                            2. Проверить наличие лишних элементов<br>
+                            <h4>Ожидаемый результат:</h4>
+                                В области логотипа нет лишних элементов у логотипа
+                            <h4>Фактический результат:</h4>
+                                Ссылка под логотипом в хэддере использует серую плашку в качестве подложки<br>
+                                <br>
+                            <button class="skills" ">Low</button>
+                    </p>
+                </div>
+            </div>
+            `;
+
+        document.body.innerHTML = newContent; // Заменяем содержимое body
+        }
+
+        function goBack() {
+        location.reload(); // Перезагружает текущую страницу
+        }
+    </script>
+
+    <script>
+        let previousContentQuestions = ''; // Для хранения предыдущего содержимого
+
+        function openNewPageQuestions() {
+        previousContentQuestions = document.body.innerHTML; // Сохраняем текущее содержимое
+        const newContent = `
+        <div>
+            <h2>Вопросы на собеседовании для тестировщика</h2>
+            <button class="carousel-button" onclick="goBack();">Вернуться в песочницу</button>
+        </div>
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Вопрос_1. Что такое тестирование?</h3>
+                            <h4>Ответ:</h4>
+                            Сравнение ожидаемого результата с фактическим результатом ПО. Тестирование это не поиск багов!<br>
+                            <h4>Своими словами:</h4> тестирование - это процесс сопоставления спецификаций продукта с его финальным результатом.<br>
+                            Под финальным результатом мы можем понимать то, что тестировщик получает, когда разработчик реализует функционал<br>
+                            по задаче и мы начинаем его тестировать. В ручном тестировании мы сравниваем тестовые случаи с реализованным проектом,<br>
+                            а в автоматизированном тестировании мы преобразуем ручные тестовые случаи в автоматические проверки для реализованного проекта.<br>
+                            <br>
+                                <br>
+                            <button class="skills" ">Джун</button>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Вопрос_2. Зачем тестировать ПО? Цель тестирования?</h3>
+                            <h4>Ответ:</h4>
+                            Есть две цели тестирования:
+                            техническая - предоставление информации о состоянии приложения на данный момент;<br>
+                            коммерческая - повышение лояльности к компании и приложению, так как любой обнаруженный <br>
+                            дефект негативно влияет на доверие пользователей. От сюда следует, что QA влияет на продукт, а не просто тестирует что сказали :)<br>
+                            <h4>Своими словами:</h4> для своевременного предоставления информации по сравнению ожидаемого поведения ПО с фактическим поведением ПО. <br>
+                            Мы предоставляем данные для координации направления продукта. Это определение дает общее понимание и роль QA зависит от методологии разработки ПО.<br>
+                                <br>
+                            <button class="skills" ">Джун</button>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-content">
+                    <p>
+                            <h3>Вопрос_3. Какие этапы тестирования?</h3>
+                            <h4>Ответ:</h4>
+                            При подготовке релиза тестировщик выполняет следующие шаги:<br>
+                                1.Планирование тестирования.<br>
+                                2.Подготовка и выполнение проверок.<br>
+                                3.Составление отчета по результатам.<br>
+                            <h4>Подробнее:</h4>
+                            1.Инициация процесса тестирования.<br>
+                            2.Выявление прямых и косвенных требований.<br>
+                            3.Генерация тестовых случаев.<br>
+                            4.Отбор значимых тестовых случаев.<br>
+                            5.Проведение проверок.<br>
+                            6.Фиксация результатов.<br>
+                            7.Анализ результатов.<br>
+                            8.Передача информации о соответствии проверенного продукта требованиям.<br>
+                            <br>
+                            <button class="skills" ">Джун</button>
+                    </p>
+                </div>
+            </div>
+
+            <ul>
+        <li><a href="https://habr.com/ru/articles/784116/">Больше вопросов на Хабре</a></li>
+        </ul>
+            `;
+
+        document.body.innerHTML = newContent; // Заменяем содержимое body
+        }
+
+        function goBack() {
+        location.reload(); // Перезагружает текущую страницу
+        }
+    </script>
+
+
 </head>
 <body>
 <nav>
@@ -33,37 +359,34 @@
         &#9776; <!-- Это значок бургер-меню -->
     </div>
     <ul>
-        <li><a href="#features">Особенности</a></li>
-        <li><a href="#carousel">Карусель</a></li>
-        <li><a href="#testimonials">Отзывы</a></li>
+        <li><a href="#" onclick="openNewPageQuestions(); return false;">Вопросы</a></li>
         <li><a href="#game">Тетрис</a></li>
-        <li><a href="#links">Полезные ссылки</a></li>
-        <li><a href="#swagger">Swagger</a></li>
-        <li><a href="#about">О нас</a></li>
+        <li><b href="#" onclick="openNewPageBugs(); return false;">Баги</b></li>
+        <li><a href="#" onclick="openNewPage(); return false;">Задания для QA</a></li>
     </ul>
 </nav>
 
 <header class="welcome">
     <div class="logo">
         <a href="https://t.me/qatodev" target="_blank">
-            <img src="QAtoDev 2.png" alt="Логотип" style="width: 60px; height: 60px;">
+            <img src="QAtoDev 2.png" alt="Логотип" style="width: 80px; height: 80px;">
         </a>
         <h3>Тренировочный сайт QAtoDev!</h3>
     </div>
 </header>
 
-
 <main>
 
     <section id="new-year-counter" class="new-year-counter">
-        <h2>Сколько осталось до Нового года?</h2>
+        <h2>Сколько осталось до 2025?</h2>
         <p id="days-left"></p>
     </section>
 
     <section id="features" class="frame">
-        <h2>Особенности песочницы</h2>
-        <p>На этом сайте вы можете практиковаться в написании автотестов для различных элементов.</p>
-        <p>Есть много секций, которые вам понадобятся для тестирования.</p>
+        <h2>Особенности QA песочницы</h2>
+        <p>На этом сайте вы можете практиковаться в написании автотестов для различных элементов.
+            Есть много секций, которые позволяют развивать навыки тестирования. Нажми "Задания для QA" в хэддере.
+        </p>
     </section>
 
     <section id="carousel" class="noneframe">
@@ -138,7 +461,7 @@
     <section id="links" class="custom-links">
         <h2>Полезные ссылки</h2>
         <ul class="link-list">
-            <li class="link-item"><a href="https://www.selenium.dev/" target="_blank">Selenium</a> <span>- Инструмент для автоматизации браузеров.</span></li>
+            <li class="link-item"><a href="https://t.me/QAtoDev/208" target="_blank">Insomnia</a> <span>- как запустить API запрос.</span></li>
             <li class="link-item"><a href="https://www.postman.com/" target="_blank">Postman</a> <span>- Инструмент для API-тестирования.</span></li>
             <li class="link-item"><a href="https://www.jenkins.io/" target="_blank">Jenkins</a> <span>- Помощник в CI/CD.</span></li>
         </ul>
