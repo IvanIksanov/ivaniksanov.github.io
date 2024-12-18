@@ -514,11 +514,11 @@ function drop() {
 // Начинаем игру
 drop();
 
-const burgerMenu = document.querySelector('.burger-menu');
-const links = document.querySelectorAll('nav ul li.hidden');
+document.addEventListener('DOMContentLoaded', function () {
+    const burgerMenu = document.querySelector('.burger-menu');
+    const navLinks = document.querySelector('nav ul');
 
-burgerMenu.addEventListener('click', () => {
-    links.forEach(link => {
-        link.classList.toggle('hidden'); // Переключает класс hidden
+    burgerMenu.addEventListener('click', () => {
+        navLinks.classList.toggle('active'); // Toggle visibility of the nav links
     });
 });
