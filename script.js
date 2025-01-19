@@ -643,7 +643,7 @@ flappyCvs.addEventListener("click", function () {
 });
 
 function moveUp() {
-    bY -= 30;
+    bY -= 20;
     fly.play();
 }
 
@@ -739,7 +739,7 @@ function drawFlappy() {
     const birdHeight = 50;
 
     // Фон — однотонный голубой
-    flappyCtx.fillStyle = "#87CEEB";
+    flappyCtx.fillStyle = "#44BBC1";
     flappyCtx.fillRect(0, 0, flappyCvs.width, fixedHeight);
 
     for (var i = 0; i < pipe.length; i++) {
@@ -850,3 +850,44 @@ drawFlappy();
    - Flappy Bird на пробел и клик мыши/тап
    особых конфликтов быть не должно.
 */
+
+document.addEventListener('DOMContentLoaded', function() {
+  const track = document.querySelector('.habr-carousel-track');
+  const prevBtn = document.getElementById('habr-prev');
+  const nextBtn = document.getElementById('habr-next');
+
+  // Количество пикселей, на которые будет пролистываться при клике
+  const scrollAmount = 200;
+
+  prevBtn.addEventListener('click', function() {
+    track.scrollBy({
+      top: 0,
+      left: -scrollAmount,
+      behavior: 'smooth'
+    });
+  });
+
+  nextBtn.addEventListener('click', function() {
+    track.scrollBy({
+      top: 0,
+      left: scrollAmount,
+      behavior: 'smooth'
+    });
+  });
+});
+
+document.getElementById('toggle-button').addEventListener('click', function () {
+        const checklist = document.getElementById('checklist-items');
+        const button = this;
+
+        if (checklist.classList.contains('expanded')) {
+            checklist.classList.remove('expanded');
+            button.textContent = 'Развернуть список';
+
+            // Скроллим вверх к началу списка
+            checklist.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            checklist.classList.add('expanded');
+            button.textContent = 'Свернуть список';
+        }
+    });
