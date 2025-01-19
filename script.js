@@ -1,3 +1,10 @@
+/****************************************************
+ *  БЛОК 1. Код для отправки формы (Swagger) и
+ *  прочие мелкие функции (карусель, счётчик сердечек,
+ *  кнопка бургера), взяты из script.js
+ ****************************************************/
+
+// --- ОТПРАВКА ФОРМЫ НА SWAGGER ---
 document.getElementById('feedbackForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
@@ -48,27 +55,34 @@ document.getElementById('feedbackForm').addEventListener('submit', function(even
     xhr.send(data);
 });
 
-// Отправка формы обратной связи
+/*
+  Если в коде был второй обработчик submit на тот же id="feedbackForm",
+  но с другими полями: name, email, message — а в HTML таких полей нет,
+  лучше удалить во избежание конфликтов. Если нужен, то раскомментируйте
+  и добавьте соответствующие поля в HTML.
+
 document.getElementById('feedbackForm').addEventListener('submit', function(event) {
     event.preventDefault();
 
     const name = document.getElementById('name').value;
-    const email = document.getElementById('email').value;
+    const email2 = document.getElementById('email').value;
     const message = document.getElementById('message').value;
 
-    console.log(`Форма отправлена! Имя: ${name}, Email: ${email}, Сообщение: ${message}`);
+    console.log(`Форма отправлена! Имя: ${name}, Email: ${email2}, Сообщение: ${message}`);
     alert('Спасибо за вашу обратную связь!');
     this.reset();
 });
+*/
 
+// --- СЧЕТЧИК ДНЕЙ ДО НОВОГО ГОДА ---
 document.addEventListener('DOMContentLoaded', function () {
     // Функция для расчёта оставшихся дней
     function calculateDaysToNewYear() {
         const today = new Date();
         const nextYear = today.getFullYear() + 1;
         const newYearDate = new Date(nextYear, 0, 1); // 1 января следующего года
-        const timeDifference = newYearDate - today; // Разница в миллисекундах
-        const daysLeft = Math.ceil(timeDifference / (1000 * 60 * 60 * 24)); // Перевод в дни
+        const timeDifference = newYearDate - today;   // Разница в миллисекундах
+        const daysLeft = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
         return daysLeft;
     }
 
@@ -76,7 +90,9 @@ document.addEventListener('DOMContentLoaded', function () {
     function displayDaysLeft() {
         const daysLeft = calculateDaysToNewYear();
         const daysLeftElement = document.getElementById('days-left');
-        daysLeftElement.textContent = `${daysLeft} дней!`;
+        if(daysLeftElement) {
+           daysLeftElement.textContent = `${daysLeft} дней!`;
+        }
     }
 
     // Инициализация счётчика
@@ -86,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setInterval(displayDaysLeft, 24 * 60 * 60 * 1000);
 });
 
+// --- КАРУСЕЛЬ ИЗОБРАЖЕНИЙ ---
 document.addEventListener('DOMContentLoaded', function () {
     let currentIndex = 0;
     const images = document.querySelectorAll('.carousel-images img');
@@ -115,14 +132,32 @@ document.addEventListener('DOMContentLoaded', function () {
     showImage(currentIndex);
 });
 
-// Инициализация счетчика пользователей
+// --- СЧЕТЧИК СЕРДЕЧЕК ---
 let userCount = 0;
 document.getElementById('increaseCount').addEventListener('click', function() {
     userCount++;
     document.getElementById('count').textContent = userCount;
 });
 
-// Игра Тетрис
+// --- БУРГЕР-МЕНЮ ---
+document.addEventListener('DOMContentLoaded', function () {
+    const burgerMenu = document.querySelector('.burger-menu');
+    const navLinks = document.querySelector('nav ul');
+
+    burgerMenu.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+    });
+});
+
+
+/****************************************************
+ *  БЛОК 2. Игра Тетрис (из script.js)
+ ****************************************************/
+
+// Для Тетриса используется <canvas id="gameCanvas">
+// Переменные названы cvs / ctx внутри Тетрис-блока.
+// (Не конфликтует с Flappy Bird после переименования в самом Flappy Bird-коде.)
+
 const cvs = document.getElementById("gameCanvas");
 const ctx = cvs.getContext("2d");
 
@@ -131,7 +166,7 @@ const ROWS = 20;
 const SQ = 20;
 const EMPTY = "WHITE";
 
-let score = 0; // Счет
+let score = 0; // Счёт Тетриса
 document.getElementById('tetris-score').textContent = `СЧЕТ: ${score}`;
 
 // Динамический интервал падения
@@ -139,11 +174,11 @@ let dropInterval = 700; // Начальная скорость в миллисе
 
 // Функция для обновления счета
 function updateScore(linesCleared) {
-    score += linesCleared * 100; // За каждую очищенную линию 100 очков
+    score += linesCleared * 100;
     document.getElementById('tetris-score').textContent = `СЧЕТ: ${score}`;
 }
 
-// Функция для отрисовки игрового поля
+// Функция для отрисовки квадратика
 function drawSquare(x, y, color) {
     ctx.fillStyle = color;
     ctx.fillRect(x * SQ, y * SQ, SQ, SQ);
@@ -151,6 +186,7 @@ function drawSquare(x, y, color) {
     ctx.strokeRect(x * SQ, y * SQ, SQ, SQ);
 }
 
+// Генерация доски
 let board = [];
 for (let r = 0; r < ROWS; r++) {
     board[r] = [];
@@ -159,9 +195,9 @@ for (let r = 0; r < ROWS; r++) {
     }
 }
 
-// Функция для отрисовки всего поля
+// Отрисовка всей доски
 function drawBoard() {
-    ctx.clearRect(0, 0, cvs.width, cvs.height); // Очистка холста перед отрисовкой
+    ctx.clearRect(0, 0, cvs.width, cvs.height);
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             drawSquare(c, r, board[r][c]);
@@ -169,9 +205,10 @@ function drawBoard() {
     }
 }
 
-// Начальная отрисовка игрового поля
+// Начальная отрисовка поля
 drawBoard();
 
+// Определение фигур (Tetromino)
 const Z = [
     [
         [1, 1, 0],
@@ -278,15 +315,14 @@ const J = [
     ]
 ];
 
-// Массив цветов
 const COLORS = ["red", "green", "yellow", "blue", "purple", "cyan", "orange", "pink", "lime", "teal"];
 
-// Генерация случайного цвета
+// Случайный цвет
 function randomColor() {
     return COLORS[Math.floor(Math.random() * COLORS.length)];
 }
 
-// Массив фигур и их цветов
+// Массив фигур + генератор
 const PIECES = [
     [Z, randomColor()],
     [S, randomColor()],
@@ -297,14 +333,12 @@ const PIECES = [
     [J, randomColor()]
 ];
 
-// Генерация случайных фигур
 function randomPiece() {
     let r = Math.floor(Math.random() * PIECES.length);
-    return new Piece(PIECES[r][0], randomColor()); // Используем случайный цвет
+    return new Piece(PIECES[r][0], randomColor());
 }
 
-let p = randomPiece();
-
+// Конструктор фигуры
 function Piece(tetromino, color) {
     this.tetromino = tetromino;
     this.color = color;
@@ -314,7 +348,7 @@ function Piece(tetromino, color) {
     this.y = -2;
 }
 
-// Fill function
+// Заполнить ячейки цветом
 Piece.prototype.fill = function(color) {
     for (let r = 0; r < this.activeTetromino.length; r++) {
         for (let c = 0; c < this.activeTetromino[r].length; c++) {
@@ -323,15 +357,15 @@ Piece.prototype.fill = function(color) {
             }
         }
     }
-}
+};
 
 Piece.prototype.draw = function() {
     this.fill(this.color);
-}
+};
 
 Piece.prototype.unDraw = function() {
     this.fill(EMPTY);
-}
+};
 
 Piece.prototype.moveDown = function() {
     if (!this.collision(0, 1, this.activeTetromino)) {
@@ -342,47 +376,44 @@ Piece.prototype.moveDown = function() {
         this.lock();
         p = randomPiece();
     }
-}
+};
 
 Piece.prototype.lock = function() {
-    // Заполнение доски цветом текущей фигуры
+    // Заполнение доски
     for (let r = 0; r < this.activeTetromino.length; r++) {
         for (let c = 0; c < this.activeTetromino[r].length; c++) {
             if (this.activeTetromino[r][c]) {
                 if (this.y + r < 0) {
-                    alert("Игра Тетрис окончена, но ты всё равно победитель!\nНашел баг - напиши в канал QAtoDev");
+                    alert("Игра Тетрис окончена, но ты всё равно победитель!\nНашел баг — напиши в канал QAtoDev");
                     gameOver = true;
-                    return; // Прерываем выполнение, если игра окончена
+                    return;
                 }
-                board[this.y + r][this.x + c] = this.color; // Заполняем клетку цветом фигуры
+                board[this.y + r][this.x + c] = this.color;
             }
         }
     }
 
-    // Удаление полных строк
-    let linesCleared = 0; // Счетчик очищенных строк
+    // Проверка заполненных строк
+    let linesCleared = 0;
     for (let r = ROWS - 1; r >= 0; r--) {
         let isRowFull = true;
         for (let c = 0; c < COLS; c++) {
             if (board[r][c] === EMPTY) {
-                isRowFull = false; // Если есть пустая клетка, строка не полная
+                isRowFull = false;
                 break;
             }
         }
 
         if (isRowFull) {
-            // Удаляем строку
-            board.splice(r, 1); // Удаляем полную строку
-            board.unshift(new Array(COLS).fill(EMPTY)); // Новая пустая строка
-            linesCleared++; // Увеличиваем счетчик очищенных строк
+            board.splice(r, 1);
+            board.unshift(new Array(COLS).fill(EMPTY));
+            linesCleared++;
         }
     }
-
-    // Обновляем счет
     updateScore(linesCleared);
 
-    drawBoard(); // Обновляем отрисовку доски
-}
+    drawBoard();
+};
 
 Piece.prototype.collision = function(x, y, piece) {
     for (let r = 0; r < piece.length; r++) {
@@ -404,7 +435,7 @@ Piece.prototype.collision = function(x, y, piece) {
         }
     }
     return false;
-}
+};
 
 Piece.prototype.moveLeft = function() {
     if (!this.collision(-1, 0, this.activeTetromino)) {
@@ -412,7 +443,7 @@ Piece.prototype.moveLeft = function() {
         this.x--;
         this.draw();
     }
-}
+};
 
 Piece.prototype.moveRight = function() {
     if (!this.collision(1, 0, this.activeTetromino)) {
@@ -420,12 +451,11 @@ Piece.prototype.moveRight = function() {
         this.x++;
         this.draw();
     }
-}
+};
 
 Piece.prototype.rotate = function() {
     let nextPattern = this.tetromino[(this.tetrominoIndex + 1) % this.tetromino.length];
     let kick = 0;
-
     if (this.collision(0, 0, nextPattern)) {
         kick = this.x > COLS / 2 ? -1 : 1;
     }
@@ -437,19 +467,19 @@ Piece.prototype.rotate = function() {
         this.activeTetromino = this.tetromino[this.tetrominoIndex];
         this.draw();
     }
-}
+};
 
-// Обработчик событий для управления игрой
+// Управление Тетрисом
+let p = randomPiece();
+let gameOver = false;
+
 document.addEventListener("keydown", CONTROL);
-document.addEventListener('gesturestart', function (e) {
-    e.preventDefault();
-});
-
 function CONTROL(event) {
     // Проверяем, находится ли фокус на полях ввода
-    const isInputFocused = document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA';
+    const isInputFocused = document.activeElement.tagName === 'INPUT'
+                           || document.activeElement.tagName === 'TEXTAREA';
 
-    // Если фокус на поле ввода, не обрабатываем стрелочные клавиши
+    // Если фокус на поле ввода, не обрабатываем
     if (isInputFocused) return;
 
     event.preventDefault();
@@ -465,42 +495,37 @@ function CONTROL(event) {
     }
 }
 
-// Обработчики событий для кнопок
+// Кнопки управления (мобильные)
 document.getElementById('left').addEventListener('click', function() {
     p.moveLeft();
 });
-
 document.getElementById('rotate').addEventListener('click', function() {
     p.rotate();
 });
-
 document.getElementById('right').addEventListener('click', function() {
     p.moveRight();
 });
-
 document.getElementById('down').addEventListener('click', function() {
     p.moveDown();
 });
 
-// Функция для падения фигур
+// Анимация падения фигур
 let dropStart = Date.now();
-let gameOver = false;
 function drop() {
     let now = Date.now();
     let delta = now - dropStart;
 
-   if (score > 300) {
-       dropInterval = 600; // Устанавливаем скорость 500, если score больше 700
-   } else if (score > 500) {
-       dropInterval = 400; // Устанавливаем скорость 600, если score больше 500
-   } else if (score > 800) {
-       dropInterval = 200; // Устанавливаем скорость 400, если score больше 100
+    // Увеличиваем сложность в зависимости от очков
+    if (score > 300) {
+       dropInterval = 600;
+    } else if (score > 500) {
+       dropInterval = 400;
+    } else if (score > 800) {
+       dropInterval = 200;
     } else if (score > 1000) {
-          dropInterval = 100; // Устанавливаем скорость 400, если score больше 100
-      }
+       dropInterval = 100;
+    }
 
-
-    // Если прошло достаточно времени, двигаем фигуру вниз
     if (delta > dropInterval) {
         p.moveDown();
         dropStart = Date.now();
@@ -510,18 +535,318 @@ function drop() {
         requestAnimationFrame(drop);
     }
 }
+drop(); // Стартуем
 
-// Начинаем игру
-drop();
 
-document.addEventListener('DOMContentLoaded', function () {
-    const burgerMenu = document.querySelector('.burger-menu');
-    const navLinks = document.querySelector('nav ul');
+/****************************************************
+ *  БЛОК 3. Игра Flappy Bird (из script2.js)
+ ****************************************************/
 
-    burgerMenu.addEventListener('click', () => {
-        navLinks.classList.toggle('active'); // Toggle visibility of the nav links
-    });
+// Для Flappy Bird используется <canvas id="canvas">
+// Чтобы не конфликтовать с переменными Тетриса,
+// переименуем cvs->flappyCvs, ctx->flappyCtx, score->flappyScore,
+// draw() -> drawFlappy() и т.д.
+
+var flappyCvs = document.getElementById("canvas");
+var flappyCtx = flappyCvs.getContext("2d");
+
+// Фиксированная высота
+var fixedHeight = 512;
+
+// Загружаем изображения
+var bird = new Image();
+var fg = new Image();
+var pipeUp = new Image();
+var pipeBottom = new Image();
+
+bird.src = "img/bird.png";
+fg.src = "img/fg.png";
+pipeUp.src = "img/pipeUp.png";
+pipeBottom.src = "img/pipeBottom.png";
+
+// Пример массива доступных персонажей
+// Можно добавить больше, главное, чтобы пути (src) существовали в папке img
+let selectableCharacters = [
+  { name: "birdClassic", src: "img/bird.png" },
+  { name: "birdRed",     src: "img/birdRed.png" },
+  { name: "birdBlue",    src: "img/birdBlue.png" }
+];
+
+// Подгружаем все изображения персонажей
+selectableCharacters.forEach(char => {
+  const img = new Image();
+  img.src = char.src;
+  // Сохраняем объект Image внутрь массива
+  char.imageObj = img;
+
+  // Можно указать желаемые размеры миниатюры
+  // (ширина/высота в пикселях) для дальнейшей отрисовки
+  char.width = 50;  // например, мини-версия 45px
+  char.height = 50; // пропорции можно менять
 });
 
+// Звук
+var fly = new Audio();
+var score_audio = new Audio();
+fly.src = "audio/fly.mp3";
+score_audio.src = "audio/score.mp3";
 
+var gap = 135;
+var constant;
+var bX = 160;
+var bY = 150;
+var gravity = 1.7;
+var flappyScore = 0;
 
+// Переменная для интервала между трубами
+var pipeInterval = 200;
+// Флаг завершения игры
+var flappyGameOver = false;
+// Флаг автоматического управления
+var autoFlight = true;
+var autoFlightInterval;
+
+// Функция для изменения размеров Flappy Bird canvas
+function resizeFlappyCanvas() {
+    flappyCvs.height = fixedHeight;        // Фикс высота
+    flappyCvs.width = window.innerWidth;   // Ширина = ширина окна
+
+    // Изменяем интервал труб на основе ширины экрана
+    if (flappyCvs.width >= 1024) {
+        pipeInterval = 290;
+    } else if (flappyCvs.width >= 768) {
+        pipeInterval = 200;
+    } else {
+        pipeInterval = 250;
+    }
+}
+
+window.addEventListener("resize", resizeFlappyCanvas);
+resizeFlappyCanvas();
+
+// Обработка пробела
+document.addEventListener("keydown", function(event) {
+    // Если игра Flappy Bird не закончена и нажали Space
+    if (!flappyGameOver && event.code === "Space") {
+        event.preventDefault();
+        disableAutoFlight();
+        moveUp();
+    }
+});
+
+// Обработка клика по canvas (на телефонах — "тап")
+flappyCvs.addEventListener("click", function () {
+    if (!flappyGameOver) {
+        disableAutoFlight();
+        moveUp();
+    }
+});
+
+function moveUp() {
+    bY -= 30;
+    fly.play();
+}
+
+// Создаём массив труб
+var pipe = [];
+pipe[0] = {
+    x: flappyCvs.width,
+    y: Math.floor(Math.random() * pipeUp.height) - pipeUp.height
+};
+
+// Остановка Flappy Bird
+function stopFlappyGame() {
+    flappyGameOver = true;
+    clearInterval(autoFlightInterval);
+    console.log("Flappy Bird игра окончена!");
+}
+
+// Отключаем автополет
+function disableAutoFlight() {
+    if (autoFlight) {
+        autoFlight = false;
+        clearInterval(autoFlightInterval);
+    }
+}
+
+// Включаем автоподдержание полёта
+function enableAutoFlappyFlight() {
+    autoFlightInterval = setInterval(() => {
+        if (bY > 50) {
+            bY -= 30;
+        }
+    }, 330);
+}
+
+// Проверка столкновений
+function detectCollision(pipeObj, pipeWidth, pipeHeight, constant, birdWidth, birdHeight) {
+    if (
+        bX + birdWidth > pipeObj.x &&
+        bX < pipeObj.x + pipeWidth &&
+        (
+            bY < pipeObj.y + pipeHeight
+            || bY + birdHeight > pipeObj.y + constant
+        )
+        ||
+        bY + birdHeight >= fixedHeight - fg.height
+    ) {
+        stopFlappyGame();
+    }
+}
+
+// Отрисовка Flappy Bird
+function drawFlappy() {
+    if (flappyGameOver) {
+        return;
+    }
+
+    function drawCharacterSelection() {
+        // Отрисуем каждую миниатюру с равным отступом
+        let startX = 500; // Начало по оси X слева (можно изменить)
+        let spacing = 80; // Промежуток между персонажами
+
+        // Координата Y чуть выше земли:
+        // fixedHeight - fg.height это верхняя граница земли
+        // но чтобы персонажи были чуть выше, вычтем ещё их высоту
+        let charY = 430;
+
+        selectableCharacters.forEach((char, index) => {
+            // Допустим, у нас уже есть char.imageObj, width/height
+            let img = char.imageObj;
+
+            // Сохраняем для каждого персонажа координаты,
+            // чтобы знать, куда пользователь кликнул
+            char.x = startX;
+            char.y = charY;
+
+            // Рисуем миниатюру
+            flappyCtx.drawImage(
+                img,
+                char.x,
+                char.y,
+                char.width,
+                char.height
+            );
+
+            // Смещаемся на spacing пикселей вправо перед следующим персонажем
+            startX += spacing;
+        });
+    }
+
+    const pipeWidth = 72;
+    const pipeHeight = 220;
+    const birdWidth = 50;
+    const birdHeight = 50;
+
+    // Фон — однотонный голубой
+    flappyCtx.fillStyle = "#87CEEB";
+    flappyCtx.fillRect(0, 0, flappyCvs.width, fixedHeight);
+
+    for (var i = 0; i < pipe.length; i++) {
+        constant = pipeHeight + gap;
+
+        // Рисуем колонки
+        flappyCtx.drawImage(pipeUp, pipe[i].x, pipe[i].y, pipeWidth, pipeHeight);
+        flappyCtx.drawImage(pipeBottom, pipe[i].x, pipe[i].y + constant, pipeWidth, pipeHeight);
+
+        pipe[i].x -= 2; // Скорость движения труб
+
+        // Добавляем новую трубу
+        if (pipe[i].x === flappyCvs.width - pipeInterval) {
+            pipe.push({
+                x: flappyCvs.width,
+                y: Math.floor(Math.random() * pipeUp.height) - pipeUp.height
+            });
+        }
+
+        // Проверка столкновений
+        detectCollision(pipe[i], pipeWidth, pipeHeight, constant, birdWidth, birdHeight);
+
+        // Увеличение счета
+        if (pipe[i].x + pipeWidth === bX) {
+            flappyScore++;
+            score_audio.play();
+        }
+
+        // Удаляем трубу, если она ушла за экран
+        if (pipe[i].x + pipeWidth < 0) {
+            pipe.splice(i, 1);
+            i--;
+        }
+    }
+
+    // Рисуем нижний фон
+    flappyCtx.drawImage(fg, 0, fixedHeight - fg.height, flappyCvs.width, fg.height);
+
+    // Птица
+    flappyCtx.drawImage(bird, bX, bY, birdWidth, birdHeight);
+
+    bY += gravity; // Применяем гравитацию
+
+    // Текст счета
+    flappyCtx.fillStyle = "#000";
+    flappyCtx.font = "20px Fira Code";
+    flappyCtx.fillText("Счет: " + flappyScore, 10, fixedHeight - 20);
+
+    // 1) нарисовали все трубы, птицу, землю...
+    // 2) теперь поверх рисуем выбор персонажа
+    drawCharacterSelection();
+
+    // 3) завершаем кадр
+
+    requestAnimationFrame(drawFlappy);
+}
+
+flappyCvs.addEventListener("click", function (e) {
+    if (!flappyGameOver) {
+        // Получаем координаты клика относительно canvas
+        const rect = flappyCvs.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        // 1) Проверяем, попали ли мы в область одного из персонажей
+        let clickedOnCharacter = false;
+
+        for (let char of selectableCharacters) {
+            // Проверяем, находится ли (clickX, clickY) внутри
+            // прямоугольника char.x, char.y, char.width, char.height
+            if (
+                clickX >= char.x &&
+                clickX <= char.x + char.width &&
+                clickY >= char.y &&
+                clickY <= char.y + char.height
+            ) {
+                // Да, пользователь кликнул по этому персонажу
+                clickedOnCharacter = true;
+
+                // Отключаем автопилот (если нужно)
+                disableAutoFlight();
+
+                // Меняем текущую птицу на выбранную
+                bird.src = char.src;
+
+                console.log("Выбран персонаж:", char.name);
+                break;
+            }
+        }
+
+        // 2) Если не попали в персонажа,
+        //    значит это обычный клик "подпрыгнуть"
+        if (!clickedOnCharacter) {
+            disableAutoFlight();
+            moveUp();
+        }
+    }
+});
+
+enableAutoFlappyFlight();
+drawFlappy();
+
+/*
+   ВАЖНО: Если вы хотите, чтобы при нажатии пробела в игре Тетрис
+   НЕ мешал Flappy Bird (или наоборот), придётся доработать логику.
+   Но по умолчанию:
+   - Тетрис использует клавиши со стрелками
+   - Flappy Bird на пробел и клик мыши/тап
+   особых конфликтов быть не должно.
+*/
