@@ -134,8 +134,8 @@ var autoFlightInterval = null;
 // Массив труб
 pipe = [];
 const initialPipes = 5;
-const minPipeOffset = 90; // Минимальная высота трубы
-const maxPipeOffset = 250; // Максимальная высота трубы
+const minPipeOffset = -70; // Минимальная высота трубы
+const maxPipeOffset = 90; // Максимальная высота трубы
 
 for (let i = 0; i < initialPipes; i++) {
     pipe.push({
@@ -148,31 +148,31 @@ for (let i = 0; i < initialPipes; i++) {
 // ============ Логика уровней ============
 const levels = [
     {
-        backgroundColor: "#44BBC1",
+        backgroundColor: "#44BBC1", //бирюзовый + классический
         pipeUpSrc: "img/pipeUp.png",
         pipeBottomSrc: "img/pipeBottom.png",
         fgSrc: "img/fg.png"
     },
     {
-        backgroundColor: "#FFD700",
-        pipeUpSrc: "img/pipeUp.png",
-        pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        backgroundColor: "#FFD1C5", //#FFD1C5 светло-коричневый + камень
+        pipeUpSrc: "img/pipeUpLevel3.png",
+        pipeBottomSrc: "img/pipeBottomLevel3.png",
+        fgSrc: "img/fgLevel3.png"
     },
     {
-        backgroundColor: "#FF733A",
-        pipeUpSrc: "img/pipeUp.png",
-        pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        backgroundColor: "#FFD700",//#FFD700 желтый + сердечки
+        pipeUpSrc: "img/pipeUpLevel4.png",
+        pipeBottomSrc: "img/pipeBottomLevel4.png",
+        fgSrc: "img/fgLevel4.png"
     },
     {
-        backgroundColor: "#8A2BE2",
-        pipeUpSrc: "img/pipeUp.png",
-        pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        backgroundColor: "#8A2BE2", //фиолетовый + классический
+        pipeUpSrc: "img/pipeUpLevel5.png",
+        pipeBottomSrc: "img/pipeBottomLevel5.png",
+        fgSrc: "img/fgLevel5.png"
     },
     {
-        backgroundColor: "#397D5D",
+        backgroundColor: "#83EFEA", //светло-синий + березы
         pipeUpSrc: "img/pipeUpLevel2.png",
         pipeBottomSrc: "img/pipeBottomLevel2.png",
         fgSrc: "img/fgLevel2.png"
@@ -182,7 +182,7 @@ const levels = [
 let currentLevel = 0;
 
 function updateLevel() {
-    const levelThresholds = [5, 20, 35, 45];
+    const levelThresholds = [10, 30, 50, 80];
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
             currentLevel = i + 1;
@@ -205,7 +205,7 @@ function resizeFlappyCanvas() {
     } else if (flappyCvs.width >= 768) {
         pipeInterval = 200;
     } else {
-        pipeInterval = 250;
+        pipeInterval = 300;
     }
 }
 window.addEventListener("resize", resizeFlappyCanvas);
@@ -302,7 +302,7 @@ function enableAutoFlappyFlight() {
             return;
         }
 
-        let gapTop = nextPipe.y + 220;
+        let gapTop = nextPipe.y + 320;
         let gapBottom = gapTop + gap;
         let centerGap = (gapTop + gapBottom) / 2;
         let birdCenter = bY + 25; // примерно центр птицы (высота 50)
@@ -350,7 +350,7 @@ function drawFlappy() {
     flappyCtx.fillRect(0, 0, flappyCvs.width, fixedHeight);
 
     const pipeWidth = 72;
-    const pipeHeight = 220;
+    const pipeHeight = 320;
     const birdWidth = 50;
     const birdHeight = 50;
 
@@ -373,9 +373,11 @@ function drawFlappy() {
         // Если эта труба ещё не создала следующую,
         // и X < (flappyCvs.width - pipeInterval) => создаём новую
         if (!pipe[i].spawnedNext && pipe[i].x < (flappyCvs.width - pipeInterval)) {
+            const minPipeY = -290; // Минимальная высота верхней трубы
+            const maxPipeY = -50;  // Максимальная высота верхней трубы (по необходимости)
             pipe.push({
                 x: flappyCvs.width,
-                y: Math.floor(Math.random() * pipeUp.height) - pipeUp.height,
+                y: Math.floor(Math.random() * (maxPipeY - minPipeY + 1)) + minPipeY, // Ограничиваем диапазон высот
                 spawnedNext: false
             });
             pipe[i].spawnedNext = true;
