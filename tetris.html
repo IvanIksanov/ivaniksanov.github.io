@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тетрис</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<nav>
+    <div class="burger-menu">
+        &#9776; <!-- Это значок бургер-меню -->
+    </div>
+    <ul>
+        <li><a href="index.html">На главную</a></li>
+    </ul>
+</nav>
+
+
+
+<div>
+    <h2>Тестируем игру Тетрис</h2>
+</div>
+
+
+<section id="game" class="tetris">
+    <h2 class="responsive-title">
+        <svg viewBox="0 0 589 57" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9.96 38.04H19.44V47.52H9.96V57H0.48V0.119998H9.96V38.04ZM38.4 0.119998H47.88V57H38.4V28.56H28.92V19.08H38.4V0.119998ZM19.44 38.04V28.56H28.92V38.04H19.44ZM104.738 0.119998V9.6H66.8184V57H57.3384V0.119998H104.738ZM114.197 57V0.119998H152.117V9.6H123.677V38.04H152.117V47.52H123.677V57H114.197ZM152.117 38.04V9.6H161.597V38.04H152.117ZM180.535 9.6V0.119998H208.975V9.6H180.535ZM171.055 57V9.6H180.535V38.04H208.975V9.6H218.455V57H208.975V47.52H180.535V57H171.055Z" fill="#F35A2F"/>
+            <path d="M256.381 9.6V0.119998H303.781V9.6H284.821V57H275.341V9.6H256.381Z" fill="#44BBC1"/>
+            <path d="M313.24 57V0.119998H360.64V9.6H322.72V19.08H351.16V28.56H322.72V47.52H360.64V57H313.24Z" fill="#9BDE00"/>
+            <path d="M370.098 9.6V0.119998H417.498V9.6H398.538V57H389.058V9.6H370.098Z" fill="#DF282C"/>
+            <path d="M426.957 57V0.119998H464.877V9.6H436.437V38.04H464.877V47.52H436.437V57H426.957ZM464.877 38.04V9.6H474.357V38.04H464.877Z" fill="#4144DF"/>
+            <path d="M493.295 38.04H502.775V47.52H493.295V57H483.815V0.119998H493.295V38.04ZM521.735 0.119998H531.215V57H521.735V28.56H512.255V19.08H521.735V0.119998ZM502.775 38.04V28.56H512.255V38.04H502.775Z" fill="#41C2DF"/>
+            <path d="M550.153 9.6V0.119998H578.593V9.6H550.153ZM540.673 47.52V9.6H550.153V47.52H540.673ZM578.593 19.08V9.6H588.073V19.08H578.593ZM578.593 47.52V38.04H588.073V47.52H578.593ZM550.153 57V47.52H578.593V57H550.153Z" fill="#F0007C"/>
+        </svg>
+    </h2>
+    <div class="score-container">
+        <div id="tetris-score">СЧЕТ: 0</div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="gameCanvas" width="240" height="400"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="left" class="control-button">
+            <svg width="115" height="127" viewBox="0 0 115 127" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11 47.9115L85.25 5.04329C97.25 -1.88492 112.25 6.77533 112.25 20.6317V106.368C112.25 120.225 97.25 128.885 85.25 121.957L11 79.0885C-1 72.1603 -1 54.8397 11 47.9115Z" fill="#5CD900" stroke="black" stroke-width="4"/>
+            </svg>
+        </button>
+        <button id="down" class="control-button">
+            <svg width="127" height="115" viewBox="0 0 127 115" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M47.9115 104L5.04329 29.75C-1.88492 17.75 6.77533 2.75 20.6317 2.75L106.368 2.75C120.225 2.75 128.885 17.75 121.957 29.75L79.0885 104C72.1603 116 54.8397 116 47.9115 104Z" fill="#FF0006" stroke="black" stroke-width="4"/>
+            </svg>
+        </button>
+        <button id="right" class="control-button">
+            <svg width="115" height="127" viewBox="0 0 115 127" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M104 79.0885L29.75 121.957C17.75 128.885 2.75 120.225 2.75 106.368V20.6317C2.75 6.77534 17.75 -1.88492 29.75 5.04328L104 47.9115C116 54.8397 116 72.1603 104 79.0885Z" fill="#DD00FF" stroke="black" stroke-width="4"/>
+            </svg>
+        </button>
+        <button id="rotate" class="control-button">
+            <svg width="116" height="116" viewBox="0 0 116 116" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="58" cy="58" r="56" fill="#0FA3FF" stroke="black" stroke-width="4"/>
+            </svg>
+        </button>
+    </div>
+</section>
+
+
+
+<section id="features2" class="frame">
+    <h2>Чек-лист проверок для тестирования игры Тетрис</h2>
+    <div id="checklist2">
+
+        <div id="checklist-items2" class="collapsible">
+            <strong>1. Проверка UI:</strong><br>
+            <label><input type="checkbox" name="ui_check1"></label> Проверить отображение кнопки вправо<br>
+            <label><input type="checkbox" name="ui_check2"></label> Проверить отображение кнопки вниз<br>
+            <label><input type="checkbox" name="ui_check3"></label> Проверить отображение кнопки влево<br>
+            <label><input type="checkbox" name="ui_check4"></label> Проверить отображение кнопки повернуть<br>
+            <label><input type="checkbox" name="ui_check5"></label> Проверить отображение счетчика очков<br>
+            <label><input type="checkbox" name="ui_check6"></label> Проверить отображение текста "игра тетрис"<br>
+            <br>
+            <strong>Адаптивность размеров:</strong><br>
+            <label><input type="checkbox" name="adapt_check1"></label> Проверить на десктопе<br>
+            <label><input type="checkbox" name="adapt_check2"></label> Проверить на мобилке<br>
+            <br>
+            <strong>Адаптивность управления:</strong><br>
+            <label><input type="checkbox" name="control_check1"></label> Проверить на десктопе (стрелки клавиатуры и тап по UI кнопкам)<br>
+            <label><input type="checkbox" name="control_check2"></label> Проверить на мобилке (тап по UI кнопкам)<br>
+            <br>
+            <strong>Соответствие цвета:</strong><br>
+            <label><input type="checkbox" name="color_check1"></label> Цвет текста "игра тетрис" - оранжевый<br>
+            <label><input type="checkbox" name="color_check2"></label> Цвет текста "счет: ХХХ - бирюзовый"<br>
+            <label><input type="checkbox" name="color_check3"></label> Цвет подложки кнопок - белый<br>
+            <label><input type="checkbox" name="color_check4"></label> Цвет кнопки вправо - синий<br>
+            <label><input type="checkbox" name="color_check5"></label> Цвет кнопки вниз - красный<br>
+            <label><input type="checkbox" name="color_check6"></label> Цвет кнопки вправо - фиолетовый<br>
+            <label><input type="checkbox" name="color_check7"></label> Цвет кнопки повернуть - зеленый<br>
+            <br>
+            <strong>Позиция элементов:</strong><br>
+            <label><input type="checkbox" name="position_check1"></label> Проверка пустого фрейма при старте<br>
+            <label><input type="checkbox" name="position_check2"></label> Высота 400 между верхней и нижней границей фрейма тетриса<br>
+            <label><input type="checkbox" name="position_check3"></label> Проверка размера кнопок - адаптируется в зависимости размера экрана<br>
+            <label><input type="checkbox" name="position_check4"></label> Проверить отсутствие обрезания или наложения элементов<br>
+            <br>
+            <strong>2. Функциональное тестирование:</strong><br>
+            <label><input type="checkbox" name="functional_check1"></label> Проверить, что после обновления страницы игра стартует автоматически<br>
+            <label><input type="checkbox" name="functional_check2"></label> Проверить, что до взаимодействия с управлением фигура автоматически падает<br>
+            <label><input type="checkbox" name="functional_check3"></label> Проверить, что после взаимодействия с управлением фигура автоматически продолжает падает<br>
+            <label><input type="checkbox" name="functional_check4"></label> Проверить, что фигура фиксируется после столкновением с нижней границей фрейма<br>
+            <label><input type="checkbox" name="functional_check5"></label> Проверить корректное поведение фигуры при отсутствии ввода (вниз)<br>
+            <label><input type="checkbox" name="functional_check6"></label> Проверить увеличение счетчика при успешном заполнении линии фигурами<br>
+            <label><input type="checkbox" name="functional_check7"></label> Проверить увеличение счетчика при успешном заполнении 2-х линий одновременно<br>
+            <label><input type="checkbox" name="functional_check8"></label> Проверить увеличение счетчика при успешном заполнении 3-х и более линий одновременно<br>
+            <label><input type="checkbox" name="functional_check9"></label> Проверить, что 2 и более линий заполненных одновременно также сгорают вместе<br>
+            <label><input type="checkbox" name="functional_check10"></label> Проверить остановку игры при столкновении с верхней границей<br>
+            <label><input type="checkbox" name="functional_check11"></label> Проверить сообщение "Игра окончена" при остановке игры<br>
+            <label><input type="checkbox" name="functional_check12"></label> Проверить, что после сообщения "Игра окончена" игра не продолжится без обновления страницы<br>
+            <label><input type="checkbox" name="functional_check13"></label> Проверить, что игра не перезапускается автоматически после завершения<br>
+            <label><input type="checkbox" name="functional_check14"></label> Проверить возможность перезапуска игры<br>
+            <br>
+            <strong>3. Тестирование производительности:</strong><br>
+            <label><input type="checkbox" name="perf_check1"></label> Проверить плавность анимации при разных разрешениях экрана<br>
+            <label><input type="checkbox" name="perf_check2"></label> Проверить производительность при быстром управлении кнопками и клавишами<br>
+            <br>
+            <strong>4. Проверка негативных сценариев:</strong><br>
+            <label><input type="checkbox" name="negative_check1"></label> Проверить поведение игры при отсутствии ввода.<br>
+            <label><input type="checkbox" name="negative_check2"></label> Проверить, что игра корректно обрабатывает попытку ввода после завершения игры<br>
+            <label><input type="checkbox" name="negative_check4"></label> Проверить поведение игры при отключении JavaScript.<br>
+            <label><input type="checkbox" name="negative_check5"></label> Проверить, что счетчик не увеличивается, если фигура не заполнила линию.<br>
+            <br>
+            <strong>5. Тестирование на кроссбраузерность:</strong><br>
+            <label><input type="checkbox" name="cross_check1"></label> Проверить корректность работы игры в Google Chrome<br>
+            <label><input type="checkbox" name="cross_check2"></label> Проверить корректность работы игры в Mozilla Firefox<br>
+            <label><input type="checkbox" name="cross_check3"></label> Проверить корректность работы игры в Safari<br>
+            <label><input type="checkbox" name="cross_check4"></label> Проверить корректность работы игры в Microsoft Edge<br>
+            <br>
+            <strong>6. Тестирование с использованием техники серого ящика:</strong><br>
+            <label><input type="checkbox" name="gray_check1"></label> Проверить скорость обновления позиций объектов<br>
+            <label><input type="checkbox" name="gray_check2"></label> Проверить скорость обновления счетчика<br>
+            <label><input type="checkbox" name="gray_check3"></label> Проверить использование ресурсов (CPU, память)<br>
+            <br>
+            <strong>7. Проверка адаптации игры:</strong><br>
+            <label><input type="checkbox" name="adapt_check3"></label> Проверить работу на экранах 1920x1080<br>
+            <label><input type="checkbox" name="adapt_check4"></label> Проверить работу на экранах 1366x768<br>
+            <label><input type="checkbox" name="adapt_check5"></label> Проверить работу на экранах 360x640<br>
+            <label><input type="checkbox" name="adapt_check6"></label> Проверить работу во время растягивания окна браузера<br>
+        </div>
+        <button id="toggle-button2">Развернуть список</button>
+    </div>
+</section>
+
+<script src="tetris.js"></script>
+</body>
+</html>

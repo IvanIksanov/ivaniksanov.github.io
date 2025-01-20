@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>QA тренировочный сайт</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="QAtoDev 2.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="img/QAtoDev%202.png" sizes="32x32" type="image/png">
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -25,330 +25,6 @@
     </script>
     <noscript><div><img src="https://mc.yandex.ru/watch/99129194" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
-    <script>
-    let previousContent = ''; // Для хранения предыдущего содержимого
-
-    function openNewPage() {
-    previousContent = document.body.innerHTML; // Сохраняем текущее содержимое
-    const newContent = `
-    <div>
-        <h2>Задания на собеседованиях для QA</h2>
-        <button class="carousel-button" onclick="goBack();">Вернуться в песочницу</button>
-    </div>
-        <div class="card">
-            <div class="card-content">
-                <p>
-                        <h3>Задание 1. Победитель в Flappy Bird</h3>
-                        Необходимо поменять количество очков в игре Flappy Bird.
-                        Воспользуйся DevTools, чтобы счетчик отобразил счет: 999!
-                        <h4>Шаги по воспроизведению:</h4>
-                        1. Открыть Devtools<br>
-                        2. Вкладка Source<br>
-                        3. Открыть файл script.js<br>
-                        ...<br>
-                        <br>
-                        <button class="skills" ">DevTools: Source</button>
-                </p>
-            </div>
-            <div class="card-image">
-                <img src="Задание 1.png" alt="Изображение" style="width: 600px; height: 200px;">
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-content">
-                <p>
-                        <h3>Задание 2. Практика Swagger</h3>
-                        Проверить ответ на API запрос после нажатия на кнопку "Отправить".
-                        <h4>Шаги по воспроизведению:</h4>
-                        1. Открыть Devtools<br>
-                        2. Вкладка Network<br>
-                        3. Очистить сетевой журнал<br>
-                        4. Заполнить необходимые поля<br>
-                        5. Нажать кнопку "Отправить"<br>
-                        6. Найти API запрос в сетевом журнале<br>
-                        7. Отобразить значение во вкладке "Respones"<br>
-                        <br>
-                        <button class="skills" ">DevTools: Network</button>
-                        <button class="skills" ">API</button>
-                </p>
-            </div>
-            <div class="card-image">
-                <img src="Задание 2.png" alt="Изображение" style="width: 720px; height: 200px;">
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-content">
-                <p>
-                    <h3>Задание 3. Удали лишний элемент</h3>
-                    Удали со страницы часть заголовка "ИГРА" формата .svg
-                    <h4>Шаги по воспроизведению:</h4>
-                    1. Открыть Devtools<br>
-                    2. Вкладка Elements<br>
-                    3. Нажать на "Цель"<br>
-                    4. Переместить курсор на необходимый элемент<br>
-                    5. В структуре html удали элемент<br>
-                    <br>
-                    <button class="skills" ">DevTools: Elements</button>
-                </p>
-            </div>
-            <div class="card-image">
-                <img src="Задание 3.png" alt="Изображение" style="width: 300px; height: 300px;">
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-content">
-                <p>
-                <h3>Задание 4. Поставь Тетрис на паузу</h3>
-                        Останови игру с помощью точки останова (breakpoint).<br>
-                        Поставить breakpoint на шаг кода, чтобы поставить игру на паузу.
-                        <h4>Шаги по воспроизведению:</h4>
-                        1. Открыть Devtools<br>
-                        2. Вкладка Source<br>
-                        3. Открыть файл script.js<br>
-                        4. Переместить курсор на строчку 362<br>
-                        5. Поставить точку останова нажав на "362"<br>
-                        6. Дождитесь падения текущей фигуры или положите её самостоятельно<br>
-                        7. Воспроизведи игру с помощью области управления breakpoint (см. Скрин)<br>
-                        НЕ ЗАБУДЬ УБРАТЬ точку останова после проверки :)<br>
-                        <br>
-                        <button class="skills" ">DevTools: Source</button>
-                        <button class="skills" ">JS: breakpoint</button>
-                        </p>
-            </div>
-            <div class="card-image">
-                <img src="Задание 4.png" alt="Изображение" style="width: 600px; height: 200px;">
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-content">
-                <p>
-                <h3>Задание 5. Открыть сайт в разных браузерах (Тестовое задание)</h3>
-                        Проверь верстку страницы на разных клиентах.<br>
-                        Важно сравнивать верстку не только на разных браузерах, но и на разных движках.<br>
-                        Не забудь про размеры экранов.<br>
-                        <h4>Шаги по воспроизведению:</h4>
-                        1. Открыть сайт в Chrome (движок Blink)<br>
-                        2. Открыть сайт в Safari (движок WebKit)<br>
-                        3. Открыть сайт в Mozilla Firefox (движок Gecko)<br>
-                        4. Открыть сайт в Internet Explorer (движок Trident)<br>
-                        5. Сравнить отрисовку элементов на странице<br>
-                        6. Проверить верстку - размер, стиль и расположение элементов<br>
-                        <br>
-                        <button class="skills" ">Кроссбраузерное тестирование</button>
-                        </p>
-            </div>
-        </div>
-        `;
-
-    document.body.innerHTML = newContent; // Заменяем содержимое body
-    }
-
-    function goBack() {
-    location.reload(); // Перезагружает текущую страницу
-    }
-    </script>
-
-    <script>
-        let previousContentBugs = ''; // Для хранения предыдущего содержимого
-
-        function openNewPageBugs() {
-        previousContentBugs = document.body.innerHTML; // Сохраняем текущее содержимое
-        const newContent = `
-        <div>
-            <h2>Список багов для воспроизведения</h2>
-            <button class="carousel-button" onclick="goBack();">Вернуться в песочницу</button>
-        </div>
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Bug_1. Зум главной страницы при быстром нажатии кнопок тетриса</h3>
-                            <h4>Предусловия:</h4>
-                            Открыть песочницу на мобильном устройстве (Например: Iphone 13 Pro - iOS 18.2)
-                            <h4>Шаги по воспроизведению:</h4>
-                            1. Перейти в блок "Тетрис"<br>
-                            2. Нажать на кнопку "Вниз" множество раз (быстро)<br>
-                            3. Сместить фокус нажатия за область кнопки<br>
-                            4. Проверить зум страницы<br>
-                            <h4>Ожидаемый результат:</h4>
-                                Масштаб страницы не изменился
-                            <h4>Фактический результат:</h4>
-                                Масштаб страницы увеличен<br>
-                                <br>
-                            <button class="skills" ">High</button>
-                    </p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Bug_2. Отображение полей ввода по левому краю в десктопном размере экрана</h3>
-                            <h4>Предусловия:</h4>
-                            Открыть песочницу на десктопном размере экрана
-                            <h4>Шаги по воспроизведению:</h4>
-                            1. Перейти в блок "Практика Swagger"<br>
-                            2. Проверить отображение полей ввода<br>
-                            <h4>Ожидаемый результат:</h4>
-                                Сортировка полей ввода по центру (десктопный размер экрана)
-                            <h4>Фактический результат:</h4>
-                                Сортировка полей ввода по левому краю (десктопный размер экрана)<br>
-                                <br>
-                            <button class="skills" ">low</button>
-                    </p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Bug_3. Отсутствие функционала удаления двух и более заполненных полос в тетрисе</h3>
-                            <h4>Предусловия:</h4>
-                            Открыть песочницу на любом устройстве (Iphone 13 Pro - iOS 18.2)
-                            <h4>Шаги по воспроизведению:</h4>
-                            1. Перейти в блок "Тетрис"<br>
-                            2. Заполнить одновременно 2-х и более полос<br>
-                            3. Проверить сгорание всех полос одновременно<br>
-                            <h4>Ожидаемый результат:</h4>
-                                При заполнении двух и более полос в тетрисе - они сгорают с начислением очков
-                            <h4>Фактический результат:</h4>
-                                При заполнении двух и более полос в тетрисе - сгорает только самая нижняя полоса с начислением очков<br>
-                                <br>
-                            <button class="skills" ">Critical</button>
-                    </p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Bug_4. Отсутствуют склонения слова "дней" в блоке "Сколько осталось до 2025?"</h3>
-                            <h4>Предусловия:</h4>
-                            Открыть песочницу на любом устройстве (Iphone 13 Pro - iOS 18.2)
-                            <h4>Шаги по воспроизведению:</h4>
-                            1. Перейти в блок "Сколько осталось до 2025?"<br>
-                            2. Изменить число оставшихся дней<br>
-                            3. Проверить склонение для "21 день"<br>
-                            4. Проверить склонение для "4 дня"<br>
-                            5. Проверить склонение для "13 дней"<br>
-                            <h4>Ожидаемый результат:</h4>
-                                Слово "дней" склоняется в зависимости от числа
-                            <h4>Фактический результат:</h4>
-                                Слово "дней" не склоняется в зависимости от числа<br>
-                                <br>
-                            <button class="skills" ">Critical</button>
-                    </p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Bug_5. Ссылка под логотипом в хэддере использует общую стилизацию плашек на странице</h3>
-                            <h4>Предусловия:</h4>
-                            Открыть песочницу на любом устройстве (Десктоп Chrome 118.0.1)
-                            <h4>Шаги по воспроизведению:</h4>
-                            1. Навести фокус на иконку над названием "Тренировочный сайт" <br>
-                            2. Проверить наличие лишних элементов<br>
-                            <h4>Ожидаемый результат:</h4>
-                                В области логотипа нет лишних элементов у логотипа
-                            <h4>Фактический результат:</h4>
-                                Ссылка под логотипом в хэддере использует серую плашку в качестве подложки<br>
-                                <br>
-                            <button class="skills" ">Low</button>
-                    </p>
-                </div>
-            </div>
-            `;
-
-        document.body.innerHTML = newContent; // Заменяем содержимое body
-        }
-
-        function goBack() {
-        location.reload(); // Перезагружает текущую страницу
-        }
-    </script>
-
-    <script>
-        let previousContentQuestions = ''; // Для хранения предыдущего содержимого
-
-        function openNewPageQuestions() {
-        previousContentQuestions = document.body.innerHTML; // Сохраняем текущее содержимое
-        const newContent = `
-        <div>
-            <h2>Вопросы на собеседовании для тестировщика</h2>
-            <button class="carousel-button" onclick="goBack();">Вернуться в песочницу</button>
-        </div>
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Вопрос_1. Что такое тестирование?</h3>
-                            <h4>Ответ:</h4>
-                            Сравнение ожидаемого результата с фактическим результатом ПО. Тестирование это не поиск багов!<br>
-                            <h4>Своими словами:</h4> тестирование - это процесс сопоставления спецификаций продукта с его финальным результатом.<br>
-                            Под финальным результатом мы можем понимать то, что тестировщик получает, когда разработчик реализует функционал<br>
-                            по задаче и мы начинаем его тестировать. В ручном тестировании мы сравниваем тестовые случаи с реализованным проектом,<br>
-                            а в автоматизированном тестировании мы преобразуем ручные тестовые случаи в автоматические проверки для реализованного проекта.<br>
-                            <br>
-                                <br>
-                            <button class="skills" ">Джун</button>
-                    </p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Вопрос_2. Зачем тестировать ПО? Цель тестирования?</h3>
-                            <h4>Ответ:</h4>
-                            Есть две цели тестирования:
-                            техническая - предоставление информации о состоянии приложения на данный момент;<br>
-                            коммерческая - повышение лояльности к компании и приложению, так как любой обнаруженный <br>
-                            дефект негативно влияет на доверие пользователей. От сюда следует, что QA влияет на продукт, а не просто тестирует что сказали :)<br>
-                            <h4>Своими словами:</h4> для своевременного предоставления информации по сравнению ожидаемого поведения ПО с фактическим поведением ПО. <br>
-                            Мы предоставляем данные для координации направления продукта. Это определение дает общее понимание и роль QA зависит от методологии разработки ПО.<br>
-                                <br>
-                            <button class="skills" ">Джун</button>
-                    </p>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-content">
-                    <p>
-                            <h3>Вопрос_3. Какие этапы тестирования?</h3>
-                            <h4>Ответ:</h4>
-                            При подготовке релиза тестировщик выполняет следующие шаги:<br>
-                                1.Планирование тестирования.<br>
-                                2.Подготовка и выполнение проверок.<br>
-                                3.Составление отчета по результатам.<br>
-                            <h4>Подробнее:</h4>
-                            1.Инициация процесса тестирования.<br>
-                            2.Выявление прямых и косвенных требований.<br>
-                            3.Генерация тестовых случаев.<br>
-                            4.Отбор значимых тестовых случаев.<br>
-                            5.Проведение проверок.<br>
-                            6.Фиксация результатов.<br>
-                            7.Анализ результатов.<br>
-                            8.Передача информации о соответствии проверенного продукта требованиям.<br>
-                            <br>
-                            <button class="skills" ">Джун</button>
-                    </p>
-                </div>
-            </div>
-
-            <ul>
-        <li><a href="https://habr.com/ru/articles/784116/">Больше вопросов на Хабре</a></li>
-        </ul>
-            `;
-
-        document.body.innerHTML = newContent; // Заменяем содержимое body
-        }
-
-        function goBack() {
-        location.reload(); // Перезагружает текущую страницу
-        }
-    </script>
-
 
 </head>
 <body>
@@ -357,10 +33,11 @@
         &#9776; <!-- Это значок бургер-меню -->
     </div>
     <ul>
-        <li><a href="#" onclick="openNewPageQuestions(); return false;">Вопросы</a></li>
-        <li><a href="#game">Тетрис</a></li>
-        <li><a href="#" onclick="openNewPageBugs(); return false;">Баги</a></li>
-        <li><a href="#" onclick="openNewPage(); return false;">Задания для QA</a></li>
+        <li><a href="questions.html">Вопросы</a></li>
+        <li><a href="tetris.html">Тетрис</a></li>
+        <li><a href="bugs.html">Баги</a></li>
+        <li><a href="tasks_for_qa.html">Задания для QA</a></li>
+        <li><a href="swagger_api.html">Практика API (Swagger)</a></li>
     </ul>
 </nav>
 
@@ -369,14 +46,13 @@
         <div class="logo"
              style="cursor: pointer;"
              onclick="window.open('https://t.me/qatodev', '_blank')">
-            <img src="QAtoDev 2.png" alt="Логотип">
+            <img src="img/QAtoDev%202.png" alt="Логотип">
         </div>
         <h3 class="site-title">Песочница QAtoDev!</h3>
     </div>
 </header>
 
 <main>
-
     <canvas id="canvas"></canvas>
 
     <section id="features" class="frame">
@@ -403,8 +79,10 @@
             <br>
             <strong>Соответствие цвета:</strong><br>
             <label><input type="checkbox" name="color_check1"></label> Фон - голубой до 20 счета<br>
-            <label><input type="checkbox" name="color_check2"></label> Фон - сиреневый от 21 до 30 счета<br>
-            <label><input type="checkbox" name="color_check3"></label> Фон - оранжевый от 31 до 50 счета<br>
+            <label><input type="checkbox" name="color_check2"></label> Фон - желтый от 20 до 30 счета<br>
+            <label><input type="checkbox" name="color_check3"></label> Фон - оранжевый от 30 до 45 счета<br>
+            <label><input type="checkbox" name="color_check3"></label> Фон - фиолетовый от 45 до 55 счета<br>
+            <label><input type="checkbox" name="color_check3"></label> Фон - малахит от 55 счета<br>
             <label><input type="checkbox" name="color_check4"></label> Текст счетчика - адаптируется под цвет фона<br>
             <label><input type="checkbox" name="color_check5"></label> Колонны - зеленые<br>
             <br>
@@ -516,138 +194,15 @@
         </div>
     </section>
 
-    <section id="game" class="tetris">
-        <h2 class="responsive-title">
-            <svg viewBox="0 0 589 57" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9.96 38.04H19.44V47.52H9.96V57H0.48V0.119998H9.96V38.04ZM38.4 0.119998H47.88V57H38.4V28.56H28.92V19.08H38.4V0.119998ZM19.44 38.04V28.56H28.92V38.04H19.44ZM104.738 0.119998V9.6H66.8184V57H57.3384V0.119998H104.738ZM114.197 57V0.119998H152.117V9.6H123.677V38.04H152.117V47.52H123.677V57H114.197ZM152.117 38.04V9.6H161.597V38.04H152.117ZM180.535 9.6V0.119998H208.975V9.6H180.535ZM171.055 57V9.6H180.535V38.04H208.975V9.6H218.455V57H208.975V47.52H180.535V57H171.055Z" fill="#F35A2F"/>
-                <path d="M256.381 9.6V0.119998H303.781V9.6H284.821V57H275.341V9.6H256.381Z" fill="#44BBC1"/>
-                <path d="M313.24 57V0.119998H360.64V9.6H322.72V19.08H351.16V28.56H322.72V47.52H360.64V57H313.24Z" fill="#9BDE00"/>
-                <path d="M370.098 9.6V0.119998H417.498V9.6H398.538V57H389.058V9.6H370.098Z" fill="#DF282C"/>
-                <path d="M426.957 57V0.119998H464.877V9.6H436.437V38.04H464.877V47.52H436.437V57H426.957ZM464.877 38.04V9.6H474.357V38.04H464.877Z" fill="#4144DF"/>
-                <path d="M493.295 38.04H502.775V47.52H493.295V57H483.815V0.119998H493.295V38.04ZM521.735 0.119998H531.215V57H521.735V28.56H512.255V19.08H521.735V0.119998ZM502.775 38.04V28.56H512.255V38.04H502.775Z" fill="#41C2DF"/>
-                <path d="M550.153 9.6V0.119998H578.593V9.6H550.153ZM540.673 47.52V9.6H550.153V47.52H540.673ZM578.593 19.08V9.6H588.073V19.08H578.593ZM578.593 47.52V38.04H588.073V47.52H578.593ZM550.153 57V47.52H578.593V57H550.153Z" fill="#F0007C"/>
-            </svg>
-        </h2>
-        <div class="score-container">
-        <div id="tetris-score">СЧЕТ: 0</div>
-        </div>
-
-        <div class="canvas-container">
-            <canvas id="gameCanvas" width="240" height="400"></canvas>
-        </div>
-
-        <div class="controls">
-            <button id="left" class="control-button">
-                <svg width="115" height="127" viewBox="0 0 115 127" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M11 47.9115L85.25 5.04329C97.25 -1.88492 112.25 6.77533 112.25 20.6317V106.368C112.25 120.225 97.25 128.885 85.25 121.957L11 79.0885C-1 72.1603 -1 54.8397 11 47.9115Z" fill="#5CD900" stroke="black" stroke-width="4"/>
-                </svg>
-            </button>
-            <button id="down" class="control-button">
-                <svg width="127" height="115" viewBox="0 0 127 115" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M47.9115 104L5.04329 29.75C-1.88492 17.75 6.77533 2.75 20.6317 2.75L106.368 2.75C120.225 2.75 128.885 17.75 121.957 29.75L79.0885 104C72.1603 116 54.8397 116 47.9115 104Z" fill="#FF0006" stroke="black" stroke-width="4"/>
-                </svg>
-            </button>
-            <button id="right" class="control-button">
-                <svg width="115" height="127" viewBox="0 0 115 127" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M104 79.0885L29.75 121.957C17.75 128.885 2.75 120.225 2.75 106.368V20.6317C2.75 6.77534 17.75 -1.88492 29.75 5.04328L104 47.9115C116 54.8397 116 72.1603 104 79.0885Z" fill="#DD00FF" stroke="black" stroke-width="4"/>
-                </svg>
-            </button>
-            <button id="rotate" class="control-button">
-                <svg width="116" height="116" viewBox="0 0 116 116" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="58" cy="58" r="56" fill="#0FA3FF" stroke="black" stroke-width="4"/>
-                </svg>
-            </button>
-        </div>
-    </section>
-
-    <section id="features2" class="frame">
-        <h2>Чек-лист проверок для тестирования игры Тетрис</h2>
-        <p>
-            <strong>1. Проверка UI:</strong><br>
-            <label><input type="checkbox" name="ui_check1"></label> Проверить отображение кнопки вправо<br>
-            <label><input type="checkbox" name="ui_check2"></label> Проверить отображение кнопки вниз<br>
-            <label><input type="checkbox" name="ui_check3"></label> Проверить отображение кнопки влево<br>
-            <label><input type="checkbox" name="ui_check4"></label> Проверить отображение кнопки повернуть<br>
-            <label><input type="checkbox" name="ui_check5"></label> Проверить отображение счетчика очков<br>
-            <label><input type="checkbox" name="ui_check6"></label> Проверить отображение текста "игра тетрис"<br>
-            <br>
-            <strong>Адаптивность размеров:</strong><br>
-            <label><input type="checkbox" name="adapt_check1"></label> Проверить на десктопе<br>
-            <label><input type="checkbox" name="adapt_check2"></label> Проверить на мобилке<br>
-            <br>
-            <strong>Адаптивность управления:</strong><br>
-            <label><input type="checkbox" name="control_check1"></label> Проверить на десктопе (стрелки клавиатуры и тап по UI кнопкам)<br>
-            <label><input type="checkbox" name="control_check2"></label> Проверить на мобилке (тап по UI кнопкам)<br>
-            <br>
-            <strong>Соответствие цвета:</strong><br>
-            <label><input type="checkbox" name="color_check1"></label> Цвет текста "игра тетрис" - оранжевый<br>
-            <label><input type="checkbox" name="color_check2"></label> Цвет текста "счет: ХХХ - бирюзовый"<br>
-            <label><input type="checkbox" name="color_check3"></label> Цвет подложки кнопок - белый<br>
-            <label><input type="checkbox" name="color_check4"></label> Цвет кнопки вправо - синий<br>
-            <label><input type="checkbox" name="color_check5"></label> Цвет кнопки вниз - красный<br>
-            <label><input type="checkbox" name="color_check6"></label> Цвет кнопки вправо - фиолетовый<br>
-            <label><input type="checkbox" name="color_check7"></label> Цвет кнопки повернуть - зеленый<br>
-            <br>
-            <strong>Позиция элементов:</strong><br>
-            <label><input type="checkbox" name="position_check1"></label> Проверка пустого фрейма при старте<br>
-            <label><input type="checkbox" name="position_check2"></label> Высота 400 между верхней и нижней границей фрейма тетриса<br>
-            <label><input type="checkbox" name="position_check3"></label> Проверка размера кнопок - адаптируется в зависимости размера экрана<br>
-            <label><input type="checkbox" name="position_check4"></label> Проверить отсутствие обрезания или наложения элементов<br>
-            <br>
-            <strong>2. Функциональное тестирование:</strong><br>
-            <label><input type="checkbox" name="functional_check1"></label> Проверить, что после обновления страницы игра стартует автоматически<br>
-            <label><input type="checkbox" name="functional_check2"></label> Проверить, что до взаимодействия с управлением фигура автоматически падает<br>
-            <label><input type="checkbox" name="functional_check3"></label> Проверить, что после взаимодействия с управлением фигура автоматически продолжает падает<br>
-            <label><input type="checkbox" name="functional_check4"></label> Проверить, что фигура фиксируется после столкновением с нижней границей фрейма<br>
-            <label><input type="checkbox" name="functional_check5"></label> Проверить корректное поведение фигуры при отсутствии ввода (вниз)<br>
-            <label><input type="checkbox" name="functional_check6"></label> Проверить увеличение счетчика при успешном заполнении линии фигурами<br>
-            <label><input type="checkbox" name="functional_check7"></label> Проверить увеличение счетчика при успешном заполнении 2-х линий одновременно<br>
-            <label><input type="checkbox" name="functional_check8"></label> Проверить увеличение счетчика при успешном заполнении 3-х и более линий одновременно<br>
-            <label><input type="checkbox" name="functional_check9"></label> Проверить, что 2 и более линий заполненных одновременно также сгорают вместе<br>
-            <label><input type="checkbox" name="functional_check10"></label> Проверить остановку игры при столкновении с верхней границей<br>
-            <label><input type="checkbox" name="functional_check11"></label> Проверить сообщение "Игра окончена" при остановке игры<br>
-            <label><input type="checkbox" name="functional_check12"></label> Проверить, что после сообщения "Игра окончена" игра не продолжится без обновления страницы<br>
-            <label><input type="checkbox" name="functional_check13"></label> Проверить, что игра не перезапускается автоматически после завершения<br>
-            <label><input type="checkbox" name="functional_check14"></label> Проверить возможность перезапуска игры<br>
-            <br>
-            <strong>3. Тестирование производительности:</strong><br>
-            <label><input type="checkbox" name="perf_check1"></label> Проверить плавность анимации при разных разрешениях экрана<br>
-            <label><input type="checkbox" name="perf_check2"></label> Проверить производительность при быстром управлении кнопками и клавишами<br>
-            <br>
-            <strong>4. Проверка негативных сценариев:</strong><br>
-            <label><input type="checkbox" name="negative_check1"></label> Проверить поведение игры при отсутствии ввода.<br>
-            <label><input type="checkbox" name="negative_check2"></label> Проверить, что игра корректно обрабатывает попытку ввода после завершения игры<br>
-            <label><input type="checkbox" name="negative_check4"></label> Проверить поведение игры при отключении JavaScript.<br>
-            <label><input type="checkbox" name="negative_check5"></label> Проверить, что счетчик не увеличивается, если фигура не заполнила линию.<br>
-            <br>
-            <strong>5. Тестирование на кроссбраузерность:</strong><br>
-            <label><input type="checkbox" name="cross_check1"></label> Проверить корректность работы игры в Google Chrome<br>
-            <label><input type="checkbox" name="cross_check2"></label> Проверить корректность работы игры в Mozilla Firefox<br>
-            <label><input type="checkbox" name="cross_check3"></label> Проверить корректность работы игры в Safari<br>
-            <label><input type="checkbox" name="cross_check4"></label> Проверить корректность работы игры в Microsoft Edge<br>
-            <br>
-            <strong>6. Тестирование с использованием техники серого ящика:</strong><br>
-            <label><input type="checkbox" name="gray_check1"></label> Проверить скорость обновления позиций объектов<br>
-            <label><input type="checkbox" name="gray_check2"></label> Проверить скорость обновления счетчика<br>
-            <label><input type="checkbox" name="gray_check3"></label> Проверить использование ресурсов (CPU, память)<br>
-            <br>
-            <strong>7. Проверка адаптации игры:</strong><br>
-            <label><input type="checkbox" name="adapt_check3"></label> Проверить работу на экранах 1920x1080<br>
-            <label><input type="checkbox" name="adapt_check4"></label> Проверить работу на экранах 1366x768<br>
-            <label><input type="checkbox" name="adapt_check5"></label> Проверить работу на экранах 360x640<br>
-            <label><input type="checkbox" name="adapt_check6"></label> Проверить работу во время растягивания окна браузера<br>
-        </p>
-    </section>
-
     <section id="carousel" class="noneframe">
         <h2>Иконки канала</h2>
         <div class="carousel">
             <div class="carousel-images">
-                <img src="QAtoDev - лето.png" alt="Фото 1" class="active">
-                <img src="QAtoDev.png" alt="Фото 2">
-                <img src="QAtoDev - Хэллоуин.png" alt="Фото 3">
-                <img src="QAtoDev - День тестировщика.png" alt="Фото 4">
-                <img src="QAtoDev5.png" alt="Фото 5">
+                <img src="img/QAtoDev%20-%20лето.png" alt="Фото 1" class="active">
+                <img src="img/QAtoDev.png" alt="Фото 2">
+                <img src="img/QAtoDev%20-%20Хэллоуин.png" alt="Фото 3">
+                <img src="img/QAtoDev%20-%20День%20тестировщика.png" alt="Фото 4">
+                <img src="img/QAtoDev5.png" alt="Фото 5">
             </div>
             <div class="carousel-controls">
                 <button id="prev" class="carousel-button">Назад</button>
@@ -655,7 +210,6 @@
             </div>
         </div>
     </section>
-
 
     <section id="links" class="custom-links">
         <h2>Полезные ссылки</h2>
@@ -666,46 +220,15 @@
         </ul>
     </section>
 
-
-    <section id="swagger" class="swagger">
-        <h2>Практика API (Swagger)</h2>
-        <form id="feedbackForm">
-            <label for="id">ID:</label>
-            <input type="number" id="id" name="id" required>
-
-            <label for="username">Имя пользователя:</label>
-            <input type="text" id="username" name="username" required>
-
-            <label for="firstName">Имя:</label>
-            <input type="text" id="firstName" name="firstName" required>
-
-            <label for="lastName">Фамилия:</label>
-            <input type="text" id="lastName" name="lastName" required>
-
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
-
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" required>
-
-            <label for="phone">Телефон:</label>
-            <input type="tel" id="phone" name="phone" required>
-
-            <label for="userStatus">Статус пользователя:</label>
-            <input type="number" id="userStatus" name="userStatus" required>
-
-            <button type="submit">Отправить</button>
-        </form>
-    </section>
-
     <section id="about" class="frame">
         <h2>О QAtoDev</h2>
         <p>Всё началось с первой статьи на Хабр, тема не была связана с тестированием - «Как провести незабываемую ретроспективу».
-            Вскоре был создан телеграм канал по тестированию, а теперь уже запущена целая песочница для практики.
+            Вскоре был создан telegram-канал по тестированию, а теперь уже запущена целая песочница для практики.
             Спасибо тем, кто помогает и поддерживает инициативу развития данного сообщества!</p>
         <p id="userCount">Накидать сердечек: <span id="count">0</span></p>
         <button id="increaseCount">❤️</button>
     </section>
+
 </main>
 <footer class="qatodev">
     <p>&copy; 2025 QAtoDev</p>

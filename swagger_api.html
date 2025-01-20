@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Практика API (Swagger)</title>
+
+    <!-- Если нужно, подключаем общий styles.css: -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- И затем подключаем swagger_api.css: -->
+    <link rel="stylesheet" href="swagger_api.css">
+</head>
+
+<body>
+<nav>
+    <div class="burger-menu">
+        &#9776; <!-- Это значок бургер-меню -->
+    </div>
+    <ul>
+        <li><a href="index.html">На главную</a></li>
+    </ul>
+</nav>
+
+<!-- Основной контент страницы -->
+<section id="swaggerApiCarousel" class="frame">
+    <h2>Практика API (Swagger)</h2>
+
+    <!-- Обёртка для карусели -->
+    <div class="api-carousel">
+
+        <!-- 1. Создать пользователя (POST /user) -->
+        <div class="api-slide active">
+            <h3>1. Создать пользователя</h3>
+            <p>URL: <code>POST {{hostname}}/user</code></p>
+            <label>ID пользователя: <input id="user_id" type="number" value="777"></label><br>
+            <label>Username: <input id="user_username" type="text" value="Barin555"></label><br>
+            <label>Имя: <input id="user_firstName" type="text" value="Ivan"></label><br>
+            <label>Фамилия: <input id="user_lastName" type="text" value="Ivanov"></label><br>
+            <label>Email: <input id="user_email" type="email" value="barin@gmail.com"></label><br>
+            <label>Пароль: <input id="user_password" type="text" value="12345"></label><br>
+            <label>Телефон: <input id="user_phone" type="text" value="89000995903"></label><br>
+            <label>UserStatus: <input id="user_status" type="number" value="5"></label><br>
+
+            <button onclick="createUser()">Отправить</button>
+            <pre id="user_create_response"></pre>
+        </div>
+
+        <!-- 2. Получить пользователя по имени (GET /user/{username}) -->
+        <div class="api-slide">
+            <h3>2. Получить пользователя</h3>
+            <p>URL: <code>GET {{hostname}}/user/{{username}}</code></p>
+            <label>Введите username: <input id="get_user_username" type="text" value="Barin555"></label><br>
+
+            <button onclick="getUserByName()">Отправить</button>
+            <pre id="get_user_response"></pre>
+        </div>
+
+        <!-- 3. Вход пользователя (GET /user/login?username=...&password=...) -->
+        <div class="api-slide">
+            <h3>3. Вход пользователя</h3>
+            <p>URL: <code>GET {{hostname}}/user/login</code></p>
+            <label>Username: <input id="login_username" type="text" value="Barin555"></label><br>
+            <label>Password: <input id="login_password" type="text" value="55555"></label><br>
+
+            <button onclick="loginUser()">Отправить</button>
+            <pre id="login_response"></pre>
+        </div>
+
+        <!-- 4. Новый питомец (POST /pet) -->
+        <div class="api-slide">
+            <h3>4. Новый питомец</h3>
+            <p>URL: <code>POST {{hostname}}/pet</code></p>
+            <label>ID питомца: <input id="pet_id" type="number" value="15"></label><br>
+            <label>Tag_name: <input id="pet_tag_name" type="text" value="Сибирская"></label><br>
+            <label>Имя питомца: <input id="pet_name" type="text" value="Рыжик"></label><br>
+
+            <button onclick="createPet()">Отправить</button>
+            <pre id="pet_create_response"></pre>
+        </div>
+
+        <!-- 5. Получить питомца по ID (GET /pet/{ID_pet}) -->
+        <div class="api-slide">
+            <h3>5. Получить питомца по ID</h3>
+            <p>URL: <code>GET {{hostname}}/pet/{{ID_pet}}</code></p>
+            <label>ID питомца: <input id="get_pet_id" type="number" value="15"></label><br>
+
+            <button onclick="getPetById()">Отправить</button>
+            <pre id="get_pet_response"></pre>
+        </div>
+
+        <!-- 6. Оформить заказ (POST /store/order) -->
+        <div class="api-slide">
+            <h3>6. Оформить заказ</h3>
+            <p>URL: <code>POST {{hostname}}/store/order</code></p>
+            <label>ID заказа: <input id="order_id" type="number" value="1"></label><br>
+            <label>ID питомца: <input id="order_pet_id" type="number" value="15"></label><br>
+
+            <button onclick="createOrder()">Отправить</button>
+            <pre id="create_order_response"></pre>
+        </div>
+
+        <!-- 7. Найти заказ по ID (GET /store/order/{ID_order}) -->
+        <div class="api-slide">
+            <h3>7. Найти заказ</h3>
+            <p>URL: <code>GET {{hostname}}/store/order/{{ID_order}}</code></p>
+            <label>ID заказа: <input id="get_order_id" type="number" value="1"></label><br>
+
+            <button onclick="getOrderById()">Отправить</button>
+            <pre id="get_order_response"></pre>
+        </div>
+
+        <!-- 8. Удалить заказ по ID (DELETE /store/order/{ID_order}) -->
+        <div class="api-slide">
+            <h3>8. Удалить заказ</h3>
+            <p>URL: <code>DELETE {{hostname}}/store/order/{{ID_order}}</code></p>
+            <label>ID заказа: <input id="delete_order_id" type="number" value="1"></label><br>
+
+            <button onclick="deleteOrder()">Отправить</button>
+            <pre id="delete_order_response"></pre>
+        </div>
+
+        <!-- 9. Удалить пользователя по имени (DELETE /user/{username}) -->
+        <div class="api-slide">
+            <h3>9. Удалить пользователя</h3>
+            <p>URL: <code>DELETE {{hostname}}/user/{{username}}</code></p>
+            <label>Username: <input id="delete_user_username" type="text" value="Barin555"></label><br>
+
+            <button onclick="deleteUser()">Отправить</button>
+            <pre id="delete_user_response"></pre>
+        </div>
+
+    </div>
+
+    <!-- Кнопки «влево/вправо» для переключения между формами -->
+    <div class="api-carousel-controls">
+        <button id="api-prev" class="carousel-button">&larr; Назад</button>
+        <button id="api-next" class="carousel-button">Вперёд &rarr;</button>
+    </div>
+</section>
+
+<!-- Подключаем скрипт, где все функции fetch(...) -->
+<script src="swagger_api.js"></script>
+</body>
+</html>

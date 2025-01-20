@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Задания для QA</title>
+
+    <!-- Если нужно, подключаем общий styles.css: -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<nav>
+    <div class="burger-menu">
+        &#9776; <!-- Это значок бургер-меню -->
+    </div>
+    <ul>
+        <li><a href="index.html">На главную</a></li>
+    </ul>
+</nav>
+
+
+<div>
+    <h2>Задания на собеседованиях для QA</h2>
+</div>
+<div class="card">
+    <div class="card-content">
+        <h3>Задание 1. Победитель в Flappy Bird</h3>
+        Необходимо поменять количество очков в игре Flappy Bird.
+        Воспользуйся DevTools, чтобы счетчик отобразил счет: 999!
+        <h4>Шаги по воспроизведению:</h4>
+        1. Открыть Devtools<br>
+        2. Вкладка Source<br>
+        3. Открыть файл script.js<br>
+        ...<br>
+        <br>
+        <button class="skills">DevTools: Source</button>
+    </div>
+    <div class="card-image">
+        <img src="Задание 1.png" alt="Изображение" style="width: 600px; height: 200px;">
+    </div>
+</div>
+<div class="card">
+    <div class="card-content">
+        <p>
+        <h3>Задание 2. Практика Swagger</h3>
+        Проверить ответ на API запрос после нажатия на кнопку "Отправить".
+        <h4>Шаги по воспроизведению:</h4>
+        1. Открыть Devtools<br>
+        2. Вкладка Network<br>
+        3. Очистить сетевой журнал<br>
+        4. Заполнить необходимые поля<br>
+        5. Нажать кнопку "Отправить"<br>
+        6. Найти API запрос в сетевом журнале<br>
+        7. Отобразить значение во вкладке "Respones"<br>
+        <br>
+        <button class="skills">DevTools: Network</button>
+        <button class="skills">API</button>
+        </p>
+    </div>
+    <div class="card-image">
+        <img src="Задание 2.png" alt="Изображение" style="width: 720px; height: 200px;">
+    </div>
+</div>
+<div class="card">
+    <div class="card-content">
+        <p>
+        <h3>Задание 3. Удали лишний элемент</h3>
+        Удали со страницы часть заголовка "ИГРА" формата .svg
+        <h4>Шаги по воспроизведению:</h4>
+        1. Открыть Devtools<br>
+        2. Вкладка Elements<br>
+        3. Нажать на "Цель"<br>
+        4. Переместить курсор на необходимый элемент<br>
+        5. В структуре html удали элемент<br>
+        <br>
+        <button class="skills">DevTools: Elements</button>
+        </p>
+    </div>
+    <div class="card-image">
+        <img src="Задание 3.png" alt="Изображение" style="width: 300px; height: 300px;">
+    </div>
+</div>
+<div class="card">
+    <div class="card-content">
+        <p>
+        <h3>Задание 4. Поставь Тетрис на паузу</h3>
+        Останови игру с помощью точки останова (breakpoint).<br>
+        Поставить breakpoint на шаг кода, чтобы поставить игру на паузу.
+        <h4>Шаги по воспроизведению:</h4>
+        1. Открыть Devtools<br>
+        2. Вкладка Source<br>
+        3. Открыть файл script.js<br>
+        4. Переместить курсор на строчку 362<br>
+        5. Поставить точку останова нажав на "362"<br>
+        6. Дождитесь падения текущей фигуры или положите её самостоятельно<br>
+        7. Воспроизведи игру с помощью области управления breakpoint (см. Скрин)<br>
+        НЕ ЗАБУДЬ УБРАТЬ точку останова после проверки :)<br>
+        <br>
+        <button class="skills">DevTools: Source</button>
+        <button class="skills">JS: breakpoint</button>
+        </p>
+    </div>
+    <div class="card-image">
+        <img src="Задание 4.png" alt="Изображение" style="width: 600px; height: 200px;">
+    </div>
+</div>
+<div class="card">
+    <div class="card-content">
+        <p>
+        <h3>Задание 5. Открыть сайт в разных браузерах (Тестовое задание)</h3>
+        Проверь верстку страницы на разных клиентах.<br>
+        Важно сравнивать верстку не только на разных браузерах, но и на разных движках.<br>
+        Не забудь про размеры экранов.<br>
+        <h4>Шаги по воспроизведению:</h4>
+        1. Открыть сайт в Chrome (движок Blink)<br>
+        2. Открыть сайт в Safari (движок WebKit)<br>
+        3. Открыть сайт в Mozilla Firefox (движок Gecko)<br>
+        4. Открыть сайт в Internet Explorer (движок Trident)<br>
+        5. Сравнить отрисовку элементов на странице<br>
+        6. Проверить верстку - размер, стиль и расположение элементов<br>
+        <br>
+        <button class="skills">Кроссбраузерное тестирование</button>
+        </p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const burgerMenu = document.querySelector('.burger-menu');
+        const navLinks = document.querySelector('nav ul');
+
+        burgerMenu.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+    });
+</script>
+
+</body>

@@ -1,0 +1,42 @@
+/* Обёртка */
+.api-carousel {
+  position: relative;
+  overflow: hidden;
+  max-width: 400px;  /* Ширина «окна» для форм (настраивайте) */
+  margin: 0 auto;    /* Центровка */
+}
+
+/* Каждый слайд */
+.api-slide {
+  display: none;       /* По умолчанию скрыты все */
+  width: 100%;
+}
+
+/* Показываем только активный */
+.api-slide.active {
+  display: block;
+}
+
+/* Кнопки переключения */
+.api-carousel-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.api-carousel-controls .carousel-button {
+  padding: 8px 15px;
+  margin: 0 10px;
+  cursor: pointer;
+}
+
+/* Для наглядности форм */
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  margin-left: 5px;
+  margin-bottom: 10px;
+}
