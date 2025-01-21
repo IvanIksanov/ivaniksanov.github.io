@@ -257,7 +257,7 @@ flappyCvs.addEventListener("click", function (e) {
 
 // Поднятие птицы
 function moveUp() {
-    bY -= 20;
+    bY -= 35;
     fly.play();
 }
 
@@ -305,7 +305,7 @@ function enableAutoFlappyFlight() {
         let gapTop = nextPipe.y + 320;
         let gapBottom = gapTop + gap;
         let centerGap = (gapTop + gapBottom) / 2;
-        let birdCenter = bY + 25; // примерно центр птицы (высота 50)
+        let birdCenter = bY + 35; // примерно центр птицы (высота 50)
 
         // Усиленная логика:
         // Если наш центр ниже, чем центр щели, поднимаемся сильнее
