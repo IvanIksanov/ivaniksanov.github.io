@@ -456,3 +456,19 @@ function handleControl(buttonId) {
         p.rotate();
     }
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    const prefix = "tetris_"; // Префикс для данной страницы
+    const checkboxes = document.querySelectorAll("#checklist-items2 input[type='checkbox']");
+
+    checkboxes.forEach((checkbox) => {
+        const savedState = localStorage.getItem(prefix + checkbox.name);
+        checkbox.checked = savedState === "true";
+    });
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", function () {
+            localStorage.setItem(prefix + checkbox.name, checkbox.checked);
+        });
+    });
+});
