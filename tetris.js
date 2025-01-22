@@ -414,23 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    const prefix = "tetris_"; // Префикс для данной страницы
-    const checkboxes = document.querySelectorAll("#checklist-items2 input[type='checkbox']");
-
-    checkboxes.forEach((checkbox) => {
-        const savedState = localStorage.getItem(prefix + checkbox.name);
-        checkbox.checked = savedState === "true";
-    });
-
-    checkboxes.forEach((checkbox) => {
-        checkbox.addEventListener("change", function () {
-            localStorage.setItem(prefix + checkbox.name, checkbox.checked);
-        });
-    });
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    // Предотвращаем зум при двойном тапе
+    // Предотвращение зума при двойном тапе
     let lastTouchEnd = 0;
     document.addEventListener(
         "touchend",
@@ -444,20 +428,31 @@ document.addEventListener("DOMContentLoaded", function () {
         false
     );
 
-    // Обработка событий для кнопок управления
+    // Быстрая обработка событий на кнопках управления
     const controlButtons = document.querySelectorAll(".control-button");
     controlButtons.forEach((button) => {
-        // Разрешаем стандартное поведение для клика
+        // Обработка touchstart для мгновенного отклика
         button.addEventListener("touchstart", function (event) {
-            // Только предотвращаем зум, но позволяем нажатию
-            if (event.touches.length > 1) {
-                event.preventDefault();
-            }
+            event.preventDefault(); // Предотвращаем стандартное поведение
+            handleControl(button.id); // Обрабатываем нажатие
         });
 
+        // Обработка click для совместимости с десктопами
         button.addEventListener("click", function () {
-            console.log(`${button.id} button clicked`);
-            // Вызов функции управления тетрисом (замените на вашу логику)
+            handleControl(button.id);
         });
     });
 });
+
+// Функция обработки команд управления
+function handleControl(buttonId) {
+    if (buttonId === "left") {
+        p.moveLeft();
+    } else if (buttonId === "right") {
+        p.moveRight();
+    } else if (buttonId === "down") {
+        p.moveDown();
+    } else if (buttonId === "rotate") {
+        p.rotate();
+    }
+}
