@@ -150,8 +150,8 @@ for (let i = 0; i < initialPipes; i++) {
 const levels = [
     {
         backgroundColor: "#44BBC1", //бирюзовый + классический 1-10
-        pipeUpSrc: "img/pipeUp.png",
-        pipeBottomSrc: "img/pipeBottom.png",
+        pipeUpSrc: "img/pipeUpPro.png",
+        pipeBottomSrc: "img/pipeBottomPro.png",
         fgSrc: "img/fg.png"
     },
     {
@@ -554,3 +554,18 @@ document.getElementById('toggle-button').addEventListener('click', function () {
         }
     });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const prefix = "index_"; // Префикс для данной страницы
+    const checkboxes = document.querySelectorAll("#checklist-items input[type='checkbox']");
+
+    checkboxes.forEach((checkbox) => {
+        const savedState = localStorage.getItem(prefix + checkbox.name);
+        checkbox.checked = savedState === "true";
+    });
+
+    checkboxes.forEach((checkbox) => {
+        checkbox.addEventListener("change", function () {
+            localStorage.setItem(prefix + checkbox.name, checkbox.checked);
+        });
+    });
+});

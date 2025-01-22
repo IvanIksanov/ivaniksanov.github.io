@@ -61,49 +61,60 @@
             <p>
             <div id="checklist-items" class="collapsible">
             <strong>1. Проверка UI:</strong><br>
-            <label><input type="checkbox" name="ui_check1"></label> Проверить отображение иконки персонажа<br>
-            <label><input type="checkbox" name="ui_check2"></label> Проверить отображение иконок для выбора персонажа<br>
-            <label><input type="checkbox" name="ui_check3"></label> Проверить отображение верхней колонны<br>
-            <label><input type="checkbox" name="ui_check4"></label> Проверить отображение нижней колонны<br>
-            <label><input type="checkbox" name="ui_check5"></label> Проверить отображение однотонного фона<br>
-            <label><input type="checkbox" name="ui_check6"></label> Проверить отображение счетчика очков<br>
-            <label><input type="checkbox" name="ui_check7"></label> Проверить отображение нижнего фона (земля)<br>
+            <label><input type="checkbox" name="ui_check1"></label> Отображение иконки персонажа<br>
+            <label><input type="checkbox" name="ui_check2"></label> Отображение иконок выбора персонажа<br>
+            <label><input type="checkbox" name="ui_check3"></label> Отображение верхней колонны<br>
+            <label><input type="checkbox" name="ui_check4"></label> Отображение нижней колонны<br>
+            <label><input type="checkbox" name="ui_check5"></label> Отображение фона<br>
+            <label><input type="checkbox" name="ui_check6"></label> Отображение счетчика очков<br>
+            <label><input type="checkbox" name="ui_check7"></label> Отображение нижнего фона (земля)<br>
             <br>
             <strong>Адаптивность размеров:</strong><br>
-            <label><input type="checkbox" name="adapt_check1"></label> Проверить на десктопе<br>
-            <label><input type="checkbox" name="adapt_check2"></label> Проверить на мобилке<br>
+            <label><input type="checkbox" name="adapt_check1"></label> Проверить на десктопе отображение элементов<br>
+            <label><input type="checkbox" name="adapt_check2"></label> Проверить на мобилках отображение элементов<br>
+            <label><input type="checkbox" name="adapt_check3"></label> Проверить запуск игры на десктопе и на мобилках<br>
             <br>
             <strong>Адаптивность управления:</strong><br>
             <label><input type="checkbox" name="control_check1"></label> Проверить на десктопе (пробел и тап по фрейму)<br>
             <label><input type="checkbox" name="control_check2"></label> Проверить на мобилке (тап по фрейму)<br>
+            <label><input type="checkbox" name="control_check3"></label> Проверить гравитацию на десктопе и на мобилках<br>
+            <label><input type="checkbox" name="control_check4"></label> Проверить прыжок на десктопе и на мобилках<br>
             <br>
-            <strong>Соответствие цвета:</strong><br>
-            <label><input type="checkbox" name="color_check1"></label> Фон - голубой до 20 счета<br>
-            <label><input type="checkbox" name="color_check2"></label> Фон - желтый от 20 до 30 счета<br>
-            <label><input type="checkbox" name="color_check3"></label> Фон - оранжевый от 30 до 45 счета<br>
-            <label><input type="checkbox" name="color_check3"></label> Фон - фиолетовый от 45 до 55 счета<br>
-            <label><input type="checkbox" name="color_check3"></label> Фон - малахит от 55 счета<br>
-            <label><input type="checkbox" name="color_check4"></label> Текст счетчика - адаптируется под цвет фона<br>
-            <label><input type="checkbox" name="color_check5"></label> Колонны - зеленые<br>
+            <strong>Соответствие тематики уровней:</strong><br>
+            <label><input type="checkbox" name="color_check1"></label> Бирюзовый + классический 1-10<br>
+            <label><input type="checkbox" name="color_check2"></label> Светло-коричневый + камень 10 - 30<br>
+            <label><input type="checkbox" name="color_check3"></label> Желтый + сердечки 30 - 50<br>
+            <label><input type="checkbox" name="color_check4"></label> Красный + классический 50 - 80<br>
+            <label><input type="checkbox" name="color_check5"></label> Светло-синий + березы 80 - 120<br>
+            <label><input type="checkbox" name="color_check6"></label> Светло-зеленый + здания 120 - 150<br>
+            <label><input type="checkbox" name="color_check7"></label> Розовый + классический 150 - 180<br>
+            <label><input type="checkbox" name="color_check8"></label> Серый + классический 180 - 220<br>
+            <label><input type="checkbox" name="color_check9"></label> Синий + классический 220 - 250<br>
+            <label><input type="checkbox" name="color_check10"></label> Текст счетчика - адаптируется под цвет фона<br>
             <br>
             <strong>Позиция элементов:</strong><br>
             <label><input type="checkbox" name="position_check1"></label> Проверка старта персонажа 150px от левого края фрейма<br>
             <label><input type="checkbox" name="position_check2"></label> Проверка интервала 130px между верхней и нижней колонной<br>
+            <label><input type="checkbox" name="position_check2"></label> Проверка интервала между препятствиями при старте<br>
+            <label><input type="checkbox" name="position_check2"></label> Проверка интервала между препятствиями при рестарте<br>
             <label><input type="checkbox" name="position_check3"></label> Проверка размера персонажа 54 на 44px<br>
             <label><input type="checkbox" name="position_check4"></label> Проверить отсутствие обрезания или наложения элементов<br>
             <br>
             <strong>2. Функциональное тестирование:</strong><br>
-            <label><input type="checkbox" name="functional_check1"></label> Проверить, что после обновления страницы игра стартует автоматически<<br>
-            <label><input type="checkbox" name="functional_check2"></label> Проверить, что до взаимодействия с управлением персонаж автоматически поддерживает полет<br>
-            <label><input type="checkbox" name="functional_check3"></label> Проверить, что персонажа можно выбрать только до прохождения первого препятствия<br>
-            <label><input type="checkbox" name="functional_check4"></label> Проверить, что персонаж поднимается на фиксированную высоту при нажатии пробела или клике<br>
-            <label><input type="checkbox" name="functional_check5"></label> Проверить корректное поведение персонажа при отсутствии ввода (падение)<br>
-            <label><input type="checkbox" name="functional_check6"></label> Проверить увеличение счетчика при успешном прохождении колонны<br>
-            <label><input type="checkbox" name="functional_check7"></label> Проверить остановку игры при столкновении с верхней колонной<br>
-            <label><input type="checkbox" name="functional_check8"></label> Проверить остановку игры при столкновении с нижней колонной<br>
-            <label><input type="checkbox" name="functional_check9"></label> Проверить остановку игры при столкновении с землей<br>
-            <label><input type="checkbox" name="functional_check10"></label> Проверить, что игра не перезапускается автоматически после завершения<br>
-            <label><input type="checkbox" name="functional_check11"></label> Проверить возможность перезапуска игры<br>
+            <label><input type="checkbox" name="functional_check1"></label> Проверить, что после обновления страницы игра стартует автоматически<br>
+            <label><input type="checkbox" name="functional_check2"></label> Проверить, что после рестарта игры - старт происходит автоматически<br>
+            <label><input type="checkbox" name="functional_check3"></label> Проверить, что до взаимодействия с управлением персонаж на автопилоте<br>
+            <label><input type="checkbox" name="functional_check4"></label> Проверить, что персонажа можно выбрать только до прохождения первого препятствия<br>
+            <label><input type="checkbox" name="functional_check5"></label> Проверить, что персонаж поднимается на фиксированную высоту при нажатии пробела или клике<br>
+            <label><input type="checkbox" name="functional_check6"></label> Проверить корректное поведение персонажа при отсутствии ввода (падение)<br>
+            <label><input type="checkbox" name="functional_check7"></label> Проверить увеличение счетчика при успешном прохождении колонны<br>
+            <label><input type="checkbox" name="functional_check8"></label> Проверить смену стилей разных уровней<br>
+            <label><input type="checkbox" name="functional_check9"></label> Проверить число счетчика при смене стилей разных уровней<br>
+            <label><input type="checkbox" name="functional_check10"></label> Проверить остановку игры при столкновении с верхней колонной<br>
+            <label><input type="checkbox" name="functional_check11"></label> Проверить остановку игры при столкновении с нижней колонной<br>
+            <label><input type="checkbox" name="functional_check12"></label> Проверить остановку игры при столкновении с землей<br>
+            <label><input type="checkbox" name="functional_check13"></label> Проверить, что игра не перезапускается автоматически после завершения<br>
+            <label><input type="checkbox" name="functional_check14"></label> Проверить возможность перезапуска игры (рестарт)<br>
             <br>
             <strong>3. Тестирование производительности:</strong><br>
             <label><input type="checkbox" name="perf_check1"></label> Проверить плавность анимации при разных разрешениях экрана<br>
@@ -115,11 +126,11 @@
             <label><input type="checkbox" name="edge_check4"></label> Проверить максимальный интервал между колоннами (для больших экранов)<br>
             <br>
             <strong>5. Проверка негативных сценариев:</strong><br>
-            <label><input type="checkbox" name="negative_check1"></label> Проверить поведение игры при отсутствии ввода.<br>
-            <label><input type="checkbox" name="negative_check2"></label> Проверить, что после прохождения первого препятствия нельзя поменять персонажа<br>
-            <label><input type="checkbox" name="negative_check3"></label> Проверить, что игра корректно обрабатывает попытку ввода после завершения игры<br>
-            <label><input type="checkbox" name="negative_check4"></label> Проверить, что персонаж не “проходит” через колонны при медленном FPS.<br>
-            <label><input type="checkbox" name="negative_check5"></label> Проверить поведение игры при отключении JavaScript<br>
+            <label><input type="checkbox" name="negative_check1"></label> Проверить, что игра корректно обрабатывает попытку ввода после завершения игры<br>
+            <label><input type="checkbox" name="negative_check2"></label> Проверить, что персонаж не “проходит” через колонны при медленном FPS.<br>
+            <label><input type="checkbox" name="negative_check3"></label> Проверить поведение игры при отключении JavaScript<br>
+            <label><input type="checkbox" name="negative_check4"></label> Проверить поведение игры при отключении CSS<br>
+            <label><input type="checkbox" name="negative_check5"></label> Проверить поведение игры при отключении HTML<br>
             <label><input type="checkbox" name="negative_check6"></label> Проверить, что счетчик не увеличивается при столкновении с колонной.<br>
             <br>
             <strong>6. Тестирование на кроссбраузерность:</strong><br>
@@ -134,10 +145,11 @@
             <label><input type="checkbox" name="gray_check3"></label> Проверить использование ресурсов (CPU, память)<br>
             <br>
             <strong>8. Проверка адаптации игры:</strong><br>
-            <label><input type="checkbox" name="adapt_check3"></label> Проверить работу на экранах 1920x1080<br>
-            <label><input type="checkbox" name="adapt_check4"></label> Проверить работу на экранах 1366x768<br>
-            <label><input type="checkbox" name="adapt_check5"></label> Проверить работу на экранах 360x640<br>
-            <label><input type="checkbox" name="adapt_check6"></label> Проверить работу во время растягивания окна браузера<br>
+            <label><input type="checkbox" name="adapt_check1"></label> Проверить работу на экранах 1920x1080<br>
+            <label><input type="checkbox" name="adapt_check2"></label> Проверить работу на экранах 1366x768<br>
+            <label><input type="checkbox" name="adapt_check3"></label> Проверить работу на экранах 360x640<br>
+            <label><input type="checkbox" name="adapt_check4"></label> Проверить работу во время растягивания окна браузера (пауза игры)<br>
+            <label><input type="checkbox" name="adapt_check5"></label> Проверить работу во время растягивания окна браузера (автопилот)<br>
             </div>
         <button id="toggle-button">Развернуть список</button>
         </div>
