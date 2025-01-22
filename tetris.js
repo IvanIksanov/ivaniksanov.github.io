@@ -428,3 +428,27 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+    // Отключение зума при двойном тапе
+    let lastTouchEnd = 0;
+    document.addEventListener(
+        "touchend",
+        function (event) {
+            const now = new Date().getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        },
+        false
+    );
+
+    // Отключение масштабирования при взаимодействии с кнопками
+    const controlButtons = document.querySelectorAll(".control-button");
+    controlButtons.forEach((button) => {
+        button.addEventListener("touchstart", function (event) {
+            event.preventDefault(); // Предотвращаем зум
+        });
+    });
+});
