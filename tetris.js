@@ -430,7 +430,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
-    // Отключение зума при двойном тапе
+    // Предотвращаем зум при двойном тапе
     let lastTouchEnd = 0;
     document.addEventListener(
         "touchend",
@@ -444,11 +444,20 @@ document.addEventListener("DOMContentLoaded", function () {
         false
     );
 
-    // Отключение масштабирования при взаимодействии с кнопками
+    // Обработка событий для кнопок управления
     const controlButtons = document.querySelectorAll(".control-button");
     controlButtons.forEach((button) => {
+        // Разрешаем стандартное поведение для клика
         button.addEventListener("touchstart", function (event) {
-            event.preventDefault(); // Предотвращаем зум
+            // Только предотвращаем зум, но позволяем нажатию
+            if (event.touches.length > 1) {
+                event.preventDefault();
+            }
+        });
+
+        button.addEventListener("click", function () {
+            console.log(`${button.id} button clicked`);
+            // Вызов функции управления тетрисом (замените на вашу логику)
         });
     });
 });
