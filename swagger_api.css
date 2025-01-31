@@ -2,7 +2,7 @@
 .api-carousel {
   position: relative;
   overflow: hidden;
-  max-width: 400px;  /* Ширина «окна» для форм (настраивайте) */
+  max-width: 500px;  /* Ширина «окна» для форм (настраивайте) */
   margin: 0 auto;    /* Центровка */
 }
 
@@ -40,3 +40,4 @@ input {
   margin-left: 5px;
   margin-bottom: 10px;
 }
+

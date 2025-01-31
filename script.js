@@ -161,16 +161,16 @@ const levels = [
         fgSrc: "img/fgLevel3.png"
     },
     {
-        backgroundColor: "#FFD700",//#FFD700 желтый + сердечки 30 - 50
-        pipeUpSrc: "img/pipeUpLevel4.png",
-        pipeBottomSrc: "img/pipeBottomLevel4.png",
-        fgSrc: "img/fgLevel4.png"
-    },
-    {
         backgroundColor: "#8A2BE2", //фиолетовый + классический 50 - 80
         pipeUpSrc: "img/pipeUpLevel5.png",
         pipeBottomSrc: "img/pipeBottomLevel5.png",
         fgSrc: "img/fgLevel5.png"
+    },
+    {
+        backgroundColor: "#FFD700",//#FFD700 желтый + сердечки 30 - 50
+        pipeUpSrc: "img/pipeUpLevel4.png",
+        pipeBottomSrc: "img/pipeBottomLevel4.png",
+        fgSrc: "img/fgLevel4.png"
     },
     {
         backgroundColor: "#83EFEA", //светло-синий + березы 80 - 120
@@ -213,7 +213,7 @@ const levels = [
 let currentLevel = 0;
 
 function updateLevel() {
-    const levelThresholds = [10, 30, 50, 80, 120, 150, 180, 220, 250];
+    const levelThresholds = [3, 30, 50, 80, 120, 150, 180, 220, 250];
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
             currentLevel = i + 1;

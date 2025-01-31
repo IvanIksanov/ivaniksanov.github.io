@@ -100,11 +100,11 @@ header {
 
 .header-container {
     position: absolute;
-    top: 0; /* Поднимает логотип и текст к верхнему краю */
+    top: 20; /* Поднимает логотип и текст к верхнему краю */
     left: 10px; /* Отступ от левого края */
     display: flex;
     align-items: center; /* Выровнять логотип и текст по вертикали */
-    margin-top: -75px;
+    margin-top: -60px;
 }
 
 
@@ -115,9 +115,9 @@ header {
 }
 
 .site-title {
-        font-size: 15px;
-        color: #1e1e1e; /* Цвет заголовка */
-    }
+    font-size: 15px;
+    color: #1e1e1e; /* Цвет заголовка */
+}
 
 @media (prefers-color-scheme: dark) {
     .site-title {
@@ -125,7 +125,11 @@ header {
         color: #FFFFFF; /* Цвет заголовка */
     }
 }
-
+@media (max-width: 1200px) {
+    .site-title {
+        display: none;
+    }
+}
 
 nav {
     padding: 10px; /* Отступы вокруг меню */
@@ -137,7 +141,7 @@ nav {
 ul {
     list-style-type: none; /* Убираем маркеры списка */
     padding: 0; /* Убираем отступы */
-    margin: 10; /* Убираем внешние отступы */
+    margin: 0; /* Убираем внешние отступы */
     display: flex; /* Выравниваем ссылки в строку */
     justify-content: center;  /* ССЫЛКИ ХЭДДЕРА ПО ЦЕНТРУ */
 }
