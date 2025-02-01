@@ -206,7 +206,7 @@ const levels = [
         fgSrc: "img/fg.png",
         decorationSrc: shuffleArray(commonDecorations),
         // Пример цвета декора для данного уровня (вы можете задать свои оттенки)
-        decorColor: "#3B1E00"
+        decorColor: "#FEFEFE"
     },
     {
         backgroundColor: "#FFD1C5", //#FFD1C5 светло-коричневый + камень 10 - 30
@@ -214,7 +214,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottomLevel3.png",
         fgSrc: "img/fgLevel3.png",
         decorationSrc: commonDecorations,
-        decorColor: "#3B1E00"
+        decorColor: "#B55C00"
     },
     {
         backgroundColor: "#8A2BE2", //фиолетовый + классический 30 - 50
@@ -222,7 +222,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottomLevel5.png",
         fgSrc: "img/fgLevel5.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#7A1BE2"
+        decorColor: "#FEFEFE"
     },
     {
         backgroundColor: "#FFD700",//#FFD700 желтый + сердечки 50 - 80
@@ -230,7 +230,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottomLevel4.png",
         fgSrc: "img/fgLevel4.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#E6C200"
+        decorColor: "#FF0000"
     },
     {
         backgroundColor: "#83EFEA", //светло-синий + березы 80 - 120
@@ -238,7 +238,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottomLevel2.png",
         fgSrc: "img/fgLevel2.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#6CDAD8"
+        decorColor: "#FEFEFE"
     },
     {
         backgroundColor: "#E2FFD4", //светло-зеленый + здания 120 - 150
@@ -246,7 +246,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottomLevel6.png",
         fgSrc: "img/fgLevel6.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#C8EFB8"
+        decorColor: "#FFD4A9"
     },
     {
         backgroundColor: "#DB7EFF", //розовый + классический 150 - 180
@@ -254,7 +254,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottom.png",
         fgSrc: "img/fg.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#C568E0"
+        decorColor: "#DBDA96"
     },
     {
         backgroundColor: "#000000", //черный + классический 180 - 220
@@ -262,7 +262,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottom.png",
         fgSrc: "img/fg.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#333333"
+        decorColor: "#FEFEFE"
     },
     {
         backgroundColor: "#000000", //черный + классический 220 - 250
@@ -270,7 +270,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottom.png",
         fgSrc: "img/fg.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#333333"
+        decorColor: "#FEFEFE"
     },
     {
         backgroundColor: "#2200E1", //синий + классический => 250
@@ -278,7 +278,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottom.png",
         fgSrc: "img/fg.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#1F00C8"
+        decorColor: "#FEFEFE"
     }
 ];
 
