@@ -116,12 +116,33 @@ var score_audio = new Audio();
 fly.src = "audio/fly.mp3";
 score_audio.src = "audio/score.mp3";
 
+// -------------------------
+// Переменные для монет
+// -------------------------
+var coinCount = 0;            // Счётчик собранных монет
+var coins = [];               // Массив объектов монет
+var lastCoinSpawnScore = 0;   // Последний счёт, при котором была заспавнена монета
+var coinImg = new Image();
+coinImg.src = "img/coin.png"; // Изображение монеты (замените по необходимости)
+var coinWidth = 30;           // Размеры монеты
+var coinHeight = 30;
+
+// -------------------------
+// Переменные для декора (фоновые картинки)
+// -------------------------
+var decorations = [];         // Массив объектов декораций
+// Изменяем начальное значение, чтобы декор спавнился с самого начала (счёт 0)
+var lastDecorationSpawnScore = -1;
+var decorationCycleIndex = 0; // Для циклического выбора изображения декора
+var decorationWidth = 120;    // Размеры декора (аналогичны предыдущим png)
+var decorationHeight = 200;
+
 // Параметры игры
 var gap = 130;
 var constant;
 var bX = 160;
 var bY = 150;
-var gravity = 1.9;
+var gravity = 2;
 var flappyScore = 0;
 
 // Интервал между трубами
@@ -146,74 +167,125 @@ for (let i = 0; i < initialPipes; i++) {
     });
 }
 
+// Общий массив декораций
+const commonDecorations = [
+    "img/decor1_pro.svg",
+    "img/decor3_pro.svg",
+    "img/decor4_pro.svg",
+    "img/decor5_pro.svg",
+    "img/decor2_pro.svg",
+    "img/decor6_pro.svg",
+    "img/decor7_pro.svg",
+    "img/decor8_pro.svg",
+    "img/decor9_pro.svg",
+    "img/decor10_pro.svg",
+    "img/decor11_pro.svg",
+    "img/decor12_pro.svg",
+    "img/decor13_pro.svg",
+    "img/decor14_pro.svg",
+    "img/decor15_pro.svg",
+    "img/decor16_pro.svg"
+];
+
+// Функция для перемешивания массива (Алгоритм Фишера-Йетса)
+function shuffleArray(array) {
+    let shuffledArray = array.slice(); // Создаём копию массива, чтобы не менять исходный
+    for (let i = shuffledArray.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1)); // Генерируем случайный индекс
+        [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]]; // Меняем элементы местами
+    }
+    return shuffledArray;
+}
+
 // Уровни
 const levels = [
     {
         backgroundColor: "#44BBC1", //бирюзовый + классический 1-10
         pipeUpSrc: "img/pipeUpPro.png",
         pipeBottomSrc: "img/pipeBottomPro.png",
-        fgSrc: "img/fg.png"
+        fgSrc: "img/fg.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        // Пример цвета декора для данного уровня (вы можете задать свои оттенки)
+        decorColor: "#3B1E00"
     },
     {
         backgroundColor: "#FFD1C5", //#FFD1C5 светло-коричневый + камень 10 - 30
         pipeUpSrc: "img/pipeUpLevel3.png",
         pipeBottomSrc: "img/pipeBottomLevel3.png",
-        fgSrc: "img/fgLevel3.png"
+        fgSrc: "img/fgLevel3.png",
+        decorationSrc: commonDecorations,
+        decorColor: "#3B1E00"
     },
     {
-        backgroundColor: "#8A2BE2", //фиолетовый + классический 50 - 80
+        backgroundColor: "#8A2BE2", //фиолетовый + классический 30 - 50
         pipeUpSrc: "img/pipeUpLevel5.png",
         pipeBottomSrc: "img/pipeBottomLevel5.png",
-        fgSrc: "img/fgLevel5.png"
+        fgSrc: "img/fgLevel5.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#7A1BE2"
     },
     {
-        backgroundColor: "#FFD700",//#FFD700 желтый + сердечки 30 - 50
+        backgroundColor: "#FFD700",//#FFD700 желтый + сердечки 50 - 80
         pipeUpSrc: "img/pipeUpLevel4.png",
         pipeBottomSrc: "img/pipeBottomLevel4.png",
-        fgSrc: "img/fgLevel4.png"
+        fgSrc: "img/fgLevel4.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#E6C200"
     },
     {
         backgroundColor: "#83EFEA", //светло-синий + березы 80 - 120
         pipeUpSrc: "img/pipeUpLevel2.png",
         pipeBottomSrc: "img/pipeBottomLevel2.png",
-        fgSrc: "img/fgLevel2.png"
+        fgSrc: "img/fgLevel2.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#6CDAD8"
     },
     {
         backgroundColor: "#E2FFD4", //светло-зеленый + здания 120 - 150
         pipeUpSrc: "img/pipeUpLevel6.png",
         pipeBottomSrc: "img/pipeBottomLevel6.png",
-        fgSrc: "img/fgLevel6.png"
+        fgSrc: "img/fgLevel6.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#C8EFB8"
     },
     {
         backgroundColor: "#DB7EFF", //розовый + классический 150 - 180
         pipeUpSrc: "img/pipeUp.png",
         pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        fgSrc: "img/fg.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#C568E0"
     },
     {
         backgroundColor: "#000000", //черный + классический 180 - 220
         pipeUpSrc: "img/pipeUp.png",
         pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        fgSrc: "img/fg.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#333333"
     },
     {
         backgroundColor: "#000000", //черный + классический 220 - 250
         pipeUpSrc: "img/pipeUp.png",
         pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        fgSrc: "img/fg.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#333333"
     },
     {
         backgroundColor: "#2200E1", //синий + классический => 250
         pipeUpSrc: "img/pipeUp.png",
         pipeBottomSrc: "img/pipeBottom.png",
-        fgSrc: "img/fg.png"
+        fgSrc: "img/fg.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#1F00C8"
     }
 ];
 
 let currentLevel = 0;
 
 function updateLevel() {
-    const levelThresholds = [3, 30, 50, 80, 120, 150, 180, 220, 250];
+    const levelThresholds = [3, 15, 50, 80, 120, 150, 180, 220, 250];
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
             currentLevel = i + 1;
@@ -351,14 +423,60 @@ function enableAutoFlappyFlight() {
         let birdCenter = bY + 35; // центр птицы
 
         if (birdCenter > centerGap + 10) {
-            bY -= 25;
+            bY -= 35;
         } else if (birdCenter < centerGap - 10) {
             bY += 2;
         }
     }, 100);
 }
 
-// Проверка коллизий
+// Функция для создания (спавна) монеты
+function spawnCoin() {
+    // Монета появляется в правой части canvas на случайной высоте (с учётом земли)
+    var minY = 50;
+    // fg.height может быть ещё не загружен, но такова логика игры – монета не должна появляться ниже земли
+    var maxY = fixedHeight - fg.height - coinHeight - 20;
+    var coinY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+    coins.push({ x: flappyCvs.width, y: coinY });
+}
+
+// Функция для загрузки SVG с применением нужного цвета
+function loadSvgWithColor(url, color, callback) {
+    fetch(url)
+      .then(response => response.text())
+      .then(svgText => {
+          // Заменяем все вхождения базового цвета ("#FEFEFE") на цвет текущего уровня
+          let coloredSvgText = svgText.replace(/#FEFEFE/gi, color);
+          let blob = new Blob([coloredSvgText], { type: "image/svg+xml" });
+          let objectURL = URL.createObjectURL(blob);
+          callback(objectURL);
+      })
+      .catch(err => {
+          console.error("Ошибка загрузки SVG:", err);
+          // Если ошибка, возвращаем исходный URL
+          callback(url);
+      });
+}
+
+// Функция для создания (спавна) декорации с использованием SVG и сменой цвета
+function spawnDecoration() {
+    let levelDecors = levels[currentLevel].decorationSrc;
+    // Выбираем изображение по очереди
+    let decorationSrc = levelDecors[decorationCycleIndex % levelDecors.length];
+    decorationCycleIndex++;
+    // Определяем случайную вертикальную позицию для декора (учитываем, что fg может быть ниже)
+    var minY = 10;
+    var maxY = fixedHeight - (fg.height || 100) - decorationHeight - 50;
+    var decorY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+    // Загружаем SVG, заменяя цвет на decorColor текущего уровня
+    loadSvgWithColor(decorationSrc, levels[currentLevel].decorColor, function(coloredSvgUrl) {
+        let decorImg = new Image();
+        decorImg.src = coloredSvgUrl;
+        decorations.push({ x: flappyCvs.width, y: decorY, img: decorImg });
+    });
+}
+
+// Проверка коллизий (для труб)
 function detectCollision(pipeObj, pipeWidth, pipeHeight, constant, birdWidth, birdHeight) {
     if (
         // Горизонтальное пересечение
@@ -379,10 +497,28 @@ function detectCollision(pipeObj, pipeWidth, pipeHeight, constant, birdWidth, bi
 
 // Главный цикл отрисовки
 function drawFlappy() {
-    // Заливаем фон цветом уровня (обновляем каждый кадр)
+    // Обновляем уровень (фон, трубы, земля)
     updateLevel();
     flappyCtx.fillStyle = levels[currentLevel].backgroundColor;
     flappyCtx.fillRect(0, 0, flappyCvs.width, fixedHeight);
+
+    // -------------------------
+    // Спавним и отрисовываем декорации (фоновый декор, за колоннами)
+    // Условие спавна: каждое значение flappyScore кратное 4 и не совпадает с предыдущим
+    if (!flappyGameOver && flappyScore % 4 === 0 && flappyScore !== lastDecorationSpawnScore) {
+        spawnDecoration();
+        lastDecorationSpawnScore = flappyScore;
+    }
+    for (var d = 0; d < decorations.length; d++) {
+         decorations[d].x -= 1;
+         flappyCtx.drawImage(decorations[d].img, decorations[d].x, decorations[d].y, decorationWidth, decorationHeight);
+         // Удаляем декор, если он вышел за левую границу
+         if (decorations[d].x + decorationWidth < 0) {
+             decorations.splice(d, 1);
+             d--;
+         }
+    }
+    // -------------------------
 
     const pipeWidth = 72;
     const pipeHeight = 320;
@@ -414,22 +550,59 @@ function drawFlappy() {
                 pipe[i].spawnedNext = true;
             }
 
-            // Проверка коллизий
+            // Проверка коллизий с трубами
             detectCollision(pipe[i], pipeWidth, pipeHeight, constant, birdWidth, birdHeight);
 
-            // Увеличиваем счёт (если прошли трубу) — тоже только если игра не окончена
+            // Увеличиваем счёт (если прошли трубу) — только если игра не окончена
             if (pipe[i].x + pipeWidth === bX) {
                 flappyScore++;
                 score_audio.play();
             }
 
-            // Удаление трубы за границей
+            // Удаление трубы за границей экрана
             if (pipe[i].x + pipeWidth < 0) {
                 pipe.splice(i, 1);
                 i--;
             }
         }
     }
+
+    // -------------------------
+    // Обновляем и отрисовываем монеты
+    // -------------------------
+    if (!flappyGameOver) {
+        // Каждая монета двигается вместе с трубами
+        for (var j = 0; j < coins.length; j++) {
+            coins[j].x -= 2;
+            flappyCtx.drawImage(coinImg, coins[j].x, coins[j].y, coinWidth, coinHeight);
+
+            // Проверка коллизии птицы с монетой
+            if (
+                bX < coins[j].x + coinWidth &&
+                bX + birdWidth > coins[j].x &&
+                bY < coins[j].y + coinHeight &&
+                bY + birdHeight > coins[j].y
+            ) {
+                coinCount++;
+                coins.splice(j, 1);
+                j--;
+                continue;
+            }
+
+            // Удаляем монету, если она вышла за левую границу
+            if (coins[j] && coins[j].x + coinWidth < 0) {
+                coins.splice(j, 1);
+                j--;
+            }
+        }
+
+        // Спавн монеты через каждые 5 препятствий
+        if (flappyScore > 0 && flappyScore % 5 === 0 && flappyScore !== lastCoinSpawnScore) {
+            spawnCoin();
+            lastCoinSpawnScore = flappyScore;
+        }
+    }
+    // -------------------------
 
     // Рисуем землю (foreground)
     flappyCtx.drawImage(fg, 0, fixedHeight - fg.height, flappyCvs.width, fg.height);
@@ -442,10 +615,16 @@ function drawFlappy() {
         bY += gravity;
     }
 
-    // Текст счёта
+    // Текст счёта (традиционный счёт)
     flappyCtx.fillStyle = "#000";
     flappyCtx.font = "20px Fira Code";
     flappyCtx.fillText("Счет: " + flappyScore, 10, fixedHeight - 20);
+
+    // Отрисовка счётчика монет с изображением (размещено в правом верхнем углу)
+    var coinCounterX = flappyCvs.width - 150;
+    var coinCounterY = 30;
+    flappyCtx.drawImage(coinImg, coinCounterX, coinCounterY, coinWidth, coinHeight);
+    flappyCtx.fillText("x " + coinCount, coinCounterX + coinWidth + 10, coinCounterY + coinHeight / 2 + 7);
 
     // Рисуем выбор скинов
     drawCharacterSelection();
@@ -485,6 +664,14 @@ function resetGame() {
     bX = 160;
     bY = 150;
     pipe = [];
+    // Сбрасываем монеты и их счёт
+    coinCount = 0;
+    coins = [];
+    lastCoinSpawnScore = 0;
+    // Сбрасываем декор
+    decorations = [];
+    lastDecorationSpawnScore = -1;
+    decorationCycleIndex = 0;
 
     for (let i = 0; i < initialPipes; i++) {
         pipe.push({
