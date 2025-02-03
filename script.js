@@ -294,7 +294,7 @@ const levels = [
 let currentLevel = 0;
 
 function updateLevel() {
-    const levelThresholds = [10, 15, 50, 80, 120, 150, 180, 220, 250];
+    const levelThresholds = [4, 15, 50, 80, 120, 150, 180, 220, 250];
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
             currentLevel = i + 1;
