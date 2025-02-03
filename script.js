@@ -1,4 +1,3 @@
-
 // --- СЧЕТЧИК ДНЕЙ ДО НОВОГО ГОДА ---
 document.addEventListener('DOMContentLoaded', function () {
     // Функция для расчёта оставшихся дней
@@ -133,16 +132,17 @@ var coinHeight = 30;
 var decorations = [];         // Массив объектов декораций
 // Изменяем начальное значение, чтобы декор спавнился с самого начала (счёт 0)
 var lastDecorationSpawnScore = -1;
-var decorationCycleIndex = 0; // Для циклического выбора изображения декора
-var decorationWidth = 120;    // Размеры декора (аналогичны предыдущим png)
-var decorationHeight = 200;
+var decorationCycleIndex = 0; // Для циклического выбора типа декора (чередование text и pro)
+// Глобальные размеры по умолчанию для pro (для text будут заданы другие размеры)
+var decorationWidth = 150;    // Для pro-декора
+var decorationHeight = 230;   // Для pro-декора
 
 // Параметры игры
 var gap = 130;
 var constant;
 var bX = 160;
 var bY = 150;
-var gravity = 2;
+var gravity = 2.2;
 var flappyScore = 0;
 
 // Интервал между трубами
@@ -169,7 +169,7 @@ for (let i = 0; i < initialPipes; i++) {
 
 // Общий массив декораций
 const commonDecorations = [
-    "img/decor1_pro.svg",
+    "img/decor16_pro.svg",
     "img/decor3_pro.svg",
     "img/decor4_pro.svg",
     "img/decor5_pro.svg",
@@ -184,7 +184,16 @@ const commonDecorations = [
     "img/decor13_pro.svg",
     "img/decor14_pro.svg",
     "img/decor15_pro.svg",
-    "img/decor16_pro.svg"
+    "img/decor1_pro.svg",
+    "img/decor17_pro.svg",
+    "img/decor1_text.svg",
+    "img/decor2_text.svg",
+    "img/decor3_text.svg",
+    "img/decor4_text.svg",
+    "img/decor5_text.svg",
+    "img/decor6_text.svg",
+    "img/decor7_text.svg",
+    "img/decor8_text.svg"
 ];
 
 // Функция для перемешивания массива (Алгоритм Фишера-Йетса)
@@ -213,7 +222,7 @@ const levels = [
         pipeUpSrc: "img/pipeUpLevel3.png",
         pipeBottomSrc: "img/pipeBottomLevel3.png",
         fgSrc: "img/fgLevel3.png",
-        decorationSrc: commonDecorations,
+        decorationSrc: shuffleArray(commonDecorations),
         decorColor: "#B55C00"
     },
     {
@@ -246,7 +255,7 @@ const levels = [
         pipeBottomSrc: "img/pipeBottomLevel6.png",
         fgSrc: "img/fgLevel6.png",
         decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#FFD4A9"
+        decorColor: "#000000"
     },
     {
         backgroundColor: "#DB7EFF", //розовый + классический 150 - 180
@@ -285,7 +294,7 @@ const levels = [
 let currentLevel = 0;
 
 function updateLevel() {
-    const levelThresholds = [3, 15, 50, 80, 120, 150, 180, 220, 250];
+    const levelThresholds = [10, 15, 50, 80, 120, 150, 180, 220, 250];
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
             currentLevel = i + 1;
@@ -327,7 +336,7 @@ document.addEventListener("keydown", function(event) {
 
 // Одна-единственная функция "поднять птицу"
 function moveUp() {
-    bY -= 35;
+    bY -= 39;
     fly.play();
 }
 
@@ -413,7 +422,7 @@ function enableAutoFlappyFlight() {
 
         // Если нет ближайшей трубы, просто слегка поднимаемся
         if (!nextPipe) {
-            if (bY > 50) bY -= 5;
+            if (bY > 60) bY -= 5;
             return;
         }
 
@@ -423,7 +432,7 @@ function enableAutoFlappyFlight() {
         let birdCenter = bY + 35; // центр птицы
 
         if (birdCenter > centerGap + 10) {
-            bY -= 35;
+            bY -= 39;
         } else if (birdCenter < centerGap - 10) {
             bY += 2;
         }
@@ -459,20 +468,54 @@ function loadSvgWithColor(url, color, callback) {
 }
 
 // Функция для создания (спавна) декорации с использованием SVG и сменой цвета
+// Новая логика: разделение на группы text и pro, чередование и назначение разных размеров
 function spawnDecoration() {
     let levelDecors = levels[currentLevel].decorationSrc;
-    // Выбираем изображение по очереди
-    let decorationSrc = levelDecors[decorationCycleIndex % levelDecors.length];
+    // Отбираем декорации по типу
+    let textDecors = levelDecors.filter(src => src.includes('_text'));
+    let proDecors = levelDecors.filter(src => src.includes('_pro'));
+
+    // Задаём шаблон чередования: text, pro, pro, pro, text
+    var alternatingPattern = ['text', 'pro', 'pro', 'pro', 'text', 'pro', 'pro', 'pro'];
+    // Определяем тип для текущего декора по шаблону
+    var currentType = alternatingPattern[decorationCycleIndex % alternatingPattern.length];
     decorationCycleIndex++;
-    // Определяем случайную вертикальную позицию для декора (учитываем, что fg может быть ниже)
+
+    let chosenSrc;
+    if (currentType === 'text') {
+        if (textDecors.length > 0) {
+            chosenSrc = textDecors[Math.floor(Math.random() * textDecors.length)];
+        } else if (proDecors.length > 0) {
+            chosenSrc = proDecors[Math.floor(Math.random() * proDecors.length)];
+        }
+    } else { // currentType === 'pro'
+        if (proDecors.length > 0) {
+            chosenSrc = proDecors[Math.floor(Math.random() * proDecors.length)];
+        } else if (textDecors.length > 0) {
+            chosenSrc = textDecors[Math.floor(Math.random() * textDecors.length)];
+        }
+    }
+
+    // Назначаем размеры в зависимости от типа декора
+    let decorWidth, decorHeight;
+    if (chosenSrc.includes('_text')) {
+         decorWidth = 300;
+         decorHeight = 180;
+    } else {
+         decorWidth = 150;
+         decorHeight = 250;
+    }
+
+    // Определяем случайную вертикальную позицию для декора
     var minY = 10;
-    var maxY = fixedHeight - (fg.height || 100) - decorationHeight - 50;
+    var maxY = fixedHeight - (fg.height || 100) - decorHeight - 50;
     var decorY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
-    // Загружаем SVG, заменяя цвет на decorColor текущего уровня
-    loadSvgWithColor(decorationSrc, levels[currentLevel].decorColor, function(coloredSvgUrl) {
-        let decorImg = new Image();
-        decorImg.src = coloredSvgUrl;
-        decorations.push({ x: flappyCvs.width, y: decorY, img: decorImg });
+
+    // Загружаем SVG с заменой цвета текущего уровня
+    loadSvgWithColor(chosenSrc, levels[currentLevel].decorColor, function(coloredSvgUrl) {
+         let decorImg = new Image();
+         decorImg.src = coloredSvgUrl;
+         decorations.push({ x: flappyCvs.width, y: decorY, img: decorImg, width: decorWidth, height: decorHeight });
     });
 }
 
@@ -504,16 +547,16 @@ function drawFlappy() {
 
     // -------------------------
     // Спавним и отрисовываем декорации (фоновый декор, за колоннами)
-    // Условие спавна: каждое значение flappyScore кратное 4 и не совпадает с предыдущим
+    // Условие спавна: каждое значение flappyScore кратное 2 и не совпадает с предыдущим
     if (!flappyGameOver && flappyScore % 4 === 0 && flappyScore !== lastDecorationSpawnScore) {
         spawnDecoration();
         lastDecorationSpawnScore = flappyScore;
     }
     for (var d = 0; d < decorations.length; d++) {
          decorations[d].x -= 1;
-         flappyCtx.drawImage(decorations[d].img, decorations[d].x, decorations[d].y, decorationWidth, decorationHeight);
+         flappyCtx.drawImage(decorations[d].img, decorations[d].x, decorations[d].y, decorations[d].width, decorations[d].height);
          // Удаляем декор, если он вышел за левую границу
-         if (decorations[d].x + decorationWidth < 0) {
+         if (decorations[d].x + decorations[d].width < 0) {
              decorations.splice(d, 1);
              d--;
          }
@@ -535,7 +578,7 @@ function drawFlappy() {
 
         if (!flappyGameOver) {
             // Двигаем трубу
-            pipe[i].x -= 2;
+            pipe[i].x -= 1.9;
             pipe[i].x = Math.floor(pipe[i].x);
 
             // Генерация новой трубы
