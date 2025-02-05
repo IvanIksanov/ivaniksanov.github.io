@@ -137,12 +137,10 @@ var decorationCycleIndex = 0; // Для циклического выбора т
 var decorationWidth = 150;    // Для pro-декора
 var decorationHeight = 230;   // Для pro-декора
 
-// --- Новые глобальные переменные для обеспечения уникальности декора ---
-// Эти переменные хранят очереди уникальных декораций для каждого типа.
-// После исчерпания списка происходит перемешивание и заполнение заново.
+// --- Глобальные переменные для очередей уникальных декораций ---
+// Они не будут обновляться при смене уровня, пока не исчерпаются
 var availableProDecor = [];
 var availableTextDecor = [];
-var currentDecorationLevel = null;
 
 // Параметры игры
 var gap = 130;
@@ -223,8 +221,8 @@ const levels = [
         pipeUpSrc: "img/pipeUpPro.png",
         pipeBottomSrc: "img/pipeBottomPro.png",
         fgSrc: "img/fg.png",
+        // decorationSrc здесь не используется для спавна декора
         decorationSrc: shuffleArray(commonDecorations),
-        // Пример цвета декора для данного уровня (вы можете задать свои оттенки)
         decorColor: "#FEFEFE"
     },
     {
@@ -302,9 +300,8 @@ const levels = [
 ];
 
 let currentLevel = 0;
-var previousLevel = 0; // для отслеживания смены стилистики
 
-// Функция для обновления уровня и переключения стилистики
+// Функция для обновления уровня и (при необходимости) обновления цвета уже отображаемых декораций
 function updateLevel() {
     const levelThresholds = [4, 15, 50, 80, 120, 150, 180, 220, 250];
     let newLevel = 0;
@@ -494,41 +491,33 @@ function loadSvgWithColor(url, color, callback) {
       });
 }
 
-// Функция для создания (спавна) декорации с использованием SVG и сменой цвета
-// Новая логика: для каждого типа декора ("_pro" и "_text") используется очередь уникальных картинок,
-// которая заполняется перемешанным списком при запуске уровня. При спавне в объект декора теперь также записывается
-// исходный путь (originalSrc) для дальнейшего обновления цвета при смене стилистики.
+// Функция для создания (спавна) декорации с использованием SVG и сменой цвета.
+// Новая логика: используются глобальные очереди уникальных изображений для каждого типа (pro и text).
+// Пока не будут показаны все уникальные изображения из commonDecorations, очереди не перезаполняются,
+// даже если меняется уровень (стилистика).
 function spawnDecoration() {
-    // При смене уровня (currentLevel) пересоздаём очереди декораций
-    if (currentDecorationLevel !== currentLevel) {
-         currentDecorationLevel = currentLevel;
-         let levelDecors = levels[currentLevel].decorationSrc;
-         availableTextDecor = shuffleArray(levelDecors.filter(src => src.includes('_text')));
-         availableProDecor = shuffleArray(levelDecors.filter(src => src.includes('_pro')));
+    // Если очередь для text-декора пуста, заполняем её из общего набора
+    if (!availableTextDecor || availableTextDecor.length === 0) {
+         availableTextDecor = shuffleArray(commonDecorations.filter(src => src.includes('_text')));
+    }
+    // Если очередь для pro-декора пуста, заполняем её из общего набора
+    if (!availableProDecor || availableProDecor.length === 0) {
+         availableProDecor = shuffleArray(commonDecorations.filter(src => src.includes('_pro')));
     }
 
-    // Задаём шаблон чередования: здесь можно задать любую схему чередования
+    // Задаём схему чередования: можно задать любую схему
     var alternatingPattern = ['text', 'pro', 'pro', 'pro', 'text', 'pro', 'pro', 'pro'];
     var currentType = alternatingPattern[decorationCycleIndex % alternatingPattern.length];
     decorationCycleIndex++;
 
     let chosenSrc = null;
     if (currentType === 'text') {
-         if (availableTextDecor.length === 0) {
-             // Если все уникальные варианты использованы, заполняем очередь заново
-             let levelDecors = levels[currentLevel].decorationSrc;
-             availableTextDecor = shuffleArray(levelDecors.filter(src => src.includes('_text')));
-         }
          if (availableTextDecor.length > 0) {
              chosenSrc = availableTextDecor.shift();
          } else if (availableProDecor.length > 0) {
              chosenSrc = availableProDecor.shift();
          }
     } else { // currentType === 'pro'
-         if (availableProDecor.length === 0) {
-             let levelDecors = levels[currentLevel].decorationSrc;
-             availableProDecor = shuffleArray(levelDecors.filter(src => src.includes('_pro')));
-         }
          if (availableProDecor.length > 0) {
              chosenSrc = availableProDecor.shift();
          } else if (availableTextDecor.length > 0) {
@@ -754,13 +743,12 @@ function resetGame() {
     coinCount = 0;
     coins = [];
     lastCoinSpawnScore = 0;
-    // Сбрасываем декор и очереди уникальных изображений
+    // Сбрасываем декор и глобальные очереди уникальных изображений
     decorations = [];
     lastDecorationSpawnScore = -1;
     decorationCycleIndex = 0;
     availableProDecor = [];
     availableTextDecor = [];
-    currentDecorationLevel = null;
 
     for (let i = 0; i < initialPipes; i++) {
         pipe.push({
