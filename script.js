@@ -137,6 +137,13 @@ var decorationCycleIndex = 0; // Для циклического выбора т
 var decorationWidth = 150;    // Для pro-декора
 var decorationHeight = 230;   // Для pro-декора
 
+// --- Новые глобальные переменные для обеспечения уникальности декора ---
+// Эти переменные хранят очереди уникальных декораций для каждого типа.
+// После исчерпания списка происходит перемешивание и заполнение заново.
+var availableProDecor = [];
+var availableTextDecor = [];
+var currentDecorationLevel = null;
+
 // Параметры игры
 var gap = 130;
 var constant;
@@ -193,7 +200,10 @@ const commonDecorations = [
     "img/decor5_text.svg",
     "img/decor6_text.svg",
     "img/decor7_text.svg",
-    "img/decor8_text.svg"
+    "img/decor8_text.svg",
+    "img/decor18_pro.svg",
+    "img/decor19_pro.svg",
+    "img/decor20_pro.svg"
 ];
 
 // Функция для перемешивания массива (Алгоритм Фишера-Йетса)
@@ -292,18 +302,35 @@ const levels = [
 ];
 
 let currentLevel = 0;
+var previousLevel = 0; // для отслеживания смены стилистики
 
+// Функция для обновления уровня и переключения стилистики
 function updateLevel() {
     const levelThresholds = [4, 15, 50, 80, 120, 150, 180, 220, 250];
+    let newLevel = 0;
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
-            currentLevel = i + 1;
+            newLevel = i + 1;
         }
+    }
+    // Если уровень изменился – обновляем цвет декора на экране
+    if (newLevel !== currentLevel) {
+        currentLevel = newLevel;
+        updateDecorationsColor();
     }
     const level = levels[currentLevel];
     pipeUp.src = level.pipeUpSrc;
     pipeBottom.src = level.pipeBottomSrc;
     fg.src = level.fgSrc;
+}
+
+// Функция обновления цвета уже отображаемых SVG декораций
+function updateDecorationsColor() {
+    decorations.forEach(decor => {
+         loadSvgWithColor(decor.originalSrc, levels[currentLevel].decorColor, function(newSrc) {
+               decor.img.src = newSrc;
+         });
+    });
 }
 
 // Изменение размеров canvas
@@ -468,33 +495,48 @@ function loadSvgWithColor(url, color, callback) {
 }
 
 // Функция для создания (спавна) декорации с использованием SVG и сменой цвета
-// Новая логика: разделение на группы text и pro, чередование и назначение разных размеров
+// Новая логика: для каждого типа декора ("_pro" и "_text") используется очередь уникальных картинок,
+// которая заполняется перемешанным списком при запуске уровня. При спавне в объект декора теперь также записывается
+// исходный путь (originalSrc) для дальнейшего обновления цвета при смене стилистики.
 function spawnDecoration() {
-    let levelDecors = levels[currentLevel].decorationSrc;
-    // Отбираем декорации по типу
-    let textDecors = levelDecors.filter(src => src.includes('_text'));
-    let proDecors = levelDecors.filter(src => src.includes('_pro'));
+    // При смене уровня (currentLevel) пересоздаём очереди декораций
+    if (currentDecorationLevel !== currentLevel) {
+         currentDecorationLevel = currentLevel;
+         let levelDecors = levels[currentLevel].decorationSrc;
+         availableTextDecor = shuffleArray(levelDecors.filter(src => src.includes('_text')));
+         availableProDecor = shuffleArray(levelDecors.filter(src => src.includes('_pro')));
+    }
 
-    // Задаём шаблон чередования: text, pro, pro, pro, text
+    // Задаём шаблон чередования: здесь можно задать любую схему чередования
     var alternatingPattern = ['text', 'pro', 'pro', 'pro', 'text', 'pro', 'pro', 'pro'];
-    // Определяем тип для текущего декора по шаблону
     var currentType = alternatingPattern[decorationCycleIndex % alternatingPattern.length];
     decorationCycleIndex++;
 
-    let chosenSrc;
+    let chosenSrc = null;
     if (currentType === 'text') {
-        if (textDecors.length > 0) {
-            chosenSrc = textDecors[Math.floor(Math.random() * textDecors.length)];
-        } else if (proDecors.length > 0) {
-            chosenSrc = proDecors[Math.floor(Math.random() * proDecors.length)];
-        }
+         if (availableTextDecor.length === 0) {
+             // Если все уникальные варианты использованы, заполняем очередь заново
+             let levelDecors = levels[currentLevel].decorationSrc;
+             availableTextDecor = shuffleArray(levelDecors.filter(src => src.includes('_text')));
+         }
+         if (availableTextDecor.length > 0) {
+             chosenSrc = availableTextDecor.shift();
+         } else if (availableProDecor.length > 0) {
+             chosenSrc = availableProDecor.shift();
+         }
     } else { // currentType === 'pro'
-        if (proDecors.length > 0) {
-            chosenSrc = proDecors[Math.floor(Math.random() * proDecors.length)];
-        } else if (textDecors.length > 0) {
-            chosenSrc = textDecors[Math.floor(Math.random() * textDecors.length)];
-        }
+         if (availableProDecor.length === 0) {
+             let levelDecors = levels[currentLevel].decorationSrc;
+             availableProDecor = shuffleArray(levelDecors.filter(src => src.includes('_pro')));
+         }
+         if (availableProDecor.length > 0) {
+             chosenSrc = availableProDecor.shift();
+         } else if (availableTextDecor.length > 0) {
+             chosenSrc = availableTextDecor.shift();
+         }
     }
+
+    if (!chosenSrc) return;
 
     // Назначаем размеры в зависимости от типа декора
     let decorWidth, decorHeight;
@@ -515,7 +557,8 @@ function spawnDecoration() {
     loadSvgWithColor(chosenSrc, levels[currentLevel].decorColor, function(coloredSvgUrl) {
          let decorImg = new Image();
          decorImg.src = coloredSvgUrl;
-         decorations.push({ x: flappyCvs.width, y: decorY, img: decorImg, width: decorWidth, height: decorHeight });
+         // Сохраняем также оригинальный путь для будущего обновления цвета
+         decorations.push({ x: flappyCvs.width, y: decorY, img: decorImg, width: decorWidth, height: decorHeight, originalSrc: chosenSrc });
     });
 }
 
@@ -547,8 +590,8 @@ function drawFlappy() {
 
     // -------------------------
     // Спавним и отрисовываем декорации (фоновый декор, за колоннами)
-    // Условие спавна: каждое значение flappyScore кратное 2 и не совпадает с предыдущим
-    if (!flappyGameOver && flappyScore % 4 === 0 && flappyScore !== lastDecorationSpawnScore) {
+    // Условие спавна: каждое значение flappyScore кратное 4 и не совпадает с предыдущим
+    if (!flappyGameOver && flappyScore % 3 === 0 && flappyScore !== lastDecorationSpawnScore) {
         spawnDecoration();
         lastDecorationSpawnScore = flappyScore;
     }
@@ -711,10 +754,13 @@ function resetGame() {
     coinCount = 0;
     coins = [];
     lastCoinSpawnScore = 0;
-    // Сбрасываем декор
+    // Сбрасываем декор и очереди уникальных изображений
     decorations = [];
     lastDecorationSpawnScore = -1;
     decorationCycleIndex = 0;
+    availableProDecor = [];
+    availableTextDecor = [];
+    currentDecorationLevel = null;
 
     for (let i = 0; i < initialPipes; i++) {
         pipe.push({
@@ -767,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// работа кнопки Свернуть список
+// Работа кнопки "Свернуть список"
 document.getElementById('toggle-button').addEventListener('click', function () {
         const checklist = document.getElementById('checklist-items');
         const button = this;
