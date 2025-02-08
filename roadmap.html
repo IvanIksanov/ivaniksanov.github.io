@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Roadmap для QA</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="roadmap.css">
+</head>
+<body>
+<nav>
+    <div class="burger-menu">&#9776;</div>
+    <ul>
+        <li><a href="index.html" style="background-color: #58BEFE;">Roadmap</a></li>
+        <li><a href="questions.html">Вопросы</a></li>
+        <li><a href="tetris.html">Тетрис</a></li>
+        <li><a href="bugs.html">Баги</a></li>
+        <li><a href="tasks_for_qa.html">Задания для QA</a></li>
+        <li><a href="swagger_api.html">Практика API (Swagger)</a></li>
+    </ul>
+</nav>
+
+<div class="page-header">
+    <h2>Roadmap для QA</h2>
+    <p>План развития тестировщика: от основ до автоматизации и CI/CD.</p>
+</div>
+
+<div class="roadmap-container">
+    <div class="roadmap-card">
+        <h3>Теория тестирования</h3>
+        <p>Quality assurance, методы тестирования (White, Gray, Black Box), классификация багов, виды и уровни тестирования.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>Методология разработки ПО</h3>
+        <p>V-Model, Waterfall, Agile (Scrum, Kanban, XP, SAFe), TDD.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>Ручное тестирование</h3>
+        <p>Создание тест-кейсов, проверка совместимости, верификация и валидация, тест-планирование.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>Техники тестирования</h3>
+        <p>Функциональное тестирование: UAT, регресс, интеграционное, smoke, sanity, exploratory.</p>
+        <p>Нефункциональное тестирование: нагрузка, производительность, стресс, безопасность, доступность.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card branch">
+        <h3>Выбор технологий автоматизации</h3>
+        <div class="branch-container">
+            <div class="branch-card">
+                <h4>Frontend</h4>
+                <p>Инструменты: Cypress, Selenium, Webdriver.io, Playwright, Puppeteer.</p>
+            </div>
+            <div class="branch-card">
+                <h4>Backend</h4>
+                <p>Инструменты: Karate, SoapUI, Postman, REST Assured.</p>
+            </div>
+            <div class="branch-card">
+                <h4>Мобильное тестирование</h4>
+                <p>Инструменты: Appium, Espresso, Detox, XCUITest.</p>
+            </div>
+        </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>Тестирование безопасности</h3>
+        <p>Аутентификация, OSINT, сканирование уязвимостей, OWASP Top 10, вектор атак.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>Нагрузочное и стресс тестирование</h3>
+        <p>JMeter, Gatling, K6, Locust, Vegeta, Artillery, Lighthouse.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>Мониторинг и логи</h3>
+        <p>New Relic, Kibana, Datadog, Grafana, Sentry, RunScope.</p>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="roadmap-card">
+        <h3>CI/CD</h3>
+        <p>Jenkins, GitLab CI, CircleCI, Bamboo, TeamCity, Azure DevOps.</p>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const burgerMenu = document.querySelector('.burger-menu');
+        const navLinks = document.querySelector('nav ul');
+
+        burgerMenu.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+    });
+</script>
+</body>
+</html>

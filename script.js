@@ -80,8 +80,13 @@ document.addEventListener('DOMContentLoaded', function () {
 var flappyCvs = document.getElementById("canvas");
 var flappyCtx = flappyCvs.getContext("2d");
 
-// Фиксированная высота
-var fixedHeight = 512;
+
+var fixedHeight = 412;
+
+// Дополнительное смещение для земли (fg)
+// Чтобы визуально сохранить положение земли, как было при fixedHeight = 512,
+// добавляем смещение, равное разнице (512 - 412 = 100)
+var floorOffset = 100;
 
 // Загружаем изображения
 var bird = new Image();
@@ -201,7 +206,9 @@ const commonDecorations = [
     "img/decor8_text.svg",
     "img/decor18_pro.svg",
     "img/decor19_pro.svg",
-    "img/decor20_pro.svg"
+    "img/decor20_pro.svg",
+    "img/decor21_pro.svg",
+    "img/decor22_pro.svg"
 ];
 
 // Функция для перемешивания массива (Алгоритм Фишера-Йетса)
@@ -290,10 +297,18 @@ const levels = [
         decorColor: "#FEFEFE"
     },
     {
-        backgroundColor: "#2200E1", //синий + классический => 250
+        backgroundColor: "#2200E1", //синий + классический 230 - 260
         pipeUpSrc: "img/pipeUp.png",
         pipeBottomSrc: "img/pipeBottom.png",
         fgSrc: "img/fg.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#FEFEFE"
+    },
+    {
+        backgroundColor: "#009279", //зеленый + блины => 260
+        pipeUpSrc: "img/pipeUpLevel7.png",
+        pipeBottomSrc: "img/pipeBottomLevel7.png",
+        fgSrc: "img/fgLevel7.png",
         decorationSrc: shuffleArray(commonDecorations),
         decorColor: "#FEFEFE"
     }
@@ -303,7 +318,7 @@ let currentLevel = 0;
 
 // Функция для обновления уровня и (при необходимости) обновления цвета уже отображаемых декораций
 function updateLevel() {
-    const levelThresholds = [4, 15, 50, 80, 120, 150, 180, 220, 250];
+    const levelThresholds = [4, 15, 30, 50, 80, 110, 150, 190, 230, 260];
     let newLevel = 0;
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) {
@@ -468,7 +483,7 @@ function spawnCoin() {
     // Монета появляется в правой части canvas на случайной высоте (с учётом земли)
     var minY = 50;
     // fg.height может быть ещё не загружен, но такова логика игры – монета не должна появляться ниже земли
-    var maxY = fixedHeight - fg.height - coinHeight - 20;
+    var maxY = fixedHeight - fg.height + floorOffset - coinHeight - 20;
     var coinY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
     coins.push({ x: flappyCvs.width, y: coinY });
 }
@@ -539,7 +554,7 @@ function spawnDecoration() {
 
     // Определяем случайную вертикальную позицию для декора
     var minY = 10;
-    var maxY = fixedHeight - (fg.height || 100) - decorHeight - 50;
+    var maxY = fixedHeight - fg.height + floorOffset - decorHeight - 50;
     var decorY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
 
     // Загружаем SVG с заменой цвета текущего уровня
@@ -563,8 +578,8 @@ function detectCollision(pipeObj, pipeWidth, pipeHeight, constant, birdWidth, bi
             bY + birdHeight > pipeObj.y + constant
         )
         ||
-        // Птица упала на землю
-        bY + birdHeight >= fixedHeight - fg.height
+        // Птица упала на землю (с учётом смещения пола)
+        bY + birdHeight >= fixedHeight - fg.height + floorOffset
     ) {
         stopFlappyGame();
     }
@@ -579,7 +594,7 @@ function drawFlappy() {
 
     // -------------------------
     // Спавним и отрисовываем декорации (фоновый декор, за колоннами)
-    // Условие спавна: каждое значение flappyScore кратное 4 и не совпадает с предыдущим
+    // Условие спавна: каждое значение flappyScore кратное 3 и не совпадает с предыдущим
     if (!flappyGameOver && flappyScore % 3 === 0 && flappyScore !== lastDecorationSpawnScore) {
         spawnDecoration();
         lastDecorationSpawnScore = flappyScore;
@@ -679,8 +694,8 @@ function drawFlappy() {
     }
     // -------------------------
 
-    // Рисуем землю (foreground)
-    flappyCtx.drawImage(fg, 0, fixedHeight - fg.height, flappyCvs.width, fg.height);
+    // Рисуем землю (foreground) с учётом смещения floorOffset
+    flappyCtx.drawImage(fg, 0, fixedHeight - fg.height + floorOffset, flappyCvs.width, fg.height);
 
     // Рисуем птицу
     flappyCtx.drawImage(bird, bX, bY, birdWidth, birdHeight);
@@ -701,8 +716,11 @@ function drawFlappy() {
     flappyCtx.drawImage(coinImg, coinCounterX, coinCounterY, coinWidth, coinHeight);
     flappyCtx.fillText("x " + coinCount, coinCounterX + coinWidth + 10, coinCounterY + coinHeight / 2 + 7);
 
-    // Рисуем выбор скинов
-    drawCharacterSelection();
+    // Отрисовка выбора скинов
+    // Скины отображаются только до прохождения первого препятствия (flappyScore === 0)
+    if (flappyScore < 1) {
+        drawCharacterSelection();
+    }
 
     // Если игра окончена, рисуем "restart" поверх всего
     if (flappyGameOver) {
@@ -720,9 +738,12 @@ function drawFlappy() {
 
 // Отрисовка скинов
 function drawCharacterSelection() {
-    let startX = 500;
+    let startX = 150;
     let spacing = 80;
-    let charY = 440;
+    // Вычисляем позицию выбора скинов относительно земли,
+    // чтобы они отображались над полом (fg)
+    let currentFgHeight = fg.height || 100;
+    let charY = fixedHeight - currentFgHeight + floorOffset - 72;
 
     selectableCharacters.forEach((char) => {
         flappyCtx.drawImage(char.imageObj, startX, charY, char.width, char.height);

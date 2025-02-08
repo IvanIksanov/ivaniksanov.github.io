@@ -1,0 +1,214 @@
+/* Сброс отступов и базовые настройки */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 10;
+  padding: 0;
+}
+
+html, body {
+    overflow-x: hidden;
+}
+body {
+  font-family: "Fira Code", monospace;
+  background-color: #F1F1F1;
+  color: #1e1e1e;
+  line-height: 1.6;
+  margin: 0px;
+}
+
+/* Тёмный режим */
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1A1A1A;
+    color: #F1F1F1;
+  }
+}
+
+/* Стилизация навигации */
+nav {
+  background-color: #fff;
+  padding: 8px;
+  font-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  nav {
+    background-color: #1A1A1A;
+  }
+}
+
+nav ul {
+  list-style: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+nav ul li {
+  margin: 3px; /* Отступы между элементами списка (ССЫЛКИ)*/
+}
+
+nav ul li a {
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background-color: #1e1e1e;
+  color: #F1F1F1;
+  transition: background-color 0.3s;
+}
+
+nav ul li a:hover {
+  background-color: rgba(255, 255, 255, 1);
+  color: #000;
+}
+
+@media (prefers-color-scheme: dark) {
+  nav ul li a {
+    background-color: #444;
+    color: #F1F1F1;
+  }
+  nav ul li a:hover {
+    background-color: #666;
+    color: #fff;
+  }
+}
+
+/* Бургер-меню */
+.burger-menu {
+  display: none;
+  cursor: pointer;
+}
+
+@media only screen and (max-width: 880px) {
+  .burger-menu {
+    display: block;
+  }
+  nav ul {
+    display: none;
+  }
+  nav ul.active {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+  }
+      nav ul.active li {
+          margin-top: 10px;
+          margin-bottom: 10px;
+      }
+}
+
+/* Заголовок страницы */
+.page-header {
+  text-align: center;
+  padding: 1rem;
+  color: #1A1A1A;
+  margin-bottom: 1.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .page-header {
+    background-color: #1A1A1A;
+    color: #fff;
+  }
+}
+
+/* Контейнер дорожной карты */
+.roadmap-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+/* Стили карточек */
+.roadmap-card {
+  background-color: #FAFAFA;
+  border: 2px solid #44BBC1;
+  border-radius: 8px;
+  padding: 1rem;
+  width: 100%;
+  text-align: center;
+  margin: 0.5rem 0;
+  position: relative;
+}
+
+@media (prefers-color-scheme: dark) {
+  .roadmap-card {
+    background-color: #2e2e2e;
+    border-color: #44BBC1;
+  }
+}
+
+.roadmap-card h3 {
+  margin-bottom: 0.5rem;
+}
+
+.roadmap-card p {
+  margin-bottom: 0.5rem;
+}
+
+/* Стрелка между карточками */
+.arrow {
+  font-size: 2rem;
+  color: #44BBC1;
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  .arrow {
+    font-size: 1.5rem;
+  }
+}
+
+/* Стили карточки с ветвлением */
+.branch {
+  background-color: #fff;
+  border-color: #007BFF;
+}
+
+@media (prefers-color-scheme: dark) {
+  .branch {
+    background-color: #2e2e2e;
+    border-color: #007BFF;
+  }
+}
+
+.branch-container {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.branch-card {
+  background-color: #FAFAFA;
+  border: 2px solid #44BBC1;
+  border-radius: 8px;
+  padding: 0.75rem;
+  flex: 1 1 250px;
+  text-align: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .branch-card {
+    background-color: #2e2e2e;
+    border-color: #44BBC1;
+  }
+}
+
+.branch-card h4 {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Адаптивные настройки */
+@media (max-width: 768px) {
+  .roadmap-container {
+    width: 95%;
+  }
+}
