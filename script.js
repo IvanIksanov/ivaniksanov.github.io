@@ -510,7 +510,11 @@ function loadSvgWithColor(url, color, callback) {
 // Новая логика: используются глобальные очереди уникальных изображений для каждого типа (pro и text).
 // Пока не будут показаны все уникальные изображения из commonDecorations, очереди не перезаполняются,
 // даже если меняется уровень (стилистика).
-function spawnDecoration() {
+// Теперь функция может принимать опциональный параметр (optionalX) – если он передан, декор спавнится с этой позиции,
+// иначе по умолчанию с правого края (flappyCvs.width)
+function spawnDecoration(optionalX) {
+    var startX = (typeof optionalX !== 'undefined') ? optionalX : flappyCvs.width;
+
     // Если очередь для text-декора пуста, заполняем её из общего набора
     if (!availableTextDecor || availableTextDecor.length === 0) {
          availableTextDecor = shuffleArray(commonDecorations.filter(src => src.includes('_text')));
@@ -521,7 +525,7 @@ function spawnDecoration() {
     }
 
     // Задаём схему чередования: можно задать любую схему
-    var alternatingPattern = ['text', 'pro', 'pro', 'pro', 'text', 'pro', 'pro', 'pro'];
+    var alternatingPattern = ['pro', 'pro', 'pro', 'text', 'pro', 'pro', 'pro', 'text'];
     var currentType = alternatingPattern[decorationCycleIndex % alternatingPattern.length];
     decorationCycleIndex++;
 
@@ -554,7 +558,15 @@ function spawnDecoration() {
 
     // Определяем случайную вертикальную позицию для декора
     var minY = 10;
-    var maxY = fixedHeight - fg.height + floorOffset - decorHeight - 50;
+    // Задаём базовый отступ от нижней границы (50 пикселей)
+    var bottomMargin = 50;
+
+    // Если декор текстовый, увеличиваем отступ, чтобы он располагался выше
+    if (chosenSrc.includes('_text')) {
+        bottomMargin = 100; // например, вместо 50 пикселей теперь 80
+    }
+
+    var maxY = fixedHeight - fg.height + floorOffset - decorHeight - bottomMargin;
     var decorY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
 
     // Загружаем SVG с заменой цвета текущего уровня
@@ -562,8 +574,18 @@ function spawnDecoration() {
          let decorImg = new Image();
          decorImg.src = coloredSvgUrl;
          // Сохраняем также оригинальный путь для будущего обновления цвета
-         decorations.push({ x: flappyCvs.width, y: decorY, img: decorImg, width: decorWidth, height: decorHeight, originalSrc: chosenSrc });
+         decorations.push({ x: startX, y: decorY, img: decorImg, width: decorWidth, height: decorHeight, originalSrc: chosenSrc });
     });
+}
+
+// Функция для предварительного заполнения фона декорациями от левого до правого края
+function initDecorations() {
+    decorations = [];
+    let spacing = 400; // интервал между декорациями (при необходимости можно скорректировать)
+    for (let x = 0; x < flappyCvs.width; x += spacing) {
+         spawnDecoration(x);
+    }
+    lastDecorationSpawnScore = 0;
 }
 
 // Проверка коллизий (для труб)
@@ -778,11 +800,14 @@ function resetGame() {
             spawnedNext: i === initialPipes - 1 ? false : true
         });
     }
-
+    // Инициализируем декорации по всей ширине экрана
+    initDecorations();
     enableAutoFlappyFlight();
 }
 
 // Запускаем игру
+// При первоначальной загрузке заполняем фон декорациями от левого до правого края
+initDecorations();
 enableAutoFlappyFlight();
 drawFlappy();
 

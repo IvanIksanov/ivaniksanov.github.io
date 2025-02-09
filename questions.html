@@ -1075,6 +1075,18 @@
 
 <!-- Скрипты: обработка клика по карточкам и переключение видимости ответов -->
 <script>
+    document.querySelectorAll('.card-questions li strong').forEach(function(el) {
+  el.addEventListener('dblclick', function(e) {
+    // Отменяем стандартное поведение
+    e.preventDefault();
+    // Сбрасываем выделение текста
+    if (window.getSelection) {
+      window.getSelection().removeAllRanges();
+    } else if (document.selection) {
+      document.selection.empty();
+    }
+  });
+});
     document.addEventListener('DOMContentLoaded', function () {
       // Бургер-меню
       const burgerMenu = document.querySelector('.burger-menu');
@@ -1107,30 +1119,50 @@
         }
       });
 
-      // Добавляем кнопки переключения для раскрытия/сокрытия ответа внутри вопросов
-      const allListItems = document.querySelectorAll('.card-questions li');
-      allListItems.forEach(li => {
-        const nestedUl = li.querySelector('ul');
-        if (nestedUl && nestedUl.querySelector('.node-answer')) {
-          nestedUl.style.display = 'none';
-          const toggleBtn = document.createElement('button');
-          toggleBtn.classList.add('toggle-btn');
-          toggleBtn.textContent = '+';
-          // Остановка всплытия события, чтобы клик по кнопке не влиял на раскрытие карточки
-          toggleBtn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            if (nestedUl.style.display === 'none') {
-              nestedUl.style.display = 'block';
-              toggleBtn.textContent = '–';
-            } else {
-              nestedUl.style.display = 'none';
-              toggleBtn.textContent = '+';
-            }
-          });
-          li.insertBefore(toggleBtn, li.firstElementChild);
-        }
+  // Функция для переключения отображения ответа
+  function toggleAnswer(nestedUl, toggleBtn) {
+    if (nestedUl.style.display === 'none') {
+      nestedUl.style.display = 'block';
+      toggleBtn.textContent = '–';
+    } else {
+      nestedUl.style.display = 'none';
+      toggleBtn.textContent = '+';
+    }
+  }
+
+  // Добавляем кнопки переключения для раскрытия/сокрытия ответа внутри вопросов
+  const allListItems = document.querySelectorAll('.card-questions li');
+  allListItems.forEach(li => {
+    const nestedUl = li.querySelector('ul');
+    if (nestedUl && nestedUl.querySelector('.node-answer')) {
+      nestedUl.style.display = 'none';
+
+      // Создаём кнопку переключения
+      const toggleBtn = document.createElement('button');
+      toggleBtn.classList.add('toggle-btn');
+      toggleBtn.textContent = '+';
+
+      // Обработчик клика по кнопке
+      toggleBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleAnswer(nestedUl, toggleBtn);
       });
-    });
+
+      // Вставляем кнопку перед первым элементом списка
+      li.insertBefore(toggleBtn, li.firstElementChild);
+
+      // Добавляем обработчик для клика по тексту вопроса (например, в теге <strong>)
+      const questionText = li.querySelector('strong');
+      if (questionText) {
+        questionText.style.cursor = 'pointer'; // для наглядности, чтобы показать, что текст кликабельный
+        questionText.addEventListener('click', function (e) {
+          e.stopPropagation();
+          toggleAnswer(nestedUl, toggleBtn);
+        });
+      }
+    }
+  });
+});
 </script>
 </body>
 </html>

@@ -232,8 +232,28 @@ b:hover {
     cursor: pointer;
 }
 
-@media only screen and (max-width: 880px) {
+/* Стили для контейнеров навигационных пунктов (если хотите задать позиционирование глобально) */
+nav ul li {
+    position: relative;
+}
+
+/* Стили для бейджа "new" */
+.new-badge {
+    position: absolute;
+    top: -14px;         /* Расположение сверху */
+    right: -5px;       /* Расположение справа */
+    background-color: #E30000;  /* Красный фон */
+    color: #fff;    /* Белый текст */
+    font-size: 8px; /* Размер шрифта можно корректировать под дизайн */
+    padding: 3px 5px;  /* Отступы внутри бейджа */
+    border-radius: 20px;  /* Круглая форма бейджа */
+    line-height: 1;
+    text-transform: uppercase;  /* Для стилизации текста, если нужно */
+}
+
+@media only screen and (max-width: 800px) {
     .burger-menu {
+        padding: 10px;
         display: block;
         align-items: center
     }
@@ -666,7 +686,7 @@ button[type="submit"]:hover {
   }
 }
 
-@media only screen and (max-width: 880px) {
+@media only screen and (max-width: 800px) {
     .burger-menu {
         display: block;
     }
