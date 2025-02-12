@@ -130,6 +130,7 @@ margin-right: 5px; /* Отступ между логотипом и тексто
         color: #FFFFFF; /* Цвет заголовка */
     }
 }
+
 @media (max-width: 1200px) {
     .site-title {
         display: none;
@@ -251,6 +252,48 @@ nav ul li {
     text-transform: uppercase;  /* Для стилизации текста, если нужно */
 }
 
+/* Стили для блока с навыками */
+        .skill-links a {
+            position: relative;
+            padding: 5px 10px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            display: inline-block;
+            text-decoration: none;
+            color: #000;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .skill-links a:hover {
+            background-color: #f0f0f0;
+        }
+        .skill-links a.selected {
+            background-color: #1e1e1e;
+            color: #F1F1F1;
+        }
+        /* Стили для счётчика выбранного навыка */
+        .skill-links a .skill-counter {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 5px;
+            font-size: 10px;
+            display: none;
+        }
+        .skill-links a.selected .skill-counter {
+            display: inline-block;
+        }
+        /* Стили для контейнера с планом изучения */
+        #study-plan {
+            margin-top: 20px;
+            padding: 10px;
+            border-top: 2px solid red;
+        }
+
 @media only screen and (max-width: 800px) {
     .burger-menu {
         padding: 10px;
@@ -266,6 +309,12 @@ nav ul li {
     nav.active ul {
         display: flex;
         flex-direction: column;
+        align-items: center;
+    }
+
+    nav ul.active li {
+        margin-top: 10px;
+        margin-bottom: 10px;
     }
 }
 
@@ -322,7 +371,7 @@ nav ul li {
 }
 
 .skills {
-    margin: 10 10px;
+    margin: 10px 10px;
     padding: 7px 10px;
     font-size: 15px;
     border-radius: 4px;
@@ -678,9 +727,9 @@ button[type="submit"]:hover {
     width: 80%;
     font-size: 0.8rem;
   }
-  card-content {
+  .card-content {
       font-size: 0.8rem;
-    }
+  }
   .card-image {
     display: none;
   }
@@ -710,8 +759,7 @@ button[type="submit"]:hover {
     border: 0px solid #1e1e1e;
     width: 100%;
     height: auto;
-    /* Задаём отступы: сверху 0, справа 10px, снизу 0, слева 20px */
-    margin: 0 0 0 0;
+    margin: 0;
 }
 
 @media (max-width: 768px) {
@@ -806,6 +854,33 @@ button[type="submit"]:hover {
     color: #000;
 }
 
+#get-plan {
+    margin-top: 10px;
+    background-color: red;
+    color: #F1F1F1;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+    #get-plan {
+        color: #F1F1F1;
+        margin-top: 10px;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+}
+
+#get-plan:hover {
+    background-color: rgba(255, 255, 255, 1);
+    color: #000;
+}
+
 /* Новые стили для фрейма с навыками */
 #qa-skills {
   margin: 1rem 0;
@@ -832,14 +907,14 @@ button[type="submit"]:hover {
   text-decoration: none;
   padding: 7px 10px;
   border-radius: 10px;
-  background-color: #1e1e1e;
-  color: #F1F1F1;
+  background-color: #FAFAFA;
+  color: #000;
   transition: background-color 0.3s;
 }
 
 .skill-links a:hover {
-  background-color: rgba(255, 255, 255, 1);
-  color: #000;
+  background-color: #1e1e1e;
+  color: #F1F1F1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -847,11 +922,45 @@ button[type="submit"]:hover {
     color: #FFFFFF;
   }
   .skill-links a {
-    background-color: rgba(255, 255, 255, 0.7);
-    color: #000;
+    background-color: #1e1e1e;
+    color: #F1F1F1;
   }
   .skill-links a:hover {
     background-color: rgba(255, 255, 255, 1);
     color: #000;
   }
+  .skill-links a.selected {
+    background-color: #FFFFFF;
+    color: #000;
+  }
 }
+
+/* Стили для плана изучения */
+#plan-list ul {
+  display: block;
+  list-style-type: none;
+  padding-left: 20px;
+  margin: 10px 10px 20px 10px;
+}
+
+/* Отступы между плашками и адаптация для мобильных:
+   - Каждая строка (li) получает нижний отступ.
+   - Текст не переносится и обрезается с многоточием при узком экране.
+*/
+#plan-list li {
+  margin-bottom: 20px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  #plan-list li {
+    max-width: 100%;
+  }
+}
+
+/* Стили для иконок в ссылках плана обучения */
+#plan-list li img {
+  vertical-align: middle;
+}
+

@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>QA тренировочный сайт</title>
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" href="img/QAtoDev%202.png" sizes="32x32" type="image/png">
+    <link rel="icon" href="img/QAtoDev_(Flappy_Bird_style).png" sizes="32x32" type="image/png">
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
         (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
@@ -210,94 +210,112 @@
 
     <!-- Новый фрейм: Список навыков для QA / тестировщика -->
     <section id="qa-skills" class="frame">
-        <h2>Какие навыки необходимо указывать в резюме тестировщику?</h2>
+        <h2>Конструктор навыков: собери свой план обучения!</h2>
 
         <div class="skill-category">
             <h3>Тестирование и теория</h3>
             <div class="skill-links">
-                <a >Scrum</a>
-                <a >Web/Mobile testing</a>
-                <a >Обеспечение качества</a>
-                <a >Составление MindMap</a>
-                <a >Кроссбраузерное</a>
-                <a >BDD/TDD</a>
+                <a data-skill-id="scrum" data-plan="https://practicum.yandex.ru/blog/chto-takoe-scrum-metodologiya/ | https://thecode.media/scrum/ | https://blog.skillfactory.ru/kto-takoy-scrum-master-chem-zanimaetsya/ | https://doka.guide/tools/agile/">Scrum<span class="skill-counter"></span></a>
+                <a data-skill-id="web-mobile-testing" data-plan="https://selectel.ru/blog/testing-mobile-applications/ | https://sky.pro/media/kak-testirovat-igry/ ">Web/Mobile testing<span class="skill-counter"></span></a>
+                <a data-skill-id="test-design" data-plan="https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
+                <a data-skill-id="quality-assurance" data-plan="https://skillbox.ru/media/code/bol-testirovshchika-s-kakimi-problemami-stalkivayutsya-qainzhenery/ | https://tproger.ru/articles/instrumenty-i-frejmvorki-qa--kotorye--ne--nuzhno-znat | https://thecode.media/qa-engineer-2023/">Обеспечение качества<span class="skill-counter"></span></a>
+                <a data-skill-id="mindmap" data-plan="https://skillbox.ru/media/base/chto-takoe-intellektkarty | https://vc.ru/services/1553974-top-15-luchshih-servisov-dlya-sozdaniya-intellekt-kart? | https://fb2-book.com/book/152103-intellekt-karty-polnoe-rukovodstvo-po-moshchnomu | https://habr.com/ru/articles/857390/ | https://www.mindmeister.com/app/map/470194599?fullscreen=1&v=public">Составление MindMap<span class="skill-counter"></span></a>
+                <a data-skill-id="cross-browser" data-plan="https://testengineer.ru/chto-takoe-kross-brauzernoe-testirovanie/">Кроссбраузерное<span class="skill-counter"></span></a>
+                <a data-skill-id="bdd-tdd" data-plan="https://doka.guide/tools/tdd/ | https://thecode.media/tdd/ | ">BDD/TDD<span class="skill-counter"></span></a>
             </div>
         </div>
 
         <div class="skill-category">
-            <h3>API-инструменты</h3>
+            <h3>API и инструменты</h3>
             <div class="skill-links">
-                <a >Postman</a>
-                <a >Insomnia</a>
-                <a >Charles</a>
-                <a >DevTools</a>
-                <a >Proxyman</a>
+                <a data-skill-id="rest-api" data-plan="https://thecode.media/kak-ustroeny-api-razbiraemsya-na-primere-rest-api/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#rest-api | https://doka.guide/tools/api/ | https://thecode.media/kak-testiruyut-api-razbiraemsya-na-primere-rest-api/ | https://vvrozhkova.github.io/chek-list-proverok-api/">REST-api<span class="skill-counter"></span></a>
+                <a data-skill-id="postman" data-plan="https://t.me/QAtoDev/108 | https://testengineer.ru/gajd-po-testirovaniyu-v-postman/">Postman<span class="skill-counter"></span></a>
+                <a data-skill-id="insomnia" data-plan="https://t.me/QAtoDev/208">Insomnia<span class="skill-counter"></span></a>
+                <a data-skill-id="charles" data-plan="https://trofimovdigital.ru/blog/how-to-use-charles">Charles<span class="skill-counter"></span></a>
+                <a data-skill-id="devtools" data-plan="https://thecode.media/vsyo-pro-devtools-i-instrumenty-razrabotchika-v-brauzere/ | https://testgrow.ru/lecture45 | https://selectel.ru/blog/devtools/ | https://ru.hexlet.io/blog/posts/devtools-dlya-testirovschikov | https://testengineer.ru/chrome-developer-tools-dlya-testirovshchika/ | https://thecode.media/good-tester/">DevTools<span class="skill-counter"></span></a>
+                <a data-skill-id="proxyman" data-plan="https://habr.com/ru/articles/737120/">Proxyman<span class="skill-counter"></span></a>
             </div>
         </div>
 
         <div class="skill-category">
             <h3>SQL и База Данных</h3>
             <div class="skill-links">
-                <a >MySQL</a>
-                <a >PostgreSQL</a>
-                <a >ORACLE</a>
-                <a >MongoDB</a>
-                <a >DBeaver</a>
+                <a data-skill-id="MySQL" data-plan="https://thecode.media/mysql/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#базы-данных | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#sql | https://sql-academy.org/ru/guide | https://blog.skillfactory.ru/polnoe-rukovodstvo-po-zaprosam-sql/ | https://thecode.media/5-db-types/">MySQL<span class="skill-counter"></span></a>
+                <a data-skill-id="postgresql" data-plan="https://practicum.yandex.ru/blog/chto-takoe-subd-postgresql/ | https://skillbox.ru/media/code/postgresql-vsye-chto-nuzhno-znat-dlya-bystrogo-starta/">PostgreSQL<span class="skill-counter"></span></a>
+                <a data-skill-id="oracle" data-plan="https://skillbox.ru/media/code/baza-dannykh-oracle-db-kak-ona-ustroena-i-chem-khorosha/">ORACLE<span class="skill-counter"></span></a>
+                <a data-skill-id="mongodb" data-plan="https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#mongodb">MongoDB<span class="skill-counter"></span></a>
+                <a data-skill-id="dbeaver" data-plan="https://practicum.yandex.ru/blog/menedzher-baz-dannyh-dbeaver/">DBeaver<span class="skill-counter"></span></a>
             </div>
         </div>
 
         <div class="skill-category">
             <h3>Управление проектами</h3>
             <div class="skill-links">
-                <a >GitHub</a>
-                <a >Jira</a>
-                <a >Zephyr</a>
-                <a >YouTrack</a>
-                <a >Bitbucket</a>
-                <a >Confluence</a>
+                <a data-skill-id="github" data-plan="https://doka.guide/recipes/github-new-repo">GitHub<span class="skill-counter"></span></a>
+                <a data-skill-id="jira" data-plan="https://blog.skillfactory.ru/glossary/jira/ | https://practicum.yandex.ru/blog/chto-takoe-bug-report-kak-ego-sostavit/ | https://testengineer.ru/bag-trekingovye-sistemy-jira-i-alternativnye-varianty/">Jira<span class="skill-counter"></span></a>
+                <a data-skill-id="bitbucket" data-plan="https://blog.skillfactory.ru/glossary/bitbucket/?ysclid=m72gaboxsz333521041">Bitbucket<span class="skill-counter"></span></a>
+                <a data-skill-id="confluence" data-plan="https://practicum.yandex.ru/blog/confluence-dlya-sovmestnoy-raboty-komand/">Confluence<span class="skill-counter"></span></a>
             </div>
         </div>
 
         <div class="skill-category">
             <h3>Языки и IDE</h3>
             <div class="skill-links">
-                <a >IDEA</a>
-                <a >Java</a>
-                <a >PyCharm</a>
-                <a >Python</a>
-                <a >VScode</a>
-                <a >JavaScript</a>
-                <a >Android Studio</a>
-                <a >Kotlin</a>
-                <a >Xcode</a>
-                <a >Swift</a>
-                <a >Git</a>
+                <a data-skill-id="idea" data-plan="https://vvrozhkova.github.io/professionalno-rabotaem-s-intelli-j-idea/ | https://www.youtube.com/watch?v=yefmcX57Eyg | https://www.youtube.com/watch?v=XBf_XzXQQS8 | https://javaspecialists.teachable.com/p/intellij-wizardry | https://resources.jetbrains.com/storage/products/intellij-idea/docs/IntelliJIDEA_ReferenceCard.pdf | https://www.youtube.com/watch?v=5qrn-Z5Put4">IDEA<span class="skill-counter"></span></a>
+                <a data-skill-id="java" data-plan="https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#java | https://trofimovdigital.ru/blog/how-to-start-writing-autotests-on-java#Курсы_по_Java | https://vvrozhkova.github.io/kurs-po-avtomatizaczii-testirovaniya-java/">Java<span class="skill-counter"></span></a>
+                <a data-skill-id="pycharm" data-plan="https://skillbox.ru/media/code/pycharm-kak-eye-ustanovit-i-ispolzovat">PyCharm<span class="skill-counter"></span></a>
+                <a data-skill-id="python" data-plan="https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#python">Python<span class="skill-counter"></span></a>
+                <a data-skill-id="vscode" data-plan="https://code.visualstudio.com/docs/java/java-tutorial | https://code.visualstudio.com/docs/languages/javascript">VScode<span class="skill-counter"></span></a>
+                <a data-skill-id="javascript" data-plan="https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#javascript | https://learn.javascript.ru/intro | https://doka.guide/js/ | https://doka.guide/tools/structure-data-in-js/">JavaScript<span class="skill-counter"></span></a>
+                <a data-skill-id="android-studio" data-plan="https://skillbox.ru/media/code/chto-takoe-android-studio-i-kak-ey-polzovatsya/ | https://practicum.yandex.ru/blog/kak-polzovatsya-android-studio/">Android Studio<span class="skill-counter"></span></a>
+                <a data-skill-id="kotlin" data-plan="https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#kotlin | https://example.com/plan/kotlin">Kotlin<span class="skill-counter"></span></a>
+                <a data-skill-id="xcode" data-plan="https://skillbox.ru/media/code/xcode-gayd-po-ide-ot-apple-dlya-novichkov/ | https://practicum.yandex.ru/blog/sreda-razrabotki-xcode/">Xcode<span class="skill-counter"></span></a>
+                <a data-skill-id="swift" data-plan="https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#swift">Swift<span class="skill-counter"></span></a>
+                <a data-skill-id="git" data-plan="https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#git | https://www.youtube.com/playlist?list=PLDyvV36pndZFHXjXuwA_NywNrVQO0aQqb | https://learngitbranching.js.org/?locale=ru_RU | https://ru.hexlet.io/courses/intro_to_git | https://git-scm.com/book/en/v2 | https://practicum.yandex.ru/blog/chto-takoe-git-i-dlya-chego-nuzhen/">Git<span class="skill-counter"></span></a>
             </div>
         </div>
 
         <div class="skill-category">
             <h3>Автоматизация/Библиотеки</h3>
             <div class="skill-links">
-                <a >CI CD</a>
-                <a >Jenkins</a>
-                <a >Cypress</a>
-                <a >JMeter</a>
-                <a >Selenium</a>
-                <a >Selenide</a>
-                <a >REST-assured</a>
-                <a >Appium</a>
-                <a >Espresso</a>
+                <a data-skill-id="ci-cd" data-plan="https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#развертывание-cicd | https://doka.guide/tools/ci-cd/">CI CD<span class="skill-counter"></span></a>
+                <a data-skill-id="jenkins" data-plan="https://www.youtube.com/watch?v=yTNQnSKqKis | https://habr.com/ru/companies/yoomoney/articles/538664/ | https://www.litres.ru/book/brent-laster-21051066/jenkins-2-pristupaem-k-rabote-48411335/">Jenkins<span class="skill-counter"></span></a>
+                <a data-skill-id="cypress" data-plan="https://testengineer.ru/chto-takoe-cypress-vvedenie-i-arhitektura/ | https://testengineer.ru/playwright-vs-cypress-vs-selenium/ | https://ru.hexlet.io/blog/posts/avtomatizatsiya-testirovaniya-s-cypress-osnovy-dlya-junior-qa">Cypress<span class="skill-counter"></span></a>
+                <a data-skill-id="jmeter" data-plan="https://testengineer.ru/jmeter-guide/?ysclid=m72g44bqot855676748 | https://habr.com/ru/companies/tochka/articles/741698/">JMeter<span class="skill-counter"></span></a>
+                <a data-skill-id="selenium" data-plan="https://ru.hexlet.io/blog/posts/chto-takoe-selenium-webdriver | https://tproger.ru/articles/prakticheskoe-rukovodstvo-po-testirovaniyu-prilozhenij-s-ispolzovaniem-selenium | https://testengineer.ru/selenium-2024/ | https://vvrozhkova.github.io/chto-takoe-selenium/">Selenium<span class="skill-counter"></span></a>
+                <a data-skill-id="selenide" data-plan="https://github.com/selenide-examples | https://github.com/angry-qa/Selenide-snippets-by-Vinoradoff/blob/main/snippets.java | https://github.com/selenide/selenide/wiki/Selenide-vs-Selenium">Selenide<span class="skill-counter"></span></a>
+                <a data-skill-id="rest-assured" data-plan="https://testengineer.ru/rest-assured-tutorial/?ysclid=m71ju1jfjk353497505 | https://github.com/angry-qa/first-java-autotests/blob/04-api-test/src/test/java/APITests.java">REST-assured<span class="skill-counter"></span></a>
+                <a data-skill-id="appium" data-plan="https://testengineer.ru/appium-gaid/?ysclid=m72g5x3y4d402713205">Appium<span class="skill-counter"></span></a>
+                <a data-skill-id="allure" data-plan="https://allurereport.org/docs/#_java">Allure<span class="skill-counter"></span></a>
+                <a data-skill-id="junit" data-plan="https://proselyte.net/tutorials/junit/ | https://easyjava.ru/testirovanie/junit-2/">JUnit<span class="skill-counter"></span></a>
             </div>
         </div>
 
         <div class="skill-category">
             <h3>Макеты и Дизайн</h3>
             <div class="skill-links">
-                <a >Figma</a>
-                <a >Pixso</a>
+                <a data-skill-id="figma" data-plan="https://www.youtube.com/watch?v=eSOM83Zwy4s">Figma<span class="skill-counter"></span></a>
+                <a data-skill-id="pixso" data-plan="https://skillbox.ru/media/design/chto-takoe-pixso">Pixso<span class="skill-counter"></span></a>
             </div>
         </div>
-        <p>Всё подряд указывать не советую, выбери самое релевантное для твоего направления :) И не забудь для начала овладеть ими!</p>
+
+        <div class="skill-category">
+            <h3 id="toggle-superpower" style="cursor: pointer;">Добавить суперсилу</h3>
+            <div class="skill-links" id="superpower-skills" style="display: none;">
+                <a data-skill-id="typing" data-plan="https://www.edclub.com/sportal/ | https://klava.org/delta/#rus_basic | https://www.keybr.com/#google_vignette">Скоропечатание<span class="skill-counter"></span></a>
+                <a data-skill-id="sec-test" data-plan="https://doka.guide/tools/web-security">Тестирование безопасности<span class="skill-counter"></span></a>
+                <a data-skill-id="eng" data-plan="https://puzzle-movies.com | https://www.duolingo.com/learn | https://puzzle-english.com">Английский<span class="skill-counter"></span></a>
+                <a data-skill-id="heisenbug" data-plan="https://www.youtube.com/@Heisenbugconf/videos">Канал HeisenBug<span class="skill-counter"></span></a>
+                <a data-skill-id="clear-code" data-plan="https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#качество-кода">Чистый код<span class="skill-counter"></span></a>
+            </div>
+        </div>
+        <p>Навыки можно указать в своём резюме. Всё подряд указывать не советую, выбери самое релевантное для твоего направления :) И не забудь для начала овладеть ими!</p>
+        <!-- Кнопка для получения плана изучения -->
+        <button id="get-plan">Получить план</button>
+        <!-- Контейнер для отображения плана изучения (ссылки выбранных навыков) -->
+        <div id="study-plan" style="display: none;">
+            <div id="plan-list"></div>
+        </div>
     </section>
 
     <section id="about" class="frame">
@@ -313,6 +331,7 @@
 <footer class="qatodev">
     <p>&copy; 2025 QAtoDev</p>
 </footer>
+
 <script src="script.js"></script>
 </body>
 </html>

@@ -879,3 +879,119 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+/***********************
+ * --- QA Skills ---
+ ***********************/
+document.addEventListener('DOMContentLoaded', function(){
+  // Массив для хранения выбранных навыков
+  let selectedSkills = [];
+  const skillLinks = document.querySelectorAll('#qa-skills .skill-links a');
+
+  // Восстанавливаем выбор из localStorage
+  const savedSelected = localStorage.getItem('selectedSkills');
+  if (savedSelected) {
+    const savedSkillIds = JSON.parse(savedSelected);
+    skillLinks.forEach(skill => {
+      const skillId = skill.getAttribute('data-skill-id');
+      if (savedSkillIds.includes(skillId)) {
+        skill.classList.add('selected');
+        selectedSkills.push(skill);
+      }
+    });
+    updateCounters();
+  }
+
+  // Обработчик клика по навыку
+  skillLinks.forEach(function(skill){
+    skill.addEventListener('click', function(e){
+      e.preventDefault();
+      if (skill.classList.contains('selected')) {
+        // Если навык уже выбран, снимаем выбор
+        skill.classList.remove('selected');
+        selectedSkills = selectedSkills.filter(function(item){
+          return item !== skill;
+        });
+        let counter = skill.querySelector('.skill-counter');
+        if (counter) {
+          counter.textContent = '';
+        }
+        updateCounters();
+        updateSelectedSkillsStorage();
+      } else {
+        // Ограничение выбора: максимум 10 навыков
+        if (selectedSkills.length >= 10) {
+          alert("Сконцентрируемся на 10 навыках!");
+          return;
+        }
+        // Если лимит не достигнут — выбираем навык
+        skill.classList.add('selected');
+        selectedSkills.push(skill);
+        updateCounters();
+        updateSelectedSkillsStorage();
+      }
+    });
+  });
+
+  function updateCounters(){
+    selectedSkills.forEach(function(skill, index){
+      let counter = skill.querySelector('.skill-counter');
+      if (counter) {
+        counter.textContent = index + 1;
+      }
+    });
+  }
+  function updateSelectedSkillsStorage(){
+    let selectedIds = selectedSkills.map(skill => skill.getAttribute('data-skill-id'));
+    localStorage.setItem('selectedSkills', JSON.stringify(selectedIds));
+  }
+
+  // Обработка кнопки "Получить план изучения"
+  const getPlanButton = document.getElementById('get-plan');
+  getPlanButton.addEventListener('click', function(){
+    if(selectedSkills.length === 0){
+      alert('Выбери навык для изучения :)');
+      return;
+    }
+    const studyPlan = document.getElementById('study-plan');
+    const planList = document.getElementById('plan-list');
+    planList.innerHTML = ''; // Очистка предыдущего содержимого
+    // Для каждого выбранного навыка создаём группу: заголовок + список ссылок
+    selectedSkills.forEach(function(skill){
+      let planLinkData = skill.getAttribute('data-plan');
+      let skillName = skill.textContent.trim();
+      let groupHeader = document.createElement('h3');
+      groupHeader.textContent = skillName;
+      planList.appendChild(groupHeader);
+      let ul = document.createElement('ul');
+      // Разбиваем data-plan по разделителю "|"
+      let links = planLinkData.split('|');
+      links.forEach(function(link){
+        let li = document.createElement('li');
+        let a = document.createElement('a');
+        a.href = link.trim();
+        a.textContent = link.trim();
+        a.target = '_blank';
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+      planList.appendChild(ul);
+    });
+    studyPlan.style.display = 'block';
+    studyPlan.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+  const toggleHeader = document.getElementById("toggle-superpower");
+  const skillsBlock = document.getElementById("superpower-skills");
+
+  toggleHeader.addEventListener("click", function() {
+    // Переключаем отображение блока с навыками
+    if (skillsBlock.style.display === "none" || skillsBlock.style.display === "") {
+      skillsBlock.style.display = "block";
+    } else {
+      skillsBlock.style.display = "none";
+    }
+  });
+});
