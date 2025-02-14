@@ -951,6 +951,9 @@ button[type="submit"]:hover {
   margin-bottom: 20px;
   white-space: nowrap;
   text-overflow: ellipsis;
+  overflow: hidden;       /* Обрезаем выступающее содержимое */
+  border-radius: 8px;     /* Устанавливаем закругление по краям */
+  padding: 5px;           /* При необходимости добавляем отступы */
 }
 
 @media (max-width: 600px) {

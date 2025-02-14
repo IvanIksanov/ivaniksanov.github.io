@@ -959,7 +959,7 @@ document.addEventListener('DOMContentLoaded', function(){
     // Для каждого выбранного навыка создаём группу: заголовок + список ссылок
     selectedSkills.forEach(function(skill){
       let planLinkData = skill.getAttribute('data-plan');
-      let skillName = skill.textContent.trim();
+      let skillName = skill.firstChild.textContent.trim();
       let groupHeader = document.createElement('h3');
       groupHeader.textContent = skillName;
       planList.appendChild(groupHeader);
