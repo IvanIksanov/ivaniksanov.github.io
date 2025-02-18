@@ -387,7 +387,7 @@ function drop() {
 drop(); // Стартуем
 
 // работа кнопки Свернуть список
-document.getElementById('toggle-button2').addEventListener('click', function () {
+document.getElementById('toggle-buttonTetris').addEventListener('click', function () {
         const checklist = document.getElementById('checklist-items2');
         const button = this;
 
