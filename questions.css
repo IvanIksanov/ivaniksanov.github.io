@@ -573,6 +573,20 @@ h2 {
   outline: none;
 }
 
+/* Для тёмной темы */
+@media (prefers-color-scheme: dark) {
+  .toggle-btn {
+    color: white;
+  }
+}
+
+/* Для светлой темы */
+@media (prefers-color-scheme: light) {
+  .toggle-btn {
+    color: black;
+  }
+}
+
 .node-answer {
   margin-left: 1rem;
   padding: 0.5rem;
