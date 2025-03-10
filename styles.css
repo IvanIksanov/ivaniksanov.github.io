@@ -994,3 +994,15 @@ button[type="submit"]:hover {
   vertical-align: middle;
 }
 
+.selection-item img {
+    width: 40%;
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+}
+
+@media (max-width: 800px) {
+    .selection-item img {
+        width: 100%;
+    }
+}

@@ -536,10 +536,6 @@ h2 {
   transition: transform 0.2s;
 }
 
-.card:hover {
-  transform: scale(1.01);
-}
-
 @media (prefers-color-scheme: dark) {
   .card {
     background-color: #1A1A1A;
