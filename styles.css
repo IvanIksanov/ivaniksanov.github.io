@@ -12,6 +12,16 @@ body {
     background-color: #F1F1F1; /* Измененный цвет фона */
 }
 
+@media (max-width: 600px) {
+body {
+margin-left: 10px;
+margin-top: 0;
+margin-right: 10px;
+margin-bottom: 0;
+padding: 0;
+}
+}
+
 .fira-code-<uniquifier> {
   font-family: "Fira Code", monospace;
   font-optical-sizing: auto;
@@ -37,6 +47,31 @@ body {
     .frame {
         border: 2px solid #44BBC1; /* Цвет рамки можно оставить без изменений или изменить на более контрастный */
         background-color: #1A1A1A;
+    }
+}
+
+.article {
+    border: none;
+    background-color: #FAFAFA; /* Белый фон */
+    padding: 1rem;
+    margin: 0 auto;
+    max-width: 800px;
+    border-radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .article {
+        border: none;
+        background-color: #242424;
+    }
+}
+
+@media (max-width: 600px) {
+    .article {
+        padding-top: 1rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        border: none;
     }
 }
 
@@ -294,7 +329,7 @@ nav ul li {
             border-top: 2px solid red;
         }
 
-@media only screen and (max-width: 800px) {
+@media only screen and (max-width: 900px) { /* отвечает за отображение хэддеров, меньше 900px отображает бургер-меню */
     .burger-menu {
         padding: 10px;
         display: block;
@@ -906,11 +941,6 @@ button[type="submit"]:hover {
 #get-plan:hover {
     background-color: rgba(255, 255, 255, 1);
     color: #000;
-}
-
-/* Новые стили для фрейма с навыками */
-#qa-skills {
-  margin: 1rem 0;
 }
 
 #qa-skills h2 {
