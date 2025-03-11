@@ -57,6 +57,7 @@ padding: 0;
     margin: 0 auto;
     max-width: 800px;
     border-radius: 8px;
+    margin-bottom: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -68,7 +69,7 @@ padding: 0;
 
 @media (max-width: 600px) {
     .article {
-        padding-top: 1rem;
+        padding-top: 0.2rem;
         padding-left: 0.5rem;
         padding-right: 0.5rem;
         border: none;
