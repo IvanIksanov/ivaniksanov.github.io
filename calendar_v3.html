@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Календарь</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav>
+    <div class="burger-menu">&#9776;</div>
+    <ul>
+        <li><a href="index.html">На главную</a></li>
+        <li><a href="calendar_doc.html">Документация</a></li>
+        <li><a href="calendar_v1.html">Версия 1.0</a></li>
+        <li><a href="calendar_v2.html">Версия 2.0</a></li>
+        <li><a href="calendar_v3.html" style="background-color: #58BEFE;">Версия 3.0</a></li>
+    </ul>
+</nav>
+
+<h2>Тестируем вечный календарь v3.0</h2>
+<title>Универсальный календарь с поднятой панелью</title>
+<style>
+    body {
+      margin: 0px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* Контейнер календаря с относительным позиционированием */
+    .calendar-container {
+      position: relative;
+      /* Ширина вычисляется: 13 колонок по 40px + 12 зазоров по 5px = 580px */
+      width: 580px;
+      margin-top: 60px;
+      margin-bottom: 0px;
+    }
+    /* Сетка чисел: 13 колонок, 5 строк, зазор 5px */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(13, 40px);
+      grid-auto-rows: 40px;
+      gap: 5px;
+    }
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    /* Плашка с днями недели – накладывается абсолютно */
+    .overlay {
+      position: absolute;
+      top: -45px; /* Поднимаем на высоту одной строки (40px + 5px зазор) */
+      /* Ширина плашки: 7 ячеек (7 * 40px + 6 * 5px = 280 + 30 = 310px) */
+      width: 310px;
+      height: 40px;
+      display: grid;
+      grid-template-columns: repeat(7, 40px);
+      gap: 5px;
+      /* Для визуального эффекта используем полупрозрачный фон,
+         чтобы через него было видно число под ячейкой */
+      pointer-events: none;
+    }
+    .overlay-cell {
+      border: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      /* Фон с прозрачностью – эффект «отверстия» */
+      background: transparent;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .overlay-cell::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      /* Полностью прозрачный центр – через него видно число */
+      background: transparent;
+    }
+    /* Блок с кнопками для сдвига плашки */
+    .controls {
+      text-align: center;
+    }
+    .controls button {
+      font-size: 16px;
+      padding: 5px 10px;
+      margin: 0 5px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    /* Стиль для подсветки: будние – голубым, выходные – красным */
+    .cell.weekday {
+        background-color: lightblue;
+    }
+    .cell.weekend {
+        background-color: red;
+    }
+
+    /* Адаптивность для мобильных экранов */
+    @media (max-width: 600px) {
+      /* Адаптивный стиль для списка проверок */
+      #checklist {
+         font-size: 14px;
+         padding: 10px;
+      }
+      #checklist-items3 label,
+      #checklist-items3 input {
+         font-size: 14px;
+      }
+      h2 {
+         font-size: 18px;
+      }
+    }
+</style>
+</body>
+<!-- Выпадающий список выбора месяца -->
+<div class="month-selector" style="margin-top: 0px;">
+    <label for="monthSelect">Текущий месяц: </label>
+    <select id="monthSelect">
+        <option value="1">Январь</option>
+        <option value="2">Февраль</option>
+        <option value="3">Март</option>
+        <option value="4">Апрель</option>
+        <option value="5">Май</option>
+        <option value="6">Июнь</option>
+        <option value="7">Июль</option>
+        <option value="8">Август</option>
+        <option value="9">Сентябрь</option>
+        <option value="10">Октябрь</option>
+        <option value="11">Ноябрь</option>
+        <option value="12">Декабрь</option>
+    </select>
+</div>
+
+<body>
+<div class="calendar-container">
+    <!-- Сетка чисел календаря -->
+    <div class="grid" id="numbersGrid">
+        <!-- Заполнение производится скриптом -->
+    </div>
+    <!-- Плашка с днями недели (накладывается поверх сетки) -->
+    <div class="overlay" id="daysOverlay">
+        <!-- Ячейки плашки будут созданы скриптом -->
+    </div>
+</div>
+<!-- Элементы управления -->
+<div class="controls">
+    <button id="shiftLeft">←</button>
+    <button id="shiftRight">→</button>
+</div>
+
+<section id="features" class="article">
+    <h2>Чек-лист для тестирования v3.0</h2>
+    <div id="checklist">
+        <p>
+        <div id="checklist-items3" class="collapsible">
+            <strong>1. Классы эквивалентности:</strong><br>
+            <label><input type="checkbox" name="ui_check1"></label> Проверить отображение чисел в формате будний/выходной день<br>
+            <label><input type="checkbox" name="ui_check2"></label> Проверить, что пустые и "-" ячейки не попадают в категорию будний/выходной день<br>
+            <label><input type="checkbox" name="ui_check3"></label> Проверить, что числа 23/30 и 24/31 корректно подсвечиваются в категории будний/выходной день<br>
+            <label><input type="checkbox" name="ui_check4"></label> Проверить, что подсвечиваются только те числа, которые попали под плашку дней недели (7 столбцов)<br>
+            <label><input type="checkbox" name="ui_check5"></label> Проверить, что будние дни подсвечиваются голубым цветом<br>
+            <label><input type="checkbox" name="ui_check6"></label> Проверить, что выходные дни подсвечиваются красным цветом<br>
+            <label><input type="checkbox" name="ui_check7"></label> Проверить последовательность дней недели: ПН ВТ СР ЧТ ПТ СБ ВС<br>
+            <br>
+            <strong>2. Граничные значения:</strong><br>
+            <label><input type="checkbox" name="functional_check1"></label> Проверить при выборе короткого месяца лишние даты не подсвечиваются (если присутствуют в одной линии)<br>
+            <label><input type="checkbox" name="functional_check2"></label> Проверить при выборе короткого месяца лишние даты не подсвечиваются (если присутствуют в сетке)<br>
+            <label><input type="checkbox" name="functional_check3"></label> Проверить выбор дней в месяце: 28/30/31<br>
+            <label><input type="checkbox" name="functional_check4"></label> Проверить отсутствие выбора дней в месяце: меньше 28, больше 31 и 29 дней<br>
+            <label><input type="checkbox" name="functional_check5"></label> Для месяцев с 30 днями (апрель, июнь, сентябрь, ноябрь): проверить, что 30-е число подсвечивается, а 31-е – нет.<br>
+            <label><input type="checkbox" name="functional_check6"></label> Для месяцев с 31 днём (январь, март, май, июль, август, октябрь, декабрь): проверить, что 31-е число корректно подсвечивается.<br>
+            <label><input type="checkbox" name="functional_check7"></label> Для месяцев с 28 днями (только февраль): проверить, что 29-е, 30-е и 31-е числа не подсвечивается.<br>
+            <label><input type="checkbox" name="functional_check8"></label> Плашка с днями недели не должна смещаться до исчезновения вправо и появляться слева.<br>
+            <label><input type="checkbox" name="functional_check9"></label> Плашка с днями недели должна по умолчанию быть выровнена по правому краю<br>
+            <br>
+            <strong>3. Тестирование состояний и переходов:</strong><br>
+            <label><input type="checkbox" name="perf_check1"></label> При выборе нового месяца сразу обновляется подсветка календаря согласно новому максимуму дней.<br>
+            <label><input type="checkbox" name="perf_check2"></label> После каждого нажатия кнопок панель с днями недели (overlay) сдвигается зависимости от новой позиции.<br>
+            <label><input type="checkbox" name="perf_check3"></label> Проверить, что последовательность сдвигов приводит календарь в корректное состояние (overlay и подсветка).<br>
+            <label><input type="checkbox" name="perf_check4"></label> Проверить, что при выборе любого года пользователь может выставить корректный месяц календаря.<br>
+            <label><input type="checkbox" name="perf_check5"></label> Проверить, что при выборе сокращенного месяца (28 дней) - числа 23/30 и 24/31 корректно подсвечиваются.<br>
+            <label><input type="checkbox" name="perf_check6"></label> Проверить адаптацию плашек дней недели и чисел месяца в темной и светлой теме.<br>
+            <label><input type="checkbox" name="perf_check7"></label> Проверить одинаковый стиль дней недели и чисел месяца в темной и светлой теме.<br>
+            <br>
+            <strong>4. Таблицы принятия решений:</strong><br>
+            <label><input type="checkbox" name="edge_check1"></label> Проверить каждую строку таблицы, варьируя входные данные (номер дня, положение overlay, выбранный месяц).<br>
+            <label><input type="checkbox" name="edge_check2"></label> Если позиция ячейки в overlay соответствует буднему дню (Пн–Пт) – применить класс «weekday» (голубой).<br>
+            <label><input type="checkbox" name="edge_check3"></label> Если соответствует выходному (Сб, Вс) – применить класс «weekend» (красный).<br>
+            <br>
+            <strong>5. Попарное тестирование:</strong><br>
+            <label><input type="checkbox" name="negative_check1"></label> Проверить месяц 28 дней (февраль) в разные годы<br>
+            <label><input type="checkbox" name="negative_check2"></label> Проверить месяц 30 дней (например, апрель, июнь, сентябрь, ноябрь) в разные годы<br>
+            <label><input type="checkbox" name="negative_check3"></label> Проверить месяц 31 дней (например, январь, март, май, июль, август, октябрь, декабрь) в разные годы<br>
+            <br>
+            <strong>6. Предугадывание ошибки:</strong><br>
+            <label><input type="checkbox" name="negative_check1"></label> Попробовать изменить значение в массиве gridData на некорректное (текст вместо числа) и проверить подсветку.<br>
+            <label><input type="checkbox" name="negative_check2"></label> Попробовать изменить значение в массиве gridData на некорректное (числа 32/33/34 и т.д.) и проверить подсветку.<br>
+            <br>
+        </div>
+        <button id="toggle-button3">Развернуть список</button>
+    </div>
+</section>
+
+<script>
+    /* Данные для заполнения сетки календаря согласно заданию */
+    const gridData = [
+      // Первый ряд: 6 пустых (отображаем как "-") затем 1..7
+      ["-", "-", "-", "-", "-", "-", "1", "2", "3", "4", "5", "6", "7"],
+      // Второй ряд: 2 3 4 5 6 7 8 9 10 11 12 13 14
+      ["2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"],
+      // Третий ряд: 9 10 11 12 13 14 15 16 17 18 19 20 21
+      ["9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21"],
+      // Четвертый ряд: 16 17 18 19 20 21 22 23 24 25 26 27 28
+      ["16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28"],
+      // Пятый ряд: 23/30 24/31 25 26 27 28 29 30 31 - - - -
+      ["23", "24", "25", "26", "27", "28", "29", "30", "31", "-", "-", "-", "-"],
+      // Шестой ряд: 30 31
+      ["30", "31"]
+    ];
+    const numbersGrid = document.getElementById('numbersGrid');
+    gridData.forEach(row => {
+      row.forEach(cellText => {
+        const cellDiv = document.createElement('div');
+        cellDiv.className = 'cell';
+        cellDiv.textContent = cellText;
+        numbersGrid.appendChild(cellDiv);
+      });
+    });
+
+    /* Данные для плашки с днями недели */
+    let daysOfWeek = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+    const daysOverlay = document.getElementById('daysOverlay');
+    function renderDaysOverlay() {
+      daysOverlay.innerHTML = "";
+      daysOfWeek.forEach(day => {
+        const overlayCell = document.createElement('div');
+        overlayCell.className = 'overlay-cell';
+        overlayCell.textContent = day;
+        daysOverlay.appendChild(overlayCell);
+      });
+    }
+    renderDaysOverlay();
+
+    /* Управление положением плашки.
+       Всего у нас 13 колонок в сетке и плашка занимает 7 колонок,
+       значит возможные позиции смещения: от 0 до (13 - 7) = 6 */
+    const cellWidth = 40;
+    const gap = 5;
+    // Эффективная ширина ячейки = ширина + gap (за исключением последнего зазора)
+    const effectiveCellWidth = cellWidth + gap; // 45px
+    const maxOffset = 13 - 7; // 6
+    // Начальное смещение – чтобы плашка накладывалась на правую часть первой строки (ячейки с 1 до 7)
+    let currentOffset = 6;
+    function updateOverlayPosition() {
+      // Вычисляем смещение с учётом зазора:
+      daysOverlay.style.left = (currentOffset * effectiveCellWidth) + "px";
+      updateHighlighting();
+    }
+    updateOverlayPosition();
+
+    /* Функция для обновления подсветки календаря */
+    function updateHighlighting() {
+      const monthSelect = document.getElementById('monthSelect');
+      const selectedMonth = parseInt(monthSelect.value, 10);
+      const monthMaxDays = {
+          1: 31,
+          2: 28,
+          3: 31,
+          4: 30,
+          5: 31,
+          6: 30,
+          7: 31,
+          8: 31,
+          9: 30,
+          10: 31,
+          11: 30,
+          12: 31
+      };
+      const maxDay = monthMaxDays[selectedMonth] || 31;
+      // Получаем все ячейки календаря
+      const cells = numbersGrid.children;
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
+        // Убираем предыдущие классы подсветки
+        cell.classList.remove('weekday', 'weekend');
+        const colIndex = i % 13;
+        // Проверяем, находится ли ячейка в области плашки (только 7 колонок)
+        if (colIndex >= currentOffset && colIndex < currentOffset + 7) {
+          let text = cell.textContent;
+          if(text === '-' || text.trim() === '') continue;
+          let dayNum;
+          if(text.indexOf('/') !== -1) {
+            const parts = text.split('/');
+            const first = parseInt(parts[0], 10);
+            const second = parseInt(parts[1], 10);
+            // Если второй вариант дня не превышает maxDay, используем его, иначе первый вариант
+            if(second <= maxDay) {
+              dayNum = second;
+            } else {
+              dayNum = first;
+            }
+          } else {
+            dayNum = parseInt(text, 10);
+          }
+          if(isNaN(dayNum)) continue;
+          // Если день превышает максимальное число месяца, не подсвечиваем
+          if(dayNum > maxDay) continue;
+          // Определяем день недели по позиции в области плашки (0 - Пн, 6 - Вс)
+          const dayOfWeek = colIndex - currentOffset;
+          if(dayOfWeek === 5 || dayOfWeek === 6) {
+            cell.classList.add('weekend');
+          } else {
+            cell.classList.add('weekday');
+          }
+        }
+      }
+    }
+    // Изначальная подсветка
+    updateHighlighting();
+
+    /* Обработчики кнопок */
+    document.getElementById('shiftLeft').addEventListener('click', () => {
+      if (currentOffset > 0) {
+        currentOffset--;
+        updateOverlayPosition();
+      }
+    });
+    document.getElementById('shiftRight').addEventListener('click', () => {
+      if (currentOffset < maxOffset) {
+        currentOffset++;
+        updateOverlayPosition();
+      }
+    });
+
+    /* Обработчик изменения месяца */
+    document.getElementById('monthSelect').addEventListener('change', updateHighlighting);
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const burgerMenu = document.querySelector('.burger-menu');
+        const navLinks = document.querySelector('nav ul');
+
+        burgerMenu.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+        });
+    });
+
+    // Работа кнопки "Свернуть список"
+document.getElementById('toggle-button3').addEventListener('click', function () {
+        const checklist = document.getElementById('checklist-items3');
+        const button = this;
+
+        if (checklist.classList.contains('expanded')) {
+            checklist.classList.remove('expanded');
+            button.textContent = 'Развернуть список';
+
+            // Скроллим вверх к началу списка
+            checklist.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            checklist.classList.add('expanded');
+            button.textContent = 'Свернуть список';
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Используем путь страницы как префикс для уникальности ключей localStorage
+        const prefix = window.location.pathname + "_";
+        const checkboxes = document.querySelectorAll("#checklist-items3 input[type='checkbox']");
+
+        checkboxes.forEach((checkbox) => {
+            const savedState = localStorage.getItem(prefix + checkbox.name);
+            checkbox.checked = savedState === "true";
+        });
+
+        checkboxes.forEach((checkbox) => {
+            checkbox.addEventListener("change", function () {
+                localStorage.setItem(prefix + checkbox.name, checkbox.checked);
+            });
+        });
+    });
+</script>
+</body>
+</html>
