@@ -403,16 +403,6 @@ document.getElementById('toggle-buttonTetris').addEventListener('click', functio
         }
     });
 
-
-document.addEventListener('DOMContentLoaded', function () {
-    const burgerMenu = document.querySelector('.burger-menu');
-    const navLinks = document.querySelector('nav ul');
-
-    burgerMenu.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
-    });
-});
-
 document.addEventListener("DOMContentLoaded", function () {
     // Предотвращение зума при двойном тапе
     let lastTouchEnd = 0;

@@ -2,13 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Календарь</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 
 <nav>
-    <div class="burger-menu">&#9776;</div>
     <ul>
         <li><a href="index.html">На главную</a></li>
         <li><a href="calendar_doc.html" style="background-color: #58BEFE;">Документация</a></li>
@@ -55,14 +54,4 @@
     <br><br>Попарное тестирование;
     <br><br>Предугадывание ошибки;
 </section>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const burgerMenu = document.querySelector('.burger-menu');
-        const navLinks = document.querySelector('nav ul');
-
-        burgerMenu.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-    });
-</script>
 </html>

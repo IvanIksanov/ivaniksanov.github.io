@@ -2,14 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Вопросы для тестировщика</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <nav>
-    <div class="burger-menu">&#9776;</div>
     <ul>
         <li><a href="index.html" style="background-color: #58BEFE;">Кто такой тестировщик?</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
@@ -25,7 +24,7 @@
         <div class="logo" onclick="window.location.href='index.html'">
             <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="Логотип">
         </div>
-        <h3 class="site-title">Вернуться на главную</h3>
+        <h3 class="site-title">На главную</h3>
     </div>
 </header>
 <h2>Кто такой тестировщик и чем он занимается в 2025?</h2>
@@ -156,17 +155,6 @@
 <footer class="qatodev">
     <p><a href="https://t.me/QAtoDev" target="_blank">Telegram-канал QAtoDev</a></p>
 </footer>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const burgerMenu = document.querySelector('.burger-menu');
-        const navLinks = document.querySelector('nav ul');
-
-        burgerMenu.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-    });
-</script>
 
 </body>
 </html>

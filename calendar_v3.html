@@ -2,14 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Календарь</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <nav>
-    <div class="burger-menu">&#9776;</div>
     <ul>
         <li><a href="index.html">На главную</a></li>
         <li><a href="calendar_doc.html">Документация</a></li>
@@ -23,11 +22,17 @@
 <title>Универсальный календарь с поднятой панелью</title>
 <style>
     body {
-      margin: 0px;
+      margin: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+    @media (max-width: 600px) {
+  body {
+    margin: 10px;
+    padding: 0;
+  }
+}
     /* Контейнер календаря с относительным позиционированием */
     .calendar-container {
       position: relative;
@@ -349,15 +354,6 @@
     document.getElementById('monthSelect').addEventListener('change', updateHighlighting);
 </script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const burgerMenu = document.querySelector('.burger-menu');
-        const navLinks = document.querySelector('nav ul');
-
-        burgerMenu.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-    });
-
     // Работа кнопки "Свернуть список"
 document.getElementById('toggle-button3').addEventListener('click', function () {
         const checklist = document.getElementById('checklist-items3');

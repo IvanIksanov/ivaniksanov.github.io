@@ -1,25 +1,19 @@
 html, body {
-    overflow-x: hidden;
+  overflow-x: hidden;
 }
 
 body {
-    font-family: "Fira Code", monospace;
-    margin-left: 20px;
-    margin-top: 0;
-    margin-right: 20px;
-    margin-bottom: 0;
-    padding: 0;
-    background-color: #F1F1F1; /* Измененный цвет фона */
+  font-family: "Fira Code", monospace;
+  margin: 20px;
+  padding: 0;
+  background-color: #F1F1F1;
 }
 
 @media (max-width: 600px) {
-body {
-margin-left: 10px;
-margin-top: 0;
-margin-right: 10px;
-margin-bottom: 0;
-padding: 0;
-}
+  body {
+    margin: 10px;
+    padding: 0;
+  }
 }
 
 .fira-code-<uniquifier> {
@@ -30,262 +24,283 @@ padding: 0;
 }
 
 @media (prefers-color-scheme: dark) {
-    body {
-        background-color: #1A1A1A; /* Темный цвет фона для ночного режима */
-        color: #FFFFFF; /* Цвет текста при темном фоне */
-    }
+  body {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+  }
 }
 
 .frame {
-    border: 2px solid #44BBC1; /* Синий цвет рамки */
-    background-color: #FAFAFA; /* Белый фон */
-    padding: 1rem;
-    margin: 1rem 0;
+  border: 2px solid #44BBC1;
+  background-color: #FAFAFA;
+  padding: 1rem;
+  margin: 1rem 0;
 }
 
 @media (prefers-color-scheme: dark) {
-    .frame {
-        border: 2px solid #44BBC1; /* Цвет рамки можно оставить без изменений или изменить на более контрастный */
-        background-color: #1A1A1A;
-    }
+  .frame {
+    border: 2px solid #44BBC1;
+    background-color: #1A1A1A;
+  }
 }
 
 .article {
-    border: none;
-    background-color: #FAFAFA; /* Белый фон */
-    padding: 1rem;
-    margin: 0 auto;
-    max-width: 800px;
-    border-radius: 8px;
-    margin-bottom: 1rem;
+  border: none;
+  background-color: #FAFAFA;
+  padding: 1rem;
+  margin: 0 auto;
+  max-width: 800px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {
-    .article {
-        border: none;
-        background-color: #242424;
-    }
+  .article {
+    background-color: #242424;
+  }
 }
 
 @media (max-width: 600px) {
-    .article {
-        padding-top: 0.2rem;
-        padding-left: 0.5rem;
-        padding-right: 0.5rem;
-        border: none;
-    }
+  .article {
+    padding: 0.2rem 0.5rem;
+    border: none;
+  }
 }
 
 .noneframe {
-    padding: 1rem;
-    margin: 1rem 0;
+  padding: 1rem;
+  margin: 1rem 0;
 }
 
 @media (prefers-color-scheme: dark) {
-.noneframe {
-        color: #FFFFFF; /* Цвет текста в секциях */
-    }
+  .noneframe {
+    color: #FFFFFF;
+  }
 }
 
 .new-year-counter {
-    padding: 1rem;
-    margin: 1rem 0;
-    color: #E30000;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: #E30000;
 }
 
 @media (prefers-color-scheme: dark) {
-.new-year-counter {
-        color: #FFFFFF; /* Цвет текста в секциях */
-    }
+  .new-year-counter {
+    color: #FFFFFF;
+  }
 }
 
 .welcome {
-    border-radius: 0px;
-    padding: 0rem;
-    margin: 1rem 0;
-    color: #44BBC1; /* Цвет текста Тренировочный сайт QAtoDev! */
+  border-radius: 0;
+  padding: 0;
+  margin: 1rem 0;
+  color: #44BBC1;
 }
 
 @media (prefers-color-scheme: dark) {
-    .welcome {
-        color: #44BBC1; /* Цвет текста Тренировочный сайт QAtoDev! */
-    }
+  .welcome {
+    color: #44BBC1;
+  }
 }
 
 .custom-links {
-    border: 2px solid #44BBC1; /* Цвет рамки можно оставить без изменений или изменить на более контрастный */
-    padding: 10; /* Убираем отступы у списка */
-    margin-bottom: 10px;
+  border: 2px solid #44BBC1;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .link-list {
-    padding: 10; /* Убираем отступы у списка */
-    list-style-type: none; /* Убираем маркеры списков, если нужно */
+  padding: 10px;
+  list-style-type: none;
 }
 
 .link-item {
-    margin-bottom: 10px; /* Отступ между элементами списка */
+  margin-bottom: 10px;
 }
 
 @media (max-width: 600px) {
-    .link-item span {
-        display: none; /* Скрываем текст на мобильных */
-        padding: 10; /* Убираем отступы у списка */
-        margin-bottom: 10px;
-    }
+  .link-item span {
+    display: none;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
 }
 
+/* Хэдер и навигация */
 header {
-    position: relative; /* Родительский контейнер для абсолютного позиционирования */
-    padding: 0; /* Убираем лишние отступы */
+  position: relative;
+  padding: 0;
 }
 
 .header-container {
-    position: absolute;
-    top: 20; /* Поднимает логотип и текст к верхнему краю */
-    left: 10px; /* Отступ от левого края */
-    display: flex;
-    align-items: center; /* Выровнять логотип и текст по вертикали */
-    margin-top: -60px;
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  margin-top: -80px;
 }
 
 .logo img {
-padding: 0px; /* Отступы вокруг меню */
-width: 40px; /* Задаем размеры логотипа */
-height: 40px;
-margin-right: 5px; /* Отступ между логотипом и текстом */
+  padding: 0px;
+  width: 40px;
+  height: 40px;
+  margin-right: 5px;
 }
 
 .site-title {
-    font-size: 12px;
-    color: #1e1e1e; /* Цвет заголовка */
+  font-size: 12px;
+  color: #1e1e1e;
 }
 
 @media (prefers-color-scheme: dark) {
-    .site-title {
-        color: #FFFFFF; /* Цвет заголовка */
-    }
+  .site-title {
+    color: #FFFFFF;
+  }
 }
 
 @media (max-width: 1200px) {
-    .site-title {
-        display: none;
-    }
+  .site-title {
+    display: none;
+  }
 }
 
+/* Стили для навигации – ссылки всегда отображаются, при переполнении переносятся на новую строку */
 nav {
-    padding: 10px; /* Отступы вокруг меню */
-    text-align: center; /* Центрирование содержимого */
-    align-items: center; /* Центрируем по горизонтали */
-    justify-content: center;
-    font-size: 12px;
+  padding: 5px;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
 }
 
-ul {
-    list-style-type: none; /* Убираем маркеры списка */
-    padding: 0; /* Убираем отступы */
-    margin: 10; /* Убираем внешние отступы */
-    display: flex; /* Выравниваем ссылки в строку */
-    justify-content: center;  /* ССЫЛКИ ХЭДДЕРА ПО ЦЕНТРУ */
+nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 10px 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 20px;
 }
 
-li {
-    margin-right: 8px; /* Отступы между элементами списка (ССЫЛКИ)*/
+nav li {
+  margin-right: 8px;
 }
 
 a {
-    text-decoration: none; /* Убираем подчеркивание */
-    padding: 7px 10px; /* Высота плашек навигации в хеддере страницы */
-    border-radius: 10px; /* Закругленные углы */
-    background-color: #1e1e1e; /* Прозрачная подложка */
-    color: #F1F1F1; /* Цвет текста */
-    transition: background-color 0.3s; /* Плавный переход цвета фона */
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background-color: #F1F1F1;
+  color: #1A1A1A;
+  transition: background-color 0.2s;
 }
 
 @media (prefers-color-scheme: dark) {
-    a {
-        text-decoration: none;
-        padding: 7px 10px;
-        border-radius: 10px;
-        background-color: rgba(255, 255, 255, 0.7);
-        color: #000;
-        transition: background-color 0.3s;
-    }
+  a {
+      background-color: #1A1A1A;
+      color: #F1F1F1;
+  }
 }
 
 a:hover {
-    background-color: rgba(255, 255, 255, 1); /* Прозрачный фон при наведении */
-    color: #000;
+  background-color: #1A1A1A;
+  color: #F1F1F1;
 }
 
 @media (prefers-color-scheme: dark) {
-    a:hover {
-        background-color: rgba(255, 255, 255, 1);
-    }
+  a:hover {
+    background-color: #F1F1F1;
+    color: #1A1A1A;
+  }
 }
 
 b {
-    text-decoration: none;
-    padding: 7px 10px;
-    border-radius: 10px;
-    background-color: #58BEFE;
-    color: #FFFFFF;
-    transition: background-color 0.3s;
-    cursor: pointer;
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background-color: #58BEFE;
+  color: #FFFFFF;
+  transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 b:hover {
-    background-color: rgba(255, 255, 255, 1);
-    color: #1A1A1A;
+  background-color: rgba(255, 255, 255, 1);
+  color: #1A1A1A;
 }
 
-@media only screen and (max-width: 600px) {
-    ul {
-        flex-direction: list;
-        align-items: center;
-        justify-content: center;
-        margin: 10;
-    }
-
-    li {
-        margin-right: 10;
-    }
-
-    a {
-        padding: 7px 10px;
-        margin-top: 30px;
-        margin-bottom: 7px;
-    }
-
-    b {
-        padding: 7px 10px;
-        margin-top: 30px;
-        margin-bottom: 7px;
-    }
+@media (max-width: 600px) {
+  a, b {
+    margin-top: 7px;
+    margin-bottom: 7px;
+  }
 }
 
-.burger-menu {
-    display: none;
-    cursor: pointer;
+/* Остальные стили (карусель, секции, формы и пр.) остаются без изменений */
+
+.carousel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-/* Стили для контейнеров навигационных пунктов (если хотите задать позиционирование глобально) */
-nav ul li {
-    position: relative;
+.carousel-images {
+  display: flex;
+  overflow: hidden;
+  max-width: 100%;
+  justify-content: center;
 }
 
-/* Стили для бейджа "new" */
-.new-badge {
-    position: absolute;
-    top: -14px;         /* Расположение сверху */
-    right: -5px;       /* Расположение справа */
-    background-color: #E30000;  /* Красный фон */
-    color: #fff;    /* Белый текст */
-    font-size: 8px; /* Размер шрифта можно корректировать под дизайн */
-    padding: 3px 5px;  /* Отступы внутри бейджа */
-    border-radius: 20px;  /* Круглая форма бейджа */
-    line-height: 1;
-    text-transform: uppercase;  /* Для стилизации текста, если нужно */
+.carousel-images img {
+  display: none;
+}
+
+.carousel-images img.active {
+  display: block;
+}
+
+.carousel-images img {
+  width: 100%;
+  height: auto;
+  max-width: 400px;
+  border: 2px solid #000;
+  border-radius: 15px;
+  margin: 5px;
+}
+
+.carousel-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 7px;
+}
+
+.carousel-button {
+  margin: 0 10px;
+  padding: 10px 15px;
+  font-size: 20px;
+  border-radius: 10px;
+  background-color: rgba(255, 255, 255, 0.7);
+  color: #000;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.carousel-button:hover {
+  background-color: rgba(255, 255, 255, 1);
+}
+
+.skills {
+  margin: 10px;
+  padding: 7px 10px;
+  font-size: 15px;
+  border-radius: 4px;
+  background-color: #58BEFE;
+  color: #000;
+  transition: background-color 0.2s;
+  border: none;
 }
 
 /* Стили для блока с навыками */
@@ -330,341 +345,237 @@ nav ul li {
             border-top: 2px solid red;
         }
 
-@media only screen and (max-width: 900px) { /* отвечает за отображение хэддеров, меньше 900px отображает бургер-меню */
-    .burger-menu {
-        padding: 10px;
-        display: block;
-        align-items: center
-    }
-
-    nav ul {
-        display: none;
-        justify-content: center;
-    }
-
-    nav.active ul {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    nav ul.active li {
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
-}
-
-.carousel {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.carousel-images {
-    display: flex;
-    overflow: hidden;
-    max-width: 100%;
-    justify-content: center;
-}
-
-.carousel-images img {
-    display: none;
-}
-
-.carousel-images img.active {
-    display: block;
-}
-
-.carousel-images img {
-    width: 100%;
-    height: auto;
-    max-width: 400px;
-    border: 2px solid #000;
-    border-radius: 15px;
-    margin: 5px;
-}
-
-.carousel-controls {
-    display: flex;
-    justify-content: center;
-    margin-top: 7px;
-}
-
-.carousel-button {
-    margin: 0 10px;
-    padding: 10px 15px;
-    font-size: 20px;
-    border-radius: 10px;
-    background-color: rgba(255, 255, 255, 0.7);
-    color: #000;
-    transition: background-color 0.3s;
-    border: none;
-    cursor: pointer;
-}
-
-.carousel-button:hover {
-    background-color: rgba(255, 255, 255, 1);
-}
-
-.skills {
-    margin: 10px 10px;
-    padding: 7px 10px;
-    font-size: 15px;
-    border-radius: 4px;
-    background-color: #58BEFE;
-    color: #000;
-    transition: background-color 0.3s;
-    border: none;
-}
-
 @media (max-width: 600px) {
-    .carousel-images img {
-        max-width: 70%;
-    }
+  .carousel-images img {
+    max-width: 70%;
+  }
 }
 
 .tetris {
-    border-radius: none;
-    padding: 1rem;
-    margin: 1rem 0;
+  padding: 1rem;
+  margin: 1rem 0;
 }
 
 @media (prefers-color-scheme: dark) {
-    .tetris {
-        background-color: none;
-        border: none;
-        color: #FFFFFF;
-    }
+  .tetris {
+    background-color: none;
+    border: none;
+    color: #FFFFFF;
+  }
 }
 
 #gameCanvas {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
-    border: 2px solid #5A5A5A;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  border: 2px solid #5A5A5A;
 }
 
 @media (max-width: 600px) {
-    #gameCanvas {
-        border: 2px solid #221D1F;
-    }
+  #gameCanvas {
+    border: 2px solid #221D1F;
+  }
 }
 
 .canvas-container {
-    display: flex;
-    justify-content: center;
-    border-radius: 10px;
-    padding: 0px;
+  display: flex;
+  justify-content: center;
+  border-radius: 10px;
+  padding: 0;
 }
 
 .controls {
-    display: flex;
-    align-items: center;
-    margin-top: 10px;
-    justify-content: center;
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  justify-content: center;
 }
 
 .control-button {
-    background-color: none;
-    border: none;
-    border-radius: 10px;
-    padding: 10px;
-    margin: 5px;
-    cursor: pointer;
-    width: 90px;
-    height: 90px;
+  background-color: none;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  margin: 5px;
+  cursor: pointer;
+  width: 90px;
+  height: 90px;
 }
 
 .control-button svg {
-    background-color: none;
-    max-width: 100%;
-    max-height: 100%;
-    height: auto;
-    width: auto;
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  width: auto;
 }
 
 @media (max-width: 600px) {
-    .control-button {
-        width: 70px;
-        height: 70px;
-    }
+  .control-button {
+    width: 70px;
+    height: 70px;
+  }
 }
 
 .responsive-title {
-    text-align: center;
-    width: 100%;
-    height: auto;
+  text-align: center;
+  width: 100%;
+  height: auto;
 }
 
 .responsive-title svg {
-    width: 100%;
-    height: auto;
-    max-width: 600px;
+  width: 100%;
+  height: auto;
+  max-width: 600px;
 }
 
 @media (max-width: 600px) {
-    .responsive-title svg {
-        max-width: 80%;
-    }
+  .responsive-title svg {
+    max-width: 80%;
+  }
 }
 
 .counter {
-    border: 2px solid #44BBC1;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-top: 10px;
-    height: auto;
-    background-color: #FFE6D0;
-    padding: 15px;
-    font-size: 10px;
+  border: 2px solid #44BBC1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 10px;
+  background-color: #FFE6D0;
+  padding: 15px;
+  font-size: 10px;
 }
 
 #userCount {
-    margin: 10px 0;
+  margin: 10px 0;
 }
 
 #increaseCount {
-    padding: 5px 10px;
-    font-size: 24px;
-    border-radius: 8px;
-    background-color: rgba(255, 255, 255, 0.7);
-    color: #000;
-    cursor: pointer;
-    transition: background-color 0.3s;
+  padding: 5px 10px;
+  font-size: 24px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.7);
+  color: #000;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 #increaseCount:hover {
-    background-color: rgba(255, 255, 255, 1);
+  background-color: rgba(255, 255, 255, 1);
 }
 
 @media (max-width: 600px) {
-    .counter {
-        font-size: 18px;
-    }
-    #increaseCount {
-        font-size: 22px;
-    }
+  .counter {
+    font-size: 18px;
+  }
+  #increaseCount {
+    font-size: 22px;
+  }
 }
 
 .footer {
-    border: 2px solid #44BBC1;
-    border-radius: 8px;
-    padding: 0.5rem;
-    display: flex;
-    height: 60px;
-    background-color: #FFE6D0;
-    margin: 1rem 0;
+  border: 2px solid #44BBC1;
+  border-radius: 8px;
+  padding: 0.5rem;
+  display: flex;
+  height: 60px;
+  background-color: #FFE6D0;
+  margin: 1rem 0;
 }
 
 @media (prefers-color-scheme: dark) {
-    .footer {
-        background-color: #1C2E40;
-        border: 2px solid #44BBC1;
-        color: #FFFFFF;
-    }
+  .footer {
+    background-color: #1C2E40;
+    border: 2px solid #44BBC1;
+    color: #FFFFFF;
+  }
 }
 
 .score-container {
-    text-align: center;
-    padding: 8px;
-    font-size: 24px;
-    color: #44BBC1;
+  text-align: center;
+  padding: 8px;
+  font-size: 24px;
+  color: #44BBC1;
 }
 
-#new-year-counter {
-    text-align: center;
-    background-color: none;
-    padding: 20px;
-}
-
-@media (prefers-color-scheme: dark) {
-    #new-year-counter {
-        background-color: none;
-        border: none;
-    }
-}
 
 .svg-container {
-    position: relative;
-    width: 100%;
-    height: 140px;
+  position: relative;
+  width: 100%;
+  height: 140px;
 }
 
 .svg-container svg {
-    position: absolute;
-    width: 15%;
-    height: auto;
+  position: absolute;
+  width: 15%;
+  height: auto;
 }
 
 @media (max-width: 600px) {
-    .svg-container {
-        height: 20px;
-    }
-    .svg-container svg {
-        width: 30%;
-    }
+  .svg-container {
+    height: 20px;
+  }
+  .svg-container svg {
+    width: 30%;
+  }
 }
 
 .qatodev {
-    padding: 0.5rem;
-    margin: 0rem 0;
-    text-align: center;
+  padding: 0.5rem;
+  margin: 0;
+  text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {
-    .qatodev {
-        color: #FFFFFF;
-    }
+  .qatodev {
+    color: #FFFFFF;
+  }
 }
 
 :root {
-    --text-color: #333;
-    --input-background: #fff;
-    --input-text-color: #000;
-    --border-color: #007BFF;
-    --focus-border-color: #007BFF;
-    --button-background-color: rgba(255, 255, 255, 0.7);
-    --button-text-color: #fff;
-    --justify-content: center;
+  --text-color: #333;
+  --input-background: #fff;
+  --input-text-color: #000;
+  --border-color: #007BFF;
+  --focus-border-color: #007BFF;
+  --button-background-color: rgba(255, 255, 255, 0.7);
+  --button-text-color: #fff;
+  --justify-content: center;
 }
 
 @media (prefers-color-scheme: dark) {
-    :root {
-        --background-color: #1e1e1e;
-        --text-color: #f5f5f5;
-        --input-background: #2e2e2e;
-        --input-text-color: #fff;
-        --border-color: #555;
-        --focus-border-color: #66afe9;
-        --button-background: #66afe9;
-        --button-text-color: #fff;
-        --input-justify-content: center;
-    }
+  :root {
+    --background-color: #1e1e1e;
+    --text-color: #f5f5f5;
+    --input-background: #2e2e2e;
+    --input-text-color: #fff;
+    --border-color: #555;
+    --focus-border-color: #66afe9;
+    --button-background: #66afe9;
+    --button-text-color: #fff;
+  }
 }
 
 h2 {
-    text-align: center;
-    margin-bottom: 20px;
+  text-align: center;
+  margin-bottom: 20px;
 }
 
 #contact {
-    max-width: 500px;
-    margin: 0 auto;
-    justify-content: center;
+  max-width: 500px;
+  margin: 0 auto;
+  justify-content: center;
 }
 
 form {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 label {
-    margin-bottom: 5px;
-    /*font-weight: bold; Жирность обычного текста на всей странице*/
-    text-align: center;
+  margin-bottom: 5px;
+  text-align: center;
 }
 
 input[type="text"],
@@ -673,55 +584,54 @@ input[type="email"],
 input[type="password"],
 input[type="tel"],
 textarea {
-    padding: 7px;
-    margin-bottom: 15px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
-    background-color: var(--input-background);
-    color: var(--input-text-color);
-    font-size: 10px;
-    width: 100%;
-    box-sizing: border-box;
-    justify-content: center;
+  padding: 7px;
+  margin-bottom: 15px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background-color: var(--input-background);
+  color: var(--input-text-color);
+  font-size: 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 input:focus,
 textarea:focus {
-    border-color: var(--focus-border-color);
-    outline: none;
+  border-color: var(--focus-border-color);
+  outline: none;
 }
 
 button[type="submit"] {
-    padding: 10px 15px;
-    background-color: var(--button-background);
-    color: #000;
-    border: none;
-    border-radius: 8px;
-    font-size: 25px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
+  padding: 10px 15px;
+  background-color: var(--button-background);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  font-size: 25px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 button[type="submit"]:hover {
-    background-color: rgba(255, 255, 255, 1);
+  background-color: rgba(255, 255, 255, 1);
 }
 
 @media (max-width: 1200px) {
-    body {
-        padding: 0px;
-    }
-    input[type="text"],
-    input[type="number"],
-    input[type="email"],
-    input[type="password"],
-    input[type="tel"],
-    textarea {
-        font-size: 14px;
-        width: 100%;
-    }
-    button[type="submit"] {
-        font-size: 14px;
-    }
+  body {
+    padding: 0;
+  }
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  textarea {
+    font-size: 14px;
+    width: 100%;
+  }
+  button[type="submit"] {
+    font-size: 14px;
+  }
 }
 
 .card {
@@ -733,16 +643,15 @@ button[type="submit"]:hover {
   margin: 1rem auto;
   border-radius: 1px;
   width: 90%;
-  height: auto;
   background-color: #FAFAFA;
-  border: 2px solid #000000;
+  border: 2px solid #000;
 }
 
 @media (prefers-color-scheme: dark) {
-    .card {
-        background-color: #1A1A1A;
-        border: 2px solid #ffffff;
-    }
+  .card {
+    background-color: #1A1A1A;
+    border: 2px solid #fff;
+  }
 }
 
 .card-content {
@@ -764,7 +673,7 @@ button[type="submit"]:hover {
     font-size: 0.8rem;
   }
   .card-content {
-      font-size: 0.8rem;
+    font-size: 0.8rem;
   }
   .card-image {
     display: none;
@@ -772,37 +681,24 @@ button[type="submit"]:hover {
 }
 
 @media only screen and (max-width: 800px) {
-    .burger-menu {
-        display: block;
-    }
-    nav ul {
-        display: none;
-    }
-    nav ul.active {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    nav ul.active li {
-        margin-top: 10px;
-        margin-bottom: 10px;
-    }
+  .selection-item img {
+    width: 100%;
+  }
 }
 
 #canvas {
-    display: block;
-    border-radius: 20px;
-    border: 0px solid #1e1e1e;
-    width: 100%;
-    height: auto;
-    margin: 0;
+  display: block;
+  border-radius: 20px;
+  width: 100%;
+  height: auto;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
-    #canvas {
-        width: 100%;
-        height: auto;
-    }
+  #canvas {
+    width: 100%;
+    height: auto;
+  }
 }
 
 .habr-carousel {
@@ -854,94 +750,79 @@ button[type="submit"]:hover {
 }
 
 .collapsible {
-    max-height: 250px;
-    overflow: hidden;
-    transition: max-height 0.3s ease-out;
+  max-height: 250px;
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
 }
 
 .collapsible.expanded {
-    max-height: 100%;
+  max-height: 100%;
 }
 
 #toggle-button {
-    margin-top: 10px;
-    background-color: #1e1e1e;
-    color: #F1F1F1;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
+  margin-top: 10px;
+  background-color: #1e1e1e;
+  color: #F1F1F1;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
 }
 
 @media (prefers-color-scheme: dark) {
-    #toggle-button {
-        margin-top: 10px;
-        background-color: rgba(255, 255, 255, 0.7);
-        color: #000;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 5px;
-    }
+  #toggle-button {
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #000;
+  }
 }
 
 #toggle-button:hover {
-    background-color: rgba(255, 255, 255, 1);
-    color: #000;
+  background-color: rgba(255, 255, 255, 1);
+  color: #000;
 }
 
 #toggle-buttonTetris {
-    margin-top: 10px;
-    background-color: #1e1e1e;
-    color: #F1F1F1;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
+  margin-top: 10px;
+  background-color: #1e1e1e;
+  color: #F1F1F1;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
 }
 
 @media (prefers-color-scheme: dark) {
-    #toggle-buttonTetris {
-        margin-top: 10px;
-        background-color: rgba(255, 255, 255, 0.7);
-        color: #000;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 5px;
-    }
+  #toggle-buttonTetris {
+    background-color: rgba(255, 255, 255, 0.7);
+    color: #000;
+  }
 }
 
 #toggle-buttonTetris:hover {
-    background-color: rgba(255, 255, 255, 1);
-    color: #000;
+  background-color: rgba(255, 255, 255, 1);
+  color: #000;
 }
 
 #get-plan {
-    margin-top: 10px;
-    background-color: red;
-    color: #F1F1F1;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    border-radius: 5px;
-    font-size: 16px;
+  margin-top: 10px;
+  background-color: red;
+  color: #F1F1F1;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
-    #get-plan {
-        color: #F1F1F1;
-        margin-top: 10px;
-        border: none;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 5px;
-    }
+  #get-plan {
+    color: #F1F1F1;
+  }
 }
 
 #get-plan:hover {
-    background-color: rgba(255, 255, 255, 1);
-    color: #000;
+  background-color: rgba(255, 255, 255, 1);
+  color: #000;
 }
 
 #qa-skills h2 {
@@ -957,6 +838,20 @@ button[type="submit"]:hover {
   margin-bottom: 0.5rem;
   font-size: 1.2rem;
   color: #1e1e1e;
+}
+
+/* Стили для бейджа "new" */
+.new-badge {
+    position: absolute;
+    top: -14px;         /* Расположение сверху */
+    right: -5px;       /* Расположение справа */
+    background-color: #E30000;  /* Красный фон */
+    color: #fff;    /* Белый текст */
+    font-size: 8px; /* Размер шрифта можно корректировать под дизайн */
+    padding: 3px 5px;  /* Отступы внутри бейджа */
+    border-radius: 20px;  /* Круглая форма бейджа */
+    line-height: 1;
+    text-transform: uppercase;  /* Для стилизации текста, если нужно */
 }
 
 .skill-links a {
@@ -993,7 +888,6 @@ button[type="submit"]:hover {
   }
 }
 
-/* Стили для плана изучения */
 #plan-list ul {
   display: block;
   list-style-type: none;
@@ -1001,17 +895,13 @@ button[type="submit"]:hover {
   margin: 10px 10px 20px 10px;
 }
 
-/* Отступы между плашками и адаптация для мобильных:
-   - Каждая строка (li) получает нижний отступ.
-   - Текст не переносится и обрезается с многоточием при узком экране.
-*/
 #plan-list li {
   margin-bottom: 20px;
   white-space: nowrap;
   text-overflow: ellipsis;
-  overflow: hidden;       /* Обрезаем выступающее содержимое */
-  border-radius: 8px;     /* Устанавливаем закругление по краям */
-  padding: 5px;           /* При необходимости добавляем отступы */
+  overflow: hidden;
+  border-radius: 8px;
+  padding: 5px;
 }
 
 @media (max-width: 600px) {
@@ -1020,20 +910,19 @@ button[type="submit"]:hover {
   }
 }
 
-/* Стили для иконок в ссылках плана обучения */
 #plan-list li img {
   vertical-align: middle;
 }
 
 .selection-item img {
-    width: 40%;
-    display: block;
-    margin: 0 auto;
-    border-radius: 10px;
+  width: 40%;
+  display: block;
+  margin: 0 auto;
+  border-radius: 10px;
 }
 
 @media (max-width: 800px) {
-    .selection-item img {
-        width: 100%;
-    }
+  .selection-item img {
+    width: 100%;
+  }
 }

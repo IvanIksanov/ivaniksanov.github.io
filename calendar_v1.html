@@ -2,13 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Календарь</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-
+<body>
+<!-- Обновлённый хэдер без бургер-меню -->
 <nav>
-    <div class="burger-menu">&#9776;</div>
     <ul>
         <li><a href="index.html">На главную</a></li>
         <li><a href="calendar_doc.html">Документация</a></li>
@@ -22,11 +22,17 @@
 <title>Универсальный календарь с поднятой панелью</title>
 <style>
     body {
-      margin: 0px;
+      margin: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+    @media (max-width: 600px) {
+  body {
+    margin: 10px;
+    padding: 0;
+  }
+}
     /* Контейнер календаря с относительным позиционированием */
     .calendar-container {
       position: relative;
@@ -111,7 +117,7 @@
       }
     }
 </style>
-<body>
+
 <div class="calendar-container">
     <!-- Сетка чисел календаря -->
     <div class="grid" id="numbersGrid">
@@ -248,49 +254,34 @@
         updateOverlayPosition();
       }
     });
-</script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const burgerMenu = document.querySelector('.burger-menu');
-        const navLinks = document.querySelector('nav ul');
 
-        burgerMenu.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-    });
+    // Работа кнопки "Свернуть/Развернуть список"
+    document.getElementById('toggle-button3').addEventListener('click', function () {
+      const checklist = document.getElementById('checklist-items3');
+      const button = this;
 
-    // Работа кнопки "Свернуть список"
-document.getElementById('toggle-button3').addEventListener('click', function () {
-        const checklist = document.getElementById('checklist-items3');
-        const button = this;
-
-        if (checklist.classList.contains('expanded')) {
-            checklist.classList.remove('expanded');
-            button.textContent = 'Развернуть список';
-
-            // Скроллим вверх к началу списка
-            checklist.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            checklist.classList.add('expanded');
-            button.textContent = 'Свернуть список';
-        }
+      if (checklist.classList.contains('expanded')) {
+          checklist.classList.remove('expanded');
+          button.textContent = 'Развернуть список';
+          checklist.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+          checklist.classList.add('expanded');
+          button.textContent = 'Свернуть список';
+      }
     });
 
     document.addEventListener("DOMContentLoaded", function () {
-        // Используем путь страницы как префикс для уникальности ключей localStorage
-        const prefix = window.location.pathname + "_";
-        const checkboxes = document.querySelectorAll("#checklist-items3 input[type='checkbox']");
-
-        checkboxes.forEach((checkbox) => {
-            const savedState = localStorage.getItem(prefix + checkbox.name);
-            checkbox.checked = savedState === "true";
-        });
-
-        checkboxes.forEach((checkbox) => {
-            checkbox.addEventListener("change", function () {
-                localStorage.setItem(prefix + checkbox.name, checkbox.checked);
-            });
-        });
+      const prefix = window.location.pathname + "_";
+      const checkboxes = document.querySelectorAll("#checklist-items3 input[type='checkbox']");
+      checkboxes.forEach((checkbox) => {
+          const savedState = localStorage.getItem(prefix + checkbox.name);
+          checkbox.checked = savedState === "true";
+      });
+      checkboxes.forEach((checkbox) => {
+          checkbox.addEventListener("change", function () {
+              localStorage.setItem(prefix + checkbox.name, checkbox.checked);
+          });
+      });
     });
 </script>
 </body>
