@@ -52,6 +52,7 @@ body {
   max-width: 800px;
   border-radius: 8px;
   margin-bottom: 1rem;
+  font-size: 16px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -62,6 +63,30 @@ body {
 
 @media (max-width: 600px) {
   .article {
+    padding: 0.2rem 0.5rem;
+    border: none;
+  }
+}
+
+.check-list {
+  border: none;
+  background-color: #FAFAFA;
+  padding: 1rem;
+  margin: 0 auto;
+  max-width: 800px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .check-list {
+    background-color: #242424;
+  }
+}
+
+@media (max-width: 600px) {
+  .check-list {
     padding: 0.2rem 0.5rem;
     border: none;
   }
@@ -149,7 +174,7 @@ header {
 }
 
 .site-title {
-  font-size: 12px;
+  font-size: 10px;
   color: #1e1e1e;
 }
 
@@ -457,7 +482,7 @@ b:hover {
   background-color: rgba(255, 255, 255, 0.7);
   color: #000;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.3s;
 }
 
 #increaseCount:hover {

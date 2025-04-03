@@ -1,14 +1,52 @@
 /* Обёртка */
-
 html, body {
     overflow-x: hidden;
+}
+
+/* CSS-переменные для тем */
+:root {
+  --control-bg-light: #fff;
+  --control-bg-dark: #222;
+  --button-bg: #FFA001;
+  --button-color-light: #000;
+  --button-color-dark: #fff;
+}
+
+/* Автоматическая адаптация под системную тему */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --control-bg: var(--control-bg-dark);
+    --button-color: var(--button-color-dark);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --control-bg: var(--control-bg-light);
+    --button-color: var(--button-color-light);
+  }
 }
 
 .api-carousel {
   position: relative;
   overflow: hidden;
-  max-width: 500px;  /* Ширина «окна» для форм (настраивайте) */
+  max-width: 500px;  /* Ширина «окна» для форм */
   margin: 0 auto;    /* Центровка */
+  min-height: 400px; /* Фиксированная минимальная высота для предотвращения сдвигов */
+}
+
+/* Фиксированный блок кнопок на экране */
+.api-carousel-controls {
+  position: fixed;           /* Фиксируем блок к экрану */
+  bottom: 0;                 /* Располагаем у нижнего края */
+  left: 0;
+  width: 100%;
+  background-color: var(--control-bg); /* Подложка, адаптирующаяся по теме */
+  z-index: 1000;             /* Выводим поверх остальных элементов */
+  padding: 10px 0;
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* Небольшая тень для отделения */
 }
 
 /* Каждый слайд */
@@ -22,22 +60,40 @@ html, body {
   display: block;
 }
 
-/* Кнопки переключения */
-.api-carousel-controls {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.api-carousel-controls .carousel-button {
+/* Стили для фиксированных кнопок переключения (карусель) */
+.carousel-button {
+  background-color: var(--button-bg);
+  color: var(--button-color);
+  border: none;
+  border-radius: 4px;
   padding: 8px 15px;
   margin: 0 10px;
   cursor: pointer;
 }
 
+/* Стили для кнопок "Отправить" в слайдах */
+.api-slide button {
+  background-color: var(--button-bg);
+  color: var(--button-color);
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* Адаптив для мобильных устройств */
+@media (max-width: 600px) {
+  .carousel-button,
+  .api-slide button {
+    padding: 10px 20px;
+    margin: 0 5px;
+    font-size: 16px;
+  }
+}
+
 /* Для наглядности форм */
 label {
- /* display: block;*/
   margin-bottom: 5px;
 }
 
@@ -45,4 +101,3 @@ input {
   margin-left: 0px;
   margin-bottom: 10px;
 }
-

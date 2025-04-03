@@ -12,7 +12,7 @@
     <ul>
         <li><a href="index.html">На главную</a></li>
         <li><a href="calendar_doc.html">Документация</a></li>
-        <li><a href="calendar_v1.html" style="background-color: #58BEFE;">Версия 1.0</a></li>
+        <li><a href="calendar_v1.html" style="background-color: #FFA001;">Версия 1.0</a></li>
         <li><a href="calendar_v2.html">Версия 2.0</a></li>
         <li><a href="calendar_v3.html">Версия 3.0</a></li>
     </ul>
@@ -116,6 +116,7 @@
          font-size: 18px;
       }
     }
+
 </style>
 
 <div class="calendar-container">
@@ -134,7 +135,7 @@
     <button id="shiftRight">→</button>
 </div>
 
-<section id="features" class="article">
+<section id="features" class="check-list">
     <h2>Чек-лист для тестирования v1.0</h2>
     <div id="checklist">
         <p>
@@ -183,7 +184,7 @@
             <label><input type="checkbox" name="pos_check2"></label> Попробовать изменить значение в массиве gridData на некорректное (числа 32/33/34 и т.д.) и проверить подсветку.<br>
             <br>
         </div>
-        <button id="toggle-button3">Развернуть список</button>
+        <button id="toggle-button">Развернуть список</button>
     </div>
 </section>
 
@@ -256,7 +257,7 @@
     });
 
     // Работа кнопки "Свернуть/Развернуть список"
-    document.getElementById('toggle-button3').addEventListener('click', function () {
+    document.getElementById('toggle-button').addEventListener('click', function () {
       const checklist = document.getElementById('checklist-items3');
       const button = this;
 
