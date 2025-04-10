@@ -57,7 +57,7 @@
     <div class="card" data-topic="theory">
         <div class="card-banner">
             <!-- SVG баннер – здесь можно заменить содержимое на свой SVG -->
-            <img src="img/Frame_1.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; max-width: 700px; height: auto; border-radius: 10px;">
+            <img src="img/Frame_1.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; height: auto; border-radius: 10px;">
         </div>
         <div class="card-title">
             <h3>ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ</h3>
@@ -519,7 +519,7 @@
         <div class="card-banner">
             <div class="card-banner">
                 <!-- SVG баннер – здесь можно заменить содержимое на свой SVG -->
-                <img src="img/Frame_2.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; max-width: 700px; height: auto; border-radius: 10px;">
+                <img src="img/Frame_2.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; height: auto; border-radius: 10px;">
             </div>
         </div>
         <div class="card-title">
@@ -791,7 +791,7 @@
         <div class="card-banner">
             <div class="card-banner">
                 <!-- SVG баннер – здесь можно заменить содержимое на свой SVG -->
-                <img src="img/Frame_3.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; max-width: 700px; height: auto; border-radius: 10px;">
+                <img src="img/Frame_3.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; height: auto; border-radius: 10px;">
             </div>
         </div>
         <div class="card-title">
@@ -968,7 +968,7 @@
         <div class="card-banner">
             <div class="card-banner">
                 <!-- SVG баннер – здесь можно заменить содержимое на свой SVG -->
-                <img src="img/Frame_4.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; max-width: 700px; height: auto; border-radius: 10px;">
+                <img src="img/Frame_4.jpg" alt="БАЗЫ ДАННЫХ" style="width: 100%; height: auto; border-radius: 10px;">
             </div>
         </div>
         <div class="card-title">
@@ -988,7 +988,13 @@
                     <strong>Типы БД</strong>
                     <ul>
                         <li class="node-answer">
-                            Основные типы: реляционные (SQL) и нереляционные (NoSQL), включая документные, ключ-значение, графовые и колонковые базы данных.
+                            Основные типы:<br><br>
+                            реляционные (MySQL, PostgreSQL, Oracle Database, Microsoft SQL Server, SQLite)<br>
+                            документо-ориентированные (MongoDB, CouchDB, Amazon DocumentDB)<br>
+                            ключ-значение (Redis, Amazon DynamoDB)<br>
+                            графовые базы данных (ArangoDB, OrientDB)<br>
+                            колонно-ориентированные БД (Apache Cassandra, ClickHouse, Amazon Redshift)<br>
+                            объектно-ориентированные БД (ObjectDB)<br>
                         </li>
                     </ul>
                 </li>
@@ -1004,7 +1010,28 @@
                     <strong>Назови структуру запроса в БД (SELECT FROM WHERE ORDER BY GROUP BY)</strong>
                     <ul>
                         <li class="node-answer">
-                            Запрос состоит из: SELECT (указание столбцов), FROM (таблица), WHERE (фильтрация данных), GROUP BY (агрегация) и ORDER BY (сортировка результатов).
+                            SELECT - Определяет, какие столбцы или выражения извлекаются<br>
+                            DISTINCT - Убирает повторяющиеся строки из результатов<br>
+                            FROM - Указывает таблицу(ы) или подзапрос, откуда берутся данные<br>
+                            JOIN - Объединяет данные из нескольких таблиц<br>
+                            WHERE - Фильтрует строки до группировки<br>
+                            GROUP BY - Группирует строки по значениям одного или нескольких столбцов<br>
+                            HAVING - Фильтрует группы после группировки<br>
+                            UNION / INTERSECT/ EXCEPT - Оперирует над результатами нескольких запросов<br>
+                            ORDER BY - Сортирует результат по одному или нескольким столбцам<br>
+                            LIMIT - Ограничивает количество возвращаемых строк<br>
+                            OFFSET - Пропускает указанное количество строк в выводе<br><br>
+
+                            Пример:<br><br>
+
+                            SELECT DISTINCT department, COUNT(*) AS total<br>
+                            FROM employees<br>
+                            JOIN departments ON employees.dept_id = departments.id<br>
+                            WHERE salary > 50000<br>
+                            GROUP BY department<br>
+                            HAVING COUNT(*) > 3<br>
+                            ORDER BY total DESC<br>
+                            LIMIT 10 OFFSET 5;<br>
                         </li>
                     </ul>
                 </li>
@@ -1025,10 +1052,50 @@
                     </ul>
                 </li>
                 <li>
-                    <strong>Какая разница между DROP и TRUNCATE?</strong>
+                    <strong>Какая разница между DROP, TRUNCATE и DELETE?</strong>
                     <ul>
                         <li class="node-answer">
-                            DROP удаляет таблицу вместе со структурой, а TRUNCATE удаляет все записи, сохраняя структуру таблицы, что обычно быстрее и менее ресурсоёмко.
+                            DROP удаляет таблицу вместе со структурой.<br>
+                            Пример: DROP TABLE employees;<br><br>
+                            TRUNCATE удаляет все записи, сохраняя структуру таблицы.<br>
+                            Пример: TRUNCATE TABLE employees;<br><br>
+                            DELETE удаляет строки из таблицы (можно использовать WHERE).<br>
+                            Пример: DELETE FROM employees WHERE department = 'Sales';
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Назови порядок выполнения SELECT-запроса</strong>
+                    <ul>
+                        <li class="node-answer">
+                            1.	FROM — выбор таблицы или таблиц (и JOIN’ы, если есть)<br>
+                            2.	WHERE — фильтрация строк<br>
+                            3.	GROUP BY — группировка строк<br>
+                            4.	HAVING — фильтрация групп (после группировки)<br>
+                            5.	SELECT — выбор нужных столбцов и выражений<br>
+                            6.	DISTINCT — удаление дубликатов (если есть)<br>
+                            7.	ORDER BY — сортировка результата<br>
+                            8.	LIMIT / OFFSET — ограничение количества строк<br><br>
+                            Пример:<br><br>
+                            SELECT department, COUNT(*) AS total_employees<br>
+                            FROM employees<br>
+                            WHERE salary > 50000<br>
+                            GROUP BY department<br>
+                            HAVING COUNT(*) > 5<br>
+                            ORDER BY total_employees DESC<br>
+                            LIMIT 10;<br>
+                        </li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Выведи из таблицы Product пять продуктов, у которых price выше 1000</strong>
+                    <ul>
+                        <li class="node-answer">
+                            SELECT *<br>
+                            FROM Product<br>
+                            WHERE price > 1000<br>
+                            ORDER BY price DESC<br>
+                            LIMIT 5;<br>
                         </li>
                     </ul>
                 </li>
@@ -1036,7 +1103,39 @@
                     <strong>Как объединить 2 таблицы?</strong>
                     <ul>
                         <li class="node-answer">
-                            Объединение таблиц осуществляется с помощью оператора JOIN (например, INNER JOIN или LEFT JOIN) по общему полю.
+                            1. INNER JOIN — внутреннее соединение:<br>
+                            Выбирает только совпадающие строки из обеих таблиц по условию.<br><br>
+
+                            SELECT *<br>
+                            FROM table1<br>
+                            INNER JOIN table2<br>
+                            ON table1.id = table2.id;<br><br>
+
+                            2. LEFT JOIN (или LEFT OUTER JOIN):<br>
+                            Берёт все строки из левой таблицы, и только совпадающие — из правой. Если в правой нет соответствия — подставляется NULL.<br><br>
+
+                            SELECT *<br>
+                            FROM table1<br>
+                            LEFT JOIN table2<br>
+                            ON table1.id = table2.id;<br><br>
+
+                            3. RIGHT JOIN (или RIGHT OUTER JOIN):<br>
+                            То же самое, но наоборот: все строки из правой таблицы, и только совпадающие — из левой.<br><br>
+
+                            SELECT *<br>
+                            FROM table1<br>
+                            RIGHT JOIN table2<br>
+                            ON table1.id = table2.id;<br><br>
+
+                            4. FULL JOIN (или FULL OUTER JOIN):<br>
+                            Возвращает все строки из обеих таблиц. Там, где нет совпадений, подставляется NULL.<br><br>
+
+                            SELECT *<br>
+                            FROM table1<br>
+                            FULL JOIN table2<br>
+                            ON table1.id = table2.id;<br>
+
+
                         </li>
                     </ul>
                 </li>
@@ -1089,7 +1188,7 @@
         <div class="card-banner">
             <div class="card-banner">
                 <!-- SVG баннер – здесь можно заменить содержимое на свой SVG -->
-                <img src="img/Frame_5.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; max-width: 700px; height: auto; border-radius: 10px;">
+                <img src="img/Frame_5.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; height: auto; border-radius: 10px;">
             </div>
         </div>
         <div class="card-title">
@@ -1282,7 +1381,7 @@
         <div class="card-banner">
             <div class="card-banner">
                 <!-- SVG баннер – здесь можно заменить содержимое на свой SVG -->
-                <img src="img/Frame_6.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; max-width: 700px; height: auto; border-radius: 10px;">
+                <img src="img/Frame_6.jpg" alt="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ" style="width: 100%; height: auto; border-radius: 10px;">
             </div>
         </div>
         <div class="card-title">

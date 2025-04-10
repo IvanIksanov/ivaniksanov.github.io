@@ -1,0 +1,123 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f2f2f2;
+  margin: 0;
+  padding: 0;
+}
+
+/* Панель загрузки файла */
+.top-container {
+  text-align: center;
+  padding: 10px;
+  background-color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Режим скорочтения: слово по центру */
+#displayArea {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+#wordDisplay {
+  font-weight: bold;
+  opacity: 0;
+}
+
+/* Плавное появление слова */
+.fade {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Режим редактора чтения (полноэкранный оверлей) */
+#editorOverlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+/* Бургер-меню, всегда фиксировано в верхнем левом углу */
+#hamburgerBtn {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  font-size: 24px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 1100;
+}
+
+/* Шторка с настройками, фиксированная слева */
+#settingsDrawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100%;
+  background: #eee;
+  padding: 20px;
+  box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+  overflow-y: auto;
+  z-index: 1050;
+}
+
+/* Контейнер с текстом редактора: фиксированная ширина 800px, центрирован */
+#editorContent {
+  width: 800px;
+  margin: 50px auto;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+/* Настройки внутри шторки */
+#settingsDrawer h2 {
+  margin-top: 10;
+}
+
+#settingsDrawer label {
+  display: block;
+  margin-top: 10px;
+}
+
+#settingsDrawer input,
+#settingsDrawer select,
+#settingsDrawer button {
+  margin-top: 5px;
+}
+
+/* Текст редактора */
+#editorContent span {
+  cursor: pointer;
+}
+
+#editorContent span.selected {
+  background-color: yellow;
+}
+
+/* Адаптация для мобильных устройств */
+@media only screen and (max-width: 800px) {
+  #editorContent {
+    width: 100%;
+    margin: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+  #settingsDrawer {
+    width: 40%;
+  }
+}
