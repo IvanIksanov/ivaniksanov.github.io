@@ -703,6 +703,18 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
   display: block;
 }
 
+   /* сразу после ваших общих правил для svg-hidden */
+   @media (prefers-color-scheme: light) {
+     html:not([data-theme]) .lightToggleIcon_pyhR {
+       display: block;
+     }
+   }
+   @media (prefers-color-scheme: dark) {
+     html:not([data-theme]) .darkToggleIcon_wfgR {
+       display: block;
+     }
+   }
+
 /* НАСТРОЙКА ТЕМНОГО ОФОРМЛЕНИЯ */
 
   html[data-theme="dark"] body {
