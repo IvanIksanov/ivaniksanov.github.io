@@ -218,7 +218,6 @@
         <button id="toggle-button">Развернуть список</button>
     </div>
 </section>
-
 <script>
     /* Данные для заполнения сетки календаря согласно заданию */
     const gridData = [
@@ -387,6 +386,28 @@ document.getElementById('toggle-button').addEventListener('click', function () {
             });
         });
     });
+</script>
+
+<script>
+    (function() {
+      const root = document.documentElement;
+      const btn  = document.getElementById('theme-toggle');
+
+      // Восстановление при загрузке
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') {
+        root.setAttribute('data-theme', saved);
+        btn.classList.toggle('active', saved === 'dark');
+      }
+
+      // Обработчик клика
+      btn.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        btn.classList.toggle('active', next === 'dark');
+      });
+    })();
 </script>
 </body>
 </html>

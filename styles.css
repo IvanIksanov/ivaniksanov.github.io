@@ -23,12 +23,15 @@ body {
   font-style: normal;
 }
 
+/* Отключаем все отдельные dark-медиа-блоки */
+/*
 @media (prefers-color-scheme: dark) {
   body {
     background-color: #1A1A1A;
     color: #FFFFFF;
   }
 }
+*/
 
 .frame {
   border: 2px solid #44BBC1;
@@ -37,12 +40,14 @@ body {
   margin: 1rem 0;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .frame {
     border: 2px solid #44BBC1;
     background-color: #1A1A1A;
   }
 }
+*/
 
 .article {
   border: none;
@@ -55,11 +60,13 @@ body {
   font-size: 16px;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .article {
     background-color: #242424;
   }
 }
+*/
 
 @media (max-width: 600px) {
   .article {
@@ -79,11 +86,13 @@ body {
   font-size: 12px;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .check-list {
     background-color: #242424;
   }
 }
+*/
 
 @media (max-width: 600px) {
   .check-list {
@@ -97,11 +106,13 @@ body {
   margin: 1rem 0;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .noneframe {
     color: #FFFFFF;
   }
 }
+*/
 
 .new-year-counter {
   padding: 1rem;
@@ -109,11 +120,13 @@ body {
   color: #E30000;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .new-year-counter {
     color: #FFFFFF;
   }
 }
+*/
 
 .welcome {
   border-radius: 0;
@@ -122,11 +135,13 @@ body {
   color: #44BBC1;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .welcome {
     color: #44BBC1;
   }
 }
+*/
 
 .custom-links {
   border: 2px solid #44BBC1;
@@ -166,6 +181,18 @@ header {
   margin-top: -80px;
 }
 
+/* Делаем header.welcome фиксированным при скролле */
+header.welcome {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #FAFAFA; /* или используйте тот же фон, что и у body */
+  /* при желании можно добавить тень:
+     box-shadow: 0 2px 4px rgba(0,0,0,0.1); */
+}
+
 .logo img {
   padding: 0px;
   width: 40px;
@@ -178,11 +205,13 @@ header {
   color: #1e1e1e;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .site-title {
     color: #FFFFFF;
   }
 }
+*/
 
 @media (max-width: 1200px) {
   .site-title {
@@ -222,24 +251,28 @@ a {
   transition: background-color 0.2s;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   a {
       background-color: #1A1A1A;
       color: #F1F1F1;
   }
 }
+*/
 
 a:hover {
   background-color: #1A1A1A;
   color: #F1F1F1;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   a:hover {
     background-color: #F1F1F1;
     color: #1A1A1A;
   }
 }
+*/
 
 b {
   text-decoration: none;
@@ -381,6 +414,7 @@ b:hover {
   margin: 1rem 0;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .tetris {
     background-color: none;
@@ -388,6 +422,7 @@ b:hover {
     color: #FFFFFF;
   }
 }
+*/
 
 #gameCanvas {
   max-width: 100%;
@@ -508,6 +543,7 @@ b:hover {
   margin: 1rem 0;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .footer {
     background-color: #1C2E40;
@@ -515,6 +551,7 @@ b:hover {
     color: #FFFFFF;
   }
 }
+*/
 
 .score-container {
   text-align: center;
@@ -551,11 +588,13 @@ b:hover {
   text-align: center;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .qatodev {
     color: #FFFFFF;
   }
 }
+*/
 
 :root {
   --text-color: #333;
@@ -568,6 +607,7 @@ b:hover {
   --justify-content: center;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   :root {
     --background-color: #1e1e1e;
@@ -580,6 +620,7 @@ b:hover {
     --button-text-color: #fff;
   }
 }
+*/
 
 h2 {
   text-align: center;
@@ -668,16 +709,17 @@ button[type="submit"]:hover {
   margin: 1rem auto;
   border-radius: 1px;
   width: 90%;
-  background-color: #FAFAFA;
   border: 2px solid #000;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .card {
     background-color: #1A1A1A;
     border: 2px solid #fff;
   }
 }
+*/
 
 .card-content {
   flex: 1;
@@ -794,12 +836,14 @@ button[type="submit"]:hover {
   border-radius: 5px;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   #toggle-button {
     background-color: rgba(255, 255, 255, 0.7);
     color: #000;
   }
 }
+*/
 
 #toggle-button:hover {
   background-color: rgba(255, 255, 255, 1);
@@ -816,12 +860,14 @@ button[type="submit"]:hover {
   border-radius: 5px;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   #toggle-buttonTetris {
     background-color: rgba(255, 255, 255, 0.7);
     color: #000;
   }
 }
+*/
 
 #toggle-buttonTetris:hover {
   background-color: rgba(255, 255, 255, 1);
@@ -839,11 +885,13 @@ button[type="submit"]:hover {
   font-size: 16px;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   #get-plan {
     color: #F1F1F1;
   }
 }
+*/
 
 #get-plan:hover {
   background-color: rgba(255, 255, 255, 1);
@@ -895,6 +943,7 @@ button[type="submit"]:hover {
   color: #F1F1F1;
 }
 
+/*
 @media (prefers-color-scheme: dark) {
   .skill-category h3 {
     color: #FFFFFF;
@@ -912,6 +961,7 @@ button[type="submit"]:hover {
     color: #000;
   }
 }
+*/
 
 #plan-list ul {
   display: block;
@@ -950,4 +1000,163 @@ button[type="submit"]:hover {
   .selection-item img {
     width: 100%;
   }
+}
+
+/* Обязательно: header уже position: relative; */
+
+.theme-switcher {
+  position: absolute;
+  top: -55px;
+  right: 16px;
+  z-index: 10;
+  transform: none;
+}
+
+@media (max-width: 600px) {
+  .theme-switcher {
+    top: -55px;
+    right: 8px;
+  }
+}
+
+/* Убираем лишний margin-left, задаём отступы внутри */
+.theme-switcher button {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin: 0;       /* сброс margin-left: auto */
+  padding: 6px;    /* можно подогнать паддинги */
+}
+
+/* Подсветка при активной теме */
+.theme-switcher button.active {
+  color: #F1F1F1;
+}
+
+/* Подсветка при наведении */
+.theme-switcher button:hover {
+  background: rgba(255, 165, 0, 0.1); /* лёгкий оранжевый фон */
+  color: #FFA001;                     /* окрашиваем иконку в оранжевый */
+}
+
+
+
+/* Размер кнопки */
+.toggleButton_gllP {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: none;
+  border: none;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.toggleButton_gllP:hover {
+  background: var(--ifm-color-emphasis-200);
+}
+
+/* Иконки */
+.lightToggleIcon_pyhR,
+.darkToggleIcon_wfgR {
+  display: none;
+}
+html[data-theme="light"] .lightToggleIcon_pyhR {
+  display: block;
+}
+html[data-theme="dark"] .darkToggleIcon_wfgR {
+  display: block;
+}
+
+/* === ПОСЛЕ ВСЕХ МЕДИА-ЗАПРОСОВ === */
+/* когда либо система в dark-режиме, либо мы сами явно включили dark-mode → применять тёмные переменные */
+
+  /* сюда скопировать все ваши правила из @media(prefers-color-scheme: dark) */
+  html[data-theme="dark"] body {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
+  }
+
+  html[data-theme="dark"] .frame {
+      border: 2px solid #44BBC1;
+      background-color: #1A1A1A;
+  }
+
+  html[data-theme="dark"] .article {
+      background-color: #242424;
+  }
+
+    html[data-theme="dark"] .check-list {
+    background-color: #242424;
+  }
+
+  html[data-theme="dark"] .noneframe {
+      color: #FFFFFF;
+  }
+
+  html[data-theme="dark"] .new-year-counter {
+      color: #FFFFFF;
+  }
+
+  html[data-theme="dark"] .welcome {
+      color: #44BBC1;
+  }
+
+  html[data-theme="dark"] .site-title {
+      color: #FFFFFF;
+  }
+
+  html[data-theme="dark"] a {
+        background-color: #1A1A1A;
+        color: #F1F1F1;
+  }
+
+  html[data-theme="dark"] a:hover {
+      background-color: #F1F1F1;
+      color: #1A1A1A;
+  }
+
+    html[data-theme="dark"] .skill-category h3 {
+      color: #FFFFFF;
+    }
+    html[data-theme="dark"] .skill-links a {
+      background-color: #1e1e1e;
+      color: #F1F1F1;
+    }
+    html[data-theme="dark"] .skill-links a:hover {
+      background-color: rgba(255, 255, 255, 1);
+      color: #000;
+    }
+    html[data-theme="dark"] .skill-links a.selected {
+      background-color: #FFFFFF;
+      color: #000;
+    }
+
+    html[data-theme="dark"] #toggle-button {
+        background-color: rgba(255, 255, 255, 0.7);
+        color: #000;
+    }
+
+    html[data-theme="dark"] #toggle-button:hover {
+      background-color: rgba(255, 255, 255, 1);
+      color: #000;
+    }
+
+
+    html[data-theme="dark"] .card {
+      background-color: #1A1A1A;
+      border: 1px solid #fff;
+    }
+
+/* Аналогично, если хотите корректно «принудительно» светлую тему: */
+@media (prefers-color-scheme: light), html[data-theme="light"] {
+  /* ваши правила для светлой темы */
+  body {
+    background-color: #F1F1F1;
+    color: #1A1A1A;
+  }
+  /* … */
 }

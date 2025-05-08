@@ -10,7 +10,6 @@
 .page-header {
   text-align: center;
   padding: 1rem;
-  color: #1A1A1A;
   margin-bottom: 1.5rem;
 }
 
@@ -33,7 +32,6 @@
 
 /* Стили карточек */
 .roadmap-card {
-  background-color: #FAFAFA;
   border: 2px solid #44BBC1;
   border-radius: 8px;
   padding: 1rem;
@@ -73,8 +71,7 @@
 
 /* Стили карточки с ветвлением */
 .branch {
-  background-color: #fff;
-  border-color: #007BFF;
+  border-color: #44BBC1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -93,7 +90,6 @@
 }
 
 .branch-card {
-  background-color: #FAFAFA;
   border: 2px solid #44BBC1;
   border-radius: 8px;
   padding: 0.75rem;
@@ -113,9 +109,9 @@
   font-size: 1.1rem;
 }
 
-/* Адаптивные настройки */
+/* Адаптивные настройки: ширина бордера на мобильных экранов*/
 @media (max-width: 768px) {
   .roadmap-container {
-    width: 95%;
+    width: 90%;
   }
 }
