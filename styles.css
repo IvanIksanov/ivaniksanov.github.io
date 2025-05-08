@@ -1021,6 +1021,7 @@ button[type="submit"]:hover {
 
 /* Убираем лишний margin-left, задаём отступы внутри */
 .theme-switcher button {
+  color: #1A1A1A;
   background: none;
   border: none;
   font-size: 1.2rem;
