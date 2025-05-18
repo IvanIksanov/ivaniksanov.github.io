@@ -146,7 +146,17 @@ a {
   transition: background-color 0.2s;
 }
 
+a.answer-link {
+  background-color: #929292;
+  color: #F1F1F1;
+}
+
 a:hover {
+  background-color: #1A1A1A;
+  color: #F1F1F1;
+}
+
+a.answer-link:hover {
   background-color: #1A1A1A;
   color: #F1F1F1;
 }
@@ -756,6 +766,16 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
       background-color: #F1F1F1;
       color: #1A1A1A;
   }
+
+  html[data-theme="dark"] a.answer-link {
+        background-color: #999999;
+        color: #1A1A1A;
+  }
+
+  html[data-theme="dark"] a.answer-link:hover {
+        background-color: #F1F1F1;
+        color: #1A1A1A;
+    }
 
   html[data-theme="dark"] .footer {
       background-color: #1C2E40;
