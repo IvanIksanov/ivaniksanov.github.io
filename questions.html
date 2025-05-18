@@ -520,7 +520,8 @@
             {
               id: 'accordion_api_q2',
               title: 'Из чего состоит URL?',
-              answer: 'URL состоит из схемы (например, http/https), домена, порта (опционально), пути, параметров запроса и фрагмента (якоря).'
+              answer: 'URL состоит из схемы (например, http/https), домена, порта (опционально), пути, параметров запроса и фрагмента (якоря).',
+              moreLink: 'https://www.dev-notes.ru/articles/devops/whats-in-a-url/'
             },
             {
               id: 'accordion_api_q3',
@@ -621,17 +622,20 @@
             {
               id: 'accordion_db_q1',
               title: 'Что такое БД?',
-              answer: 'База данных (БД) – систематизированное хранилище данных, управляемое СУБД, которое обеспечивает хранение, поиск и модификацию информации.'
+              answer: 'База данных (БД) – систематизированное хранилище данных, управляемое СУБД, которое обеспечивает хранение, поиск и модификацию информации.',
+              moreLink: 'https://sql-academy.org/ru/guide/basic-database-concepts'
             },
             {
               id: 'accordion_db_q2',
               title: 'Типы БД',
-              answer: 'Основные типы:<br><br>реляционные (MySQL, PostgreSQL, Oracle Database, Microsoft SQL Server, SQLite)<br>документо-ориентированные (MongoDB, CouchDB, Amazon DocumentDB)<br>ключ-значение (Redis, Amazon DynamoDB)<br>графовые базы данных (ArangoDB, OrientDB)<br>колонно-ориентированные БД (Apache Cassandra, ClickHouse, Amazon Redshift)<br>объектно-ориентированные БД (ObjectDB)'
+              answer: 'Основные типы:<br><br>реляционные (MySQL, PostgreSQL, Oracle Database, Microsoft SQL Server, SQLite)<br>документо-ориентированные (MongoDB, CouchDB, Amazon DocumentDB)<br>ключ-значение (Redis, Amazon DynamoDB)<br>графовые базы данных (ArangoDB, OrientDB)<br>колонно-ориентированные БД (Apache Cassandra, ClickHouse, Amazon Redshift)<br>объектно-ориентированные БД (ObjectDB)',
+              moreLink: 'https://sql-academy.org/ru/guide/relation-databases'
             },
             {
               id: 'accordion_db_q3',
               title: 'Отличие реляционных от нереляционных БД?',
-              answer: 'Реляционные БД используют таблицы с фиксированной схемой и SQL для запросов, тогда как нереляционные БД гибче, масштабируются горизонтально и используют различные модели данных.'
+              answer: 'Реляционные БД используют таблицы с фиксированной схемой и SQL для запросов, тогда как нереляционные БД гибче, масштабируются горизонтально и используют различные модели данных.',
+              moreLink: 'https://sql-academy.org/ru/guide/structure-of-relation-databases'
             },
             {
               id: 'accordion_db_q4',
@@ -641,12 +645,14 @@
             {
               id: 'accordion_db_q5',
               title: 'Типы JOIN? (показать на кругах Эйлера)',
-              answer: 'Основные типы JOIN: INNER JOIN, LEFT (OUTER) JOIN, RIGHT (OUTER) JOIN, FULL (OUTER) JOIN и CROSS JOIN – используются для объединения строк из разных таблиц по общему полю.'
+              answer: 'Основные типы JOIN: INNER JOIN, LEFT (OUTER) JOIN, RIGHT (OUTER) JOIN, FULL (OUTER) JOIN и CROSS JOIN – используются для объединения строк из разных таблиц по общему полю.',
+              moreLink: 'https://sql-academy.org/ru/guide/multi-table-request-join'
             },
             {
               id: 'accordion_db_q6',
               title: 'Для чего используем ORDER BY/GROUP BY?',
-              answer: 'ORDER BY используется для сортировки результатов, а GROUP BY – для агрегирования данных по определённому критерию с последующим применением агрегатных функций.'
+              answer: 'ORDER BY используется для сортировки результатов, а GROUP BY – для агрегирования данных по определённому критерию с последующим применением агрегатных функций.',
+              moreLink: 'https://sql-academy.org/ru/guide/sorting'
             },
             {
               id: 'accordion_db_q7',
@@ -671,12 +677,14 @@
             {
               id: 'accordion_db_q11',
               title: 'Что такое оконная функция?',
-              answer: 'Оконная функция в SQL выполняет вычисления по набору строк, связанных с текущей строкой, без группировки, позволяя получать, например, ранжирование или суммарные значения по разделам.'
+              answer: 'Оконная функция в SQL выполняет вычисления по набору строк, связанных с текущей строкой, без группировки, позволяя получать, например, ранжирование или суммарные значения по разделам.',
+              moreLink: 'https://sql-academy.org/ru/guide/windows-functions'
             },
             {
               id: 'accordion_db_q12',
               title: 'Что такое подзапросы?',
-              answer: 'Подзапрос – это запрос, вложенный в другой запрос, используемый для вычисления значений или фильтрации данных.'
+              answer: 'Подзапрос – это запрос, вложенный в другой запрос, используемый для вычисления значений или фильтрации данных.',
+              moreLink: 'https://sql-academy.org/ru/guide/nested-sql-queries'
             },
             {
               id: 'accordion_db_q13',
@@ -687,7 +695,8 @@
             {
               id: 'accordion_db_q14',
               title: 'Приведи пример запроса на вычисление среднего значения стоимости в столбце Price',
-              answer: 'Пример: <code>SELECT AVG(Price) AS AvgPrice FROM Products;</code>'
+              answer: 'Пример: <code>SELECT AVG(Price) AS AvgPrice FROM Products;</code>',
+              moreLink: 'https://sql-academy.org/ru/guide/aggregate-functions'
             },
             {
               id: 'accordion_db_q15',
@@ -809,17 +818,20 @@
             {
               id: 'accordion_git_q20',
               title: 'Что такое Maven?',
-              answer: 'Maven – инструмент для управления проектами на Java, обеспечивающий сборку, управление зависимостями и стандартизированную структуру проекта через POM-файл.'
+              answer: 'Maven – инструмент для управления проектами на Java, обеспечивающий сборку, управление зависимостями и стандартизированную структуру проекта через POM-файл.',
+              moreLink: 'https://ru.hexlet.io/blog/posts/apache-maven-chto-eto-i-kak-ispolzovat-v-java'
             },
             {
               id: 'accordion_git_q21',
               title: 'Что такое PageObject и PageFactory?',
-              answer: 'PageObject – паттерн для организации автотестов, где каждая страница представлена классом с методами взаимодействия. PageFactory – инструмент для инициализации элементов страницы, упрощающий работу с локаторами.'
+              answer: 'PageObject – паттерн для организации автотестов, где каждая страница представлена классом с методами взаимодействия. PageFactory – инструмент для инициализации элементов страницы, упрощающий работу с локаторами.',
+              moreLink: 'https://testengineer.ru/bolshoj-gajd-po-page-object-model/'
             },
             {
               id: 'accordion_git_q22',
               title: 'Какая разница между String, StringBuffer и StringBuilder?',
-              answer: 'String – неизменяемая строка; StringBuffer – изменяемая строка с синхронизацией (потокобезопасная); StringBuilder – изменяемая строка без синхронизации (быстрее в однопоточной среде).'
+              answer: 'String – неизменяемая строка; StringBuffer – изменяемая строка с синхронизацией (потокобезопасная); StringBuilder – изменяемая строка без синхронизации (быстрее в однопоточной среде).',
+              moreLink: 'https://habr.com/ru/articles/260767/'
             }
           ]
         },
@@ -829,12 +841,14 @@
             {
               id: 'accordion_devops_q1',
               title: 'Что такое Docker?',
-              answer: 'Docker – платформа контейнеризации, позволяющая создавать, развёртывать и запускать приложения в изолированных контейнерах.'
+              answer: 'Docker – платформа контейнеризации, позволяющая создавать, развёртывать и запускать приложения в изолированных контейнерах.',
+              moreLink: 'https://doka.guide/tools/docker/'
             },
             {
               id: 'accordion_devops_q2',
               title: 'Отличие виртуальных машин от контейнеров?',
-              answer: 'Виртуальные машины запускают полноценные ОС поверх гипервизора; контейнеры используют ядро хоста и изолируют процессы, что легче и быстрее.'
+              answer: 'Виртуальные машины запускают полноценные ОС поверх гипервизора; контейнеры используют ядро хоста и изолируют процессы, что легче и быстрее.',
+              moreLink: 'https://habr.com/ru/articles/474068/'
             },
             {
               id: 'accordion_devops_q3',
