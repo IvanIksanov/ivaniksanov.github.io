@@ -24,11 +24,10 @@
 
 Как использовать
 
-Просто перейдите на сайт: ivaniksanov.github.io
+Просто перейдите на сайт: [ivaniksanov.github.io](https://ivaniksanov.github.io/)
 Никакой регистрации, всё работает прямо в браузере.
 
 Телеграм-канал 
-
-t.me/QAtoDev
+[QAtoDev](https://t.me/QAtoDev)
 
 
