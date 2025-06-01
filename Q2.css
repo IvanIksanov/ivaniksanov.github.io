@@ -617,6 +617,17 @@ h2 {
   box-shadow: 0 0 0 1px var(--search-focus);
 }
 
+.answer-image {
+  margin-top: 12px;
+  text-align: center;
+}
+.answer-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
 /* ===================================================================
    Цветовые переменные
    =================================================================== */
@@ -758,7 +769,7 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
   }
 
   html[data-theme="dark"] a {
-        background-color: #1A1A1A;
+        background-color: #1A1A1A;-
         color: #FFFFFF;
   }
 

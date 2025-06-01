@@ -598,29 +598,12 @@ b:hover {
 
 :root {
   --text-color: #333;
-  --input-background: #fff;
-  --input-text-color: #000;
-  --border-color: #007BFF;
+  --border-color: #FFA001;
   --focus-border-color: #007BFF;
   --button-background-color: rgba(255, 255, 255, 0.7);
   --button-text-color: #fff;
   --justify-content: center;
 }
-
-/*
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background-color: #1e1e1e;
-    --text-color: #f5f5f5;
-    --input-background: #2e2e2e;
-    --input-text-color: #fff;
-    --border-color: #555;
-    --focus-border-color: #66afe9;
-    --button-background: #66afe9;
-    --button-text-color: #fff;
-  }
-}
-*/
 
 h2 {
   text-align: center;
@@ -1041,8 +1024,6 @@ button[type="submit"]:hover {
   color: #FFA001;                     /* окрашиваем иконку в оранжевый */
 }
 
-
-
 /* Размер кнопки */
 .toggleButton_gllP {
   display: flex;
@@ -1158,11 +1139,14 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
       color: #000;
     }
 
-
     html[data-theme="dark"] .card {
       background-color: #1A1A1A;
       border: 1px solid #fff;
     }
+
+     html[data-theme="dark"] :root {
+        --border-color: #1A1A1A;
+      }
 
 /* Аналогично, если хотите корректно «принудительно» светлую тему: */
 @media (prefers-color-scheme: light), html[data-theme="light"] {

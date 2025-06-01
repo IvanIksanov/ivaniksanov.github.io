@@ -1,23 +1,8 @@
-/* Тёмный режим */
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1A1A1A;
-    color: #F1F1F1;
-  }
-}
-
 /* Заголовок страницы */
 .page-header {
   text-align: center;
   padding: 1rem;
   margin-bottom: 1.5rem;
-}
-
-@media (prefers-color-scheme: dark) {
-  .page-header {
-    background-color: #1A1A1A;
-    color: #fff;
-  }
 }
 
 /* Контейнер дорожной карты */
@@ -39,13 +24,6 @@
   text-align: center;
   margin: 0.5rem 0;
   position: relative;
-}
-
-@media (prefers-color-scheme: dark) {
-  .roadmap-card {
-    background-color: #2e2e2e;
-    border-color: #44BBC1;
-  }
 }
 
 .roadmap-card h3 {
@@ -74,13 +52,6 @@
   border-color: #44BBC1;
 }
 
-@media (prefers-color-scheme: dark) {
-  .branch {
-    background-color: #2e2e2e;
-    border-color: #007BFF;
-  }
-}
-
 .branch-container {
   display: flex;
   justify-content: center;
@@ -97,13 +68,6 @@
   text-align: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  .branch-card {
-    background-color: #2e2e2e;
-    border-color: #44BBC1;
-  }
-}
-
 .branch-card h4 {
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
@@ -115,3 +79,22 @@
     width: 90%;
   }
 }
+
+
+html[data-theme="dark"] body {
+    background-color: #1A1A1A;
+        color: #F1F1F1;
+   }
+
+html[data-theme="dark"] .branch-card {
+    border-color: #44BBC1;
+  }
+
+html[data-theme="dark"] .roadmap-card {
+    border-color: #44BBC1;
+  }
+
+html[data-theme="dark"] .page-header {
+    background-color: #1A1A1A;
+    color: #fff;
+  }
