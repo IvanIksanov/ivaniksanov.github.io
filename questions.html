@@ -410,8 +410,7 @@
               id: 'accordion_theory_q48',
               title: 'В каких случаях больше подходит тест кейс, в каких чек-лист?',
               answer: 'Чек-листы пишут на этапе проектирования тест дизайна, описание проверок на основе требований и на этапе тестирования функциональности - очень удобно и быстро набросать список проверок на основе требований. Тест-кейсы пишут после релиза, например версия 1.5, и эти кейсы будут включены в регресс следующего релиза 1.6 (регрессионное тестирование).<br><br>Чек-лист подходит для тестировщика, который знаком с ПО и с его функционалом, специалист может приступить к проверке, ориентируясь по одному предложению "проверить отправку заявок в поддержку", а Тест-кейс это подробно описанный сценарий действий, в котором есть название, подготовка тестовых данных, шаги, ожидаемый результат.',
-              moreLink: 'https://practicum.yandex.ru/blog/chto-takoe-test-keys-i-kak-ego-sostavit/',
-              img: 'img/answer/check-list.jpeg'
+              moreLink: 'https://practicum.yandex.ru/blog/chto-takoe-test-keys-i-kak-ego-sostavit/'
             },
             {
               id: 'accordion_theory_q49',
@@ -481,7 +480,8 @@
               id: 'accordion_web_q6',
               title: 'Что такое клиент-серверная архитектура?',
               answer: 'Клиент-серверная архитектура — это архитектурный стиль, при котором идет взаимодействие клиента (например, браузера) и сервера посредством передачи данных.<br><br>Клиент отправляет запрос на сервер, который может взаимодействовать с базой данных для сохранения, изменения или чтения информации.<br><br>Основные роли:<br><br>• Клиент: отправляет запросы и отображает информацию пользователю.<br><br>• Балансировщик нагрузки (Load Balancer): распределяет входящие запросы между несколькими серверами для оптимизации нагрузки.<br><br>• Сервер: обрабатывает запросы клиентов и взаимодействует с базой данных.<br><br>• База данных (БД): хранит данные и отвечает на запросы сервера.',
-              moreLink: 'https://doka.guide/tools/web-app-works/'
+              moreLink: 'https://doka.guide/tools/web-app-works/',
+              img: 'img/answer/client-server-2.jpg'
             },
             {
               id: 'accordion_web_q7',
@@ -589,7 +589,8 @@
             {
               id: 'accordion_api_q1',
               title: 'Что такое API?',
-              answer: 'API (Application Programming Interface) – набор протоколов и инструментов для создания программ, который определяет, как программные компоненты взаимодействуют друг с другом.'
+              answer: 'API (Application Programming Interface) – набор протоколов и инструментов для создания программ, который определяет, как программные компоненты взаимодействуют друг с другом.',
+              moreLink: 'https://doka.guide/tools/api/'
             },
             {
               id: 'accordion_api_q2',
@@ -1105,7 +1106,41 @@
       data.forEach(cat => {
         const section = document.createElement("section");
         section.className = "article";
-        section.innerHTML = `<h3 class="category-title">${cat.category}</h3>`;
+
+        let imgSrc = "";
+        switch (cat.category) {
+          case "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ":
+            imgSrc = "img/answer/check-list.jpeg";
+            break;
+          case "WEB":
+            imgSrc = "img/answer/client-2.jpeg";
+            break;
+          case "API":
+            imgSrc = "img/answer/api.jpeg";
+            break;
+          case "БАЗЫ ДАННЫХ":
+            imgSrc = "img/answer/mysql.jpeg";
+            break;
+          case "GIT + IDE + SELENIUM":
+            imgSrc = "img/answer/git.jpeg";
+            break;
+          case "DEVOPS":
+            imgSrc = "img/answer/docker.jpeg";
+            break;
+          case "Вопросы к руководителю | команде | HR":
+            imgSrc = "img/answer/hr.jpeg";
+            break;
+          // при необходимости добавьте другие категории
+          default:
+            imgSrc = "img/answer/default-category.png"; // картинка-заглушка, если не заданы
+        }
+
+        section.innerHTML = `
+          <div class="answer-image">
+            <img src="${imgSrc}" alt="Иконка для ${cat.category}" class="category-icon" />
+            <h3 class="category-title">${cat.category}</h3>
+          </div>
+        `;
         container.appendChild(section);
 
         cat.items.forEach(item => {
