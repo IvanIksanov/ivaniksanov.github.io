@@ -118,6 +118,8 @@ header {
 /* Стили для навигации – ссылки всегда отображаются, при переполнении переносятся на новую строку */
 nav {
   padding: 5px;
+  margin-right: 40px;
+  margin-left: 40px;
   text-align: center;
   align-items: center;
   justify-content: center;
@@ -483,10 +485,9 @@ h2 {
 /* 2) Сам инпут */
 .search-container #search-input {
   display: inline-block;      /* чтобы margin: auto работал */
-  width: 100%;                /* по ширине контейнера */
+  width: 98%;                /* по ширине контейнера */
   padding: 0.75rem 2.5rem 0.75rem 1rem; /* запас справа под кнопку */
   font-size: 1rem;
-  line-height: 1.5;
   border: none;
   border-radius: 0.5rem;
   background-color: #FAFAFA;
@@ -510,11 +511,10 @@ h2 {
 /* 5) Кнопка “очистить” внутри инпута */
 .search-container .clear-btn {
   position: absolute;
-  top: 15%;
+  top: 12%;
   right: 1rem;
   width: 1.2rem;
   height: 1.2rem;
-  line-height: 1.2rem;
   font-size: 1.2rem;
   text-align: center;
   border: none;
@@ -528,11 +528,10 @@ h2 {
 
 .search-container .ai-btn {
   position: absolute;
-  top: 21%;
+  top: 20%;
   right: 3rem;
   width: 1.2rem;
   height: 1.2rem;
-  line-height: 1.2rem;
   font-size: 1rem;
   text-align: center;
   border: none;
@@ -544,17 +543,22 @@ h2 {
   z-index: 1;
 }
 
+#search-results-title {
+  display: none;
+  margin: 1.5rem 0 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 /* ===================================================================
    Мобильная адаптация (обновлённая часть)
    =================================================================== */
 @media (max-width: 600px) {
   .search-container {
-    padding: 0.5rem;
+    padding: 0.9rem;
   }
   .search-container #search-input {
-    padding: 4rem 8rem 0.5rem 5rem; /* на мобильных тоже увеличили правый отступ */
     font-size: 0.9rem;
-    border-radius: 0.375rem;
     overflow: hidden;           /* обрезка длинного текста */
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -593,11 +597,15 @@ h2 {
   color: var(--search-text);
 }
 
+/* 7) Hover-эффект для кнопки */
+.search-container .ai-btn:hover {
+  color: var(--search-text);
+}
+
 /* ===== Стили для выпадающего списка (как поле поиска) ===== */
 .search-container #model-select {
   /* Подложка и размеры как у инпута */
   padding: 0.15rem 1rem;
-  line-height: 2;
   width: auto;                 /* подгоняйте под нужную ширину */
   border: none;
   background-color: var(--search-bg);
@@ -634,6 +642,26 @@ h2 {
   box-shadow: 0 0 0 1px var(--search-focus);
 }
 
+/* 1) Делаем отступ в инпуте, чтобы текст не доходил до кнопки */
+.search-container #search-input {
+  /* вместо 4rem подберите значение, равное ширине кнопки + отступ */
+  padding-right: 5rem;
+}
+
+@media (max-width: 600px) {
+  .search-container {
+    padding: 0rem;
+  }
+  .search-container #search-input {
+    font-size: 0.9rem;
+    padding: 0.75rem 5rem 0.75rem 1rem; /* ширина кнопки + запас */
+    border-radius: 0.1rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
+
 .answer-image {
   margin-top: 12px;
   text-align: center;
@@ -655,20 +683,6 @@ h2 {
   --search-placeholder: #777;
   --search-shadow:      0 2px 4px rgba(0, 0, 0, 0.1);
   --search-focus:       rgba(255, 160, 1, 0.5);
-}
-
-/* ===================================================================
-   Мобильная адаптация
-   =================================================================== */
-@media (max-width: 600px) {
-  .search-container {
-    padding: 0.5rem;
-  }
-  .search-container #search-input {
-    padding: 0.5rem 2rem 0.5rem 0.75rem;
-    font-size: 0.9rem;
-    border-radius: 0.375rem;
-  }
 }
 
 /* Обязательно: header уже position: relative; */

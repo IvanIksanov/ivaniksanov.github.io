@@ -1167,14 +1167,38 @@ const systemPrompt =
       // Элементы интерфейса поиска/AI
       const searchInput = document.getElementById("search-input");
       const modelSelect = document.getElementById("model-select");
+      const savedModel = localStorage.getItem("selectedModel");
+      if (savedModel) modelSelect.value = savedModel;
       const clearBtn     = document.getElementById("search-clear-btn");
       const aiBtn        = document.getElementById("ai-btn");
       const aiResponse   = document.getElementById("ai-response");
+      const resultsTitle = document.getElementById("search-results-title");
+      const about = document.getElementById("about");
+
+      modelSelect.addEventListener("change", () => {
+          localStorage.setItem("selectedModel", modelSelect.value);
+        });
+
+    function typeWriter(el, text, startSpeed = 50, endSpeed = 0) {
+      el.textContent = "";
+      let i = 0;
+      const total = text.length;
+      const write = () => {
+        if (i < total) {
+          el.textContent += text.charAt(i);
+          const progress = total > 1 ? i / (total - 1) : 1;
+          const delay = startSpeed + (endSpeed - startSpeed) * progress;
+          i++;
+          setTimeout(write, Math.max(delay, 0));
+        }
+      };
+      write();
+    }
 
       // 1) Рендер аккордеона
-      const container = document.getElementById("accordion-container");
-      const tpl = document.getElementById("accordion-item-template");
-      data.forEach(cat => {
+     const container = document.getElementById("accordion-container");
+     const tpl = document.getElementById("accordion-item-template");
+     data.forEach(cat => {
         const section = document.createElement("section");
         section.className = "article";
 
@@ -1273,33 +1297,49 @@ const systemPrompt =
 
           section.appendChild(clone);
         });
-      });
+     });
 
-      // Восстанавливаем ранее сохранённую модель
-      const savedModel = localStorage.getItem("selectedModel");
-      if (savedModel && [...modelSelect.options].some(o => o.value === savedModel)) {
-        modelSelect.value = savedModel;
-      }
+        searchInput.addEventListener("input", () => {
+          const term = searchInput.value.trim().toLowerCase();
+          const has  = term.length > 0;
 
-      searchInput.addEventListener("input", () => {
-        const term = searchInput.value.trim().toLowerCase();
-        document.querySelectorAll("#accordion-container .t-item").forEach(item => {
-          const q = item.querySelector(".t849__title").textContent.toLowerCase();
-          const a = item.querySelector(".t849__text").textContent.toLowerCase();
-          item.style.display = (!term || q.includes(term) || a.includes(term)) ? "" : "none";
+          // 1) Показ/скрытие отдельных .t-item
+          document.querySelectorAll("#accordion-container .t-item").forEach(item => {
+            const q = item.querySelector(".t849__title").textContent.toLowerCase();
+            const a = item.querySelector(".t849__text").textContent.toLowerCase();
+            const match = !term || q.includes(term) || a.includes(term);
+            item.style.display = match ? "" : "none";
+          });
+
+          // 2) Показ/скрытие секций в зависимости от наличия видимых .t-item
+          document.querySelectorAll("#accordion-container .article").forEach(section => {
+            const items      = section.querySelectorAll(".t-item");
+            const anyVisible = Array.from(items).some(i => i.style.display !== "none");
+            section.style.display = anyVisible ? "" : "none";
+
+            // 3) Скрываем иконку только когда есть поиск и в секции есть результаты
+            const icon = section.querySelector(".category-icon");
+            if (icon) {
+              icon.style.display = (has && anyVisible) ? "none" : "";
+            }
+          });
+
+          // 4) Кнопки и заголовок
+          clearBtn.style.display     = has ? "inline-block" : "none";
+          modelSelect.style.display  = has ? "inline-block" : "none";
+          aiBtn.style.display        = has ? "inline-block" : "none";
+          resultsTitle.style.display = has ? "block"       : "none";
+          about.style.display        = has ? "none"        : "";
         });
-        const has = !!term;
-        clearBtn.style.display   = has ? "inline-block" : "none";
-        modelSelect.style.display = has ? "inline-block" : "none";
-        aiBtn.style.display      = has ? "inline-block" : "none";
-      });
 
-      clearBtn.addEventListener("click", () => {
+
+
+     clearBtn.addEventListener("click", () => {
         searchInput.value = "";
         searchInput.dispatchEvent(new Event("input"));
         aiResponse.textContent = "";
         searchInput.focus();
-      });
+     });
 
       modelSelect.addEventListener("change", () => {
         localStorage.setItem("selectedModel", modelSelect.value);
@@ -1310,10 +1350,25 @@ const systemPrompt =
         const userQ = searchInput.value.trim();
         if (!userQ) return;
 
+        // запускаем обратный отсчёт от 10 до 0
+        let countdown = 10;
         aiResponse.classList.add("show");
         aiBtn.disabled = true;
         aiBtn.textContent = "...";
-        aiResponse.textContent = "Думаю…";
+
+        // сразу показать первый кадр
+        aiResponse.textContent = `Верну ответ через ${countdown}`;
+
+        const countdownInterval = setInterval(() => {
+          countdown--;
+          if (countdown >= 0) {
+            aiResponse.textContent = `Верну ответ через ${countdown}`;
+          } else {
+            clearInterval(countdownInterval);
+            // здесь продолжите вашу логику после окончания отсчёта,
+            // например запрос к AI или просто скрытие .show
+          }
+        }, 1000);
 
         fetch("https://api.intelligence.io.solutions/api/v1/chat/completions", {
           method: "POST",
@@ -1334,8 +1389,11 @@ const systemPrompt =
         })
         .then(res => res.json())
         .then(json => {
-          const msg = json.choices?.[0]?.message;
-          aiResponse.textContent = msg?.content?.trim() || "AI не вернул ответ.";
+              clearInterval(countdownInterval);
+              aiResponse.textContent = "";
+              const msg     = json.choices?.[0]?.message;
+              const answer  = msg?.content?.trim() || "AI не вернул ответ.";
+              typeWriter(aiResponse, answer, 10, -1000);
         })
         .catch(err => {
           console.error(err);
@@ -1411,3 +1469,4 @@ const systemPrompt =
         updateLogo();
       }, 50000);
     })();
+
