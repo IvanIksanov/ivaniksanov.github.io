@@ -1,0 +1,108 @@
+/* header.css — общие стили для <header> и навигации */
+
+header {
+  position: relative;
+  padding: 0;
+}
+
+header.welcome {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background-color: #FAFAFA; /* присутствует только в styles.css, отсутствует в questions.css, roadmap.css, swagger_api.css */
+}
+
+.header-container {
+  position: absolute;
+  top: 20px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  margin-top: -80px;
+}
+
+.logo img {
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  margin-right: 5px;
+}
+
+.site-title { /*темная тема осталась в styles.css questions.css */
+  font-size: 10px;
+  color: #1e1e1e;
+}
+@media (max-width: 1200px) {
+  .site-title {
+    display: none;
+  }
+}
+
+nav {
+  padding: 5px;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+nav ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 10px 0; /* в styles.css: 10px 0; в questions.css: 10px 10px */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  row-gap: 20px;
+}
+
+nav li {
+  margin-right: 8px;
+}
+
+a {
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 10px;
+  color: #1A1A1A;
+  transition: background-color 0.2s;
+}
+
+a.answer-link {
+  background-color: #929292; /* есть в questions.css, отсутствует в styles.css */
+  color: #F1F1F1;            /* есть в questions.css, отсутствует в styles.css */
+}
+
+a:hover { /*темная тема осталась в styles.css questions.css */
+  background-color: #1A1A1A;
+  color: #F1F1F1;
+}
+
+a.answer-link:hover {
+  background-color: #1A1A1A; /* есть в questions.css, отсутствует в styles.css */
+  color: #F1F1F1;            /* есть в questions.css, отсутствует в styles.css */
+}
+
+b {
+  text-decoration: none;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background-color: #58BEFE;
+  color: #FFFFFF;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+
+b:hover {
+  background-color: rgba(255, 255, 255, 1);
+  color: #1A1A1A;
+}
+
+@media (max-width: 600px) {
+  a, b {
+    margin-top: 7px;
+    margin-bottom: 7px;
+  }
+}

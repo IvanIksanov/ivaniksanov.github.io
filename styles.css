@@ -166,136 +166,6 @@ body {
   }
 }
 
-/* Хэдер и навигация */
-header {
-  position: relative;
-  padding: 0;
-}
-
-.header-container {
-  position: absolute;
-  top: 20px;
-  left: 10px;
-  display: flex;
-  align-items: center;
-  margin-top: -80px;
-}
-
-/* Делаем header.welcome фиксированным при скролле */
-header.welcome {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background-color: #FAFAFA; /* или используйте тот же фон, что и у body */
-  /* при желании можно добавить тень:
-     box-shadow: 0 2px 4px rgba(0,0,0,0.1); */
-}
-
-.logo img {
-  padding: 0px;
-  width: 40px;
-  height: 40px;
-  margin-right: 5px;
-}
-
-.site-title {
-  font-size: 10px;
-  color: #1e1e1e;
-}
-
-/*
-@media (prefers-color-scheme: dark) {
-  .site-title {
-    color: #FFFFFF;
-  }
-}
-*/
-
-@media (max-width: 1200px) {
-  .site-title {
-    display: none;
-  }
-}
-
-/* Стили для навигации – ссылки всегда отображаются, при переполнении переносятся на новую строку */
-nav {
-  padding: 5px;
-  text-align: center;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-nav ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 10px 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  row-gap: 20px;
-}
-
-nav li {
-  margin-right: 8px;
-}
-
-a {
-  text-decoration: none;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background-color: #F1F1F1;
-  color: #1A1A1A;
-  transition: background-color 0.2s;
-}
-
-/*
-@media (prefers-color-scheme: dark) {
-  a {
-      background-color: #1A1A1A;
-      color: #F1F1F1;
-  }
-}
-*/
-
-a:hover {
-  background-color: #1A1A1A;
-  color: #F1F1F1;
-}
-
-/*
-@media (prefers-color-scheme: dark) {
-  a:hover {
-    background-color: #F1F1F1;
-    color: #1A1A1A;
-  }
-}
-*/
-
-b {
-  text-decoration: none;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background-color: #58BEFE;
-  color: #FFFFFF;
-  transition: background-color 0.2s;
-  cursor: pointer;
-}
-
-b:hover {
-  background-color: rgba(255, 255, 255, 1);
-  color: #1A1A1A;
-}
-
-@media (max-width: 600px) {
-  a, b {
-    margin-top: 7px;
-    margin-bottom: 7px;
-  }
-}
-
 /* Остальные стили (карусель, секции, формы и пр.) остаются без изменений */
 
 .carousel {
@@ -926,26 +796,6 @@ button[type="submit"]:hover {
   color: #F1F1F1;
 }
 
-/*
-@media (prefers-color-scheme: dark) {
-  .skill-category h3 {
-    color: #FFFFFF;
-  }
-  .skill-links a {
-    background-color: #1e1e1e;
-    color: #F1F1F1;
-  }
-  .skill-links a:hover {
-    background-color: rgba(255, 255, 255, 1);
-    color: #000;
-  }
-  .skill-links a.selected {
-    background-color: #FFFFFF;
-    color: #000;
-  }
-}
-*/
-
 #plan-list ul {
   display: block;
   list-style-type: none;
@@ -984,8 +834,6 @@ button[type="submit"]:hover {
     width: 100%;
   }
 }
-
-/* Обязательно: header уже position: relative; */
 
 .theme-switcher {
   position: absolute;
