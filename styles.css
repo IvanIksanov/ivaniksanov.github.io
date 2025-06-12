@@ -40,14 +40,25 @@ body {
   margin: 1rem 0;
 }
 
-/*
-@media (prefers-color-scheme: dark) {
-  .frame {
-    border: 2px solid #44BBC1;
-    background-color: #1A1A1A;
-  }
+#prev-section {
+  background-color: #44BBC1;
+  margin-top: 10px;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  font-size: 10px;
 }
-*/
+
+#next-section {
+  background-color: #44BBC1;
+  margin-top: 10px;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 10px;
+  font-size: 10px;
+}
 
 .article {
   border: none;
@@ -59,14 +70,6 @@ body {
   margin-bottom: 1rem;
   font-size: 16px;
 }
-
-/*
-@media (prefers-color-scheme: dark) {
-  .article {
-    background-color: #242424;
-  }
-}
-*/
 
 @media (max-width: 600px) {
   .article {
@@ -273,6 +276,19 @@ body {
             border-top: 2px solid red;
         }
 
+        /* Плашки чек-листа: full-width до 800px, дальше не шире 800px */
+        #checklist-items .skill-links .skill-link {
+          width: 100%;           /* растягиваем на всю ширину родителя */
+          max-width: 600px;      /* но не больше 800px */
+          margin: 1 auto;   /* по центру + вертикальные отступы */
+          text-align: center;    /* текст внутри плашки по центру */
+        }
+
+        #checklist-items .skill-links {
+          /* по 1rem слева и справа */
+          padding: 0 2rem 0rem 1rem;
+        }
+
 @media (max-width: 600px) {
   .carousel-images img {
     max-width: 70%;
@@ -284,18 +300,10 @@ body {
   margin: 1rem 0;
 }
 
-/*
-@media (prefers-color-scheme: dark) {
-  .tetris {
-    background-color: none;
-    border: none;
-    color: #FFFFFF;
-  }
-}
-*/
-
 #gameCanvas {
-  max-width: 100%;
+  display: block;
+  margin: 0 auto;
+  max-width: 60%;
   height: auto;
   border-radius: 10px;
   border: 2px solid #5A5A5A;
@@ -303,15 +311,10 @@ body {
 
 @media (max-width: 600px) {
   #gameCanvas {
+    max-width: 100%;
+    margin: 0 auto;
     border: 2px solid #221D1F;
   }
-}
-
-.canvas-container {
-  display: flex;
-  justify-content: center;
-  border-radius: 10px;
-  padding: 0;
 }
 
 .controls {
@@ -607,11 +610,12 @@ button[type="submit"]:hover {
 }
 
 #canvas {
-  display: block;
-  border-radius: 20px;
-  width: 100%;
-  height: auto;
-  margin: 0;
+    display: block;
+    width: 100%;
+    /* пусть height: auto оставит соотношение сторон чисто за Canvas-рендером */
+    height: auto;
+    margin: 0 auto;
+    border-radius: 20px;
 }
 
 @media (max-width: 768px) {
@@ -737,14 +741,6 @@ button[type="submit"]:hover {
   border-radius: 5px;
   font-size: 16px;
 }
-
-/*
-@media (prefers-color-scheme: dark) {
-  #get-plan {
-    color: #F1F1F1;
-  }
-}
-*/
 
 #get-plan:hover {
   background-color: rgba(255, 255, 255, 1);

@@ -1,31 +1,3 @@
-// --- СЧЕТЧИК ДНЕЙ ДО НОВОГО ГОДА ---
-document.addEventListener('DOMContentLoaded', function () {
-    // Функция для расчёта оставшихся дней
-    function calculateDaysToNewYear() {
-        const today = new Date();
-        const nextYear = today.getFullYear() + 1;
-        const newYearDate = new Date(nextYear, 0, 1); // 1 января следующего года
-        const timeDifference = newYearDate - today;   // Разница в миллисекундах
-        const daysLeft = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
-        return daysLeft;
-    }
-
-    // Отображение количества дней
-    function displayDaysLeft() {
-        const daysLeft = calculateDaysToNewYear();
-        const daysLeftElement = document.getElementById('days-left');
-        if(daysLeftElement) {
-           daysLeftElement.textContent = `${daysLeft} дней!`;
-        }
-    }
-
-    // Инициализация счётчика
-    displayDaysLeft();
-
-    // Обновление каждые 24 часа
-    setInterval(displayDaysLeft, 24 * 60 * 60 * 1000);
-});
-
 // --- КАРУСЕЛЬ ИЗОБРАЖЕНИЙ ---
 document.addEventListener('DOMContentLoaded', function () {
     let currentIndex = 0;
@@ -54,13 +26,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Изначально показываем первое изображение
     showImage(currentIndex);
-});
-
-// --- СЧЕТЧИК СЕРДЕЧЕК ---
-let userCount = 0;
-document.getElementById('increaseCount').addEventListener('click', function() {
-    userCount++;
-    document.getElementById('count').textContent = userCount;
 });
 
 // --- БУРГЕР-МЕНЮ ---
@@ -156,7 +121,7 @@ var gravity = 2.2;
 var flappyScore = 0;
 
 // Интервал между трубами
-var pipeInterval = 200;
+var pipeInterval = 290;
 
 // Флаги и массивы
 var flappyGameOver = false; // Флаг завершения игры
@@ -224,6 +189,22 @@ function shuffleArray(array) {
 // Уровни
 const levels = [
     {
+        backgroundColor: "#83EFEA", //светло-синий + березы 80 - 120
+        pipeUpSrc: "img/pipeUpLevel2.png",
+        pipeBottomSrc: "img/pipeBottomLevel2.png",
+        fgSrc: "img/fgLevel2.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#FEFEFE"
+    },
+    {
+        backgroundColor: "#009279", //зеленый + блины => 260
+        pipeUpSrc: "img/pipeUpLevel7.png",
+        pipeBottomSrc: "img/pipeBottomLevel7.png",
+        fgSrc: "img/fgLevel7.png",
+        decorationSrc: shuffleArray(commonDecorations),
+        decorColor: "#FEFEFE"
+    },
+    {
         backgroundColor: "#44BBC1", //бирюзовый + классический 1-10
         pipeUpSrc: "img/pipeUpPro.png",
         pipeBottomSrc: "img/pipeBottomPro.png",
@@ -255,14 +236,6 @@ const levels = [
         fgSrc: "img/fgLevel4.png",
         decorationSrc: shuffleArray(commonDecorations),
         decorColor: "#FF0000"
-    },
-    {
-        backgroundColor: "#83EFEA", //светло-синий + березы 80 - 120
-        pipeUpSrc: "img/pipeUpLevel2.png",
-        pipeBottomSrc: "img/pipeBottomLevel2.png",
-        fgSrc: "img/fgLevel2.png",
-        decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#FEFEFE"
     },
     {
         backgroundColor: "#E2FFD4", //светло-зеленый + здания 120 - 150
@@ -303,14 +276,6 @@ const levels = [
         fgSrc: "img/fg.png",
         decorationSrc: shuffleArray(commonDecorations),
         decorColor: "#FEFEFE"
-    },
-    {
-        backgroundColor: "#009279", //зеленый + блины => 260
-        pipeUpSrc: "img/pipeUpLevel7.png",
-        pipeBottomSrc: "img/pipeBottomLevel7.png",
-        fgSrc: "img/fgLevel7.png",
-        decorationSrc: shuffleArray(commonDecorations),
-        decorColor: "#FEFEFE"
     }
 ];
 
@@ -347,18 +312,16 @@ function updateDecorationsColor() {
 
 // Изменение размеров canvas
 function resizeFlappyCanvas() {
-    flappyCvs.height = fixedHeight;
-    flappyCvs.width = window.innerWidth;
+  // 1) Фиксируем внутреннюю высоту
+  flappyCvs.height = fixedHeight;
 
-    // Изменяем интервал труб на основе ширины экрана
-    if (flappyCvs.width >= 1024) {
-        pipeInterval = 290;
-    } else if (flappyCvs.width >= 768) {
-        pipeInterval = 200;
-    } else {
-        pipeInterval = 300;
-    }
+  // 2) Подгоняем ширину под CSS-контейнер
+  flappyCvs.width = flappyCvs.clientWidth;
+
+  // 3) Интервал между трубами всегда 300
+  pipeInterval = 280;
 }
+
 window.addEventListener("resize", resizeFlappyCanvas);
 resizeFlappyCanvas();
 
@@ -665,10 +628,11 @@ function drawFlappy() {
             // Проверка коллизий с трубами
             detectCollision(pipe[i], pipeWidth, pipeHeight, constant, birdWidth, birdHeight);
 
-            // Увеличиваем счёт (если прошли трубу) — только если игра не окончена
-            if (pipe[i].x + pipeWidth === bX) {
+            // Увеличиваем счёт, когда труба пересекла позицию птицы, и считаем её только один раз
+            if (!pipe[i].scored && pipe[i].x + pipeWidth < bX) {
                 flappyScore++;
                 score_audio.play();
+                pipe[i].scored = true;
             }
 
             // Удаление трубы за границей экрана
@@ -847,23 +811,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Работа кнопки "Свернуть список"
-document.getElementById('toggle-button').addEventListener('click', function () {
-        const checklist = document.getElementById('checklist-items');
-        const button = this;
-
-        if (checklist.classList.contains('expanded')) {
-            checklist.classList.remove('expanded');
-            button.textContent = 'Развернуть список';
-
-            // Скроллим вверх к началу списка
-            checklist.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            checklist.classList.add('expanded');
-            button.textContent = 'Свернуть список';
-        }
-    });
-
 document.addEventListener("DOMContentLoaded", function () {
     const prefix = "index_"; // Префикс для данной страницы
     const checkboxes = document.querySelectorAll("#checklist-items input[type='checkbox']");
@@ -879,6 +826,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
 
 /***********************
  * --- QA Skills ---
@@ -994,4 +943,36 @@ document.addEventListener("DOMContentLoaded", function() {
       skillsBlock.style.display = "none";
     }
   });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const prefix = "index_";
+  const sections = Array.from(document.querySelectorAll('#checklist-items .section'));
+  const prevBtn  = document.getElementById('prev-section');
+  const nextBtn  = document.getElementById('next-section');
+
+  // Восстанавливаем текущую секцию (или 0)
+  let current = parseInt(localStorage.getItem(prefix + 'currentSection'), 10);
+  if (isNaN(current) || current < 0 || current >= sections.length) {
+    current = 0;
+  }
+
+  function showSection(idx) {
+    sections.forEach((sec, i) => {
+      sec.style.display = (i === idx) ? 'block' : 'none';
+    });
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === sections.length - 1;
+    localStorage.setItem(prefix + 'currentSection', idx);
+  }
+
+  prevBtn.addEventListener('click', () => {
+    if (current > 0) showSection(--current);
+  });
+  nextBtn.addEventListener('click', () => {
+    if (current < sections.length - 1) showSection(++current);
+  });
+
+  // Показываем при инициализации
+  showSection(current);
 });

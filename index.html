@@ -26,7 +26,6 @@
     <!-- Yandex.RTB -->
     <script>window.yaContextCb=window.yaContextCb||[]</script>
     <script src="https://yandex.ru/ads/system/context.js" async></script>
-
 </head>
 <body>
 <nav>
@@ -74,106 +73,164 @@
 </header>
 
 <main>
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas"></canvas><br>
 
-    <section id="features" class="frame">
-        <h2>Чек-лист для тестирования игры Flappy Bird</h2>
+    <section id="features" class="article"  style="max-width: none; border: 2px solid #44BBC1; text-align: center; padding: 0rem;">
         <div id="checklist">
-            <p>
-            <div id="checklist-items" class="collapsible">
-            <strong>1. Проверка UI:</strong><br>
-            <label><input type="checkbox" name="ui_check1"></label> Отображение иконки персонажа<br>
-            <label><input type="checkbox" name="ui_check2"></label> Отображение иконок выбора персонажа<br>
-            <label><input type="checkbox" name="ui_check3"></label> Отображение верхней колонны<br>
-            <label><input type="checkbox" name="ui_check4"></label> Отображение нижней колонны<br>
-            <label><input type="checkbox" name="ui_check5"></label> Отображение фона<br>
-            <label><input type="checkbox" name="ui_check6"></label> Отображение счетчика очков<br>
-            <label><input type="checkbox" name="ui_check7"></label> Отображение нижнего фона (земля)<br>
-            <br>
-            <strong>Адаптивность размеров:</strong><br>
-            <label><input type="checkbox" name="adapt_check1"></label> Проверить на десктопе отображение элементов<br>
-            <label><input type="checkbox" name="adapt_check2"></label> Проверить на мобилках отображение элементов<br>
-            <label><input type="checkbox" name="adapt_check3"></label> Проверить запуск игры на десктопе и на мобилках<br>
-            <br>
-            <strong>Адаптивность управления:</strong><br>
-            <label><input type="checkbox" name="control_check1"></label> Проверить на десктопе (пробел и тап по фрейму)<br>
-            <label><input type="checkbox" name="control_check2"></label> Проверить на мобилке (тап по фрейму)<br>
-            <label><input type="checkbox" name="control_check3"></label> Проверить гравитацию на десктопе и на мобилках<br>
-            <label><input type="checkbox" name="control_check4"></label> Проверить прыжок на десктопе и на мобилках<br>
-            <br>
-            <strong>Соответствие тематики уровней:</strong><br>
-            <label><input type="checkbox" name="color_check1"></label> Бирюзовый + классический 1-10<br>
-            <label><input type="checkbox" name="color_check2"></label> Светло-коричневый + камень 10 - 30<br>
-            <label><input type="checkbox" name="color_check3"></label> Желтый + сердечки 30 - 50<br>
-            <label><input type="checkbox" name="color_check4"></label> Красный + классический 50 - 80<br>
-            <label><input type="checkbox" name="color_check5"></label> Светло-синий + березы 80 - 120<br>
-            <label><input type="checkbox" name="color_check6"></label> Светло-зеленый + здания 120 - 150<br>
-            <label><input type="checkbox" name="color_check7"></label> Розовый + классический 150 - 180<br>
-            <label><input type="checkbox" name="color_check8"></label> Серый + классический 180 - 220<br>
-            <label><input type="checkbox" name="color_check9"></label> Синий + классический 220 - 250<br>
-            <label><input type="checkbox" name="color_check10"></label> Текст счетчика - адаптируется под цвет фона<br>
-            <br>
-            <strong>Позиция элементов:</strong><br>
-            <label><input type="checkbox" name="position_check1"></label> Проверка старта персонажа 150px от левого края фрейма<br>
-            <label><input type="checkbox" name="position_check2"></label> Проверка интервала 130px между верхней и нижней колонной<br>
-            <label><input type="checkbox" name="position_check3"></label> Проверка интервала между препятствиями при старте<br>
-            <label><input type="checkbox" name="position_check4"></label> Проверка интервала между препятствиями при рестарте - 200px<br>
-            <label><input type="checkbox" name="position_check5"></label> При рестарте генерация препятствий на расстоянии 200px от персонажа<br>
-            <label><input type="checkbox" name="position_check6"></label> Проверка размера персонажа 54 на 44px<br>
-            <label><input type="checkbox" name="position_check7"></label> Проверить отсутствие обрезания или наложения элементов<br>
-            <br>
-            <strong>2. Функциональное тестирование:</strong><br>
-            <label><input type="checkbox" name="functional_check1"></label> Проверить, что после обновления страницы игра стартует автоматически<br>
-            <label><input type="checkbox" name="functional_check2"></label> Проверить, что после рестарта игры - старт происходит автоматически<br>
-            <label><input type="checkbox" name="functional_check3"></label> Проверить, что до взаимодействия с управлением персонаж на автопилоте<br>
-            <label><input type="checkbox" name="functional_check4"></label> Проверить, что персонажа можно выбрать только до прохождения первого препятствия<br>
-            <label><input type="checkbox" name="functional_check5"></label> Проверить, что персонаж поднимается на фиксированную высоту при нажатии пробела или клике<br>
-            <label><input type="checkbox" name="functional_check6"></label> Проверить корректное поведение персонажа при отсутствии ввода (падение)<br>
-            <label><input type="checkbox" name="functional_check7"></label> Проверить увеличение счетчика при успешном прохождении колонны<br>
-            <label><input type="checkbox" name="functional_check8"></label> Проверить смену стилей разных уровней<br>
-            <label><input type="checkbox" name="functional_check9"></label> Проверить число счетчика при смене стилей разных уровней<br>
-            <label><input type="checkbox" name="functional_check10"></label> Проверить остановку игры при столкновении с верхней колонной<br>
-            <label><input type="checkbox" name="functional_check11"></label> Проверить остановку игры при столкновении с нижней колонной<br>
-            <label><input type="checkbox" name="functional_check12"></label> Проверить остановку игры при столкновении с землей<br>
-            <label><input type="checkbox" name="functional_check13"></label> Проверить, что игра не перезапускается автоматически после завершения<br>
-            <label><input type="checkbox" name="functional_check14"></label> Проверить возможность перезапуска игры (рестарт)<br>
-            <br>
-            <strong>3. Тестирование производительности:</strong><br>
-            <label><input type="checkbox" name="perf_check1"></label> Проверить плавность анимации при разных разрешениях экрана<br>
-            <br>
-            <strong>4. Проверка граничных значений:</strong><br>
-            <label><input type="checkbox" name="edge_check1"></label> Проверить поведение персонажа при достижении верхней границы экрана<br>
-            <label><input type="checkbox" name="edge_check2"></label> Проверить поведение персонажа при достижении нижней границы экрана.<br>
-            <label><input type="checkbox" name="edge_check3"></label> Проверить корректность счета при прохождении множества колонн.<br>
-            <label><input type="checkbox" name="edge_check4"></label> Проверить максимальный интервал между колоннами (для больших экранов)<br>
-            <br>
-            <strong>5. Проверка негативных сценариев:</strong><br>
-            <label><input type="checkbox" name="negative_check1"></label> Проверить, что игра корректно обрабатывает попытку ввода после завершения игры<br>
-            <label><input type="checkbox" name="negative_check2"></label> Проверить, что персонаж не “проходит” через колонны при медленном FPS.<br>
-            <label><input type="checkbox" name="negative_check3"></label> Проверить поведение игры при отключении JavaScript<br>
-            <label><input type="checkbox" name="negative_check4"></label> Проверить поведение игры при отключении CSS<br>
-            <label><input type="checkbox" name="negative_check5"></label> Проверить поведение игры при отключении HTML<br>
-            <label><input type="checkbox" name="negative_check6"></label> Проверить, что счетчик не увеличивается при столкновении с колонной.<br>
-            <br>
-            <strong>6. Тестирование на кроссбраузерность:</strong><br>
-            <label><input type="checkbox" name="cross_check1"></label> Проверить корректность работы игры в Google Chrome<br>
-            <label><input type="checkbox" name="cross_check2"></label> Проверить корректность работы игры в Mozilla Firefox<br>
-            <label><input type="checkbox" name="cross_check3"></label> Проверить корректность работы игры в Safari<br>
-            <label><input type="checkbox" name="cross_check4"></label> Проверить корректность работы игры в Microsoft Edge<br>
-            <br>
-            <strong>7. Тестирование с использованием техники серого ящика:</strong><br>
-            <label><input type="checkbox" name="gray_check1"></label> Проверить скорость обновления позиций объектов<br>
-            <label><input type="checkbox" name="gray_check2"></label> Проверить скорость обновления счетчика<br>
-            <label><input type="checkbox" name="gray_check3"></label> Проверить использование ресурсов (CPU, память)<br>
-            <br>
-            <strong>8. Проверка адаптации игры:</strong><br>
-            <label><input type="checkbox" name="adapt_check1"></label> Проверить работу на экранах 1920x1080<br>
-            <label><input type="checkbox" name="adapt_check2"></label> Проверить работу на экранах 1366x768<br>
-            <label><input type="checkbox" name="adapt_check3"></label> Проверить работу на экранах 360x640<br>
-            <label><input type="checkbox" name="adapt_check4"></label> Проверить работу во время растягивания окна браузера (пауза игры)<br>
-            <label><input type="checkbox" name="adapt_check5"></label> Проверить работу во время растягивания окна браузера (автопилот)<br>
+            <div id="checklist-items" class="article">
+                <!-- Навигация по секциям -->
+                <div class="navigation-buttons">
+                    <button id="prev-section">Назад</button>
+                    <button id="next-section">Далее</button>
+                </div><br>
+
+                <!-- Блок 1: Проверка UI -->
+                <div class="section">
+                Проверка UI - выбери успешные проверки<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="ui_check1">Отображается иконка персонажа</a><br>
+                        <a href="#" class="skill-link" data-check-id="ui_check2">Отображаются иконки при выборе персонажа</a><br>
+                        <a href="#" class="skill-link" data-check-id="ui_check3">Отображаются верхние колонны</a><br>
+                        <a href="#" class="skill-link" data-check-id="ui_check4">Отображаются нижние колонны</a><br>
+                        <a href="#" class="skill-link" data-check-id="ui_check5">Отображается цветной фон</a><br>
+                        <a href="#" class="skill-link" data-check-id="ui_check6">Отображается счетчик очков</a><br>
+                        <a href="#" class="skill-link" data-check-id="ui_check7">Отображается нижний фон (земля)</a>
+                        <a href="#" class="skill-link" data-check-id="ui_check8">Отображаются золотые монеты</a>
+                        <a href="#" class="skill-link" data-check-id="ui_check8">Отображается счетчик монет</a>
+                    </div>
+                </div>
+
+                <!-- Блок 2: Адаптивность размеров -->
+                <div class="section">
+                    Адаптивность размеров - выбери успешные проверки<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="adapt_check1">Проверить на десктопе отображение элементов</a><br>
+                        <a href="#" class="skill-link" data-check-id="adapt_check2">Проверить на мобилках отображение элементов</a><br>
+                        <a href="#" class="skill-link" data-check-id="adapt_check3">Проверить запуск игры на десктопе и на мобилках</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 3: Адаптивность управления -->
+                <div class="section">
+                    Адаптивность управления - выбери успешные проверки<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="control_check1">Проверить на десктопе (пробел и тап по фрейму)</a><br>
+                        <a href="#" class="skill-link" data-check-id="control_check2">Проверить на мобилке (тап по фрейму)</a><br>
+                        <a href="#" class="skill-link" data-check-id="control_check3">Проверить гравитацию на десктопе и на мобилках</a><br>
+                        <a href="#" class="skill-link" data-check-id="control_check4">Проверить прыжок на десктопе и на мобилках</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 4: Gray-box тестирование -->
+                <div class="section">
+                    Проверка уровней - выбери успешные проверки<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="color_check1">Бирюзовый + классический 1-10</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check2">Светло-коричневый + камень 10 - 30</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check3">Желтый + сердечки 30 - 50</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check4">Красный + классический 50 - 80</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check5">Светло-синий + березы 80 - 120</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check6">Светло-зеленый + здания 120 - 150</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check7">Розовый + классический 150 - 180</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check8">Серый + классический 180 - 220</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check9">Синий + классический 220 - 250</a><br>
+                        <a href="#" class="skill-link" data-check-id="color_check10">Текст счетчика - адаптируется под цвет фона</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 5: Проверка адаптации игры -->
+                <div class="section">
+                    Проверка адаптации игры - выбери успешные проверки<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="position_check1">Проверка старта персонажа 150px от левого края фрейма</a><br>
+                        <a href="#" class="skill-link" data-check-id="position_check2">Проверка интервала 130px между верхней и нижней колонной</a><br>
+                        <a href="#" class="skill-link" data-check-id="position_check3">Проверка интервала между препятствиями при старте</a><br>
+                        <a href="#" class="skill-link" data-check-id="position_check4">Проверка интервала между препятствиями при рестарте - 200px</a><br>
+                        <a href="#" class="skill-link" data-check-id="position_check5">При рестарте генерация препятствий на расстоянии 200px от персонажа</a><br>
+                        <a href="#" class="skill-link" data-check-id="position_check6">Проверка размера персонажа 54 на 44px</a><br>
+                        <a href="#" class="skill-link" data-check-id="position_check7">Проверить отсутствие обрезания или наложения элементов</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 7: Функциональное тестировани -->
+                <div class="section">
+                    Функциональное тестирование - выбери успешные проверки<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="functional_check1">Проверить, что после обновления страницы игра стартует автоматически</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check2">Проверить, что после рестарта игры - старт происходит автоматически</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check3">Проверить, что до взаимодействия с управлением персонаж на автопилоте</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check4">Проверить, что персонажа можно выбрать только до прохождения первого препятствия</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check5">Проверить, что персонаж поднимается на фиксированную высоту при нажатии пробела или клике</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check6">Проверить корректное поведение персонажа при отсутствии ввода (падение)</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check7">Проверить увеличение счетчика при успешном прохождении колонны</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check8">Проверить смену стилей разных уровней</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check9">Проверить число счетчика при смене стилей разных уровней</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check10">Проверить остановку игры при столкновении с верхней колонной</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check11">Проверить остановку игры при столкновении с нижней колонной</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check12">Проверить остановку игры при столкновении с землей</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check13">Проверить, что игра не перезапускается автоматически после завершения</a><br>
+                        <a href="#" class="skill-link" data-check-id="functional_check14">Проверить возможность перезапуска игры (рестарт)</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 8: Тестирование производительности -->
+                <div class="section">
+                    Тестирование производительности<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="edge_check1">Проверить поведение персонажа при достижении верхней границы экрана</a><br>
+                        <a href="#" class="skill-link" data-check-id="edge_check2">Проверить поведение персонажа при достижении нижней границы экрана.</a><br>
+                        <a href="#" class="skill-link" data-check-id="edge_check3">Проверить корректность счета при прохождении множества колонн.</a><br>
+                        <a href="#" class="skill-link" data-check-id="edge_check4">Проверить максимальный интервал между колоннами (для больших экранов)</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 9: Проверка негативных сценариев -->
+                <div class="section">
+                Проверка негативных сценариев<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="negative_check1">Проверить, что игра корректно обрабатывает попытку ввода после завершения игры</a><br>
+                        <a href="#" class="skill-link" data-check-id="negative_check2">Проверить, что персонаж не “проходит” через колонны при медленном FPS.</a><br>
+                        <a href="#" class="skill-link" data-check-id="negative_check3">Проверить поведение игры при отключении JavaScript</a><br>
+                        <a href="#" class="skill-link" data-check-id="negative_check4">Проверить поведение игры при отключении CSS</a><br>
+                        <a href="#" class="skill-link" data-check-id="negative_check5">Проверить поведение игры при отключении HTML</a><br>
+                        <a href="#" class="skill-link" data-check-id="negative_check6">Проверить, что счетчик не увеличивается при столкновении с колонной.</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 10: Тестирование на кроссбраузерность -->
+                <div class="section">
+                    Тестирование на кроссбраузерность<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="cross_check1">Проверить корректность работы игры в Google Chrome</a><br>
+                        <a href="#" class="skill-link" data-check-id="cross_check2">Проверить корректность работы игры в Mozilla Firefox</a><br>
+                        <a href="#" class="skill-link" data-check-id="cross_check3">Проверить корректность работы игры в Safari</a><br>
+                        <a href="#" class="skill-link" data-check-id="cross_check4">Проверить корректность работы игры в Microsoft Edge</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 11: Тестирование с использованием техники серого ящика -->
+                <div class="section">
+                    Тестирование с использованием техники серого ящика<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="gray_check1">Проверить скорость обновления позиций объектов</a><br>
+                        <a href="#" class="skill-link" data-check-id="gray_check2">Проверить скорость обновления счетчика</a><br>
+                        <a href="#" class="skill-link" data-check-id="gray_check3">Проверить использование ресурсов (CPU, память)</a><br>
+                    </div>
+                </div>
+
+                <!-- Блок 12: Проверка адаптации игры -->
+                <div class="section">
+                Проверка адаптации игры<br><br>
+                    <div class="skill-links">
+                        <a href="#" class="skill-link" data-check-id="adapt_check1">Проверить работу на экранах 1920x1080</a><br>
+                        <a href="#" class="skill-link" data-check-id="adapt_check2">Проверить работу на экранах 1366x768</a><br>
+                        <a href="#" class="skill-link" data-check-id="adapt_check3">Проверить работу на экранах 360x640</a><br>
+                        <a href="#" class="skill-link" data-check-id="adapt_check4">Проверить работу во время растягивания окна браузера (пауза игры)</a><br>
+                        <a href="#" class="skill-link" data-check-id="adapt_check5">Проверить работу во время растягивания окна браузера (автопилот)</a><br>
+                    </div>
+                </div>
             </div>
-        <button id="toggle-button">Развернуть список</button>
+
         </div>
     </section>
 
@@ -351,11 +408,11 @@
 
     <section id="about" class="article">
         <h2>О QAtoDev</h2>
-        <p>Всё началось с первой статьи на Хабр...
+        <p>QAtoDev - это сообщество тестировщиков и QA, которые прокачивают технические навыки на уровне разработки.
+            <br><br>
+            Всё началось с первой статьи на Хабр...
             Вскоре был создан telegram-канал по тестированию, а теперь уже запущена целая песочница для практики.
-            Спасибо тем, кто помогает и поддерживает инициативу развития данного сообщества!</p>
-        <p id="userCount">Накидать сердечек: <span id="count">0</span></p>
-        <button id="increaseCount">❤️</button>
+            Спасибо тем, кто помогает и поддерживает инициативу развития данного сообщества!<br><br></p>
         <p>Подписывайтесь на <a href="https://t.me/QAtoDev" target="_blank" style="background-color: #FFA001;">Telegram</a>!</p>
     </section>
 
@@ -426,6 +483,26 @@
         updateLogo();
       }, 50000);
     })();
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const items = document.querySelectorAll('#checklist-items .skill-link');
+      items.forEach(item => {
+        const id = item.getAttribute('data-check-id');
+        // Восстановление состояния из localStorage
+        if (localStorage.getItem('check_' + id) === 'true') {
+          item.classList.add('selected');
+        }
+        // Обработчик клика
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          item.classList.toggle('selected');
+          // Сохраняем состояние
+          localStorage.setItem('check_' + id, item.classList.contains('selected'));
+        });
+      });
+    });
 </script>
 
 <script src="script.js"></script>
