@@ -283,7 +283,7 @@ const systemPrompt =
               img: 'img/answer/VeriforValid.jpeg'
             },
             {
-              id: 'accordion_theory_q60',
+              id: 'accordion_theory_q53',
               title: 'Вопросы на софты без конкретного ответа',
               answer: 'Какая ваша самая сильная/слабая сторона?<br>Как вы справляетесь с критикой?<br>Что бы вы хотели улучшить в себе?<br>Что вы делаете, если не хватает ресурсов?<br>Как вы приоритизируете задачи?<br>Как вы реагируете на просьбу поработать на выходных?<br>Как справляетесь с многозадачностью?<br>Как работаете с трудными коллегами?<br>Что для вас важно в руководителе?<br>Как делитесь знаниями?<br>Какие роли предпочитаете?<br>Как даёте обратную связь?<br>Как убеждаете команду?<br>Как справляетесь с рутиной?<br>Какие проекты вдохновляют?<br>Работа индивидуально или в команде?<br>Какие навыки хотите развить?<br>Как реагируете на неудачи?<br>Что цените в работе?<br>Почему ушли с прошлого места?<br>Как учились навыкам?<br>Планы на развитие?<br>Фронтенд или бэкенд?<br>Какие книги/каналы читаете?<br>Как развиваете софт-скиллы?'
             }
@@ -415,13 +415,13 @@ const systemPrompt =
               moreLink: 'https://testengineer.ru/xpath-vs-css-selector-locator/'
             },
             {
-              id: 'accordion_web_q21',
+              id: 'accordion_web_q23',
               title: 'Какие виды веб-приложений знаешь/тестировал?',
               answer: 'Существуют разные виды веб-приложений в зависимости от архитектуры и задач. Одностраничные приложения (SPA) работают без перезагрузки страницы и часто используют React или Vue. Приложения с серверным рендерингом (SSR) генерируют HTML на сервере, что улучшает SEO и скорость загрузки. Статически сгенерированные сайты (SSG) создаются заранее и быстро загружаются с CDN, хорошо подходят для блогов и документации. Прогрессивные веб-приложения (PWA) работают как мобильные приложения — могут работать офлайн, слать уведомления и устанавливаться на устройство.',
               moreLink: 'https://doka.guide/tools/web-app-types/'
             },
             {
-              id: 'accordion_web_q22',
+              id: 'accordion_web_q24',
               title: 'Локализуй баг на веб-странице',
               answer: 'Ты тестируешь логин форму:<br><br>1) вводишь валидный логин,<br>2) вводишь валидный пароль,<br>3) нажимаешь кнопку войти,<br>4) обновляется страница,<br>5) и ты остаешься разлогинен.<br>Твои действия?<br><br>Нам необходимо локализовать ошибку:<br><br>1) Для начала нужно открыть DevTools (Network) и повторить действия в режиме инкогнито, чтобы проверить какой запрос отправляется, его ответ и  статус-код. Если запроса не было с авторизацией, то отследить при нажатии на кнопку какой запрос отправляется или почему кнопка "Войти" вызывает обновление страницы.<br><br>2) Открыть вкладку Console и проверить информацию об ошибках в файлах javascript.<br><br>Можно предположить, что ошибка в переадресации при логине со статус-кодом 3ХХ или кнопка "Войти" вызывает обновление страницы.<br><br>3) Найти токен авторизации, убедится в корректности логина и пароля (даже если ты уверен что они верные + убедится в корректности тестового стенда: логин и пароль от ИФТ, а ты пытаешься войти на ПСИ). <br><br>4) Проверить в логах (Кибана) историю авторизации, проверить уровни логов (INFO, DEBUG, ERROR).<br><br>5) Зайти в БД и проверить сохранение последней сессии авторизации.<br><br>6) Если вышеперечисленное не помогло локализовать причину данного поведения - обратится за помощью к разработчику (фронту/бэку). Если есть новость про найденный инцидент другими тестировщиками, то для начала сконнектиться с ними.',
               img: 'img/answer/formLogin.png'
@@ -635,12 +635,12 @@ const systemPrompt =
               answer: 'Подключение возможно через клиентские приложения (например, pgAdmin, SQL Developer), драйверы для языков программирования (JDBC, ODBC), командную строку или ORM фреймворки.'
             },
             {
-              id: 'accordion_db_q13',
+              id: 'accordion_db_q16',
               title: 'Самая популярная агрегатная функция (COUNT)?',
               answer: 'COUNT подсчитывает количество строк или ненулевых значений в наборе данных.<br><br>Примеры:<br><br>– SELECT COUNT(*) FROM table — общее число строк<br><br>– SELECT COUNT(column) FROM table — число ненулевых значений в column<br><br>– SELECT COUNT(DISTINCT column) FROM table — число уникальных значений column'
             },
             {
-              id: 'accordion_db_q14',
+              id: 'accordion_db_q17',
               title: 'Что такое ER-диаграмма? Как с ней работать?',
               answer: 'ER-диаграмма (Entity–Relationship Diagram) — это наглядная схема, на которой прямоугольники представляют таблицы базы данных, а линии между ними показывают связи через первичные (PK) и внешние ключи (FK).<br><br>Шпаргалка при отсутствии описания:<br><br>Если официальной документации по базе нет, диаграмма подскажет, какие поля где лежат: любая таблица на схеме имеет пометки PK (первичный ключ) и FK (внешний ключ), по которым легко отследить, как таблицы «склеиваются» между собой.<br><br>Поиск клиентских данных:<br><br>Когда нужно понять, где хранятся данные о клиенте — например, ФИО в одной таблице, паспортные данные в другой — по линиям связей вы находите, что поле client_id из таблицы clients (где ФИО) «смотрит» на такое же поле в таблице passports. Значит, именно по этому ключу можно собрать все сведения о пользователе в одном запросе.<br><br>Где смотреть ER-диаграмму:<br><br>При подключении к БД через MySQL Workbench, DBeaver, DataGrip, pgAdmin и т.п.',
               moreLink: 'https://getanalyst.ru/database/how-to-visualize-er-model',
@@ -768,7 +768,7 @@ const systemPrompt =
               moreLink: 'https://testengineer.ru/bolshoj-gajd-po-page-object-model/'
             },
             {
-              id: 'accordion_git_q22',
+              id: 'accordion_git_q23',
               title: 'Какая разница между String, StringBuffer и StringBuilder?',
               answer: 'String – неизменяемая строка; StringBuffer – изменяемая строка с синхронизацией (потокобезопасная); StringBuilder – изменяемая строка без синхронизации (быстрее в однопоточной среде).',
               moreLink: 'https://habr.com/ru/articles/260767/'
@@ -941,27 +941,27 @@ const systemPrompt =
             answer: 'Нужен для чёткого понимания функционала, задач и зон ответственности, чтобы соотнести ожидания и реальную работу.'
             },
             {
-            id: 'accordion_hr_q25',
+            id: 'accordion_hr_q26',
             title: 'Кто будет моим непосредственным руководителем/ лидом?',
             answer: 'Уточняет, с кем вы будете взаимодействовать напрямую и кто будет отвечать за ваш профессиональный рост и поддержку.'
             },
             {
-            id: 'accordion_hr_q26',
+            id: 'accordion_hr_q27',
             title: 'Сколько человек сейчас работает в команде? Планируется ли расширение?',
             answer: 'Помогает оценить текущий масштаб проекта и перспективы роста команды в ближайшем будущем.'
             },
             {
-            id: 'accordion_hr_q27',
+            id: 'accordion_hr_q28',
             title: 'На данной должности есть рост в зарплате и в проф. навыках?',
             answer: 'Проясняет доступные пути развития карьеры и повышения квалификации вместе с компенсацией.'
             },
             {
-            id: 'accordion_hr_q28',
+            id: 'accordion_hr_q29',
             title: 'Какие еще будут этапы перед выходом на работу?',
             answer: 'Уточняет оставшиеся шаги процесса найма и адаптации, чтобы заранее подготовиться к каждому из них.'
             },
             {
-            id: 'accordion_hr_q29',
+            id: 'accordion_hr_q30',
             title: 'В каком формате вы даёте обратную связь кандидату?',
             answer: 'Помогает понять, получите ли вы конструктивный и детализированный фидбэк с указанием сильных и слабых сторон, а не общий отказ без конкретики, чтобы знать, над чем стоит поработать для будущих собеседований.'
             }
@@ -1164,211 +1164,229 @@ const systemPrompt =
         }
       ];
 
-      // Элементы интерфейса поиска/AI
-      const searchInput = document.getElementById("search-input");
-      const modelSelect = document.getElementById("model-select");
-      const savedModel = localStorage.getItem("selectedModel");
-      if (savedModel) modelSelect.value = savedModel;
-      const clearBtn     = document.getElementById("search-clear-btn");
-      const aiBtn        = document.getElementById("ai-btn");
-      const aiResponse   = document.getElementById("ai-response");
-      const resultsTitle = document.getElementById("search-results-title");
-      const about = document.getElementById("about");
+  // --- UI elements: поиск, AI, переключатель модели ---
+  const searchInput   = document.getElementById("search-input");
+  const modelSelect   = document.getElementById("model-select");
+  const clearBtn      = document.getElementById("search-clear-btn");
+  const aiBtn         = document.getElementById("ai-btn");
+  const aiResponse    = document.getElementById("ai-response");
+  const resultsTitle  = document.getElementById("search-results-title");
+  const about         = document.getElementById("about");
 
-      modelSelect.addEventListener("change", () => {
-          localStorage.setItem("selectedModel", modelSelect.value);
-        });
+  // Восстановление выбранной модели из localStorage
+  const savedModel = localStorage.getItem("selectedModel");
+  if (savedModel) modelSelect.value = savedModel;
+  modelSelect.addEventListener("change", () => {
+    localStorage.setItem("selectedModel", modelSelect.value);
+  });
 
-    function typeWriter(el, text, startSpeed = 50, endSpeed = 0) {
-      el.textContent = "";
-      let i = 0;
-      const total = text.length;
-      const write = () => {
-        if (i < total) {
-          el.textContent += text.charAt(i);
-          const progress = total > 1 ? i / (total - 1) : 1;
-          const delay = startSpeed + (endSpeed - startSpeed) * progress;
-          i++;
-          setTimeout(write, Math.max(delay, 0));
-        }
-      };
-      write();
+  // --- Typewriter effect для AI-ответа ---
+  function typeWriter(el, text, startSpeed = 50, endSpeed = 0) {
+    el.textContent = "";
+    let i = 0, total = text.length;
+    (function write() {
+      if (i < total) {
+        el.textContent += text.charAt(i++);
+        const progress = total > 1 ? (i / (total - 1)) : 1;
+        const delay = startSpeed + (endSpeed - startSpeed) * progress;
+        setTimeout(write, Math.max(delay, 0));
+      }
+    })();
+  }
+
+  // --- Render accordion sections & items ---
+  const container = document.getElementById("accordion-container");
+  const tpl       = document.getElementById("accordion-item-template");
+
+  data.forEach(cat => {
+    // 1. Создаем <section>
+    const section = document.createElement("section");
+    section.className = "article";
+
+    // 2. Картинка и заголовок
+    let imgSrc = "img/answer/default-category.png";
+    switch (cat.category) {
+      case "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ": imgSrc = "img/answer/theory.jpeg"; break;
+      case "WEB":                         imgSrc = "img/answer/client-server-arch.jpeg"; break;
+      case "API":                         imgSrc = "img/answer/restapi.jpeg"; break;
+      case "БАЗЫ ДАННЫХ":                 imgSrc = "img/answer/mysql.jpeg"; break;
+      case "GIT + IDE + SELENIUM":        imgSrc = "img/answer/git.jpeg"; break;
+      case "DEVOPS":                      imgSrc = "img/answer/docker.jpeg"; break;
+      case "Вопросы к руководителю | команде | HR": imgSrc = "img/answer/hr.jpeg"; break;
+      case "AQA Java":                    imgSrc = "img/answer/AQAjava.jpeg"; break;
+      case "AQA Python":                  imgSrc = "img/answer/AQApython.jpeg"; break;
+      case "AQA JS":                      imgSrc = "img/answer/AQAjs.jpeg"; break;
     }
 
-      // 1) Рендер аккордеона
-     const container = document.getElementById("accordion-container");
-     const tpl = document.getElementById("accordion-item-template");
-     data.forEach(cat => {
-        const section = document.createElement("section");
-        section.className = "article";
+    section.innerHTML = `
+      <div class="answer-image">
+        <img src="${imgSrc}" alt="Иконка для ${cat.category}" class="category-icon" />
+        <h3 class="category-title">${cat.category}</h3>
+      </div>
+    `;
 
-        let imgSrc = "";
-        switch (cat.category) {
-          case "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ":
-            imgSrc = "img/answer/theory.jpeg";
-            break;
-          case "WEB":
-            imgSrc = "img/answer/client-server-arch.jpeg";
-            break;
-          case "API":
-            imgSrc = "img/answer/restapi.jpeg";
-            break;
-          case "БАЗЫ ДАННЫХ":
-            imgSrc = "img/answer/mysql.jpeg";
-            break;
-          case "GIT + IDE + SELENIUM":
-            imgSrc = "img/answer/git.jpeg";
-            break;
-          case "DEVOPS":
-            imgSrc = "img/answer/docker.jpeg";
-            break;
-          case "Вопросы к руководителю | команде | HR":
-            imgSrc = "img/answer/hr.jpeg";
-            break;
-            case "AQA Java":
-            imgSrc = "img/answer/AQAjava.jpeg";
-            break;
-            case "AQA Python":
-            imgSrc = "img/answer/AQApython.jpeg";
-            break;
-            case "AQA JS":
-            imgSrc = "img/answer/AQAjs.jpeg";
-            break;
-          // при необходимости добавьте другие категории
-          default:
-            imgSrc = "img/answer/default-category.png"; // картинка-заглушка, если не заданы
+    // 3. Прогресс-бар
+    const total = cat.items.length;
+    section.insertAdjacentHTML('beforeend', `
+      <div class="progress-container">
+        <div class="progress-bar-unclear" data-category="${cat.category}"></div>
+        <div class="progress-bar"        data-category="${cat.category}"></div>
+        <span class="progress-text"      data-category="${cat.category}">0%</span>
+      </div>
+    `);
+    container.appendChild(section);
+
+    // Восстанавливаем состояния из localStorage
+    const studiedArr = JSON.parse(
+      localStorage.getItem(`studied_${cat.category}`)
+    ) || [];
+    const unclearArr = JSON.parse(
+      localStorage.getItem(`unclear_${cat.category}`)
+    ) || [];
+    updateProgress(cat.category, studiedArr.length, unclearArr.length, total);
+
+    // 4. Render вопросов
+    cat.items.forEach(item => {
+      const clone  = tpl.content.cloneNode(true);
+      const header = clone.querySelector('.t849__header');
+      const btn    = clone.querySelector('.t849__trigger-button');
+      const title  = clone.querySelector('.t849__title');
+      const content= clone.querySelector('.t849__content');
+      const textEl = clone.querySelector('.t849__text');
+      const copy   = clone.querySelector('.copy-icon');
+
+      btn.setAttribute('aria-controls', item.id);
+      title.textContent = item.title;
+      content.id = item.id;
+
+      let extraLink = item.moreLink
+        ? `<br><br><a href="${item.moreLink}" target="_blank" rel="noopener noreferrer" class="answer-link">Читать</a>`
+        : "";
+      let extraImg  = item.img
+        ? `<div class="answer-image"><img src="${item.img}" alt="Иллюстрация к вопросу"></div>`
+        : "";
+      textEl.innerHTML = item.answer + extraLink + extraImg;
+
+      textEl.insertAdjacentHTML('beforeend', `
+        <div style="margin-top:1rem;">
+          <button type="button" class="answer-link study-btn"
+                  data-category="${cat.category}" data-id="${item.id}"
+                  title="Понимаю материал">
+            &#10003;
+          </button>
+          <button type="button" class="unclear-btn"
+                  data-category="${cat.category}" data-id="${item.id}"
+                  title="Не до конца разбираюсь">
+            ?
+          </button>
+        </div>
+      `);
+
+      // Подкрашиваем «+» при рендере
+      if (studiedArr.includes(item.id)) header.classList.add('studied');
+      else if (unclearArr.includes(item.id)) header.classList.add('unclear');
+
+      // Обработчик «✓»
+      clone.querySelector('.study-btn').addEventListener('click', e => {
+        const c = e.target.dataset.category;
+        const id = e.target.dataset.id;
+        const studiedKey = 'studied_' + c;
+        const unclearKey = 'unclear_' + c;
+        const sArr = JSON.parse(localStorage.getItem(studiedKey)) || [];
+        let   uArr = JSON.parse(localStorage.getItem(unclearKey)) || [];
+        if (!sArr.includes(id)) {
+          sArr.push(id);
+          uArr = uArr.filter(x => x !== id);
+          localStorage.setItem(studiedKey, JSON.stringify(sArr));
+          localStorage.setItem(unclearKey, JSON.stringify(uArr));
+          header.classList.remove('unclear');
+          header.classList.add('studied');
+          updateProgress(c, sArr.length, uArr.length, total);
         }
-
-        section.innerHTML = `
-          <div class="answer-image">
-            <img src="${imgSrc}" alt="Иконка для ${cat.category}" class="category-icon" />
-            <h3 class="category-title">${cat.category}</h3>
-          </div>
-        `;
-        container.appendChild(section);
-
-        cat.items.forEach(item => {
-          const clone = tpl.content.cloneNode(true);
-          const btn       = clone.querySelector(".t849__trigger-button");
-          const titleElem = clone.querySelector(".t849__title");
-          const content   = clone.querySelector(".t849__content");
-          const text      = clone.querySelector(".t849__text");
-          const copyIcon  = clone.querySelector(".copy-icon");
-
-          // Заполняем атрибуты и тексты
-          btn.setAttribute("aria-controls", item.id);
-          titleElem.textContent = item.title;
-          content.id = item.id;
-          text.innerHTML = item.answer;
-
-            // Вставляем ответ с индивидуальной ссылкой
-            let additionalLinkHTML = '';
-            if (item.moreLink) {
-              additionalLinkHTML =
-                `<br><br><a href="${item.moreLink}" target="_blank" rel="noopener noreferrer" class="answer-link">Читать</a>`;
-            }
-
-            // Если задано поле img — показываем картинку внизу
-            let imageHTML = '';
-            if (item.img) {
-              imageHTML = `
-                <div class="answer-image">
-                  <img src="${item.img}" alt="Иллюстрация к вопросу" />
-                </div>`;
-            }
-
-            // Собираем окончательный HTML и вставляем
-            text.innerHTML = item.answer + additionalLinkHTML + imageHTML;
-
-          // 2) Событие открытия/закрытия
-          btn.addEventListener("click", () => {
-            const expanded = btn.getAttribute("aria-expanded") === "true";
-            btn.setAttribute("aria-expanded", !expanded);
-            content.style.display = expanded ? "none" : "block";
-            btn.parentElement.classList.toggle("t849__opened", !expanded);
-          });
-
-          // 3) Событие копирования текста вопроса в поле поиска
-          copyIcon.addEventListener("click", () => {
-            searchInput.value = item.title;
-            searchInput.dispatchEvent(new Event("input"));
-            searchInput.focus();
-          });
-
-          section.appendChild(clone);
-        });
-     });
-
-        searchInput.addEventListener("input", () => {
-          const term = searchInput.value.trim().toLowerCase();
-          const has  = term.length > 0;
-
-          // 1) Показ/скрытие отдельных .t-item
-          document.querySelectorAll("#accordion-container .t-item").forEach(item => {
-            const q = item.querySelector(".t849__title").textContent.toLowerCase();
-            const a = item.querySelector(".t849__text").textContent.toLowerCase();
-            const match = !term || q.includes(term) || a.includes(term);
-            item.style.display = match ? "" : "none";
-          });
-
-          // 2) Показ/скрытие секций в зависимости от наличия видимых .t-item
-          document.querySelectorAll("#accordion-container .article").forEach(section => {
-            const items      = section.querySelectorAll(".t-item");
-            const anyVisible = Array.from(items).some(i => i.style.display !== "none");
-            section.style.display = anyVisible ? "" : "none";
-
-            // 3) Скрываем иконку только когда есть поиск и в секции есть результаты
-            const icon = section.querySelector(".category-icon");
-            if (icon) {
-              icon.style.display = (has && anyVisible) ? "none" : "";
-            }
-          });
-
-          // 4) Кнопки и заголовок
-          clearBtn.style.display     = has ? "inline-block" : "none";
-          modelSelect.style.display  = has ? "inline-block" : "none";
-          aiBtn.style.display        = has ? "inline-block" : "none";
-          resultsTitle.style.display = has ? "block"       : "none";
-          about.style.display        = has ? "none"        : "";
-        });
-
-
-
-     clearBtn.addEventListener("click", () => {
-        searchInput.value = "";
-        searchInput.dispatchEvent(new Event("input"));
-        aiResponse.textContent = "";
-        searchInput.focus();
-     });
-
-      modelSelect.addEventListener("change", () => {
-        localStorage.setItem("selectedModel", modelSelect.value);
       });
 
-      // 6) Обработчик AI-запроса
-      aiBtn.addEventListener("click", () => {
-        const userQ = searchInput.value.trim();
-        if (!userQ) return;
+      // Обработчик «?»
+      clone.querySelector('.unclear-btn').addEventListener('click', e => {
+        const c = e.target.dataset.category;
+        const id = e.target.dataset.id;
+        let   sArr = JSON.parse(localStorage.getItem('studied_' + c)) || [];
+        const uKey = 'unclear_' + c;
+        const uArr = JSON.parse(localStorage.getItem(uKey)) || [];
+        if (!uArr.includes(id)) {
+          uArr.push(id);
+          sArr = sArr.filter(x => x !== id);
+          localStorage.setItem(uKey, JSON.stringify(uArr));
+          localStorage.setItem('studied_' + c, JSON.stringify(sArr));
+          header.classList.remove('studied');
+          header.classList.add('unclear');
+          updateProgress(c, sArr.length, uArr.length, total);
+        }
+      });
 
-        // запускаем обратный отсчёт от 10 до 0
-        let countdown = 10;
-        aiResponse.classList.add("show");
-        aiBtn.disabled = true;
-        aiBtn.textContent = "...";
+      // Toggle accordion
+      btn.addEventListener("click", () => {
+        const expanded = btn.getAttribute("aria-expanded") === "true";
+        btn.setAttribute("aria-expanded", !expanded);
+        content.style.display = expanded ? "none" : "block";
+        header.classList.toggle("t849__opened", !expanded);
+      });
 
-        // сразу показать первый кадр
-        aiResponse.textContent = `Верну ответ через ${countdown}`;
+      // Copy title to search
+      copy.addEventListener("click", () => {
+        searchInput.value = item.title;
+        searchInput.dispatchEvent(new Event("input"));
+        searchInput.focus();
+      });
 
-        const countdownInterval = setInterval(() => {
-          countdown--;
-          if (countdown >= 0) {
-            aiResponse.textContent = `Верну ответ через ${countdown}`;
-          } else {
-            clearInterval(countdownInterval);
-            // здесь продолжите вашу логику после окончания отсчёта,
-            // например запрос к AI или просто скрытие .show
-          }
-        }, 1000);
+      section.appendChild(clone);
+    });
+  });
+
+  // --- Поиск/фильтрация ---
+  searchInput.addEventListener("input", () => {
+    const term = searchInput.value.trim().toLowerCase();
+    const has  = term.length > 0;
+    document.querySelectorAll("#accordion-container .t-item").forEach(item => {
+      const q = item.querySelector(".t849__title").textContent.toLowerCase();
+      const a = item.querySelector(".t849__text").textContent.toLowerCase();
+      const match = !term || q.includes(term) || a.includes(term);
+      item.style.display = match ? "" : "none";
+    });
+    document.querySelectorAll("#accordion-container .article").forEach(section => {
+      const items      = section.querySelectorAll(".t-item");
+      const anyVisible = Array.from(items).some(i => i.style.display !== "none");
+      section.style.display = anyVisible ? "" : "none";
+      const icon = section.querySelector(".category-icon");
+      if (icon) icon.style.display = (has && anyVisible) ? "none" : "";
+    });
+    clearBtn.style.display     = has ? "inline-block" : "none";
+    modelSelect.style.display  = has ? "inline-block" : "none";
+    aiBtn.style.display        = has ? "inline-block" : "none";
+    resultsTitle.style.display = has ? "block"       : "none";
+    about.style.display        = has ? "none"        : "";
+  });
+
+  clearBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    searchInput.dispatchEvent(new Event("input"));
+    aiResponse.textContent = "";
+    searchInput.focus();
+  });
+
+  // --- AI button handler ---
+  aiBtn.addEventListener("click", () => {
+    const userQ = searchInput.value.trim();
+    if (!userQ) return;
+    let countdown = 10;
+    aiResponse.classList.add("show");
+    aiBtn.disabled = true;
+    aiBtn.textContent = "...";
+    aiResponse.textContent = `Верну ответ через ${countdown}`;
+    const countdownInterval = setInterval(() => {
+      countdown--;
+      if (countdown >= 0) aiResponse.textContent = `Верну ответ через ${countdown}`;
+      else clearInterval(countdownInterval);
+    }, 1000);
 
         fetch("https://api.intelligence.io.solutions/api/v1/chat/completions", {
           method: "POST",
@@ -1406,67 +1424,72 @@ const systemPrompt =
       });
     });  // — конец DOMContentLoaded
 
+// --- Theme toggle ---
+(function() {
+  const root = document.documentElement;
+  const btn  = document.getElementById('theme-toggle');
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark' || saved === 'light') {
+    root.setAttribute('data-theme', saved);
+    btn.classList.toggle('active', saved === 'dark');
+  }
+  btn.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    btn.classList.toggle('active', next === 'dark');
+  });
+})();
 
+// --- Rotating logo/favicons (вне DOMContentLoaded) ---
+(function() {
+  const imgs = [
+    'img/QAtoDev_(Flappy_Bird_style).png',
+    'img/QAtoDev_Classic.png',
+    'img/QAtoDev_new_year.png',
+    'img/QAtoDev_DayQA.png',
+    'img/QAtoDev_Halloween.png',
+    'img/QAtoDev_BlackAndWhite.png',
+    'img/QAtoDev_CoverChatChannel.png'
+  ];
+  let idx = parseInt(localStorage.getItem('logoIdx'), 10);
+  if (isNaN(idx) || idx<0 || idx>=imgs.length) idx = 0;
+  const logoImg    = document.querySelector('.logo img');
+  const faviconTag = document.querySelector('link[rel="icon"]');
+  function updateLogo() {
+    const src = imgs[idx];
+    if (logoImg)    logoImg.src    = src;
+    if (faviconTag) faviconTag.href = src;
+  }
+  updateLogo();
+  setInterval(() => {
+    idx = (idx + 1) % imgs.length;
+    localStorage.setItem('logoIdx', idx);
+    updateLogo();
+  }, 50000);
+})();
 
-    (function() {
-      const root = document.documentElement;
-      const btn  = document.getElementById('theme-toggle');
-
-      // Восстановление при загрузке
-      const saved = localStorage.getItem('theme');
-      if (saved === 'dark' || saved === 'light') {
-        root.setAttribute('data-theme', saved);
-        btn.classList.toggle('active', saved === 'dark');
-      }
-
-      // Обработчик клика
-      btn.addEventListener('click', () => {
-        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        root.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-        btn.classList.toggle('active', next === 'dark');
-      });
-    })();
-
-
-
-    (function() {
-      // Список ваших логотипов
-      const imgs = [
-        'img/QAtoDev_(Flappy_Bird_style).png',
-        'img/QAtoDev_Classic.png',
-        'img/QAtoDev_new_year.png',
-        'img/QAtoDev_DayQA.png',
-        'img/QAtoDev_Halloween.png',
-        'img/QAtoDev_BlackAndWhite.png',
-        'img/QAtoDev_CoverChatChannel.png'
-        // …и т.д.
-      ];
-
-      // Восстанавливаем последний индекс (или 0, если нет)
-      let idx = parseInt(localStorage.getItem('logoIdx'), 10);
-      if (isNaN(idx) || idx < 0 || idx >= imgs.length) {
-        idx = 0;
-      }
-
-      const logoImg    = document.querySelector('.logo img');
-      const faviconTag = document.querySelector('link[rel="icon"]');
-
-      // Функция установки текущего логотипа и favicon
-      function updateLogo() {
-        const src = imgs[idx];
-        if (logoImg)    logoImg.src    = src;
-        if (faviconTag) faviconTag.href = src;
-      }
-
-      // Обновляем сразу при загрузке
-      updateLogo();
-
-      // Каждые 60 секунд переключаем и сохраняем индекс
-      setInterval(() => {
-        idx = (idx + 1) % imgs.length;
-        localStorage.setItem('logoIdx', idx);
-        updateLogo();
-      }, 50000);
-    })();
-
+/**
+ * @param {string} category
+ * @param {number} studiedCount
+ * @param {number} unclearCount
+ * @param {number} total
+ */
+function updateProgress(category, studiedCount, unclearCount, total) {
+  const pctStudied = (studiedCount / total) * 100;
+  const pctUnclear = (unclearCount  / total) * 100;
+  const blueBar   = document.querySelector(`.progress-bar[data-category="${category}"]`);
+  const orangeBar = document.querySelector(`.progress-bar-unclear[data-category="${category}"]`);
+  const text      = document.querySelector(`.progress-text[data-category="${category}"]`);
+  if (unclearCount > 0) {
+    blueBar.classList.add('split');
+    blueBar.classList.remove('full');
+  } else {
+    blueBar.classList.add('full');
+    blueBar.classList.remove('split');
+  }
+  blueBar.style.width   = pctStudied + '%';
+  orangeBar.style.left  = pctStudied + '%';
+  orangeBar.style.width = pctUnclear + '%';
+  text.textContent      = Math.round((studiedCount / total) * 100) + '%';
+}

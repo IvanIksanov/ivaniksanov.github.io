@@ -23,16 +23,6 @@ body {
   font-style: normal;
 }
 
-/* Отключаем все отдельные dark-медиа-блоки */
-/*
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1A1A1A;
-    color: #FFFFFF;
-  }
-}
-*/
-
 .frame {
   border: 2px solid #44BBC1;
   background-color: #FAFAFA;
@@ -89,14 +79,6 @@ body {
   font-size: 12px;
 }
 
-/*
-@media (prefers-color-scheme: dark) {
-  .check-list {
-    background-color: #242424;
-  }
-}
-*/
-
 @media (max-width: 600px) {
   .check-list {
     padding: 0.2rem 0.5rem;
@@ -109,13 +91,6 @@ body {
   margin: 1rem 0;
 }
 
-/*
-@media (prefers-color-scheme: dark) {
-  .noneframe {
-    color: #FFFFFF;
-  }
-}
-*/
 
 .new-year-counter {
   padding: 1rem;
@@ -123,13 +98,6 @@ body {
   color: #E30000;
 }
 
-/*
-@media (prefers-color-scheme: dark) {
-  .new-year-counter {
-    color: #FFFFFF;
-  }
-}
-*/
 
 .welcome {
   border-radius: 0;
@@ -137,14 +105,6 @@ body {
   margin: 1rem 0;
   color: #44BBC1;
 }
-
-/*
-@media (prefers-color-scheme: dark) {
-  .welcome {
-    color: #44BBC1;
-  }
-}
-*/
 
 .custom-links {
   border: 2px solid #44BBC1;
@@ -168,8 +128,6 @@ body {
     margin-bottom: 10px;
   }
 }
-
-/* Остальные стили (карусель, секции, формы и пр.) остаются без изменений */
 
 .carousel {
   display: flex;
@@ -276,10 +234,10 @@ body {
             border-top: 2px solid red;
         }
 
-        /* Плашки чек-листа: full-width до 800px, дальше не шире 800px */
+        /* Плашки чек-листа: full-width до 600px, дальше не шире 600px */
         #checklist-items .skill-links .skill-link {
           width: 100%;           /* растягиваем на всю ширину родителя */
-          max-width: 600px;      /* но не больше 800px */
+          max-width: 600px;      /* но не больше 600px */
           margin: 1 auto;   /* по центру + вертикальные отступы */
           text-align: center;    /* текст внутри плашки по центру */
         }
@@ -296,7 +254,7 @@ body {
 }
 
 .tetris {
-  padding: 1rem;
+  padding: 0rem;
   margin: 1rem 0;
 }
 

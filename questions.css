@@ -343,6 +343,27 @@ h2 {
   transform: rotate(45deg);     /* превращаем + в × */
 }
 
+/* По-умолчанию иконка летит текущим цветом (на hover) */
+.t849__icon {
+  stroke: currentColor;
+}
+
+/* Если вопрос изучен — синяя «+» */
+.t849__header.studied .t849__icon {
+  color: #44BBC1;
+}
+
+/* Если вопрос непонятен — оранжевая «+» */
+.t849__header.unclear .t849__icon {
+  color: #FFA500;
+}
+
+/* Сохраняем прежнюю логику показа иконки */
+.t849__header:hover .t849__icon,
+.t849__header.t849__opened .t849__icon {
+  display: inline-block;
+}
+
 .copy-icon {
   /* Иконка всегда «занимает» место, но изначально невидима */
   display: inline-block;
@@ -563,11 +584,109 @@ h2 {
   margin-top: 12px;
   text-align: center;
 }
+
 .answer-image img {
   max-width: 100%;
   height: auto;
   border-radius: 4px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* На экранах шире 800px прячем только картинку, но оставляем сам блок и заголовок */
+@media (min-width: 800px) {
+  .answer-image {
+    /* сбрасываем фиксированную высоту, чтобы блок подстраивался под содержимое */
+    height: auto;
+    overflow: visible;
+  }
+  .answer-image img {
+    display: none; /* прячем только <img> */
+  }
+}
+
+/* === Стили для прогресс-бара === */
+.progress-container {
+  position: relative;
+  background-color: #e7e7e7;
+  border-radius: 8px;
+  height: 0.8rem;
+  width: 50%;
+  margin: 0.5rem auto;
+}
+
+.progress-bar {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  width: 0;
+  background-color: #44BBC1;
+  transition: width 0.1s ease;
+  z-index: 1;
+  /* убрали все border-radius отсюда */
+}
+
+/* когда нет оранжевого — скругляем полностью */
+.progress-bar.full {
+  border-radius: 8px;
+}
+
+/* когда есть оранжевый — скругляем только слева */
+.progress-bar.split {
+  border-radius: 8px 0 0 8px;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.55rem;
+  color: #1A1A1A;
+  z-index: 3;
+}
+
+/* чтобы кнопка-галочка была просто символом без фона */
+button.study-btn {
+  background: none;       /* убираем фон */
+  border: none;           /* убираем рамку */
+  padding: 0;             /* сбрасываем отступы */
+  box-shadow: none;       /* убираем тени */
+  font-size: 1.2rem;      /* чуть больше для видимости */
+  cursor: pointer;        /* как кнопка */
+  color: #44BBC1;         /* тот же цвет, что и прогресс-бар */
+  line-height: 1;         /* чтобы не было лишней высоты */
+}
+
+button.study-btn:hover {
+  transform: scale(1.2);
+}
+
+/* «Непонятно» */
+.progress-bar-unclear {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  width: 0;
+  background-color: #FFA500;
+  border-radius: 0 8px 8px 0;
+  transition: left 0.1s ease, width 0.1s ease;
+  z-index: 2;
+}
+
+/* Кнопка «?» оранжевая, без плашки */
+button.unclear-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 0.5rem;
+  font-size: 1.2rem;
+  line-height: 1;
+  color: #FFA500;
+  cursor: pointer;
+  transition: transform 0.1s ease-in-out;
+}
+button.unclear-btn:hover {
+  transform: scale(1.2);
 }
 
 /* ===================================================================
@@ -620,8 +739,6 @@ h2 {
   background: rgba(255, 165, 0, 0.1); /* лёгкий оранжевый фон */
   color: #FFA001;                     /* окрашиваем иконку в оранжевый */
 }
-
-
 
 /* Размер кнопки */
 .toggleButton_gllP {
@@ -778,6 +895,14 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
   html[data-theme="dark"] .search-container #model-select {
     background-color: #242424;
     color: #e7e7e7;
+  }
+
+  html[data-theme="dark"] .progress-container {
+    background-color: #1A1A1A
+  }
+
+  html[data-theme="dark"] .progress-text {
+  color: #f0f0f0;
   }
 
   /* НАСТРОЙКА СВЕТЛОГО ОФОРМЛЕНИЯ */

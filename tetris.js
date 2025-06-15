@@ -386,23 +386,6 @@ function drop() {
 }
 drop(); // Стартуем
 
-// работа кнопки Свернуть список
-document.getElementById('toggle-buttonTetris').addEventListener('click', function () {
-        const checklist = document.getElementById('checklist-items2');
-        const button = this;
-
-        if (checklist.classList.contains('expanded')) {
-            checklist.classList.remove('expanded');
-            button.textContent = 'Развернуть список';
-
-            // Скроллим вверх к началу списка
-            checklist.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
-            checklist.classList.add('expanded');
-            button.textContent = 'Свернуть список';
-        }
-    });
-
 document.addEventListener("DOMContentLoaded", function () {
     // Предотвращение зума при двойном тапе
     let lastTouchEnd = 0;
@@ -461,4 +444,36 @@ document.addEventListener("DOMContentLoaded", function () {
             localStorage.setItem(prefix + checkbox.name, checkbox.checked);
         });
     });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const prefix = "tetris_";
+  const sections = Array.from(document.querySelectorAll('#checklist-items .section'));
+  const prevBtn  = document.getElementById('prev-section');
+  const nextBtn  = document.getElementById('next-section');
+
+  // Восстанавливаем текущую секцию (или 0)
+  let current = parseInt(localStorage.getItem(prefix + 'currentSection'), 10);
+  if (isNaN(current) || current < 0 || current >= sections.length) {
+    current = 0;
+  }
+
+  function showSection(idx) {
+    sections.forEach((sec, i) => {
+      sec.style.display = (i === idx) ? 'block' : 'none';
+    });
+    prevBtn.disabled = idx === 0;
+    nextBtn.disabled = idx === sections.length - 1;
+    localStorage.setItem(prefix + 'currentSection', idx);
+  }
+
+  prevBtn.addEventListener('click', () => {
+    if (current > 0) showSection(--current);
+  });
+  nextBtn.addEventListener('click', () => {
+    if (current < sections.length - 1) showSection(++current);
+  });
+
+  // Показываем при инициализации
+  showSection(current);
 });

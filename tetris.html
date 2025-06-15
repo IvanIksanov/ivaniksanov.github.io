@@ -53,11 +53,6 @@
     </div>
 </header>
 
-<div>
-    <h2>Тестируем игру Тетрис</h2>
-</div>
-
-
 <section id="game" class="tetris">
     <h2 class="responsive-title">
         <svg viewBox="0 0 589 57" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -104,86 +99,131 @@
 
 
 
-<section id="features2" class="frame">
-    <h2>Чек-лист проверок для тестирования игры Тетрис</h2>
-    <div id="checklist2">
+<section id="features2" class="article"  style="max-width: none; border: 2px solid #44BBC1; text-align: center; padding: 0rem;">
+    <div id="checklist">
+        <div id="checklist-items" class="article">
+            <!-- Навигация по секциям -->
+            <div class="navigation-buttons">
+                <button id="prev-section">Назад</button>
+                <button id="next-section">Далее</button>
+            </div><br>
 
-        <div id="checklist-items2" class="collapsible">
-            <strong>1. Проверка UI:</strong><br>
-            <label><input type="checkbox" name="ui_check1"></label> Проверить отображение кнопки вправо<br>
-            <label><input type="checkbox" name="ui_check2"></label> Проверить отображение кнопки вниз<br>
-            <label><input type="checkbox" name="ui_check3"></label> Проверить отображение кнопки влево<br>
-            <label><input type="checkbox" name="ui_check4"></label> Проверить отображение кнопки повернуть<br>
-            <label><input type="checkbox" name="ui_check5"></label> Проверить отображение счетчика очков<br>
-            <label><input type="checkbox" name="ui_check6"></label> Проверить отображение текста "игра тетрис"<br>
-            <br>
-            <strong>Адаптивность размеров:</strong><br>
-            <label><input type="checkbox" name="adapt_check1"></label> Проверить на десктопе<br>
-            <label><input type="checkbox" name="adapt_check2"></label> Проверить на мобилке<br>
-            <br>
-            <strong>Адаптивность управления:</strong><br>
-            <label><input type="checkbox" name="control_check1"></label> Проверить на десктопе (стрелки клавиатуры и тап по UI кнопкам)<br>
-            <label><input type="checkbox" name="control_check2"></label> Проверить на мобилке (тап по UI кнопкам)<br>
-            <br>
-            <strong>Соответствие цвета:</strong><br>
-            <label><input type="checkbox" name="color_check1"></label> Цвет текста "игра тетрис" - оранжевый<br>
-            <label><input type="checkbox" name="color_check2"></label> Цвет текста "счет: ХХХ - бирюзовый"<br>
-            <label><input type="checkbox" name="color_check3"></label> Цвет подложки кнопок - белый<br>
-            <label><input type="checkbox" name="color_check4"></label> Цвет кнопки вправо - синий<br>
-            <label><input type="checkbox" name="color_check5"></label> Цвет кнопки вниз - красный<br>
-            <label><input type="checkbox" name="color_check6"></label> Цвет кнопки вправо - фиолетовый<br>
-            <label><input type="checkbox" name="color_check7"></label> Цвет кнопки повернуть - зеленый<br>
-            <br>
-            <strong>Позиция элементов:</strong><br>
-            <label><input type="checkbox" name="position_check1"></label> Проверка пустого фрейма при старте<br>
-            <label><input type="checkbox" name="position_check2"></label> Высота 400 между верхней и нижней границей фрейма тетриса<br>
-            <label><input type="checkbox" name="position_check3"></label> Проверка размера кнопок - адаптируется в зависимости размера экрана<br>
-            <label><input type="checkbox" name="position_check4"></label> Проверить отсутствие обрезания или наложения элементов<br>
-            <br>
-            <strong>2. Функциональное тестирование:</strong><br>
-            <label><input type="checkbox" name="functional_check1"></label> Проверить, что после обновления страницы игра стартует автоматически<br>
-            <label><input type="checkbox" name="functional_check2"></label> Проверить, что до взаимодействия с управлением фигура автоматически падает<br>
-            <label><input type="checkbox" name="functional_check3"></label> Проверить, что после взаимодействия с управлением фигура автоматически продолжает падает<br>
-            <label><input type="checkbox" name="functional_check4"></label> Проверить, что фигура фиксируется после столкновением с нижней границей фрейма<br>
-            <label><input type="checkbox" name="functional_check5"></label> Проверить корректное поведение фигуры при отсутствии ввода (вниз)<br>
-            <label><input type="checkbox" name="functional_check6"></label> Проверить увеличение счетчика при успешном заполнении линии фигурами<br>
-            <label><input type="checkbox" name="functional_check7"></label> Проверить увеличение счетчика при успешном заполнении 2-х линий одновременно<br>
-            <label><input type="checkbox" name="functional_check8"></label> Проверить увеличение счетчика при успешном заполнении 3-х и более линий одновременно<br>
-            <label><input type="checkbox" name="functional_check9"></label> Проверить, что 2 и более линий заполненных одновременно также сгорают вместе<br>
-            <label><input type="checkbox" name="functional_check10"></label> Проверить остановку игры при столкновении с верхней границей<br>
-            <label><input type="checkbox" name="functional_check11"></label> Проверить сообщение "Игра окончена" при остановке игры<br>
-            <label><input type="checkbox" name="functional_check12"></label> Проверить, что после сообщения "Игра окончена" игра не продолжится без обновления страницы<br>
-            <label><input type="checkbox" name="functional_check13"></label> Проверить, что игра не перезапускается автоматически после завершения<br>
-            <label><input type="checkbox" name="functional_check14"></label> Проверить возможность перезапуска игры<br>
-            <br>
-            <strong>3. Тестирование производительности:</strong><br>
-            <label><input type="checkbox" name="perf_check1"></label> Проверить плавность анимации при разных разрешениях экрана<br>
-            <label><input type="checkbox" name="perf_check2"></label> Проверить производительность при быстром управлении кнопками и клавишами<br>
-            <br>
-            <strong>4. Проверка негативных сценариев:</strong><br>
-            <label><input type="checkbox" name="negative_check1"></label> Проверить поведение игры при отсутствии ввода.<br>
-            <label><input type="checkbox" name="negative_check2"></label> Проверить, что игра корректно обрабатывает попытку ввода после завершения игры<br>
-            <label><input type="checkbox" name="negative_check4"></label> Проверить поведение игры при отключении JavaScript.<br>
-            <label><input type="checkbox" name="negative_check5"></label> Проверить, что счетчик не увеличивается, если фигура не заполнила линию.<br>
-            <br>
-            <strong>5. Тестирование на кроссбраузерность:</strong><br>
-            <label><input type="checkbox" name="cross_check1"></label> Проверить корректность работы игры в Google Chrome<br>
-            <label><input type="checkbox" name="cross_check2"></label> Проверить корректность работы игры в Mozilla Firefox<br>
-            <label><input type="checkbox" name="cross_check3"></label> Проверить корректность работы игры в Safari<br>
-            <label><input type="checkbox" name="cross_check4"></label> Проверить корректность работы игры в Microsoft Edge<br>
-            <br>
-            <strong>6. Тестирование с использованием техники серого ящика:</strong><br>
-            <label><input type="checkbox" name="gray_check1"></label> Проверить скорость обновления позиций объектов<br>
-            <label><input type="checkbox" name="gray_check2"></label> Проверить скорость обновления счетчика<br>
-            <label><input type="checkbox" name="gray_check3"></label> Проверить использование ресурсов (CPU, память)<br>
-            <br>
-            <strong>7. Проверка адаптации игры:</strong><br>
-            <label><input type="checkbox" name="adapt_check3"></label> Проверить работу на экранах 1920x1080<br>
-            <label><input type="checkbox" name="adapt_check4"></label> Проверить работу на экранах 1366x768<br>
-            <label><input type="checkbox" name="adapt_check5"></label> Проверить работу на экранах 360x640<br>
-            <label><input type="checkbox" name="adapt_check6"></label> Проверить работу во время растягивания окна браузера<br>
+            <!-- Блок 1: Проверка UI -->
+            <div class="section">
+            Проверка UI - выбери успешные проверки<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="ui_check1">Проверить отображение кнопки вправо</a><br>
+                    <a href="#" class="skill-link" data-check-id="ui_check2">Проверить отображение кнопки вниз</a><br>
+                    <a href="#" class="skill-link" data-check-id="ui_check3">Проверить отображение кнопки влево</a><br>
+                    <a href="#" class="skill-link" data-check-id="ui_check4">Проверить отображение кнопки повернуть</a><br>
+                    <a href="#" class="skill-link" data-check-id="ui_check5">Проверить отображение счетчика очков</a><br>
+                    <a href="#" class="skill-link" data-check-id="ui_check6">Проверить отображение текста "игра тетрис"</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            Адаптивность размеров<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="adapt_check1">Проверить на десктопе</a><br>
+                    <a href="#" class="skill-link" data-check-id="adapt_check2">Проверить на мобилке</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            Адаптивность управления<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="control_check1">Проверить на десктопе (стрелки клавиатуры и тап по UI кнопкам)</a><br>
+                    <a href="#" class="skill-link" data-check-id="control_check2">Проверить на мобилке (тап по UI кнопкам)</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            Соответствие цвета<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="color_check1">Цвет текста "игра тетрис" - оранжевый</a><br>
+                    <a href="#" class="skill-link" data-check-id="color_check2">Цвет текста "счет: ХХХ - бирюзовый"</a><br>
+                    <a href="#" class="skill-link" data-check-id="color_check3">Цвет подложки кнопок - белый</a><br>
+                    <a href="#" class="skill-link" data-check-id="color_check4">Цвет кнопки вправо - синий</a><br>
+                    <a href="#" class="skill-link" data-check-id="color_check5">Цвет кнопки вниз - красный</a><br>
+                    <a href="#" class="skill-link" data-check-id="color_check6">Цвет кнопки вправо - фиолетовый</a><br>
+                    <a href="#" class="skill-link" data-check-id="color_check7">Цвет кнопки повернуть - зеленый</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            Позиция элементов<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="position_check1">Проверка пустого фрейма при старте</a><br>
+                    <a href="#" class="skill-link" data-check-id="position_check2">Высота 400 между верхней и нижней границей фрейма тетриса</a><br>
+                    <a href="#" class="skill-link" data-check-id="position_check3">Проверка размера кнопок - адаптируется в зависимости размера экрана</a><br>
+                    <a href="#" class="skill-link" data-check-id="position_check4">Проверить отсутствие обрезания или наложения элементов</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            2. Функциональное тестирование<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="functional_check1">Проверить, что после обновления страницы игра стартует автоматически</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check2">Проверить, что до взаимодействия с управлением фигура автоматически падает</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check3">Проверить, что после взаимодействия с управлением фигура автоматически продолжает падает</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check4">Проверить, что фигура фиксируется после столкновением с нижней границей фрейма</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check5">Проверить корректное поведение фигуры при отсутствии ввода (вниз)</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check6">Проверить увеличение счетчика при успешном заполнении линии фигурами</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check7">Проверить увеличение счетчика при успешном заполнении 2-х линий одновременно</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check8">Проверить увеличение счетчика при успешном заполнении 3-х и более линий одновременно</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check9">Проверить, что 2 и более линий заполненных одновременно также сгорают вместе</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check10">Проверить остановку игры при столкновении с верхней границей</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check11">Проверить сообщение "Игра окончена" при остановке игры</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check12">Проверить, что после сообщения "Игра окончена" игра не продолжится без обновления страницы</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check13">Проверить, что игра не перезапускается автоматически после завершения</a><br>
+                    <a href="#" class="skill-link" data-check-id="functional_check14">Проверить возможность перезапуска игры</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            3. Тестирование производительности<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="perf_check1">Проверить плавность анимации при разных разрешениях экрана</a><br>
+                    <a href="#" class="skill-link" data-check-id="perf_check2">Проверить производительность при быстром управлении кнопками и клавишами</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            4. Проверка негативных сценариев<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="negative_check1">Проверить поведение игры при отсутствии ввода.</a><br>
+                    <a href="#" class="skill-link" data-check-id="negative_check2">Проверить, что игра корректно обрабатывает попытку ввода после завершения игры</a><br>
+                    <a href="#" class="skill-link" data-check-id="negative_check4">Проверить поведение игры при отключении JavaScript.</a><br>
+                    <a href="#" class="skill-link" data-check-id="negative_check5">Проверить, что счетчик не увеличивается, если фигура не заполнила линию.</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            5. Тестирование на кроссбраузерность<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="cross_check1">Проверить корректность работы игры в Google Chrome</a><br>
+                    <a href="#" class="skill-link" data-check-id="cross_check2"> Проверить корректность работы игры в Mozilla Firefox</a><br>
+                    <a href="#" class="skill-link" data-check-id="cross_check3">Проверить корректность работы игры в Safari</a><br>
+                    <a href="#" class="skill-link" data-check-id="cross_check4"> Проверить корректность работы игры в Microsoft Edge</a><br>
+                </div>
+            </div>
+
+            <div class="section">
+            6. Тестирование с использованием техники серого ящика<br><br>
+                <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="gray_check1"> Проверить скорость обновления позиций объектов</a><br>
+                    <a href="#" class="skill-link" data-check-id="gray_check3">Проверить использование ресурсов (CPU, память)</a><br>
+                </div>
+            </div>
+
+           <div class="section">
+            7. Проверка адаптации игры<br><br>
+               <div class="skill-links">
+                    <a href="#" class="skill-link" data-check-id="adapt_check4">Проверить работу на экранах 1366x768</a><br>
+                    <a href="#" class="skill-link" data-check-id="adapt_check5"> Проверить работу на экранах 360x640</a><br>
+               </div>
+           </div>
         </div>
-        <button id="toggle-buttonTetris">Развернуть список</button>
     </div>
 </section>
 
@@ -255,6 +295,30 @@
         updateLogo();
       }, 50000);
     })();
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 1) находим только ссылки в секции Tetris
+      const items = document.querySelectorAll('#features2 #checklist-items .skill-link');
+
+      items.forEach(item => {
+        const id = item.dataset.checkId;
+        const key = 'tetris_' + id; // уникальный префикс
+
+        // 2) Восстанавливаем состояние
+        if (localStorage.getItem(key) === 'true') {
+          item.classList.add('selected');
+        }
+
+        // 3) Сохраняем на клике
+        item.addEventListener('click', function(e) {
+          e.preventDefault();
+          item.classList.toggle('selected');
+          localStorage.setItem(key, item.classList.contains('selected'));
+        });
+      });
+    });
 </script>
 </body>
 </html>
