@@ -843,6 +843,65 @@ button[type="submit"]:hover {
   background: var(--ifm-color-emphasis-200);
 }
 
+/* ---------- Блок Telegram-ссылок ---------- */
+#tg-links {
+  /* вместо margin: 2rem 0; */
+  margin: 2rem auto;      /* 2rem сверху и снизу, auto — слева и справа */
+  text-align: center;      /* для центрирования заголовка и inline-элементов */
+}
+
+.tg-links-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .tg-links-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.tg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tg-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tg-logo {
+  width: 60px;
+  height: 60px;
+  margin-bottom: 0.5rem;
+  fill: currentColor; /* если хотите менять цвет SVG через color */
+}
+.tg-card:hover .tg-logo {
+  /* при hover будем подставлять именно тот цвет, что задан в inline-стиле */
+  color: var(--hover-color);
+}
+
+.tg-title {
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 500px) {
+  .tg-links-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Иконки */
 .lightToggleIcon_pyhR,
 .darkToggleIcon_wfgR {
