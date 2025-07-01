@@ -859,6 +859,13 @@ button[type="submit"]:hover {
 @media (max-width: 800px) {
   .tg-links-grid {
     grid-template-columns: repeat(3, 1fr);
+    gap: 0,1rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .tg-links-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -896,11 +903,7 @@ button[type="submit"]:hover {
   margin: 0;
 }
 
-@media (max-width: 500px) {
-  .tg-links-grid {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 /* Иконки */
 .lightToggleIcon_pyhR,
