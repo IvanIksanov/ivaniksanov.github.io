@@ -1377,14 +1377,14 @@ const systemPrompt =
   aiBtn.addEventListener("click", () => {
     const userQ = searchInput.value.trim();
     if (!userQ) return;
-    let countdown = 10;
+    let countdown = 15;
     aiResponse.classList.add("show");
     aiBtn.disabled = true;
     aiBtn.textContent = "...";
     aiResponse.textContent = `Верну ответ через ${countdown}`;
     const countdownInterval = setInterval(() => {
       countdown--;
-      if (countdown >= 0) aiResponse.textContent = `Верну ответ через ${countdown}`;
+      if (countdown >= 0) aiResponse.textContent = `Верну ответ примерно через ${countdown}`;
       else clearInterval(countdownInterval);
     }, 1000);
 
@@ -1410,7 +1410,7 @@ const systemPrompt =
               clearInterval(countdownInterval);
               aiResponse.textContent = "";
               const msg     = json.choices?.[0]?.message;
-              const answer  = msg?.content?.trim() || "AI не вернул ответ.";
+              const answer  = msg?.content?.trim() || "AI не вернул ответ. Проверь статус код в DevTools";
               typeWriter(aiResponse, answer, 10, -1000);
         })
         .catch(err => {
@@ -1493,3 +1493,76 @@ function updateProgress(category, studiedCount, unclearCount, total) {
   orangeBar.style.width = pctUnclear + '%';
   text.textContent      = Math.round((studiedCount / total) * 100) + '%';
 }
+
+// ======== Фильтрация по категориям ========
+document.addEventListener('DOMContentLoaded', () => {
+  // Ждем полной загрузки DOM перед работой с фильтрами
+
+  const categoryFilters = document.getElementById('category-filters');
+  const filterChips = categoryFilters.querySelectorAll('.filter-chip');
+
+  // Модифицированная функция фильтрации
+  function applyCategoryFilter(category) {
+    const sections = document.querySelectorAll('#accordion-container .article');
+
+    // Сначала скрываем все разделы
+    sections.forEach(section => {
+      section.style.display = 'none';
+    });
+
+    // Затем показываем только нужные
+    if (category === 'Все') {
+      sections.forEach(section => {
+        section.style.display = '';
+      });
+    } else {
+      const targetSection = [...sections].find(section => {
+        return section.querySelector('.category-title')?.textContent === category;
+      });
+      if (targetSection) targetSection.style.display = '';
+    }
+  }
+
+  // Восстановление состояния после полной загрузки
+  function restoreFilterState() {
+    const savedFilter = localStorage.getItem('selectedFilter');
+    const activeChip = [...filterChips].find(
+      chip => chip.dataset.category === savedFilter
+    );
+
+    if (activeChip) {
+      activeChip.classList.add('active');
+      // Добавляем небольшую задержку для гарантированного рендера карточек
+      setTimeout(() => {
+        applyCategoryFilter(savedFilter);
+      }, 50);
+    } else {
+      // По умолчанию активируем "Все"
+      const allChip = document.querySelector('.filter-chip[data-category="Все"]');
+      if (allChip) {
+        allChip.classList.add('active');
+        localStorage.setItem('selectedFilter', 'Все');
+      }
+      applyCategoryFilter('Все');
+    }
+  }
+
+  // Обработчики для чипов
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+
+      const category = chip.dataset.category;
+      localStorage.setItem('selectedFilter', category);
+      applyCategoryFilter(category);
+
+      // Очищаем поиск
+      searchInput.value = '';
+      searchInput.dispatchEvent(new Event('input'));
+    });
+  });
+
+  // Инициализация после полной загрузки
+  restoreFilterState();
+});

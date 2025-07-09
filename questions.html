@@ -73,6 +73,7 @@
     </div>
 </header>
 
+<div class="main-content">
 <h2>Вопросы на собеседовании для тестировщика</h2>
 
 <!-- НОВЫЙ КОД -->
@@ -80,7 +81,7 @@
     <input
             type="text"
             id="search-input"
-            placeholder="Задать вопрос нейросети..."
+            placeholder="Задать вопрос нейросети или найти по ключевым словам вопросы ниже..."
             autocomplete="off"
     />
     <select id="model-select" title="Выберите модель" style="display:none; margin-left:8px;">
@@ -106,6 +107,23 @@
             title="Очистить поиск"
             style="display:none; margin-left:4px;"
     >⨯</button>
+</div>
+
+
+    <!-- Вставить после .search-container -->
+    <div id="category-filters" class="category-filters">
+        <button class="filter-chip" data-category="Все">Все</button>
+        <button class="filter-chip" data-category="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ">Теория</button>
+        <button class="filter-chip" data-category="WEB">Web</button>
+        <button class="filter-chip" data-category="API">API</button>
+        <button class="filter-chip" data-category="БАЗЫ ДАННЫХ">Базы данных</button>
+        <button class="filter-chip" data-category="GIT + IDE + SELENIUM">Git + IDE</button>
+        <button class="filter-chip" data-category="DEVOPS">DevOps</button>
+        <button class="filter-chip" data-category="Вопросы к руководителю | команде | HR">HR</button>
+        <button class="filter-chip" data-category="AQA Java">Java</button>
+        <button class="filter-chip" data-category="AQA Python">Python</button>
+        <button class="filter-chip" data-category="AQA JS">JS</button>
+    </div>
 </div>
 
 <section id="ai-response" class="article"></section>
