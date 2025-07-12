@@ -583,6 +583,15 @@ button[type="submit"]:hover {
   }
 }
 
+/* Добавьте в ваш CSS */
+canvas {
+  user-select: none;            /* Отключить выделение текста */
+  -webkit-user-select: none;    /* Для старых Safari */
+  -ms-user-select: none;        /* Для IE/Edge */
+  touch-action: none;           /* Запретить двойной тап-зум и скролл */
+  -webkit-touch-callout: none;  /* Отключить меню при долгом таче */
+}
+
 .habr-carousel {
   display: flex;
   align-items: center;
