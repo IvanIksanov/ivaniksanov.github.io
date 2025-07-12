@@ -1159,17 +1159,14 @@ b:hover {
   }
 }
 
-/* Отменяем выделение и тач‐меню в header и nav */
-header,
-nav,
-header * ,
-nav * {
-  -webkit-touch-callout: none;  /* iOS Safari long‐press */
-  -webkit-user-drag: none;
-  -webkit-user-select: none;    /* Chrome/Safari */
-  -khtml-user-select: none;     /* Konqueror */
-  -moz-user-select: none;       /* Firefox */
-  -ms-user-select: none;        /* IE10+ */
-  user-select: none;            /* стандартизировано */
-  touch-action: manipulation;   /* запрет двойного тапа → зум/скролл */
+/* Отключаем выделение и touch-меню в чек-листе под игрой */
+#checklist-items,
+#checklist-items * {
+  -webkit-touch-callout: none;   /* блокируем меню при долгом нажатии */
+  -webkit-user-select: none;     /* Chrome/Safari */
+  -khtml-user-select: none;      /* Konqueror */
+  -moz-user-select: none;        /* Firefox */
+  -ms-user-select: none;         /* IE10+ */
+  user-select: none;             /* стандарт */
+  touch-action: manipulation;    /* запрет двойного тапа → зум/скролл */
 }
