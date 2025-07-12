@@ -39,44 +39,45 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 /****************************************************
- *  ИГРА FLAPPY BIRD С УРОВНЯМИ
+ *  ИГРА FLAPPY BIRD (РОКЕТА) С УРОВНЯМИ
  ****************************************************/
-
 var flappyCvs = document.getElementById("canvas");
 var flappyCtx = flappyCvs.getContext("2d");
 
-
 var fixedHeight = 412;
-
-// Дополнительное смещение для земли (fg)
-// Чтобы визуально сохранить положение земли, как было при fixedHeight = 512,
-// добавляем смещение, равное разнице (512 - 412 = 100)
+// Смещение земли
 var floorOffset = 100;
 
-// Загружаем изображения
-var bird = new Image();
+// ФИЗИКА РАКЕТЫ
+var velocity = 0;                  // текущая скорость по вертикали
+var thrustAcceleration = -0.2;     // ускорение ракеты при включённом двигателе (вверх)
+var gravityAcceleration = 0.1;     // ускорение при гравитации (вниз) — уменьшили, чтобы ракета падала медленнее
+var maxFallSpeed = 5;              // максимальная скорость падения
+var maxRiseSpeed = -5;             // максимальная скорость подъёма
+var isThrusting = false;           // флаг, горит ли двигатель
+
+// Изображения
+var bird = new Image();       // будет использоваться как ракета
 var fg = new Image();
 var pipeUp = new Image();
 var pipeBottom = new Image();
 var restartImg = new Image();
 
-bird.src = "img/bird.png";
+bird.src = "img/rocket2.png";         // замените на img/rocket.png, когда загрузите
 restartImg.src = "img/restart.png";
 
-// Пример массива доступных персонажей (для выбора)
+// Скины (по желанию оставить)
 let selectableCharacters = [
-  { name: "birdClassic", src: "img/bird.png" },
-  { name: "birdRed",     src: "img/birdRed.png" },
-  { name: "birdBlue",    src: "img/birdBlue.png" }
+    { name: "birdClassic", src: "img/rocket2.png" },
+    { name: "birdRed",     src: "img/rocket3.png" },
+    { name: "birdBlue",    src: "img/rocket4.png" }
 ];
-
-// Подгружаем все изображения персонажей
 selectableCharacters.forEach(char => {
-  const img = new Image();
-  img.src = char.src;
-  char.imageObj = img;
-  char.width = 50;
-  char.height = 50;
+    const img = new Image();
+    img.src = char.src;
+    char.imageObj = img;
+    char.width = 60;
+    char.height = 30;
 });
 
 // Звуки
@@ -85,60 +86,47 @@ var score_audio = new Audio();
 fly.src = "audio/fly.mp3";
 score_audio.src = "audio/score.mp3";
 
-// -------------------------
-// Переменные для монет
-// -------------------------
-var coinCount = 0;            // Счётчик собранных монет
-var coins = [];               // Массив объектов монет
-var lastCoinSpawnScore = 0;   // Последний счёт, при котором была заспавнена монета
+// Монеты
+var coinCount = 0;
+var coins = [];
+var lastCoinSpawnScore = 0;
 var coinImg = new Image();
-coinImg.src = "img/coin.png"; // Изображение монеты (замените по необходимости)
-var coinWidth = 30;           // Размеры монеты
+coinImg.src = "img/coin.png";
+var coinWidth = 30;
 var coinHeight = 30;
 
-// -------------------------
-// Переменные для декора (фоновые картинки)
-// -------------------------
-var decorations = [];         // Массив объектов декораций
-// Изменяем начальное значение, чтобы декор спавнился с самого начала (счёт 0)
+// Декор
+var decorations = [];
 var lastDecorationSpawnScore = -1;
-var decorationCycleIndex = 0; // Для циклического выбора типа декора (чередование text и pro)
-// Глобальные размеры по умолчанию для pro (для text будут заданы другие размеры)
-var decorationWidth = 150;    // Для pro-декора
-var decorationHeight = 230;   // Для pro-декора
-
-// --- Глобальные переменные для очередей уникальных декораций ---
-// Они не будут обновляться при смене уровня, пока не исчерпаются
+var decorationCycleIndex = 0;
 var availableProDecor = [];
 var availableTextDecor = [];
+var decorationWidth = 150;
+var decorationHeight = 230;
 
 // Параметры игры
-var gap = 130;
+var gap = 190;
 var constant;
 var bX = 160;
 var bY = 150;
-var gravity = 2.2;
+// убрали старую gravity
 var flappyScore = 0;
-
-// Интервал между трубами
 var pipeInterval = 290;
 
-// Флаги и массивы
-var flappyGameOver = false; // Флаг завершения игры
-var autoFlight = true;      // Флаг автопилота
-var autoFlightInterval = null;
-var pipe = [];              // Массив труб
+// Флаги и структуры
+var flappyGameOver = false;
+var autoFlight = true;
+var pipe = [];
 
-// Начальные трубы
 const initialPipes = 5;
-const minPipeOffset = -70;  // Минимальная высота трубы
-const maxPipeOffset = 90;   // Максимальная высота трубы
-
+const minPipeOffset = -70;
+const maxPipeOffset = 90;
 for (let i = 0; i < initialPipes; i++) {
     pipe.push({
         x: flappyCvs.width + i * (pipeInterval + 60),
         y: Math.floor(Math.random() * (maxPipeOffset - minPipeOffset + 1)) + minPipeOffset - 220,
-        spawnedNext: i === initialPipes - 1 ? false : true
+        spawnedNext: i === initialPipes - 1 ? false : true,
+        scored: false  // инициализируем scored
     });
 }
 
@@ -178,10 +166,10 @@ const commonDecorations = [
 
 // Функция для перемешивания массива (Алгоритм Фишера-Йетса)
 function shuffleArray(array) {
-    let shuffledArray = array.slice(); // Создаём копию массива, чтобы не менять исходный
+    let shuffledArray = array.slice();
     for (let i = shuffledArray.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1)); // Генерируем случайный индекс
-        [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]]; // Меняем элементы местами
+        let j = Math.floor(Math.random() * (i + 1));
+        [shuffledArray[i], shuffledArray[j]] = [shuffledArray[j], shuffledArray[i]];
     }
     return shuffledArray;
 }
@@ -286,504 +274,266 @@ function updateLevel() {
     const levelThresholds = [4, 15, 30, 50, 80, 110, 150, 190, 230, 260];
     let newLevel = 0;
     for (let i = 0; i < levelThresholds.length; i++) {
-        if (flappyScore >= levelThresholds[i]) {
-            newLevel = i + 1;
-        }
+        if (flappyScore >= levelThresholds[i]) newLevel = i + 1;
     }
-    // Если уровень изменился – обновляем цвет декора на экране
     if (newLevel !== currentLevel) {
         currentLevel = newLevel;
         updateDecorationsColor();
     }
-    const level = levels[currentLevel];
-    pipeUp.src = level.pipeUpSrc;
-    pipeBottom.src = level.pipeBottomSrc;
-    fg.src = level.fgSrc;
+    const lvl = levels[currentLevel];
+    pipeUp.src = lvl.pipeUpSrc;
+    pipeBottom.src = lvl.pipeBottomSrc;
+    fg.src = lvl.fgSrc;
 }
-
-// Функция обновления цвета уже отображаемых SVG декораций
 function updateDecorationsColor() {
     decorations.forEach(decor => {
-         loadSvgWithColor(decor.originalSrc, levels[currentLevel].decorColor, function(newSrc) {
-               decor.img.src = newSrc;
-         });
+        loadSvgWithColor(decor.originalSrc, levels[currentLevel].decorColor, function(newSrc) {
+            decor.img.src = newSrc;
+        });
     });
 }
 
-// Изменение размеров canvas
 function resizeFlappyCanvas() {
-  // 1) Фиксируем внутреннюю высоту
-  flappyCvs.height = fixedHeight;
-
-  // 2) Подгоняем ширину под CSS-контейнер
-  flappyCvs.width = flappyCvs.clientWidth;
-
-  // 3) Интервал между трубами всегда 300
-  pipeInterval = 280;
+    flappyCvs.height = fixedHeight;
+    flappyCvs.width = flappyCvs.clientWidth;
+    pipeInterval = 290;
 }
-
 window.addEventListener("resize", resizeFlappyCanvas);
 resizeFlappyCanvas();
 
-// Управление
+// УПРАВЛЕНИЕ
+
+// Space — держать для тяги
 document.addEventListener("keydown", function(event) {
     if (event.code === "Space") {
-      event.preventDefault(); // Отключаем прокрутку
-    }
-    if (!flappyGameOver && event.code === "Space") {
-        disableAutoFlight();
-        moveUp();
+        event.preventDefault();
+        if (flappyGameOver) {
+            resetGame();  // рестарт по пробелу
+        } else {
+            disableAutoFlight();
+            isThrusting = true;
+        }
     }
 });
-
-// Одна-единственная функция "поднять птицу"
-function moveUp() {
-    bY -= 39;
-    fly.play();
-}
-
-// Клик по canvas
-flappyCvs.addEventListener("click", function (e) {
-    // Координаты клика относительно canvas
+document.addEventListener("keyup", function(event) {
+    if (event.code === "Space") isThrusting = false;
+});
+flappyCvs.addEventListener("mousedown", function() { disableAutoFlight(); isThrusting = true; });
+flappyCvs.addEventListener("mouseup",   function() { isThrusting = false; });
+flappyCvs.addEventListener("touchstart",function(e){ e.preventDefault(); disableAutoFlight(); isThrusting = true; });
+flappyCvs.addEventListener("touchend",  function(e){ e.preventDefault(); isThrusting = false; });
+flappyCvs.addEventListener("click", function(e) {
     const rect = flappyCvs.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const clickY = e.clientY - rect.top;
-
-    // Если игра окончена — проверяем, кликнули ли в картинку restart
+    const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
     if (flappyGameOver) {
-        const restartImgWidth = 100;
-        const restartImgHeight = 130;
-        const restartImgX = (flappyCvs.width - restartImgWidth) / 2;
-        const restartImgY = (fixedHeight - restartImgHeight) / 2;
-
-        if (
-            clickX >= restartImgX && clickX <= restartImgX + restartImgWidth &&
-            clickY >= restartImgY && clickY <= restartImgY + restartImgHeight
-        ) {
-            resetGame();
-        }
+        const rw=100, rh=130, rx=(flappyCvs.width-rw)/2, ry=(fixedHeight-rh)/2;
+        if (clickX>=rx&&clickX<=rx+rw&&clickY>=ry&&clickY<=ry+rh) resetGame();
         return;
     }
-
-    // Если игра не окончена — проверяем, кликнули ли в скин
-    let clickedOnCharacter = false;
     for (let char of selectableCharacters) {
-        if (
-            clickX >= char.x &&
-            clickX <= char.x + char.width &&
-            clickY >= char.y &&
-            clickY <= char.y + char.height
-        ) {
-            clickedOnCharacter = true;
-            disableAutoFlight();
-            bird.src = char.src;
-            break;
+        if (clickX>=char.x&&clickX<=char.x+char.width&&clickY>=char.y&&clickY<=char.y+char.height) {
+            disableAutoFlight(); bird.src=char.src; break;
         }
-    }
-
-    // Если не по скину — это подскок
-    if (!clickedOnCharacter) {
-        disableAutoFlight();
-        moveUp();
     }
 });
 
-// Остановка игры
-function stopFlappyGame() {
-    flappyGameOver = true;
-    clearInterval(autoFlightInterval);
-}
+// Автопилот
+function enableAutoFlappyFlight() { autoFlight = true; }
+function disableAutoFlight()       { autoFlight = false; }
 
-// Отключить автопилот
-function disableAutoFlight() {
-    if (autoFlight) {
-        autoFlight = false;
-        clearInterval(autoFlightInterval);
-    }
-}
-
-// Автопилот (упрощённая логика)
-function enableAutoFlappyFlight() {
-    autoFlight = true;
-    autoFlightInterval = setInterval(() => {
-        if (flappyGameOver) {
-            clearInterval(autoFlightInterval);
-            return;
-        }
-        if (!autoFlight) return;
-
-        let nextPipe = null;
-        let pipeWidth = 72;
-
-        for (let i = 0; i < pipe.length; i++) {
-            if (pipe[i].x + pipeWidth >= bX) {
-                nextPipe = pipe[i];
-                break;
-            }
-        }
-
-        // Если нет ближайшей трубы, просто слегка поднимаемся
-        if (!nextPipe) {
-            if (bY > 60) bY -= 5;
-            return;
-        }
-
-        let gapTop = nextPipe.y + 320;
-        let gapBottom = gapTop + gap;
-        let centerGap = (gapTop + gapBottom) / 2;
-        let birdCenter = bY + 35; // центр птицы
-
-        if (birdCenter > centerGap + 10) {
-            bY -= 39;
-        } else if (birdCenter < centerGap - 10) {
-            bY += 2;
-        }
-    }, 100);
-}
-
-// Функция для создания (спавна) монеты
+// Спавн монет и декораций
 function spawnCoin() {
-    // Монета появляется в правой части canvas на случайной высоте (с учётом земли)
-    var minY = 50;
-    // fg.height может быть ещё не загружен, но такова логика игры – монета не должна появляться ниже земли
-    var maxY = fixedHeight - fg.height + floorOffset - coinHeight - 20;
-    var coinY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+    var minY=50, maxY=fixedHeight-fg.height+floorOffset-coinHeight-20;
+    var coinY=Math.floor(Math.random()*(maxY-minY+1))+minY;
     coins.push({ x: flappyCvs.width, y: coinY });
 }
-
-// Функция для загрузки SVG с применением нужного цвета
 function loadSvgWithColor(url, color, callback) {
-    fetch(url)
-      .then(response => response.text())
-      .then(svgText => {
-          // Заменяем все вхождения базового цвета ("#FEFEFE") на цвет текущего уровня
-          let coloredSvgText = svgText.replace(/#FEFEFE/gi, color);
-          let blob = new Blob([coloredSvgText], { type: "image/svg+xml" });
-          let objectURL = URL.createObjectURL(blob);
-          callback(objectURL);
-      })
-      .catch(err => {
-          console.error("Ошибка загрузки SVG:", err);
-          // Если ошибка, возвращаем исходный URL
-          callback(url);
-      });
+    fetch(url).then(r=>r.text()).then(svgText=>{
+        let colored=svgText.replace(/#FEFEFE/gi,color);
+        let blob=new Blob([colored],{ type:"image/svg+xml"});
+        callback(URL.createObjectURL(blob));
+    }).catch(()=>callback(url));
 }
-
-// Функция для создания (спавна) декорации с использованием SVG и сменой цвета.
-// Новая логика: используются глобальные очереди уникальных изображений для каждого типа (pro и text).
-// Пока не будут показаны все уникальные изображения из commonDecorations, очереди не перезаполняются,
-// даже если меняется уровень (стилистика).
-// Теперь функция может принимать опциональный параметр (optionalX) – если он передан, декор спавнится с этой позиции,
-// иначе по умолчанию с правого края (flappyCvs.width)
 function spawnDecoration(optionalX) {
-    var startX = (typeof optionalX !== 'undefined') ? optionalX : flappyCvs.width;
-
-    // Если очередь для text-декора пуста, заполняем её из общего набора
-    if (!availableTextDecor || availableTextDecor.length === 0) {
-         availableTextDecor = shuffleArray(commonDecorations.filter(src => src.includes('_text')));
-    }
-    // Если очередь для pro-декора пуста, заполняем её из общего набора
-    if (!availableProDecor || availableProDecor.length === 0) {
-         availableProDecor = shuffleArray(commonDecorations.filter(src => src.includes('_pro')));
-    }
-
-    // Задаём схему чередования: можно задать любую схему
-    var alternatingPattern = ['pro', 'pro', 'pro', 'text', 'pro', 'pro', 'pro', 'text'];
-    var currentType = alternatingPattern[decorationCycleIndex % alternatingPattern.length];
+    var startX = optionalX!==undefined?optionalX:flappyCvs.width;
+    if (!availableTextDecor.length) availableTextDecor = shuffleArray(commonDecorations.filter(s=>s.includes('_text')));
+    if (!availableProDecor.length)  availableProDecor  = shuffleArray(commonDecorations.filter(s=>s.includes('_pro')));
+    var pattern=['pro','pro','pro','text','pro','pro','pro','text'];
+    var type=pattern[decorationCycleIndex%pattern.length];
     decorationCycleIndex++;
-
-    let chosenSrc = null;
-    if (currentType === 'text') {
-         if (availableTextDecor.length > 0) {
-             chosenSrc = availableTextDecor.shift();
-         } else if (availableProDecor.length > 0) {
-             chosenSrc = availableProDecor.shift();
-         }
-    } else { // currentType === 'pro'
-         if (availableProDecor.length > 0) {
-             chosenSrc = availableProDecor.shift();
-         } else if (availableTextDecor.length > 0) {
-             chosenSrc = availableTextDecor.shift();
-         }
-    }
-
-    if (!chosenSrc) return;
-
-    // Назначаем размеры в зависимости от типа декора
-    let decorWidth, decorHeight;
-    if (chosenSrc.includes('_text')) {
-         decorWidth = 300;
-         decorHeight = 180;
-    } else {
-         decorWidth = 150;
-         decorHeight = 250;
-    }
-
-    // Определяем случайную вертикальную позицию для декора
-    var minY = 10;
-    // Задаём базовый отступ от нижней границы (50 пикселей)
-    var bottomMargin = 50;
-
-    // Если декор текстовый, увеличиваем отступ, чтобы он располагался выше
-    if (chosenSrc.includes('_text')) {
-        bottomMargin = 100; // например, вместо 50 пикселей теперь 80
-    }
-
-    var maxY = fixedHeight - fg.height + floorOffset - decorHeight - bottomMargin;
-    var decorY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
-
-    // Загружаем SVG с заменой цвета текущего уровня
-    loadSvgWithColor(chosenSrc, levels[currentLevel].decorColor, function(coloredSvgUrl) {
-         let decorImg = new Image();
-         decorImg.src = coloredSvgUrl;
-         // Сохраняем также оригинальный путь для будущего обновления цвета
-         decorations.push({ x: startX, y: decorY, img: decorImg, width: decorWidth, height: decorHeight, originalSrc: chosenSrc });
+    let srcList=type==='text'?availableTextDecor:availableProDecor;
+    let chosen=srcList.shift()|| (type==='text'?availableProDecor.shift():availableTextDecor.shift());
+    if(!chosen)return;
+    let dw=chosen.includes('_text')?300:150, dh=chosen.includes('_text')?180:250;
+    let minY=10, bottomMargin=chosen.includes('_text')?100:50;
+    let maxY=fixedHeight-fg.height+floorOffset-dh-bottomMargin;
+    let decorY=Math.floor(Math.random()*(maxY-minY+1))+minY;
+    loadSvgWithColor(chosen, levels[currentLevel].decorColor, function(url){
+        let img=new Image(); img.src=url;
+        decorations.push({ x:startX, y:decorY, img, width:dw, height:dh, originalSrc:chosen });
     });
 }
-
-// Функция для предварительного заполнения фона декорациями от левого до правого края
 function initDecorations() {
-    decorations = [];
-    let spacing = 400; // интервал между декорациями (при необходимости можно скорректировать)
-    for (let x = 0; x < flappyCvs.width; x += spacing) {
-         spawnDecoration(x);
-    }
-    lastDecorationSpawnScore = 0;
+    decorations=[]; let spacing=400;
+    for (let x=0; x<flappyCvs.width; x+=spacing) spawnDecoration(x);
+    lastDecorationSpawnScore=0;
 }
 
-// Проверка коллизий (для труб)
-function detectCollision(pipeObj, pipeWidth, pipeHeight, constant, birdWidth, birdHeight) {
-    if (
-        // Горизонтальное пересечение
-        bX + birdWidth > pipeObj.x &&
-        bX < pipeObj.x + pipeWidth &&
-        (
-            // Вертикальное столкновение
-            bY < pipeObj.y + pipeHeight ||
-            bY + birdHeight > pipeObj.y + constant
-        )
-        ||
-        // Птица упала на землю (с учётом смещения пола)
-        bY + birdHeight >= fixedHeight - fg.height + floorOffset
-    ) {
-        stopFlappyGame();
+// Коллизии
+function detectCollision(pObj,pW,pH,constant,bW,bH) {
+    if ((bX+bW>pObj.x&&bX<pObj.x+pW&&(bY<pObj.y+pH||bY+bH>pObj.y+constant))
+        || (bY+bH>=fixedHeight-fg.height+floorOffset)) {
+        flappyGameOver=true;
     }
 }
+
+let prevError = 0;
 
 // Главный цикл отрисовки
 function drawFlappy() {
-    // Обновляем уровень (фон, трубы, земля)
     updateLevel();
     flappyCtx.fillStyle = levels[currentLevel].backgroundColor;
-    flappyCtx.fillRect(0, 0, flappyCvs.width, fixedHeight);
+    flappyCtx.fillRect(0,0,flappyCvs.width,fixedHeight);
 
-    // -------------------------
-    // Спавним и отрисовываем декорации (фоновый декор, за колоннами)
-    // Условие спавна: каждое значение flappyScore кратное 3 и не совпадает с предыдущим
-    if (!flappyGameOver && flappyScore % 3 === 0 && flappyScore !== lastDecorationSpawnScore) {
-        spawnDecoration();
-        lastDecorationSpawnScore = flappyScore;
+    // Декор
+    if (!flappyGameOver && flappyScore%3===0 && flappyScore!==lastDecorationSpawnScore) {
+        spawnDecoration(); lastDecorationSpawnScore=flappyScore;
     }
-    for (var d = 0; d < decorations.length; d++) {
-         decorations[d].x -= 1;
-         flappyCtx.drawImage(decorations[d].img, decorations[d].x, decorations[d].y, decorations[d].width, decorations[d].height);
-         // Удаляем декор, если он вышел за левую границу
-         if (decorations[d].x + decorations[d].width < 0) {
-             decorations.splice(d, 1);
-             d--;
-         }
-    }
-    // -------------------------
+    decorations.forEach((d,i)=>{
+        d.x-=1; flappyCtx.drawImage(d.img,d.x,d.y,d.width,d.height);
+        if (d.x+d.width<0) decorations.splice(i,1);
+    });
 
-    const pipeWidth = 72;
-    const pipeHeight = 320;
-    const birdWidth = 50;
-    const birdHeight = 50;
-
-    // Рисуем трубы
-    for (var i = 0; i < pipe.length; i++) {
-        constant = pipeHeight + gap;
-
-        // Всегда рисуем, но двигаем только если игра не окончена
-        flappyCtx.drawImage(pipeUp, pipe[i].x, pipe[i].y, pipeWidth, pipeHeight);
-        flappyCtx.drawImage(pipeBottom, pipe[i].x, pipe[i].y + constant, pipeWidth, pipeHeight);
-
+    // Трубы и счёт
+    const pipeW=72, pipeH=320, bW=100, bH=55;
+    for (let i=0;i<pipe.length;i++){
+        constant=pipeH+gap;
+        flappyCtx.drawImage(pipeUp,pipe[i].x,pipe[i].y,pipeW,pipeH);
+        flappyCtx.drawImage(pipeBottom,pipe[i].x,pipe[i].y+constant,pipeW,pipeH);
         if (!flappyGameOver) {
-            // Двигаем трубу
-            pipe[i].x -= 1.9;
-            pipe[i].x = Math.floor(pipe[i].x);
-
-            // Генерация новой трубы
-            if (!pipe[i].spawnedNext && pipe[i].x < (flappyCvs.width - pipeInterval)) {
-                const minPipeY = -290;
-                const maxPipeY = -50;
-                pipe.push({
-                    x: flappyCvs.width,
-                    y: Math.floor(Math.random() * (maxPipeY - minPipeY + 1)) + minPipeY,
-                    spawnedNext: false
-                });
-                pipe[i].spawnedNext = true;
+            pipe[i].x-=1.9;
+            if (!pipe[i].spawnedNext && pipe[i].x<flappyCvs.width-pipeInterval){
+                pipe.push({ x:flappyCvs.width,
+                            y:Math.floor(Math.random()*(maxPipeOffset-minPipeOffset+1))+minPipeOffset-220,
+                            spawnedNext:false, scored:false });
+                pipe[i].spawnedNext=true;
             }
-
-            // Проверка коллизий с трубами
-            detectCollision(pipe[i], pipeWidth, pipeHeight, constant, birdWidth, birdHeight);
-
-            // Увеличиваем счёт, когда труба пересекла позицию птицы, и считаем её только один раз
-            if (!pipe[i].scored && pipe[i].x + pipeWidth < bX) {
-                flappyScore++;
-                score_audio.play();
-                pipe[i].scored = true;
+            detectCollision(pipe[i],pipeW,pipeH,constant,bW,bH);
+            if(!pipe[i].scored && pipe[i].x+pipeW<bX){
+                flappyScore++; score_audio.play(); pipe[i].scored=true;
             }
-
-            // Удаление трубы за границей экрана
-            if (pipe[i].x + pipeWidth < 0) {
-                pipe.splice(i, 1);
-                i--;
-            }
+            if(pipe[i].x+pipeW<0){ pipe.splice(i,1); i--; }
         }
     }
 
-    // -------------------------
-    // Обновляем и отрисовываем монеты
-    // -------------------------
-    if (!flappyGameOver) {
-        // Каждая монета двигается вместе с трубами
-        for (var j = 0; j < coins.length; j++) {
-            coins[j].x -= 2;
-            flappyCtx.drawImage(coinImg, coins[j].x, coins[j].y, coinWidth, coinHeight);
-
-            // Проверка коллизии птицы с монетой
-            if (
-                bX < coins[j].x + coinWidth &&
-                bX + birdWidth > coins[j].x &&
-                bY < coins[j].y + coinHeight &&
-                bY + birdHeight > coins[j].y
-            ) {
-                coinCount++;
-                coins.splice(j, 1);
-                j--;
-                continue;
-            }
-
-            // Удаляем монету, если она вышла за левую границу
-            if (coins[j] && coins[j].x + coinWidth < 0) {
-                coins.splice(j, 1);
-                j--;
-            }
-        }
-
-        // Спавн монеты через каждые 5 препятствий
-        if (flappyScore > 0 && flappyScore % 5 === 0 && flappyScore !== lastCoinSpawnScore) {
-            spawnCoin();
-            lastCoinSpawnScore = flappyScore;
+    // Монеты
+    if(!flappyGameOver){
+        coins.forEach((c,i)=>{
+            c.x-=2; flappyCtx.drawImage(coinImg,c.x,c.y,coinWidth,coinHeight);
+            if(bX<c.x+coinWidth&&bX+bW>c.x&&bY<c.y+coinHeight&&bY+bH>c.y){
+                coinCount++; coins.splice(i,1);
+            } else if(c.x+coinWidth<0) coins.splice(i,1);
+        });
+        if(flappyScore>0 && flappyScore%5===0 && flappyScore!==lastCoinSpawnScore){
+            spawnCoin(); lastCoinSpawnScore=flappyScore;
         }
     }
-    // -------------------------
 
-    // Рисуем землю (foreground) с учётом смещения floorOffset
-    flappyCtx.drawImage(fg, 0, fixedHeight - fg.height + floorOffset, flappyCvs.width, fg.height);
+// Земля
+flappyCtx.drawImage(fg, 0, fixedHeight - fg.height + floorOffset, flappyCvs.width, fg.height);
 
-    // Рисуем птицу
-    flappyCtx.drawImage(bird, bX, bY, birdWidth, birdHeight);
-
-    // Гравитация — только если игра не окончена
-    if (!flappyGameOver) {
-        bY += gravity;
+// --- ФИЗИКА И УПРОЩЁННЫЙ АВТОПИЛОТ/РУЧНОЕ ---
+if (!flappyGameOver) {
+    if (autoFlight) {
+        // 1) ближайшая труба
+        const nextPipe = pipe.find(p => p.x + pipeW >= bX);
+        // 2) цель — середина отверстия
+        let targetCenter = fixedHeight / 2;
+        if (nextPipe) {
+            const gapTop = nextPipe.y + pipeH;
+            targetCenter = gapTop + gap / 2;
+        }
+        // 3) ошибка по вертикали
+        const birdCenter = bY + bH / 2;
+        const error = targetCenter - birdCenter;
+        // 4) желаемая скорость пропорционально ошибке
+        const DESIRED_FACTOR = 0.04;
+        const desiredVel = error * DESIRED_FACTOR;
+        // 5) мягкое сглаживание: 10% к новому
+        const SMOOTH = 0.04;
+        velocity += (desiredVel - velocity) * SMOOTH;
+    } else {
+        // ручное управление — без изменений
+        if (isThrusting) velocity += thrustAcceleration;
+        else            velocity += gravityAcceleration;
     }
 
-    // Текст счёта (традиционный счёт)
-    flappyCtx.fillStyle = "#000";
-    flappyCtx.font = "20px Fira Code";
-    flappyCtx.fillText("Счет: " + flappyScore, 10, fixedHeight - 20);
+    // 6) ограничиваем скорость и обновляем Y
+    velocity = Math.max(Math.min(velocity, maxFallSpeed), maxRiseSpeed);
+    bY += velocity;
+}
 
-    // Отрисовка счётчика монет с изображением (размещено в правом верхнем углу)
-    var coinCounterX = flappyCvs.width - 150;
-    var coinCounterY = 30;
-    flappyCtx.drawImage(coinImg, coinCounterX, coinCounterY, coinWidth, coinHeight);
-    flappyCtx.fillText("x " + coinCount, coinCounterX + coinWidth + 10, coinCounterY + coinHeight / 2 + 7);
+    // Поворот ракеты
+    flappyCtx.save();
+    let angle = velocity*0.12;
+    flappyCtx.translate(bX+bW/2,bY+bH/2);
+    flappyCtx.rotate(angle);
+    flappyCtx.drawImage(bird,-bW/2,-bH/2,bW,bH);
+    flappyCtx.restore();
 
-    // Отрисовка выбора скинов
-    // Скины отображаются только до прохождения первого препятствия (flappyScore === 0)
-    if (flappyScore < 1) {
-        drawCharacterSelection();
+    // Счёт и монетки
+    flappyCtx.fillStyle="#000"; flappyCtx.font="20px Fira Code";
+    flappyCtx.fillText("Счет: "+flappyScore,10,fixedHeight-20);
+    let cx=flappyCvs.width-150, cy=30;
+    flappyCtx.drawImage(coinImg,cx,cy,coinWidth,coinHeight);
+    flappyCtx.fillText("x "+coinCount,cx+coinWidth+10,cy+coinHeight/2+7);
+
+    // Скины
+    if(flappyScore<1) drawCharacterSelection();
+
+    // Рестарт
+    if(flappyGameOver){
+        const rw=240,rh=180,rx=(flappyCvs.width-rw)/2,ry=(fixedHeight-rh)/2;
+        flappyCtx.drawImage(restartImg,rx,ry,rw,rh);
     }
 
-    // Если игра окончена, рисуем "restart" поверх всего
-    if (flappyGameOver) {
-        const restartImgWidth = 240;
-        const restartImgHeight = 180;
-        const restartImgX = (flappyCvs.width - restartImgWidth) / 2;
-        const restartImgY = (fixedHeight - restartImgHeight) / 2;
-
-        flappyCtx.drawImage(restartImg, restartImgX, restartImgY, restartImgWidth, restartImgHeight);
-    }
-
-    // Следующий кадр
     requestAnimationFrame(drawFlappy);
 }
 
-// Отрисовка скинов
-function drawCharacterSelection() {
-    let startX = 150;
-    let spacing = 80;
-    // Вычисляем позицию выбора скинов относительно земли,
-    // чтобы они отображались над полом (fg)
-    let currentFgHeight = fg.height || 100;
-    let charY = fixedHeight - currentFgHeight + floorOffset - 72;
-
-    selectableCharacters.forEach((char) => {
-        flappyCtx.drawImage(char.imageObj, startX, charY, char.width, char.height);
-        char.x = startX;
-        char.y = charY;
-        startX += spacing;
+// Скины
+function drawCharacterSelection(){
+    let startX=150, spacing=80;
+    let cfh=fg.height||100;
+    let charY=fixedHeight-cfh+floorOffset-72;
+    selectableCharacters.forEach(char=>{
+        flappyCtx.drawImage(char.imageObj,startX,charY,char.width,char.height);
+        char.x=startX; char.y=charY;
+        startX+=spacing;
     });
 }
 
-// Сброс игры (перезапуск без перезагрузки страницы)
-function resetGame() {
-    flappyGameOver = false;
-    flappyScore = 0;
-    bX = 160;
-    bY = 150;
-    pipe = [];
-    // Сбрасываем монеты и их счёт
-    coinCount = 0;
-    coins = [];
-    lastCoinSpawnScore = 0;
-    // Сбрасываем декор и глобальные очереди уникальных изображений
-    decorations = [];
-    lastDecorationSpawnScore = -1;
-    decorationCycleIndex = 0;
-    availableProDecor = [];
-    availableTextDecor = [];
-
-    for (let i = 0; i < initialPipes; i++) {
+// Сброс игры
+function resetGame(){
+    flappyGameOver=false; flappyScore=0; bX=160; bY=150;
+    pipe=[]; coinCount=0; coins=[]; lastCoinSpawnScore=0;
+    decorations=[]; lastDecorationSpawnScore=-1; decorationCycleIndex=0;
+    availableProDecor=[]; availableTextDecor=[];
+    for(let i=0;i<initialPipes;i++){
         pipe.push({
-            x: flappyCvs.width + i * (pipeInterval + 60),
-            y: Math.floor(Math.random() * (maxPipeOffset - minPipeOffset + 1)) + minPipeOffset - 220,
-            spawnedNext: i === initialPipes - 1 ? false : true
+            x:flappyCvs.width+i*(pipeInterval+60),
+            y:Math.floor(Math.random()*(maxPipeOffset-minPipeOffset+1))+minPipeOffset-220,
+            spawnedNext:i===initialPipes-1?false:true, scored:false
         });
     }
-    // Инициализируем декорации по всей ширине экрана
     initDecorations();
     enableAutoFlappyFlight();
 }
 
-// Запускаем игру
-// При первоначальной загрузке заполняем фон декорациями от левого до правого края
+// Запуск
 initDecorations();
 enableAutoFlappyFlight();
 drawFlappy();
 
-
-/*
-   ВАЖНО: Если вы хотите, чтобы при нажатии пробела в игре Тетрис
-   НЕ мешал Flappy Bird (или наоборот), придётся доработать логику.
-   Но по умолчанию:
-   - Тетрис использует клавиши со стрелками
-   - Flappy Bird на пробел и клик мыши/тап
-   особых конфликтов быть не должно.
-*/
 
 // карусель статей хабра
 document.addEventListener('DOMContentLoaded', function() {
