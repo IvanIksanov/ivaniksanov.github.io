@@ -42,6 +42,12 @@ document.addEventListener('DOMContentLoaded', function () {
  *  ИГРА FLAPPY BIRD (РОКЕТА) С УРОВНЯМИ
  ****************************************************/
 var flappyCvs = document.getElementById("canvas");
+// Запретить выделение и двойной тап именно на канвасе
+flappyCvs.style.userSelect = "none";
+flappyCvs.style.webkitUserSelect = "none";
+flappyCvs.style.msUserSelect = "none";
+flappyCvs.style.touchAction = "none";
+flappyCvs.style.webkitTouchCallout = "none";
 var flappyCtx = flappyCvs.getContext("2d");
 
 var fixedHeight = 412;
