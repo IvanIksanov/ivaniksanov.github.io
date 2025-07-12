@@ -1170,3 +1170,22 @@ b:hover {
   user-select: none;             /* стандарт */
   touch-action: manipulation;    /* запрет двойного тапа → зум/скролл */
 }
+
+/* Отключаем выделение и подсветку на кнопках чек-листа */
+#checklist-items button,
+#checklist-items button * {
+  /* Запрет выделения текста */
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+
+  /* Отключить меню при долгом таче */
+  -webkit-touch-callout: none !important;
+
+  /* Убрать подсветку при тапе на iOS/Android */
+  -webkit-tap-highlight-color: transparent !important;
+
+  /* Отключить двойной тач-зум и скролл */
+  touch-action: manipulation !important;
+}
