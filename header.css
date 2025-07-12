@@ -124,33 +124,6 @@ b:hover {
   }
 }
 
-/* Отменяем выделение и тач‐меню в header и nav */
-header,
-nav,
-header * ,
-nav * {
-  -webkit-touch-callout: none;  /* iOS Safari long‐press */
-  -webkit-user-drag: none;
-  -webkit-user-select: none;    /* Chrome/Safari */
-  -khtml-user-select: none;     /* Konqueror */
-  -moz-user-select: none;       /* Firefox */
-  -ms-user-select: none;        /* IE10+ */
-  user-select: none;            /* стандартизировано */
-  touch-action: manipulation;   /* запрет двойного тапа → зум/скролл */
-}
-/* отключаем выделение и тач-меню в чек-листе */
-#checklist-items,
-#checklist-items * {
-  -webkit-touch-callout: none !important;   /* iOS Safari long-press меню */
-  -webkit-user-select: none !important;     /* Chrome/Safari */
-  -khtml-user-select: none !important;      /* Konqueror */
-  -moz-user-select: none !important;        /* Firefox */
-  -ms-user-select: none !important;         /* IE10+ */
-  user-select: none !important;             /* стандарт */
-  -webkit-tap-highlight-color: transparent !important; /* убрать подсветку при тапе */
-  touch-action: manipulation !important;    /* запрет двойного тапа → зум/скролл */
-}
-
 @media (pointer: coarse) {
   /* Отключаем на тач-устройствах выделение текста и тач-меню по всему документу */
   * {
