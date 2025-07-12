@@ -1165,6 +1165,7 @@ nav,
 header * ,
 nav * {
   -webkit-touch-callout: none;  /* iOS Safari long‐press */
+  -webkit-user-drag: none;
   -webkit-user-select: none;    /* Chrome/Safari */
   -khtml-user-select: none;     /* Konqueror */
   -moz-user-select: none;       /* Firefox */
