@@ -318,21 +318,57 @@ document.addEventListener("keydown", function(event) {
 document.addEventListener("keyup", function(event) {
     if (event.code === "Space") isThrusting = false;
 });
-flappyCvs.addEventListener("mousedown", function() { disableAutoFlight(); isThrusting = true; });
-flappyCvs.addEventListener("mouseup",   function() { isThrusting = false; });
-flappyCvs.addEventListener("touchstart",function(e){ e.preventDefault(); disableAutoFlight(); isThrusting = true; });
-flappyCvs.addEventListener("touchend",  function(e){ e.preventDefault(); isThrusting = false; });
+
+flappyCvs.addEventListener("pointerdown", function(e) {
+    // отключаем автопилот
+    disableAutoFlight();
+    // включаем тягу
+    isThrusting = true;
+});
+
+// На любое отпущение — выключаем тягу и эмулируем click
+flappyCvs.addEventListener("pointerup", function(e) {
+    // выключаем тягу
+    isThrusting = false;
+
+    // эмулируем click, чтобы сработал ваш обработчик рестарта/скинов
+    const clickEvent = new MouseEvent("click", {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        bubbles: true,
+        cancelable: true
+    });
+    flappyCvs.dispatchEvent(clickEvent);
+});
+
+// Одинарный клик — рестарт при Game Over или выбор скина
 flappyCvs.addEventListener("click", function(e) {
     const rect = flappyCvs.getBoundingClientRect();
-    const clickX = e.clientX - rect.left, clickY = e.clientY - rect.top;
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
     if (flappyGameOver) {
-        const rw=100, rh=130, rx=(flappyCvs.width-rw)/2, ry=(fixedHeight-rh)/2;
-        if (clickX>=rx&&clickX<=rx+rw&&clickY>=ry&&clickY<=ry+rh) resetGame();
+        // область рестарта (100×130px в центре)
+        const rw = 100, rh = 130;
+        const rx = (flappyCvs.width - rw) / 2;
+        const ry = (fixedHeight - rh) / 2;
+        if (clickX >= rx && clickX <= rx + rw && clickY >= ry && clickY <= ry + rh) {
+            resetGame();
+        }
         return;
     }
+
+    // выбор скина
     for (let char of selectableCharacters) {
-        if (clickX>=char.x&&clickX<=char.x+char.width&&clickY>=char.y&&clickY<=char.y+char.height) {
-            disableAutoFlight(); bird.src=char.src; break;
+        if (
+            clickX >= char.x &&
+            clickX <= char.x + char.width &&
+            clickY >= char.y &&
+            clickY <= char.y + char.height
+        ) {
+            disableAutoFlight();
+            bird.src = char.src;
+            break;
         }
     }
 });
