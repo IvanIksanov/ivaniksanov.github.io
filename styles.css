@@ -1190,3 +1190,16 @@ b:hover {
   /* Отключить двойной тач-зум и скролл */
   touch-action: manipulation !important;
 }
+
+@media (pointer: coarse) {
+  /* Отключаем на тач-устройствах выделение текста и тач-меню по всему документу */
+  * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+  }
+}
