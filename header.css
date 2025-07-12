@@ -138,3 +138,15 @@ nav * {
   user-select: none;            /* стандартизировано */
   touch-action: manipulation;   /* запрет двойного тапа → зум/скролл */
 }
+/* отключаем выделение и тач-меню в чек-листе */
+#checklist-items,
+#checklist-items * {
+  -webkit-touch-callout: none !important;   /* iOS Safari long-press меню */
+  -webkit-user-select: none !important;     /* Chrome/Safari */
+  -khtml-user-select: none !important;      /* Konqueror */
+  -moz-user-select: none !important;        /* Firefox */
+  -ms-user-select: none !important;         /* IE10+ */
+  user-select: none !important;             /* стандарт */
+  -webkit-tap-highlight-color: transparent !important; /* убрать подсветку при тапе */
+  touch-action: manipulation !important;    /* запрет двойного тапа → зум/скролл */
+}
