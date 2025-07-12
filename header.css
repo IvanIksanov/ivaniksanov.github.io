@@ -1,5 +1,22 @@
 /* header.css — общие стили для <header> и навигации */
 
+/* Отключаем выделение и тач‐меню в шапке сайта */
+header {
+  -webkit-touch-callout: none;   /* отключить меню при долгом таче */
+  -webkit-user-select: none;     /* Safari */
+  -khtml-user-select: none;      /* Konqueror */
+  -moz-user-select: none;        /* Firefox */
+  -ms-user-select: none;         /* Internet Explorer/Edge */
+  user-select: none;             /* стандарт */
+  touch-action: manipulation;    /* запретить двойной тап-зум/скролл */
+}
+header a, header .header-container, header .site-title {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 header {
   position: relative;
   padding: 0;
