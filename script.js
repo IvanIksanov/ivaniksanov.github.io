@@ -54,6 +54,12 @@ var fixedHeight = 412;
 // Смещение земли
 var floorOffset = 100;
 
+// ** ПЕРЕМЕННЫЕ ДЛЯ АНИМАЦИИ СМЕНЫ УРОВНЯ **
+let levelSwitching = false;
+let levelSwitchStartTime = 0;
+const levelSwitchDuration = 400; // длительность в миллисекундах
+let nextLevel = 0;
+
 // ФИЗИКА РАКЕТЫ
 var velocity = 0;                  // текущая скорость по вертикали
 var thrustAcceleration = -0.2;     // ускорение ракеты при включённом двигателе (вверх)
@@ -61,6 +67,28 @@ var gravityAcceleration = 0.1;     // ускорение при гравитац
 var maxFallSpeed = 5;              // максимальная скорость падения
 var maxRiseSpeed = -5;             // максимальная скорость подъёма
 var isThrusting = false;           // флаг, горит ли двигатель
+
+// ** АВТОПИЛОТ **
+var autoFlight = true;             // флаг автопилота
+function enableAutoFlappyFlight() { autoFlight = true; }
+function disableAutoFlight()       { autoFlight = false; }
+
+// Система частиц для IT-терминов
+var particles = [];
+var particleTerms = ['API', 'GIT', 'QA', 'smoke', 'unit', 'Back', 'manual', 'Фича', 'Баг', 'DEBUG'];
+var rocketWidth = 100, rocketHeight = 55; // размеры ракеты для расчёта точки спавна
+
+function spawnParticles() {
+    const term = particleTerms[Math.floor(Math.random() * particleTerms.length)];
+    const px = bX - 10; // чуть левее ракеты
+    const py = bY + rocketHeight / 2;
+    // угол разброса от -45 до +45 градусов
+    const angle = Math.random() * Math.PI / 2 - Math.PI / 4;
+    const speed = Math.random() * 2 + 1; // от 1 до 3
+    const vx = -Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed;
+    particles.push({ x: px, y: py, vx: vx, vy: vy, life: 30, maxLife: 80, text: term });
+}
 
 // Изображения
 var bird = new Image();       // будет использоваться как ракета
@@ -115,13 +143,11 @@ var gap = 190;
 var constant;
 var bX = 160;
 var bY = 150;
-// убрали старую gravity
 var flappyScore = 0;
 var pipeInterval = 290;
 
 // Флаги и структуры
 var flappyGameOver = false;
-var autoFlight = true;
 var pipe = [];
 
 const initialPipes = 5;
@@ -181,7 +207,7 @@ function shuffleArray(array) {
 }
 
 // Уровни
-const levels = [
+let levels = [
     {
         backgroundColor: "#83EFEA", //светло-синий + березы 80 - 120
         pipeUpSrc: "img/pipeUpLevel2.png",
@@ -203,7 +229,6 @@ const levels = [
         pipeUpSrc: "img/pipeUpPro.png",
         pipeBottomSrc: "img/pipeBottomPro.png",
         fgSrc: "img/fg.png",
-        // decorationSrc здесь не используется для спавна декора
         decorationSrc: shuffleArray(commonDecorations),
         decorColor: "#FEFEFE"
     },
@@ -272,6 +297,8 @@ const levels = [
         decorColor: "#FEFEFE"
     }
 ];
+// Перемешиваем порядок уровней при загрузке
+levels = shuffleArray(levels);
 
 let currentLevel = 0;
 
@@ -282,15 +309,22 @@ function updateLevel() {
     for (let i = 0; i < levelThresholds.length; i++) {
         if (flappyScore >= levelThresholds[i]) newLevel = i + 1;
     }
-    if (newLevel !== currentLevel) {
-        currentLevel = newLevel;
-        updateDecorationsColor();
+    if (newLevel !== currentLevel && !levelSwitching) {
+        // Начинаем анимацию смены
+        levelSwitching = true;
+        levelSwitchStartTime = performance.now();
+        nextLevel = newLevel;
     }
-    const lvl = levels[currentLevel];
-    pipeUp.src = lvl.pipeUpSrc;
-    pipeBottom.src = lvl.pipeBottomSrc;
-    fg.src = lvl.fgSrc;
+    // Если сейчас не в анимации — сразу обновляем спрайты
+    if (!levelSwitching) {
+        currentLevel = newLevel;
+        const lvl = levels[currentLevel];
+        pipeUp.src = lvl.pipeUpSrc;
+        pipeBottom.src = lvl.pipeBottomSrc;
+        fg.src = lvl.fgSrc;
+    }
 }
+
 function updateDecorationsColor() {
     decorations.forEach(decor => {
         loadSvgWithColor(decor.originalSrc, levels[currentLevel].decorColor, function(newSrc) {
@@ -318,6 +352,11 @@ document.addEventListener("keydown", function(event) {
         } else {
             disableAutoFlight();
             isThrusting = true;
+        }
+    }
+    if (event.code === "ArrowUp") {
+        if (!flappyGameOver) {
+            enableAutoFlappyFlight();
         }
     }
 });
@@ -352,7 +391,6 @@ flappyCvs.addEventListener("click", function(e) {
     const rect = flappyCvs.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
-
     if (flappyGameOver) {
         // область рестарта (100×130px в центре)
         const rw = 100, rh = 130;
@@ -379,53 +417,49 @@ flappyCvs.addEventListener("click", function(e) {
     }
 });
 
-// Автопилот
-function enableAutoFlappyFlight() { autoFlight = true; }
-function disableAutoFlight()       { autoFlight = false; }
-
 // Спавн монет и декораций
 function spawnCoin() {
-    var minY=50, maxY=fixedHeight-fg.height+floorOffset-coinHeight-20;
-    var coinY=Math.floor(Math.random()*(maxY-minY+1))+minY;
+    var minY = 50, maxY = fixedHeight - fg.height + floorOffset - coinHeight - 20;
+    var coinY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
     coins.push({ x: flappyCvs.width, y: coinY });
 }
 function loadSvgWithColor(url, color, callback) {
-    fetch(url).then(r=>r.text()).then(svgText=>{
-        let colored=svgText.replace(/#FEFEFE/gi,color);
-        let blob=new Blob([colored],{ type:"image/svg+xml"});
+    fetch(url).then(r => r.text()).then(svgText => {
+        let colored = svgText.replace(/#FEFEFE/gi, color);
+        let blob = new Blob([colored], { type: "image/svg+xml" });
         callback(URL.createObjectURL(blob));
-    }).catch(()=>callback(url));
+    }).catch(() => callback(url));
 }
 function spawnDecoration(optionalX) {
-    var startX = optionalX!==undefined?optionalX:flappyCvs.width;
-    if (!availableTextDecor.length) availableTextDecor = shuffleArray(commonDecorations.filter(s=>s.includes('_text')));
-    if (!availableProDecor.length)  availableProDecor  = shuffleArray(commonDecorations.filter(s=>s.includes('_pro')));
-    var pattern=['pro','pro','pro','text','pro','pro','pro','text'];
-    var type=pattern[decorationCycleIndex%pattern.length];
+    var startX = optionalX !== undefined ? optionalX : flappyCvs.width;
+    if (!availableTextDecor.length) availableTextDecor = shuffleArray(commonDecorations.filter(s => s.includes('_text')));
+    if (!availableProDecor.length)  availableProDecor  = shuffleArray(commonDecorations.filter(s => s.includes('_pro')));
+    var pattern = ['pro','pro','pro','text','pro','pro','pro','text'];
+    var type = pattern[decorationCycleIndex % pattern.length];
     decorationCycleIndex++;
-    let srcList=type==='text'?availableTextDecor:availableProDecor;
-    let chosen=srcList.shift()|| (type==='text'?availableProDecor.shift():availableTextDecor.shift());
-    if(!chosen)return;
-    let dw=chosen.includes('_text')?300:150, dh=chosen.includes('_text')?180:250;
-    let minY=10, bottomMargin=chosen.includes('_text')?100:50;
-    let maxY=fixedHeight-fg.height+floorOffset-dh-bottomMargin;
-    let decorY=Math.floor(Math.random()*(maxY-minY+1))+minY;
-    loadSvgWithColor(chosen, levels[currentLevel].decorColor, function(url){
-        let img=new Image(); img.src=url;
-        decorations.push({ x:startX, y:decorY, img, width:dw, height:dh, originalSrc:chosen });
+    let srcList = type === 'text' ? availableTextDecor : availableProDecor;
+    let chosen = srcList.shift() || (type === 'text' ? availableProDecor.shift() : availableTextDecor.shift());
+    if (!chosen) return;
+    let dw = chosen.includes('_text') ? 300 : 150, dh = chosen.includes('_text') ? 180 : 250;
+    let minY = 10, bottomMargin = chosen.includes('_text') ? 100 : 50;
+    let maxY = fixedHeight - fg.height + floorOffset - dh - bottomMargin;
+    let decorY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+    loadSvgWithColor(chosen, levels[currentLevel].decorColor, function(url) {
+        let img = new Image(); img.src = url;
+        decorations.push({ x: startX, y: decorY, img, width: dw, height: dh, originalSrc: chosen });
     });
 }
 function initDecorations() {
-    decorations=[]; let spacing=400;
-    for (let x=0; x<flappyCvs.width; x+=spacing) spawnDecoration(x);
-    lastDecorationSpawnScore=0;
+    decorations = []; let spacing = 400;
+    for (let x = 0; x < flappyCvs.width; x += spacing) spawnDecoration(x);
+    lastDecorationSpawnScore = 0;
 }
 
 // Коллизии
-function detectCollision(pObj,pW,pH,constant,bW,bH) {
-    if ((bX+bW>pObj.x&&bX<pObj.x+pW&&(bY<pObj.y+pH||bY+bH>pObj.y+constant))
-        || (bY+bH>=fixedHeight-fg.height+floorOffset)) {
-        flappyGameOver=true;
+function detectCollision(pObj, pW, pH, constant, bW, bH) {
+    if ((bX + bW > pObj.x && bX < pObj.x + pW && (bY < pObj.y + pH || bY + bH > pObj.y + constant))
+        || (bY + bH >= fixedHeight - fg.height + floorOffset)) {
+        flappyGameOver = true;
     }
 }
 
@@ -433,138 +467,198 @@ let prevError = 0;
 
 // Главный цикл отрисовки
 function drawFlappy() {
+    // Обработка анимации смены уровня
+    let animOffset = 0;
+    if (levelSwitching) {
+        let now = performance.now();
+        let elapsed = now - levelSwitchStartTime;
+        const half = levelSwitchDuration / 2;
+
+        if (elapsed < half) {
+            // Фаза 1: выезд старых труб
+            animOffset = fixedHeight * (elapsed / half);
+        } else if (elapsed < levelSwitchDuration) {
+            // Фаза 2: заезд новых труб
+            if (currentLevel !== nextLevel) {
+                // Обновляем спрайты один раз в начале второй фазы
+                currentLevel = nextLevel;
+                updateDecorationsColor();
+                const lvl = levels[currentLevel];
+                pipeUp.src = lvl.pipeUpSrc;
+                pipeBottom.src = lvl.pipeBottomSrc;
+                fg.src = lvl.fgSrc;
+            }
+            let t2 = (elapsed - half) / half;
+            animOffset = fixedHeight * (1 - t2);
+        } else {
+            // Конец анимации смены
+            levelSwitching = false;
+            animOffset = 0;
+        }
+    }
+
+    // Проверяем флаг смены уровня (либо запускаем анимацию, либо ничего не делаем внутри)
     updateLevel();
+
+    // Фон
     flappyCtx.fillStyle = levels[currentLevel].backgroundColor;
-    flappyCtx.fillRect(0,0,flappyCvs.width,fixedHeight);
+    flappyCtx.fillRect(0, 0, flappyCvs.width, fixedHeight);
 
     // Декор
-    if (!flappyGameOver && flappyScore%3===0 && flappyScore!==lastDecorationSpawnScore) {
-        spawnDecoration(); lastDecorationSpawnScore=flappyScore;
+    if (!flappyGameOver && flappyScore % 3 === 0 && flappyScore !== lastDecorationSpawnScore) {
+        spawnDecoration(); lastDecorationSpawnScore = flappyScore;
     }
-    decorations.forEach((d,i)=>{
-        d.x-=1; flappyCtx.drawImage(d.img,d.x,d.y,d.width,d.height);
-        if (d.x+d.width<0) decorations.splice(i,1);
+    decorations.forEach((d, i) => {
+        d.x -= 1;
+        flappyCtx.drawImage(d.img, d.x, d.y, d.width, d.height);
+        if (d.x + d.width < 0) decorations.splice(i, 1);
     });
 
     // Трубы и счёт
-    const pipeW=72, pipeH=320, bW=100, bH=55;
-    for (let i=0;i<pipe.length;i++){
-        constant=pipeH+gap;
-        flappyCtx.drawImage(pipeUp,pipe[i].x,pipe[i].y,pipeW,pipeH);
-        flappyCtx.drawImage(pipeBottom,pipe[i].x,pipe[i].y+constant,pipeW,pipeH);
+    const pipeW = 72, pipeH = 320, bW = 100, bH = 55;
+    for (let i = 0; i < pipe.length; i++) {
+        constant = pipeH + gap;
+        const px = pipe[i].x;
+        const py = pipe[i].y;
+
+        // Верхняя труба с анимацией смещения вверх
+        flappyCtx.drawImage(pipeUp, px, py - animOffset, pipeW, pipeH);
+        // Нижняя труба с анимацией смещения вниз
+        flappyCtx.drawImage(pipeBottom, px, py + constant + animOffset, pipeW, pipeH);
+
         if (!flappyGameOver) {
-            pipe[i].x-=1.9;
-            if (!pipe[i].spawnedNext && pipe[i].x<flappyCvs.width-pipeInterval){
-                pipe.push({ x:flappyCvs.width,
-                            y:Math.floor(Math.random()*(maxPipeOffset-minPipeOffset+1))+minPipeOffset-220,
-                            spawnedNext:false, scored:false });
-                pipe[i].spawnedNext=true;
+            pipe[i].x -= 1.9;
+            if (!pipe[i].spawnedNext && pipe[i].x < flappyCvs.width - pipeInterval) {
+                pipe.push({
+                    x: flappyCvs.width,
+                    y: Math.floor(Math.random() * (maxPipeOffset - minPipeOffset + 1)) + minPipeOffset - 220,
+                    spawnedNext: false, scored: false
+                });
+                pipe[i].spawnedNext = true;
             }
-            detectCollision(pipe[i],pipeW,pipeH,constant,bW,bH);
-            if(!pipe[i].scored && pipe[i].x+pipeW<bX){
-                flappyScore++; score_audio.play(); pipe[i].scored=true;
+            detectCollision(pipe[i], pipeW, pipeH, constant, bW, bH);
+            if (!pipe[i].scored && pipe[i].x + pipeW < bX) {
+                flappyScore++;
+                score_audio.play();
+                pipe[i].scored = true;
             }
-            if(pipe[i].x+pipeW<0){ pipe.splice(i,1); i--; }
+            if (pipe[i].x + pipeW < 0) { pipe.splice(i, 1); i--; }
         }
     }
 
     // Монеты
-    if(!flappyGameOver){
-        coins.forEach((c,i)=>{
-            c.x-=2; flappyCtx.drawImage(coinImg,c.x,c.y,coinWidth,coinHeight);
-            if(bX<c.x+coinWidth&&bX+bW>c.x&&bY<c.y+coinHeight&&bY+bH>c.y){
-                coinCount++; coins.splice(i,1);
-            } else if(c.x+coinWidth<0) coins.splice(i,1);
+    if (!flappyGameOver) {
+        coins.forEach((c, i) => {
+            c.x -= 2; flappyCtx.drawImage(coinImg, c.x, c.y, coinWidth, coinHeight);
+            if (bX < c.x + coinWidth && bX + bW > c.x && bY < c.y + coinHeight && bY + bH > c.y) {
+                coinCount++; coins.splice(i, 1);
+            } else if (c.x + coinWidth < 0) coins.splice(i, 1);
         });
-        if(flappyScore>0 && flappyScore%5===0 && flappyScore!==lastCoinSpawnScore){
-            spawnCoin(); lastCoinSpawnScore=flappyScore;
+        if (flappyScore > 0 && flappyScore % 5 === 0 && flappyScore !== lastCoinSpawnScore) {
+            spawnCoin(); lastCoinSpawnScore = flappyScore;
         }
     }
 
-// Земля
-flappyCtx.drawImage(fg, 0, fixedHeight - fg.height + floorOffset, flappyCvs.width, fg.height);
+    // Земля
+    flappyCtx.drawImage(fg, 0, fixedHeight - fg.height + floorOffset, flappyCvs.width, fg.height);
 
-// --- ФИЗИКА И УПРОЩЁННЫЙ АВТОПИЛОТ/РУЧНОЕ ---
-if (!flappyGameOver) {
-    if (autoFlight) {
-        // 1) ближайшая труба
-        const nextPipe = pipe.find(p => p.x + pipeW >= bX);
-        // 2) цель — середина отверстия
-        let targetCenter = fixedHeight / 2;
-        if (nextPipe) {
-            const gapTop = nextPipe.y + pipeH;
-            targetCenter = gapTop + gap / 2;
+    // ФИЗИКА И ЧАСТИЦЫ
+
+    if (!flappyGameOver) {
+        if (autoFlight) {
+            const nextPipe = pipe.find(p => p.x + pipeW >= bX);
+            let targetCenter = fixedHeight / 2;
+            if (nextPipe) {
+                const gapTop = nextPipe.y + pipeH;
+                targetCenter = gapTop + gap / 2;
+            }
+            const birdCenter = bY + bH / 2;
+            const error = targetCenter - birdCenter;
+            const DESIRED_FACTOR = 0.04;
+            const desiredVel = error * DESIRED_FACTOR;
+            const SMOOTH = 0.04;
+            velocity += (desiredVel - velocity) * SMOOTH;
+        } else {
+            if (isThrusting) {
+                velocity += thrustAcceleration;
+                // Спавним частицы при тяге
+                for (let i = 0; i < 3; i++) {
+                    spawnParticles();
+                }
+            } else {
+                velocity += gravityAcceleration;
+            }
         }
-        // 3) ошибка по вертикали
-        const birdCenter = bY + bH / 2;
-        const error = targetCenter - birdCenter;
-        // 4) желаемая скорость пропорционально ошибке
-        const DESIRED_FACTOR = 0.04;
-        const desiredVel = error * DESIRED_FACTOR;
-        // 5) мягкое сглаживание: 10% к новому
-        const SMOOTH = 0.04;
-        velocity += (desiredVel - velocity) * SMOOTH;
-    } else {
-        // ручное управление — без изменений
-        if (isThrusting) velocity += thrustAcceleration;
-        else            velocity += gravityAcceleration;
+        velocity = Math.max(Math.min(velocity, maxFallSpeed), maxRiseSpeed);
+        bY += velocity;
     }
 
-    // 6) ограничиваем скорость и обновляем Y
-    velocity = Math.max(Math.min(velocity, maxFallSpeed), maxRiseSpeed);
-    bY += velocity;
-}
+    // Обновление и отрисовка частиц
+    particles.forEach((p, i) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        flappyCtx.globalAlpha = p.life / p.maxLife;
+        flappyCtx.fillStyle = "#FFF";
+        flappyCtx.font = "12px Fira Code";
+        flappyCtx.fillText(p.text, p.x, p.y);
+        if (p.life <= 0) particles.splice(i, 1);
+    });
+    flappyCtx.globalAlpha = 1; // сброс прозрачности
 
     // Поворот ракеты
     flappyCtx.save();
-    let angle = velocity*0.12;
-    flappyCtx.translate(bX+bW/2,bY+bH/2);
+    let angle = velocity * 0.12;
+    flappyCtx.translate(bX + bW / 2, bY + bH / 2);
     flappyCtx.rotate(angle);
-    flappyCtx.drawImage(bird,-bW/2,-bH/2,bW,bH);
+    flappyCtx.drawImage(bird, -bW / 2, -bH / 2, bW, bH);
     flappyCtx.restore();
 
     // Счёт и монетки
-    flappyCtx.fillStyle="#000"; flappyCtx.font="20px Fira Code";
-    flappyCtx.fillText("Счет: "+flappyScore,10,fixedHeight-20);
-    let cx=flappyCvs.width-150, cy=30;
-    flappyCtx.drawImage(coinImg,cx,cy,coinWidth,coinHeight);
-    flappyCtx.fillText("x "+coinCount,cx+coinWidth+10,cy+coinHeight/2+7);
+    flappyCtx.fillStyle = "#000"; flappyCtx.font = "20px Fira Code";
+    flappyCtx.fillText("Счет: " + flappyScore, 10, fixedHeight - 20);
+    let cx = flappyCvs.width - 150, cy = 30;
+    flappyCtx.drawImage(coinImg, cx, cy, coinWidth, coinHeight);
+    flappyCtx.fillText("x " + coinCount, cx + coinWidth + 10, cy + coinHeight / 2 + 7);
 
-    // Скины
-    if(flappyScore<1) drawCharacterSelection();
+    // Выбор скинов
+    if (flappyScore<1) drawCharacterSelection();
 
     // Рестарт
-    if(flappyGameOver){
-        const rw=240,rh=180,rx=(flappyCvs.width-rw)/2,ry=(fixedHeight-rh)/2;
-        flappyCtx.drawImage(restartImg,rx,ry,rw,rh);
+    if (flappyGameOver) {
+        const rw = 240, rh = 180, rx = (flappyCvs.width - rw) / 2, ry = (fixedHeight - rh) / 2;
+        flappyCtx.drawImage(restartImg, rx, ry, rw, rh);
     }
 
     requestAnimationFrame(drawFlappy);
 }
 
 // Скины
-function drawCharacterSelection(){
-    let startX=150, spacing=80;
-    let cfh=fg.height||100;
-    let charY=fixedHeight-cfh+floorOffset-72;
-    selectableCharacters.forEach(char=>{
-        flappyCtx.drawImage(char.imageObj,startX,charY,char.width,char.height);
-        char.x=startX; char.y=charY;
-        startX+=spacing;
+function drawCharacterSelection() {
+    let startX = 150, spacing = 80;
+    let cfh = fg.height || 100;
+    let charY = fixedHeight - cfh + floorOffset - 72;
+    selectableCharacters.forEach(char => {
+        flappyCtx.drawImage(char.imageObj, startX, charY, char.width, char.height);
+        char.x = startX; char.y = charY;
+        startX += spacing;
     });
 }
 
 // Сброс игры
-function resetGame(){
-    flappyGameOver=false; flappyScore=0; bX=160; bY=150;
-    pipe=[]; coinCount=0; coins=[]; lastCoinSpawnScore=0;
-    decorations=[]; lastDecorationSpawnScore=-1; decorationCycleIndex=0;
-    availableProDecor=[]; availableTextDecor=[];
-    for(let i=0;i<initialPipes;i++){
+function resetGame() {
+    // Перемешиваем порядок уровней при рестарте
+    levels = shuffleArray(levels);
+    flappyGameOver = false; flappyScore = 0; bX = 160; bY = 150;
+    pipe = []; coinCount = 0; coins = []; lastCoinSpawnScore = 0;
+    decorations = []; lastDecorationSpawnScore = -1; decorationCycleIndex = 0;
+    availableProDecor = []; availableTextDecor = [];
+    particles = []; // очистка частиц
+    for (let i = 0; i < initialPipes; i++) {
         pipe.push({
-            x:flappyCvs.width+i*(pipeInterval+60),
-            y:Math.floor(Math.random()*(maxPipeOffset-minPipeOffset+1))+minPipeOffset-220,
-            spawnedNext:i===initialPipes-1?false:true, scored:false
+            x: flappyCvs.width + i * (pipeInterval + 60),
+            y: Math.floor(Math.random() * (maxPipeOffset - minPipeOffset + 1)) + minPipeOffset - 220,
+            spawnedNext: i === initialPipes - 1 ? false : true, scored: false
         });
     }
     initDecorations();
