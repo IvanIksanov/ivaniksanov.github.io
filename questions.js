@@ -195,8 +195,10 @@ const systemPrompt =
             {
               id: 'accordion_theory_q37',
               title: 'Что такое «парадокс пестицида»?',
-              answer: 'Принцип, согласно которому повторяющиеся тесты со временем теряют эффективность, поэтому их нужно периодически обновлять.',
-              moreLink: 'https://habr.com/ru/articles/699990'
+              answer: 'Принцип, согласно которому повторяющиеся тесты со временем начинают все реже находить ошибки на конкретных тестовых данных.',
+              moreLink: 'https://habr.com/ru/articles/699990',
+              authorCheck: 'https://t.me/shooandendlessagony',
+              avatar: 'img/avatar/shoo.jpeg'
             },
             {
               id: 'accordion_theory_q38',
@@ -1158,7 +1160,9 @@ const systemPrompt =
               id: 'accordion_aqajs_q4',
               title: 'Что такое конструкция switch-case?',
               answer: 'Конструкция switch-case — это управляющая структура, позволяющая выбирать один из множества блоков кода для выполнения на основе значения выражения.<br><br> <code>int day = 3;<br>switch (day) {<br>    case 1:<br>        System.out.println("Monday");<br>        break;<br>    case 2:<br>        break;<br>    case 3:<br>        break;<br>    default:<br>        System.out.println("Invalid day");<br>}</code>',
-              moreLink: 'https://learn.javascript.ru/switch'
+              moreLink: 'https://learn.javascript.ru/switch',
+              authorCheck: 'https://t.me/QAtoDev',
+              avatar: 'img/QAtoDev_PageIcon.png'
             }
         ]
         }
@@ -1259,13 +1263,36 @@ const systemPrompt =
       title.textContent = item.title;
       content.id = item.id;
 
-      let extraLink = item.moreLink
-        ? `<br><br><a href="${item.moreLink}" target="_blank" rel="noopener noreferrer" class="answer-link">Читать</a>`
-        : "";
-      let extraImg  = item.img
-        ? `<div class="answer-image"><img src="${item.img}" alt="Иллюстрация к вопросу"></div>`
-        : "";
-      textEl.innerHTML = item.answer + extraLink + extraImg;
+      // Собираем ссылки «Читать» и «Ревью от автора», если они есть
+      // Собираем кнопки
+      let links = [];
+      if (item.moreLink) {
+        links.push(
+          `<a href="${item.moreLink}" target="_blank" rel="noopener noreferrer" class="answer-link">Читать</a>`
+        );
+      }
+      if (item.authorCheck) {
+        links.push(`
+          <a
+            href="${item.authorCheck}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="answer-link author-link"
+          >
+            Блог ревьюера
+            <img src="${item.avatar}" alt="Аватар ревьюера">
+          </a>
+        `);
+      }
+
+      let extraLinks = '';
+      if (links.length) {
+        // один перенос строки перед всеми кнопками
+        extraLinks = `<br><br><div class="answer-links">${links.join('')}</div>`;
+      }
+
+      // вставляем в ответ
+      textEl.innerHTML = item.answer + extraLinks;
 
       textEl.insertAdjacentHTML('beforeend', `
         <div style="margin-top:1rem;">

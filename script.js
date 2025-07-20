@@ -1,43 +1,3 @@
-// --- КАРУСЕЛЬ ИЗОБРАЖЕНИЙ ---
-document.addEventListener('DOMContentLoaded', function () {
-    let currentIndex = 0;
-    const images = document.querySelectorAll('.carousel-images img');
-
-    function showImage(index) {
-        images.forEach((img, i) => {
-            img.classList.remove('active');
-            if (i === index) {
-                img.classList.add('active');
-            }
-        });
-    }
-
-    document.getElementById('prev').addEventListener('click', function() {
-        console.log("Кнопка Назад нажата"); // Лог для отладки
-        currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
-        showImage(currentIndex);
-    });
-
-    document.getElementById('next').addEventListener('click', function() {
-        console.log("Кнопка Вперед нажата"); // Лог для отладки
-        currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
-        showImage(currentIndex);
-    });
-
-    // Изначально показываем первое изображение
-    showImage(currentIndex);
-});
-
-// --- БУРГЕР-МЕНЮ ---
-document.addEventListener('DOMContentLoaded', function () {
-    const burgerMenu = document.querySelector('.burger-menu');
-    const navLinks = document.querySelector('nav ul');
-
-    burgerMenu.addEventListener('click', () => {
-        navLinks.classList.toggle('active');
-    });
-});
-
 /****************************************************
  *  ИГРА FLAPPY BIRD (РОКЕТА) С УРОВНЯМИ
  ****************************************************/
@@ -861,4 +821,44 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Показываем при инициализации
   showSection(current);
+});
+
+// --- КАРУСЕЛЬ ИЗОБРАЖЕНИЙ ---
+document.addEventListener('DOMContentLoaded', function () {
+    let currentIndex = 0;
+    const images = document.querySelectorAll('.carousel-images img');
+
+    function showImage(index) {
+        images.forEach((img, i) => {
+            img.classList.remove('active');
+            if (i === index) {
+                img.classList.add('active');
+            }
+        });
+    }
+
+    document.getElementById('prev').addEventListener('click', function() {
+        console.log("Кнопка Назад нажата"); // Лог для отладки
+        currentIndex = (currentIndex > 0) ? currentIndex - 1 : images.length - 1;
+        showImage(currentIndex);
+    });
+
+    document.getElementById('next').addEventListener('click', function() {
+        console.log("Кнопка Вперед нажата"); // Лог для отладки
+        currentIndex = (currentIndex < images.length - 1) ? currentIndex + 1 : 0;
+        showImage(currentIndex);
+    });
+
+    // Изначально показываем первое изображение
+    showImage(currentIndex);
+});
+
+// --- БУРГЕР-МЕНЮ ---
+document.addEventListener('DOMContentLoaded', function () {
+    const burgerMenu = document.querySelector('.burger-menu');
+    const navLinks = document.querySelector('nav ul');
+
+    burgerMenu.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+    });
 });

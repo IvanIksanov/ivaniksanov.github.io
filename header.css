@@ -88,8 +88,30 @@ a {
 }
 
 a.answer-link {
-  background-color: #929292; /* есть в questions.css, отсутствует в styles.css */
+  background-color: #8CD136; /* есть в questions.css, отсутствует в styles.css */
   color: #F1F1F1;            /* есть в questions.css, отсутствует в styles.css */
+}
+
+/* отступ между соседними кнопками (оставляем как есть) */
+.answer-links .answer-link + .answer-link {
+  margin-left: 0.5em;
+  background-color: #64B8FF;
+}
+
+a.answer-link.author-link {
+  display: inline-flex;
+  align-items: center;
+  width: auto;
+  padding: 4.5px 8px;
+}
+
+/* картинка-аватар внутри кнопки слева от текста */
+a.answer-link.author-link img {
+  width: 24px;
+  height: 24px;
+  margin-left: 8px;      /* теперь отступ справа, между аватаром и текстом */
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 a:hover { /*темная тема осталась в styles.css questions.css */
@@ -97,10 +119,15 @@ a:hover { /*темная тема осталась в styles.css questions.css *
   color: #F1F1F1;
 }
 
-a.answer-link:hover {
-  background-color: #1A1A1A; /* есть в questions.css, отсутствует в styles.css */
-  color: #F1F1F1;            /* есть в questions.css, отсутствует в styles.css */
+.answer-links .answer-link.author-link:hover {
+  background-color: #1A1A1A;
+  color: #F1F1F1;
 }
+
+html[data-theme="dark"] .answer-links .answer-link.author-link:hover {
+        background-color: #F1F1F1;
+        color: #1A1A1A;
+  }
 
 b {
   text-decoration: none;

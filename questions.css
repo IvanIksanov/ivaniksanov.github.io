@@ -395,6 +395,18 @@ h2 {
   color: #FFA500;
 }
 
+/* Новое: подсветка текста вопроса при hover и открытом состоянии */
+/* Для заголовка (вся кнопка-триггер наследует цвет) */
+.t849__header.studied:hover .t849__trigger-button,
+.t849__header.studied.t849__opened .t849__trigger-button {
+  color: #44BBC1;
+}
+
+.t849__header.unclear:hover .t849__trigger-button,
+.t849__header.unclear.t849__opened .t849__trigger-button {
+  color: #FFA500;
+}
+
 /* Сохраняем прежнюю логику показа иконки */
 .t849__header:hover .t849__icon,
 .t849__header.t849__opened .t849__icon {
@@ -917,14 +929,14 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
   }
 
   html[data-theme="dark"] a.answer-link {
-        background-color: #999999;
+        background-color: #8CD136;
         color: #1A1A1A;
   }
 
   html[data-theme="dark"] a.answer-link:hover {
         background-color: #F1F1F1;
         color: #1A1A1A;
-    }
+  }
 
   html[data-theme="dark"] .footer {
       background-color: #1C2E40;
