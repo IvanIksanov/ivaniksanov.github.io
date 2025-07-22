@@ -240,11 +240,21 @@ body {
           max-width: 600px;      /* но не больше 600px */
           margin: 1 auto;   /* по центру + вертикальные отступы */
           text-align: center;    /* текст внутри плашки по центру */
+          font-size: 14px;      /* уменьшаем шрифт плашек */
         }
 
-        #checklist-items .skill-links {
-          /* по 1rem слева и справа */
-          padding: 0 2rem 0rem 1rem;
+        @media (max-width: 900px) {
+          /* уже существующие правила для плащек */
+          #checklist-items .skill-links .skill-link {
+            max-width: 80%;       /* как ранее */
+            font-size: 12px;      /* уменьшаем шрифт плашек */
+          }
+
+          /* уменьшаем размер меток */
+          #checklist-items .skill-links .skill-link + .mark,
+          #checklist-items .skill-links .skill-link .mark {
+            font-size: 14px;      /* или другой подходящий размер */
+          }
         }
 
 @media (max-width: 600px) {
@@ -1171,4 +1181,61 @@ b:hover {
 
     touch-action: manipulation !important;
   }
+}
+
+/* ===== Новые стили для чек-листа и результатов ===== */
+
+.results-container button#check-results {
+  background-color: #44BBC1;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#resultsPie {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  margin: 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #333;
+  /* фон задаётся динамически через JS */
+}
+
+.mark {
+  display: inline-block;
+  margin-left: 8px;
+  vertical-align: middle;
+  pointer-events: none; /* чтобы метка не перехватывала клики */
+}
+
+/* Цвета остаются ваши прежние */
+.mark.correct   { color: green;  }
+.mark.incorrect { color: red;    }
+.mark.unselected{ color: grey;   }
+
+/* 1) До клика — серый круг и знак вопроса */
+#resultsPie {
+  /* задаём серый фон до перерисовки JS */
+  background-color: #ccc;
+  /* цвет текста (вопросительный знак) */
+  color: #FFFFFF;
+}
+
+/* 2) Псевдо-элемент «?», показываем только если контейнер пуст */
+#resultsPie:empty::before {
+  content: "?";
+}
+
+/* 3) Центрируем «?» внутри круга (если у вас ещё нет) */
+#resultsPie {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
