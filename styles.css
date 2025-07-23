@@ -1239,15 +1239,6 @@ b:hover {
   align-items: center;
   justify-content: center;
 }
-
-/* 1) Переносим обычный hover только в зону устройств с поддержкой hover */
-@media (hover: hover) and (pointer: fine) {
-  .skill-links a:hover {
-    background-color: #f0f0f0; /* ваш стандартный эффект */
-    color: inherit;            /* или тот цвет, который был */
-  }
-}
-
 /* 2) На тач-устройствах (pointer: coarse) выключаем hover вовсе */
 @media (pointer: coarse) {
   .skill-links a:hover {
