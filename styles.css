@@ -1239,12 +1239,3 @@ b:hover {
   align-items: center;
   justify-content: center;
 }
-
-
-@media (max-width: 600px) {
-  /* Отключаем hover-эффект на мобильных */
-  .skill-links a.skill-link:hover {
-    background-color: transparent !important;
-    color: inherit !important;
-  }
-}
