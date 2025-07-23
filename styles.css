@@ -1239,9 +1239,11 @@ b:hover {
   align-items: center;
   justify-content: center;
 }
-/* 2) На тач-устройствах (pointer: coarse) выключаем hover вовсе */
-@media (pointer: coarse) {
-  .skill-links a:hover {
+
+
+@media (max-width: 600px) {
+  /* Отключаем hover-эффект на мобильных */
+  .skill-links a.skill-link:hover {
     background-color: transparent !important;
     color: inherit !important;
   }
