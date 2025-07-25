@@ -766,13 +766,39 @@ canvas {
   color: #F1F1F1;
 }
 
-#checklist-items .skill-links .skill-link:hover {
-  background-color: #bfe8ea;
-  color: #000;
+/* При наведении, если размер экрана уже 600 (меньше 600) */
+@media (max-width: 600px) {
+    #checklist-items .skill-links .skill-link:hover {
+      background-color: #FAFAFA;
+      color: #000;
+    }
 }
+/* При наведении, если размер экрана уже 600 (меньше 600) */
+@media (max-width: 600px) {
+    html[data-theme="dark"] #checklist-items .skill-links .skill-link:hover {
+      background-color: #242424;
+      color: #F1F1F1;
+    }
+}
+
+/* Сам ховер не сработает - чтобы ликвидировать ховеры из других стилей */
 #checklist-items .skill-links .skill-link.selected {
   background-color: #59c3c8;
   color: #000;
+}
+
+/* Сам ховер не сработает - чтобы ликвидировать ховеры из других стилей */
+html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
+  background-color: #59c3c8;
+  color: #F1F1F1;
+}
+
+/* При наведении, если размер экрана шире 600 (больше 600) */
+@media (min-width: 600px) {
+    #checklist-items .skill-links .skill-link:hover {
+      background-color: #bfe8ea;
+      color: #000;
+    }
 }
 
 #plan-list ul {
