@@ -205,9 +205,6 @@ body {
             cursor: pointer;
             transition: background-color 0.2s;
         }
-        .skill-links a:hover {
-            background-color: #f0f0f0;
-        }
         .skill-links a.selected {
             background-color: #1e1e1e;
             color: #F1F1F1;
@@ -767,6 +764,11 @@ canvas {
 .skill-links a:hover {
   background-color: #1e1e1e;
   color: #F1F1F1;
+}
+
+#checklist-items .skill-links .skill-link:hover {
+  background-color: #ccecee;
+  color: #000;
 }
 
 #plan-list ul {
