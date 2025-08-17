@@ -65,6 +65,20 @@ nav {
   font-size: 12px;
 }
 
+@media (max-width: 600px) {
+  nav {
+    max-width: 340px;   /* общий контейнер уже */
+    margin: 0 auto;     /* выравниваем по центру */
+  }
+}
+
+@media (min-width: 600px) and (max-width: 900px) {
+  nav {
+    max-width: 500px;   /* общий контейнер уже */
+    margin: 0 auto;     /* выравниваем по центру */
+  }
+}
+
 nav ul {
   list-style-type: none;
   padding: 0;
