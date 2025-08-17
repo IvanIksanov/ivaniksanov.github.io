@@ -1,0 +1,252 @@
+/* Контейнер секции книг */
+.books-section {
+    max-width: 1200px;
+    margin: 24px auto 64px auto;
+    padding: 0 16px;
+}
+
+/* Тулбар (счётчик и подсказки) */
+.books-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+.books-toolbar .hint {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* --- Грид карточек --- */
+/* Мобильно по умолчанию: 3 колонки */
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+/* ≥560px — оставляем 3 колонки (чтобы не прыгало на 2) */
+@media (min-width: 560px) {
+    .books-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* ≥840px — 4 колонки */
+@media (min-width: 840px) {
+    .books-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* ≥1120px — можно оставить 4 (как было) */
+@media (min-width: 1120px) {
+    .books-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+/* --- Карточка книги --- */
+.book-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg, #fff);
+    border: 1px solid rgba(0,0,0,0.06);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.06);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.book-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 26px rgba(0,0,0,0.12);
+}
+
+/* Обложка */
+.book-cover-wrap {
+    position: relative;
+    aspect-ratio: 3/4;
+    background: #f4f4f4;
+    overflow: hidden;
+}
+.book-cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Кнопка лайка */
+.like-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    outline: none;
+    background: rgba(255,255,255,0.9);
+    border-radius: 999px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    transition: transform .18s ease, background .18s ease;
+}
+.like-btn:hover { transform: scale(1.06); }
+.like-btn[aria-pressed="true"] { background: #ffe6ea; }
+
+.like-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+.like-icon path {
+    fill: none;
+    stroke: #e73b67;
+    stroke-width: 2;
+}
+.like-btn[aria-pressed="true"] .like-icon path {
+    fill: #e73b67;
+}
+
+/* Контент карточки */
+.book-body {
+    padding: 12px 12px 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.book-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.book-title a {
+    color: inherit;
+    text-decoration: none;
+}
+.book-title a:hover {
+    text-decoration: underline;
+}
+.book-authors {
+    font-size: 0.95rem;
+    opacity: 0.85;
+}
+
+/* Рейтинг */
+.rating-row {
+    margin-top: 6px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+}
+.rating-range {
+    width: 100%;
+}
+.rating-value {
+    min-width: 36px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+/* Скелетоны */
+.skeleton {
+    background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.book-card.skeleton .book-cover-wrap { background: #eaeaea; }
+.book-card.skeleton .book-body > div { height: 14px; border-radius: 6px; }
+.book-card.skeleton .book-body > div:nth-child(1) { width: 70%; }
+.book-card.skeleton .book-body > div:nth-child(2) { width: 50%; }
+.book-card.skeleton .book-body > div:nth-child(3) { width: 90%; }
+
+/* Сообщение об ошибке / пустом результате */
+.inline-note {
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: rgba(255,160,1,0.12);
+    border: 1px solid rgba(255,160,1,0.35);
+}
+
+/* Поддержка тем */
+:root[data-theme="dark"] .book-card {
+    --card-bg: #16181d;
+    border-color: rgba(255,255,255,0.06);
+    box-shadow: 0 8px 22px rgba(0,0,0,0.4);
+}
+:root[data-theme="dark"] .book-card:hover {
+    box-shadow: 0 12px 28px rgba(0,0,0,0.6);
+}
+:root[data-theme="dark"] .book-cover-wrap { background: #20232a; }
+:root[data-theme="dark"] .inline-note {
+    background: rgba(255,160,1,0.16);
+    border-color: rgba(255,160,1,0.45);
+}
+
+/* -------- Мобильная «компактная» настройка для пропорционального уменьшения -------- */
+@media (max-width: 559px) {
+    .books-section { padding: 0 8px; }
+    .books-grid { gap: 8px; }
+
+    .book-card {
+        border-radius: 10px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    }
+
+    .like-btn {
+        top: 6px;
+        right: 6px;
+        width: 26px;
+        height: 26px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .like-icon { width: 16px; height: 16px; }
+
+    .book-body { padding: 8px 8px 10px 8px; gap: 6px; }
+    .book-title { font-size: 0.78rem; line-height: 1.35; }
+    .book-authors { font-size: 0.74rem; }
+
+    .rating-row { margin-top: 4px; gap: 6px; }
+    .rating-value { min-width: 28px; font-size: 0.78rem; }
+    .books-toolbar .hint { font-size: 0.8rem; }
+}
+        /* Небольшие стили для вкладок (на случай если нет в вашем CSS) */
+        .tabs {
+          display: inline-flex;
+          gap: .5rem;
+          background: var(--ifm-background-surface-color, transparent);
+          border-radius: 12px;
+          padding: .25rem;
+        }
+        .tab-btn {
+          border: none;
+          padding: .5rem .9rem;
+          border-radius: 10px;
+          cursor: pointer;
+          background: transparent;
+          font: inherit;
+          line-height: 1.2;
+        }
+        .tab-btn[aria-selected="true"] {
+          background: #FFA001;
+          color: #1a1a1a;
+          font-weight: 600;
+        }
+        .books-toolbar {
+          display:flex;
+          align-items:center;
+          justify-content:space-between;
+          gap:1rem;
+          flex-wrap:wrap;
+        }

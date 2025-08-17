@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Повторное тестирование</title>
+    <link rel="stylesheet" href="header.css">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="pageBooks.css">
+    <style>
+        /* === Плавающая кнопка багов === */
+        .bug-fab {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          border: none;
+          background: #FFA001;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+          font-size: 26px;
+          z-index: 999;
+          transition: transform 0.2s;
+        }
+        .bug-fab:hover { transform: scale(1.1); }
+
+        /* === Панель багов === */
+        .bug-panel {
+          position: fixed;
+          bottom: 90px;
+          right: 20px;
+          width: 320px;
+          max-height: 480px;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+          padding: 16px;
+          font-size: 14px;
+          display: none;
+          flex-direction: column;
+          gap: 10px;
+          z-index: 1000;
+          overflow-y: auto;
+        }
+        .bug-panel h4 {
+          margin: 0 0 8px;
+          font-size: 16px;
+          color: #e53935;
+        }
+
+        .bug-item {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          grid-template-areas:
+            "text actions"
+            "status actions";
+          gap: 6px 10px;
+          padding: 10px;
+          border-radius: 8px;
+          border-left: 3px solid #FFA001;
+          background: #e0e0e0;
+          transition: background 0.2s, opacity 0.2s;
+        }
+        .bug-text { grid-area: text; }
+        .bug-actions { grid-area: actions; display: flex; gap: 6px; align-items: start; }
+        .bug-status { grid-area: status; font-size: 12px; opacity: .8; }
+
+        .icon-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid rgba(0,0,0,0.08);
+          background: #fff;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0,0,0,.08);
+          transition: transform .15s, background .15s, box-shadow .15s, border-color .15s;
+          font-size: 18px;
+        }
+        .icon-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+        .icon-btn:focus { outline: none; border-color: #FFA001; }
+
+        /* Состояния бага */
+        .bug-item.status-open  { background: #fff2eb; } /* тёплый оттенок */
+        .bug-item.status-fixed { background: #eefaf5; opacity: 0.92; } /* зелёный намёк */
+
+        /* Подсветка активной кнопки */
+        .icon-btn[aria-pressed="true"] { background: #ffe7c2; }
+        .btn-fixed[aria-pressed="true"] { background: #c9f2e4; }
+
+        /* Тёмная тема */
+        html[data-theme="dark"] .bug-panel { background: #1A1A1A; color: #F1F1F1; }
+        html[data-theme="dark"] .bug-item { background: #242424; border-left-color: #FFA001; }
+        html[data-theme="dark"] .bug-item.status-open  { background: #2a2320; }
+        html[data-theme="dark"] .bug-item.status-fixed { background: #1f2a26; }
+        html[data-theme="dark"] .icon-btn { background: #16181d; color: #F1F1F1; border-color: rgba(255,255,255,0.08); }
+        html[data-theme="dark"] .icon-btn[aria-pressed="true"] { background: #3a2d22; }
+        html[data-theme="dark"] .btn-fixed[aria-pressed="true"] { background: #25433a; }
+    </style>
+</head>
+<body>
+<nav>
+    <ul>
+        <li><a href="hwois.html">Кто такой тестировщик?</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="questions.html">Вопросы</a></li>
+        <li><a href="index.html" style="background-color: #FFA001;">Книги</a></li>
+        <li><a href="calendar_v1.html">Календарь</a></li>
+        <li><a href="swagger_api.html">Практика API (Swagger)</a></li>
+    </ul>
+</nav>
+
+<header class="welcome">
+    <div class="header-container">
+        <div class="logo"
+             style="cursor: pointer;"
+             onclick="window.location.href='index.html'">
+            <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="Логотип">
+        </div>
+        <h3 class="site-title">На главную</h3>
+    </div>
+    <div class="theme-switcher">
+        <button
+                id="theme-toggle"
+                class="clean-btn toggleButton_gllP"
+                type="button"
+                title="Переключить тему"
+                aria-label="Переключить тему"
+                aria-live="polite"
+        >
+            <!-- Солнце для светлой темы -->
+            <svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR">
+                <path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path>
+            </svg>
+            <!-- Полумесяц для тёмной темы -->
+            <svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR">
+                <path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path>
+            </svg>
+        </button>
+    </div>
+</header>
+
+<div class="page-header">
+    <h2 id="page-title">Книги по программированию</h2>
+</div>
+
+<!-- Плавающая кнопка -->
+<button class="bug-fab" id="bugFab" title="Показать баги">🐞</button>
+
+<!-- Панель багов -->
+<div class="bug-panel" id="bugPanel" role="dialog" aria-label="Список найденных багов">
+    <h4>Найденные баги:</h4>
+
+    <!-- Примерные баг-репорты: вы можете заменить текст и id на свои -->
+    <div class="bug-item" data-bug-id="bug-like-not-persist">
+        <div class="bug-text">Баг №1: Кнопка «Лайк» не сохраняет состояние после перезагрузки страницы.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-team-title">
+        <div class="bug-text">Баг №2: При переключении на вкладку «Команда» отображается неправильный заголовок страницы.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-dark-authors-contrast-3">
+        <div class="bug-text">Баг №3: В тёмной теме низкая контрастность текста авторов у карточек книг.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-404-on-new-tab">
+        <div class="bug-text">Баг №4: При загрузке вкладки «Новое» статус ошибки 404.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-cards-bottom-align">
+        <div class="bug-text">Баг №5: Карточки не выровнены по нижней границе (разная длина из-за авторов).</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-team-rating-not-saved">
+        <div class="bug-text">Баг №6: Не сохраняется рейтинг пользователя на карточках во вкладке «Команда».</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-tabs-dark-mode">
+        <div class="bug-text">Баг №7: Не адаптированы вкладки (при выборе тематики) под тёмный режим.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-title-hover-highlight">
+        <div class="bug-text">Баг №8: Лишняя подсветка текста при наведении на наименование книги.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-title-opens-yandex">
+        <div class="bug-text">Баг №9: Переход на результаты поиска Яндекс при нажатии на наименование книги.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-cooking-in-team">
+        <div class="bug-text">Баг №10: Книги о готовке отображаются на вкладке «Команда».</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-panel-focus-not-closed">
+        <div class="bug-text">Баг №11: При смене фокуса окно с багами не закрывается.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-covers-slow-net">
+        <div class="bug-text">Баг №12: Обложки книг не подгружаются при медленном интернете — серый плейсхолдер остаётся навсегда.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-mobile-range-scroll">
+        <div class="bug-text">Баг №13: На мобильных слайдер рейтинга перехватывает скролл — страницу сложно прокручивать.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-hint-wrong-count">
+        <div class="bug-text">Баг №14: Сообщение «Загружено книг: N» показывает неверное число после ошибки и повторной загрузки.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-mobile-one-per-row">
+        <div class="bug-text">Баг №15: На мобильном экране отображаются в ряд по одной карточке.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-mobile-size-adapt">
+        <div class="bug-text">Баг №16: На мобильном экране вкладки не адаптированы под ширину страницы.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-counter-adapt">
+        <div class="bug-text">Баг №17: На вкладке "Избранное" отсутствует адаптивное склонение у счетчика (книги/книг/книга).</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-like-favorite">
+        <div class="bug-text">Баг №18: Если убрать лайк с книги, то она не исчезнет (необходимо обновление страницы).</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-like-favorite-counter">
+        <div class="bug-text">Баг №19: Если убрать лайк с книги, то счетчик не уменьшится (необходимо обновление страницы).</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-like-favorite-remove">
+        <div class="bug-text">Баг №20: Если убрать лайк с книги во вкладке "Избранное", то лайк не исчезнет в основной вкладке данной книги.</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-cover-hidden">
+        <div class="bug-text">Баг №21: На книгах отсутствуют обложки (вкладка "Тестирование").</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-double-show">
+        <div class="bug-text">Баг №22: Дублируются книги при загрузке вкладок (идентичные названия и автор).</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+
+    <div class="bug-item" data-bug-id="bug-same-color">
+        <div class="bug-text">Баг №23: По умолчанию карточка бага подсвечена красным (до выбора исправлен баг или воспроизводится).</div>
+        <div class="bug-actions">
+            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
+            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
+        </div>
+        <div class="bug-status" aria-live="polite"></div>
+    </div>
+</div>
+
+<!-- Секция с карточками книг -->
+<section class="books-section" aria-labelledby="books-heading">
+    <div class="books-toolbar">
+        <div role="tablist" aria-label="Переключение разделов" class="tabs">
+            <button id="tab-programming" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-books">Программирование</button>
+            <button id="tab-testing" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Тестирование</button>
+            <button id="tab-team" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Команда</button>
+            <button id="tab-favorites" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Избранное️</button>
+        </div>
+        <div class="hint" id="books-hint"></div>
+    </div>
+    <div id="panel-books">
+        <div id="books-grid" class="books-grid" aria-live="polite" aria-busy="true"></div>
+        <div id="books-error" class="inline-note" style="display:none;"></div>
+    </div>
+</section>
+
+<footer class="qatodev">
+    <p>
+        <a href="https://t.me/QAtoDev" target="_blank" style="background-color: #FFA001;">Telegram</a>
+        <a href="https://set.ki/channel/PJnPK69" target="_blank" style="background-color: #FFA001;">Сетка</a>
+    </p>
+</footer>
+
+<!-- === JS для панели багов === -->
+<script>
+    (function() {
+      const fab = document.getElementById("bugFab");
+      const panel = document.getElementById("bugPanel");
+
+      // Хранилище статусов: { [bugId]: "open" | "fixed" }
+      const LS_KEY = "qa_bugs_status";
+
+      function readStatuses() {
+        try {
+          const raw = localStorage.getItem(LS_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return (parsed && typeof parsed === "object") ? parsed : {};
+        } catch(e){ return {}; }
+      }
+      function writeStatuses(map) {
+        try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch(e){}
+      }
+
+      function applyStatus(el, status) {
+        const item = el.closest(".bug-item");
+        const statusEl = item.querySelector(".bug-status");
+        const btnOpen  = item.querySelector(".btn-open");
+        const btnFixed = item.querySelector(".btn-fixed");
+
+        // Сброс
+        item.classList.remove("status-open","status-fixed");
+        btnOpen.setAttribute("aria-pressed","false");
+        btnFixed.setAttribute("aria-pressed","false");
+
+        if (status === "fixed") {
+          item.classList.add("status-fixed");
+          statusEl.textContent = "Статус: баг исправлен";
+          btnFixed.setAttribute("aria-pressed","true");
+        } else {
+          // По умолчанию считаем «воспроизводится»
+          item.classList.add("status-open");
+          statusEl.textContent = "Статус: баг воспроизводится";
+          btnOpen.setAttribute("aria-pressed","true");
+        }
+      }
+
+      function initBugItems() {
+        const statuses = readStatuses();
+        document.querySelectorAll(".bug-item").forEach(item => {
+          const id = item.getAttribute("data-bug-id") || Math.random().toString(36).slice(2);
+          item.setAttribute("data-bug-id", id);
+
+          const current = statuses[id] || "open";
+          applyStatus(item, current);
+
+          // Обработчики
+          item.querySelector(".btn-open").addEventListener("click", (e) => {
+            statuses[id] = "open";
+            writeStatuses(statuses);
+            applyStatus(e.currentTarget, "open");
+          });
+          item.querySelector(".btn-fixed").addEventListener("click", (e) => {
+            statuses[id] = "fixed";
+            writeStatuses(statuses);
+            applyStatus(e.currentTarget, "fixed");
+          });
+        });
+      }
+
+      fab.addEventListener("click", () => {
+        panel.style.display = (panel.style.display === "flex") ? "none" : "flex";
+        if (panel.style.display === "flex") {
+          initBugItems(); // на всякий случай актуализируем статусы при открытии
+        }
+      });
+
+      // Инициализация статусов на загрузке (если панель уже будет видна стилями)
+      document.addEventListener("DOMContentLoaded", () => {
+        if (getComputedStyle(panel).display !== "none") initBugItems();
+      });
+    })();
+</script>
+
+<!-- === Тема === -->
+<script>
+    (function() {
+      const root = document.documentElement;
+      const btn  = document.getElementById('theme-toggle');
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') {
+        root.setAttribute('data-theme', saved);
+        btn.classList.toggle('active', saved === 'dark');
+      }
+      btn.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        btn.classList.toggle('active', next === 'dark');
+      });
+    })();
+</script>
+
+<!-- === Книги + Избранное === -->
+<script>
+    (function () {
+      "use strict";
+
+      /*** Пути к данным ***/
+      const API_URL       = './over/answer.json';          // Программирование
+      const API_URL_TEST  = './over/answer_testing.json';  // Тестирование
+      const API_URL_TEAM  = './over/answer_team.json';     // Команда
+
+      /*** Конфигурация вкладок ***/
+      const TAB_IDS = { PROGRAMMING: 'programming', TESTING: 'testing', TEAM: 'team', FAVORITES: 'favorites' };
+      const TABS = {
+        [TAB_IDS.PROGRAMMING]: { title: 'Книги по программированию', api: API_URL,      lsSuffix: 'prog' },
+        [TAB_IDS.TESTING]:     { title: 'Книги по тестированию',     api: API_URL_TEST, lsSuffix: 'qa'   },
+        [TAB_IDS.TEAM]:        { title: 'Книги по лидерству',        api: API_URL_TEAM, lsSuffix: 'team' },
+        [TAB_IDS.FAVORITES]:   { title: 'Книги, которые вы отметили',                  api: null,         lsSuffix: 'fav', isFavorites: true },
+      };
+
+      /*** DOM элементы ***/
+      const gridEl   = document.getElementById('books-grid')  || (function(){ const d=document.createElement('div'); d.id='books-grid'; document.body.appendChild(d); return d; })();
+      const errorEl  = document.getElementById('books-error') || (function(){ const d=document.createElement('div'); d.id='books-error'; d.style.display='none'; document.body.appendChild(d); return d; })();
+      const titleEl  = document.getElementById('page-title');
+      const hintEl   = document.getElementById('books-hint');
+      const tabProg  = document.getElementById('tab-programming');
+      const tabTest  = document.getElementById('tab-testing');
+      const tabTeam  = document.getElementById('tab-team');
+      const tabFav   = document.getElementById('tab-favorites');
+
+      /*** Сохранение выбранной вкладки ***/
+      const TAB_LS_KEY = 'books_tab_active';
+      function getInitialTab(){
+        const hash = (location.hash || '').replace('#','');
+        if (hash in TABS) return hash;
+        const ls = localStorage.getItem(TAB_LS_KEY);
+        if (ls in TABS) return ls;
+        return TAB_IDS.PROGRAMMING;
+      }
+      let CURRENT_TAB = getInitialTab();
+
+      /*** LocalStorage — ключи зависят от вкладки ***/
+      function LS_KEYS_FOR(tab){
+        const s = TABS[tab].lsSuffix;
+        return {
+          FAVES:   `books_favorites_${s}`,
+          RATINGS: `books_ratings_1_10_${s}`,
+        };
+      }
+
+      /* Глобальное хранилище избранных карточек, чтобы вкладка «Избранное» знала о лайках из любых разделов */
+      const LS_FAV_STORE = 'books_fav_items'; // объект: { [id]: {id,title,url,cover_url,persons} }
+
+      function readFavStore() {
+        try {
+          const raw = localStorage.getItem(LS_FAV_STORE);
+          const obj = raw ? JSON.parse(raw) : {};
+          return (obj && typeof obj === 'object') ? obj : {};
+        } catch { return {}; }
+      }
+      function writeFavStore(store) {
+        try { localStorage.setItem(LS_FAV_STORE, JSON.stringify(store)); } catch {}
+      }
+
+      /*** LocalStorage utils ***/
+      function readFavorites(keys) {
+        try {
+          const v = JSON.parse(localStorage.getItem(keys.FAVES) || '[]');
+          return new Set(Array.isArray(v) ? v : []);
+        } catch { return new Set(); }
+      }
+      function writeFavorites(keys, set) {
+        try { localStorage.setItem(keys.FAVES, JSON.stringify([...set])); } catch {}
+      }
+      function readRatings(keys) {
+        try {
+          const v = JSON.parse(localStorage.getItem(keys.RATINGS) || '{}');
+          return v && typeof v === 'object' ? v : {};
+        } catch { return {}; }
+      }
+      function writeRatings(keys, obj) {
+        try { localStorage.setItem(keys.RATINGS, JSON.stringify(obj)); } catch {}
+      }
+
+      /*** Утилиты ***/
+      const authorsFromPersons = (persons) =>
+        (Array.isArray(persons) ? persons.filter(p=>p?.role==='author' && p.full_name).map(p=>p.full_name.trim()) : []).join(', ') || '—';
+
+      const coverAbsolute = (u) => !u ? '' : /^https?:\/\//i.test(u) ? u : 'https://www.litres.ru' + u;
+
+      function makeSkeletonCard() {
+        const card = document.createElement('article');
+        card.className = 'book-card skeleton';
+        const cover = document.createElement('div'); cover.className = 'book-cover-wrap skeleton';
+        const body  = document.createElement('div'); body.className  = 'book-body';
+        ['l1','l2','l3'].forEach(()=>{ const x=document.createElement('div'); x.className='skeleton'; body.appendChild(x); });
+        card.appendChild(cover); card.appendChild(body);
+        return card;
+      }
+      function clearGrid(){ while (gridEl.firstChild) gridEl.removeChild(gridEl.firstChild); }
+      function showSkeletons(n){ gridEl.setAttribute('aria-busy','true'); clearGrid(); for(let i=0;i<n;i++) gridEl.appendChild(makeSkeletonCard()); }
+      function showError(msg){ errorEl.textContent = msg; errorEl.style.display='block'; gridEl.setAttribute('aria-busy','false'); }
+
+      /*** Рендер карточки ***/
+      function renderCard(art, favoritesSet, ratingsMap, lsKeys){
+        const artId = String(art.id);
+        const isFav = favoritesSet.has(artId);
+        const savedRating = Number(ratingsMap[artId] ?? 0);
+
+        const card = document.createElement('article');
+        card.className = 'book-card';
+        card.dataset.artId = artId;
+
+        const coverWrap = document.createElement('div'); coverWrap.className = 'book-cover-wrap';
+        const img = document.createElement('img');
+        img.className = 'book-cover'; img.loading='lazy';
+        img.alt = art.title ? ('Обложка: ' + art.title) : 'Обложка книги';
+        img.src = coverAbsolute(art.cover_url || '');
+        coverWrap.appendChild(img);
+
+        const likeBtn = document.createElement('button');
+        likeBtn.className = 'like-btn'; likeBtn.type='button';
+        likeBtn.setAttribute('aria-pressed', isFav ? 'true':'false');
+        likeBtn.title = isFav ? 'Убрать из избранного' : 'Добавить в избранное';
+        likeBtn.innerHTML = `
+          <svg class="like-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12.1 8.64l-.1.1-.11-.11C10.14 6.83 7.1 7.24 5.81 9.28c-1.16 1.82-.64 4.28 1.11 5.55L12 19.35l5.08-4.52c1.75-1.27 2.27-3.73 1.11-5.55-1.29-2.04-4.33-2.45-6.09-.64z"></path>
+          </svg>`;
+        coverWrap.appendChild(likeBtn);
+
+        const body = document.createElement('div'); body.className = 'book-body';
+        const title = document.createElement('div'); title.className='book-title';
+        const a = document.createElement('a');
+        a.href = art.url ? ('https://www.litres.ru' + art.url) : '#'; a.target='_blank'; a.rel='noopener';
+        a.textContent = art.title || 'Без названия';
+        title.appendChild(a);
+
+        const authors = document.createElement('div'); authors.className='book-authors';
+        authors.textContent = authorsFromPersons(art.persons);
+
+        const ratingRow = document.createElement('div'); ratingRow.className='rating-row';
+        const range = document.createElement('input');
+        range.type='range'; range.min='1'; range.max='10'; range.step='1'; range.className='rating-range';
+        range.value = String(savedRating || 5);
+        const value = document.createElement('div'); value.className='rating-value';
+        value.textContent = savedRating ? savedRating : '?';
+        ratingRow.appendChild(range);
+        ratingRow.appendChild(value);
+
+        body.appendChild(title);
+        body.appendChild(authors);
+        body.appendChild(ratingRow);
+        card.appendChild(coverWrap);
+        card.appendChild(body);
+
+        likeBtn.addEventListener('click', () => {
+          const pressed = likeBtn.getAttribute('aria-pressed') === 'true';
+          const favStore = readFavStore();
+          if (pressed) {
+            // Удалить из локального набора и общего хранилища
+            favoritesSet.delete(artId);
+            delete favStore[artId];
+          } else {
+            // Добавить в набор и общее хранилище (минимальные данные)
+            favoritesSet.add(artId);
+            favStore[artId] = {
+              id: artId,
+              title: art.title || 'Без названия',
+              url: art.url || '',
+              cover_url: art.cover_url || '',
+              persons: art.persons || []
+            };
+          }
+          writeFavorites(lsKeys, favoritesSet);
+          writeFavStore(favStore);
+
+          likeBtn.setAttribute('aria-pressed', pressed ? 'false' : 'true');
+          likeBtn.title = pressed ? 'Добавить в избранное' : 'Убрать из избранного';
+
+          // Если мы во вкладке «Избранное», удаляем карточку из списка при снятии лайка
+          if (CURRENT_TAB === TAB_IDS.FAVORITES && pressed) {
+            card.remove();
+            if (!gridEl.children.length) {
+              showError('В избранном пока пусто. Поставьте лайк на любой книге.');
+            }
+          }
+        });
+
+        range.addEventListener('input', () => { value.textContent = range.value; });
+        range.addEventListener('change', () => {
+          const v = Math.max(1, Math.min(10, Number(range.value) || 0));
+          ratingsMap[artId] = v;
+          writeRatings(lsKeys, ratingsMap);
+          value.textContent = String(v);
+        });
+
+        return card;
+      }
+
+      /*** Загрузка и рендер ***/
+      async function loadAndRender(url){
+        const cfg = TABS[CURRENT_TAB];
+        const lsKeys    = LS_KEYS_FOR(CURRENT_TAB);
+        const ratings   = readRatings(lsKeys);
+
+        errorEl.style.display = 'none';
+        gridEl.setAttribute('aria-busy','true');
+        clearGrid();
+
+        if (cfg.isFavorites) {
+          // Рендер избранного из общего хранилища
+          const favStore = readFavStore();
+          const ids = Object.keys(favStore);
+          const favoritesSet = new Set(ids); // для корректной инициализации лайков
+          if (!ids.length) {
+            gridEl.setAttribute('aria-busy','false');
+            showError('В избранном пока пусто. Поставьте лайк на любой книге.');
+            hintEl && (hintEl.textContent = 'Избранное формируется из лайков во всех разделах.');
+            return;
+          }
+          // Преобразуем в массив артов в формате, ожидаемом рендерером
+          const items = ids.map(id => {
+            const it = favStore[id];
+            return {
+              id: it.id,
+              title: it.title,
+              url: it.url,
+              cover_url: it.cover_url,
+              persons: it.persons
+            };
+          });
+          const frag = document.createDocumentFragment();
+          for (const art of items) frag.appendChild(renderCard(art, favoritesSet, ratings, lsKeys));
+          gridEl.appendChild(frag);
+          gridEl.setAttribute('aria-busy','false');
+          hintEl && (hintEl.textContent = `В избранном: ${items.length} книг(и).`);
+          return;
+        }
+
+        // Обычные вкладки: тянем из API
+        const favoritesSet = readFavorites(lsKeys);
+        showSkeletons(8);
+        errorEl.style.display = 'none';
+
+        try {
+          const resp = await fetch(url, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' },
+            credentials: 'same-origin',
+            cache: 'no-store'
+          });
+
+          if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+          const json = await resp.json();
+          const items = json?.payload?.data ?? [];
+
+          clearGrid();
+          if (!Array.isArray(items) || items.length === 0) {
+            showError('По данному запросу книги не найдены.');
+            return;
+          }
+
+          const frag = document.createDocumentFragment();
+          for (const art of items) frag.appendChild(renderCard(art, favoritesSet, ratings, lsKeys));
+          gridEl.appendChild(frag);
+          gridEl.setAttribute('aria-busy','false');
+
+          if (hintEl) hintEl.textContent = `Загружено книг: ${items.length}.`;
+
+        } catch (e) {
+          clearGrid();
+          showError('Не удалось загрузить список книг: ' + (e?.message || 'ошибка.'));
+        }
+      }
+
+      /*** Переключение вкладок ***/
+      function applyTabUI() {
+        const cfg = TABS[CURRENT_TAB];
+        titleEl && (titleEl.textContent = cfg.title);
+        tabProg.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.PROGRAMMING ? 'true' : 'false');
+        tabTest.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TESTING ? 'true' : 'false');
+        tabTeam.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TEAM ? 'true' : 'false');
+        tabFav.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.FAVORITES ? 'true' : 'false');
+        location.hash = CURRENT_TAB;
+        localStorage.setItem(TAB_LS_KEY, CURRENT_TAB);
+      }
+
+      function switchTab(tabId){
+        if (!TABS[tabId] || tabId === CURRENT_TAB) return;
+        CURRENT_TAB = tabId;
+        applyTabUI();
+        const cfg = TABS[CURRENT_TAB];
+        loadAndRender(cfg.api);
+      }
+
+      tabProg.addEventListener('click', () => switchTab(TAB_IDS.PROGRAMMING));
+      tabTest.addEventListener('click', () => switchTab(TAB_IDS.TESTING));
+      tabTeam.addEventListener('click', () => switchTab(TAB_IDS.TEAM));
+      tabFav.addEventListener('click',  () => switchTab(TAB_IDS.FAVORITES));
+
+      /*** Инициализация ***/
+      function init(){
+        applyTabUI();
+        const cfg = TABS[CURRENT_TAB];
+        loadAndRender(cfg.api);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+      } else {
+        init();
+      }
+    })();
+</script>
+</body>
+</html>
