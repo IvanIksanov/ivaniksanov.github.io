@@ -7,104 +7,7 @@
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="pageBooks.css">
-    <style>
-        /* === Плавающая кнопка багов === */
-        .bug-fab {
-          position: fixed;
-          bottom: 20px;
-          right: 20px;
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          border: none;
-          background: #FFA001;
-          color: #fff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-          font-size: 26px;
-          z-index: 999;
-          transition: transform 0.2s;
-        }
-        .bug-fab:hover { transform: scale(1.1); }
 
-        /* === Панель багов === */
-        .bug-panel {
-          position: fixed;
-          bottom: 90px;
-          right: 20px;
-          width: 320px;
-          max-height: 480px;
-          background: #fff;
-          border-radius: 12px;
-          box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-          padding: 16px;
-          font-size: 14px;
-          display: none;
-          flex-direction: column;
-          gap: 10px;
-          z-index: 1000;
-          overflow-y: auto;
-        }
-        .bug-panel h4 {
-          margin: 0 0 8px;
-          font-size: 16px;
-          color: #e53935;
-        }
-
-        .bug-item {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          grid-template-areas:
-            "text actions"
-            "status actions";
-          gap: 6px 10px;
-          padding: 10px;
-          border-radius: 8px;
-          border-left: 3px solid #FFA001;
-          background: #e0e0e0;
-          transition: background 0.2s, opacity 0.2s;
-        }
-        .bug-text { grid-area: text; }
-        .bug-actions { grid-area: actions; display: flex; gap: 6px; align-items: start; }
-        .bug-status { grid-area: status; font-size: 12px; opacity: .8; }
-
-        .icon-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          border: 1px solid rgba(0,0,0,0.08);
-          background: #fff;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          box-shadow: 0 2px 8px rgba(0,0,0,.08);
-          transition: transform .15s, background .15s, box-shadow .15s, border-color .15s;
-          font-size: 18px;
-        }
-        .icon-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
-        .icon-btn:focus { outline: none; border-color: #FFA001; }
-
-        /* Состояния бага */
-        .bug-item.status-open  { background: #fff2eb; } /* тёплый оттенок */
-        .bug-item.status-fixed { background: #eefaf5; opacity: 0.92; } /* зелёный намёк */
-
-        /* Подсветка активной кнопки */
-        .icon-btn[aria-pressed="true"] { background: #ffe7c2; }
-        .btn-fixed[aria-pressed="true"] { background: #c9f2e4; }
-
-        /* Тёмная тема */
-        html[data-theme="dark"] .bug-panel { background: #1A1A1A; color: #F1F1F1; }
-        html[data-theme="dark"] .bug-item { background: #242424; border-left-color: #FFA001; }
-        html[data-theme="dark"] .bug-item.status-open  { background: #2a2320; }
-        html[data-theme="dark"] .bug-item.status-fixed { background: #1f2a26; }
-        html[data-theme="dark"] .icon-btn { background: #16181d; color: #F1F1F1; border-color: rgba(255,255,255,0.08); }
-        html[data-theme="dark"] .icon-btn[aria-pressed="true"] { background: #3a2d22; }
-        html[data-theme="dark"] .btn-fixed[aria-pressed="true"] { background: #25433a; }
-    </style>
 </head>
 <body>
 <nav>
@@ -375,6 +278,7 @@
             <button id="tab-programming" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-books">Программирование</button>
             <button id="tab-testing" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Тестирование</button>
             <button id="tab-team" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Команда</button>
+            <button id="tab-new" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Новое</button>
             <button id="tab-favorites" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Избранное️</button>
         </div>
         <div class="hint" id="books-hint"></div>
@@ -500,14 +404,34 @@
       const API_URL       = './over/answer.json';          // Программирование
       const API_URL_TEST  = './over/answer_testing.json';  // Тестирование
       const API_URL_TEAM  = './over/answer_team.json';     // Команда
+      // Новое — внешний API по вашему cURL
+      const API_URL_NEW   = 'https://api.litres.ru/foundation/api/arts/facets?languages=ru&limit=30&o=new';
 
       /*** Конфигурация вкладок ***/
-      const TAB_IDS = { PROGRAMMING: 'programming', TESTING: 'testing', TEAM: 'team', FAVORITES: 'favorites' };
+      const TAB_IDS = {
+        PROGRAMMING: 'programming',
+        TESTING: 'testing',
+        TEAM: 'team',
+        NEW: 'new',            // <— добавлено
+        FAVORITES: 'favorites'
+      };
+
       const TABS = {
         [TAB_IDS.PROGRAMMING]: { title: 'Книги по программированию', api: API_URL,      lsSuffix: 'prog' },
         [TAB_IDS.TESTING]:     { title: 'Книги по тестированию',     api: API_URL_TEST, lsSuffix: 'qa'   },
         [TAB_IDS.TEAM]:        { title: 'Книги по лидерству',        api: API_URL_TEAM, lsSuffix: 'team' },
-        [TAB_IDS.FAVORITES]:   { title: 'Книги, которые вы отметили',                  api: null,         lsSuffix: 'fav', isFavorites: true },
+        // Новая вкладка «Новое»: используем внешний URL и требуемые заголовки (не влияем на остальные вкладки)
+        [TAB_IDS.NEW]:         {
+                                  title: 'Книжные новинки',
+                                  api: API_URL_NEW,
+                                  lsSuffix: 'new',
+                                  requestHeaders: {
+                                    'accept': 'application/json, text/plain, */*',
+                                    'accept-version': '2',
+                                    'app-id': '115'
+                                  }
+                                },
+        [TAB_IDS.FAVORITES]:   { title: 'Избранные книги',                  api: null,         lsSuffix: 'fav', isFavorites: true },
       };
 
       /*** DOM элементы ***/
@@ -518,6 +442,7 @@
       const tabProg  = document.getElementById('tab-programming');
       const tabTest  = document.getElementById('tab-testing');
       const tabTeam  = document.getElementById('tab-team');
+      const tabNew   = document.getElementById('tab-new');        // <— добавлено
       const tabFav   = document.getElementById('tab-favorites');
 
       /*** Сохранение выбранной вкладки ***/
@@ -735,9 +660,13 @@
         errorEl.style.display = 'none';
 
         try {
+          // Базовые заголовки остаются прежними, для вкладки «Новое» добавим требуемые
+          const baseHeaders = { 'Accept': 'application/json' };
+          const headers = Object.assign({}, baseHeaders, cfg.requestHeaders || {});
+
           const resp = await fetch(url, {
             method: 'GET',
-            headers: { 'Accept': 'application/json' },
+            headers,
             credentials: 'same-origin',
             cache: 'no-store'
           });
@@ -745,7 +674,11 @@
           if (!resp.ok) throw new Error('HTTP ' + resp.status);
 
           const json = await resp.json();
-          const items = json?.payload?.data ?? [];
+          // Оставляем старую логику, но добавим мягкий фолбэк на другие возможные поля
+          let items = json?.payload?.data;
+          if (!Array.isArray(items)) {
+            items = json?.payload?.items || json?.data || json?.items || json?.result?.items || [];
+          }
 
           clearGrid();
           if (!Array.isArray(items) || items.length === 0) {
@@ -773,6 +706,7 @@
         tabProg.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.PROGRAMMING ? 'true' : 'false');
         tabTest.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TESTING ? 'true' : 'false');
         tabTeam.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TEAM ? 'true' : 'false');
+        tabNew.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.NEW ? 'true' : 'false');   // <— добавлено
         tabFav.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.FAVORITES ? 'true' : 'false');
         location.hash = CURRENT_TAB;
         localStorage.setItem(TAB_LS_KEY, CURRENT_TAB);
@@ -789,6 +723,7 @@
       tabProg.addEventListener('click', () => switchTab(TAB_IDS.PROGRAMMING));
       tabTest.addEventListener('click', () => switchTab(TAB_IDS.TESTING));
       tabTeam.addEventListener('click', () => switchTab(TAB_IDS.TEAM));
+      tabNew.addEventListener('click',  () => switchTab(TAB_IDS.NEW));        // <— добавлено
       tabFav.addEventListener('click',  () => switchTab(TAB_IDS.FAVORITES));
 
       /*** Инициализация ***/

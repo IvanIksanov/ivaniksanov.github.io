@@ -199,6 +199,25 @@
     .books-section { padding: 0 8px; }
     .books-grid { gap: 8px; }
 
+    /* вкладки занимают всю ширину и сами переноятся строками */
+    .books-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        justify-content: flex-start;
+    }
+    .tabs {
+        width: 100%;
+        /* важные параметры для переноса целых вкладок */
+        display: flex;
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+    .tab-btn {
+        white-space: nowrap;   /* не ломать текст внутри кнопки */
+        flex: 0 0 auto;        /* кнопка не сжимается и переносится целиком */
+    }
+
     .book-card {
         border-radius: 10px;
         box-shadow: 0 4px 14px rgba(0,0,0,0.06);
@@ -221,32 +240,139 @@
     .rating-value { min-width: 28px; font-size: 0.78rem; }
     .books-toolbar .hint { font-size: 0.8rem; }
 }
-        /* Небольшие стили для вкладок (на случай если нет в вашем CSS) */
-        .tabs {
-          display: inline-flex;
-          gap: .5rem;
-          background: var(--ifm-background-surface-color, transparent);
-          border-radius: 12px;
-          padding: .25rem;
-        }
-        .tab-btn {
-          border: none;
-          padding: .5rem .9rem;
-          border-radius: 10px;
-          cursor: pointer;
-          background: transparent;
-          font: inherit;
-          line-height: 1.2;
-        }
-        .tab-btn[aria-selected="true"] {
-          background: #FFA001;
-          color: #1a1a1a;
-          font-weight: 600;
-        }
-        .books-toolbar {
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:1rem;
-          flex-wrap:wrap;
-        }
+
+/* === Стили вкладок === */
+.tabs {
+  /* раньше было inline-flex без переноса, из-за чего кнопки не помещались */
+  display: flex;
+  flex-wrap: wrap;           /* ключ к переносу по строкам */
+  gap: .5rem;
+  background: var(--ifm-background-surface-color, transparent);
+  border-radius: 12px;
+  padding: .25rem;
+  /* чтобы контейнер мог сжиматься внутри тулбара и правильно переносить элементы */
+  min-width: 0;
+}
+.tab-btn {
+  border: none;
+  padding: .5rem .9rem;
+  border-radius: 10px;
+  cursor: pointer;
+  background: transparent;
+  font: inherit;
+  line-height: 1.2;
+  /* не делим кнопку на части и не переносим слова внутри */
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.tab-btn[aria-selected="true"] {
+  background: #FFA001;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+/* (дубликат базового — оставлен для совместимости, но без изменений проблемной логики) */
+.books-toolbar {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  flex-wrap:wrap;
+}
+
+/* === Плавающая кнопка багов === */
+.bug-fab {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  background: #FFA001;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  font-size: 26px;
+  z-index: 999;
+  transition: transform 0.2s;
+}
+.bug-fab:hover { transform: scale(1.1); }
+
+/* === Панель багов === */
+.bug-panel {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 320px;
+  max-height: 480px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  padding: 16px;
+  font-size: 14px;
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+  overflow-y: auto;
+}
+.bug-panel h4 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #e53935;
+}
+
+.bug-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "text actions"
+    "status actions";
+  gap: 6px 10px;
+  padding: 10px;
+  border-radius: 8px;
+  border-left: 3px solid #FFA001;
+  background: #e0e0e0;
+  transition: background 0.2s, opacity 0.2s;
+}
+.bug-text { grid-area: text; }
+.bug-actions { grid-area: actions; display: flex; gap: 6px; align-items: start; }
+.bug-status { grid-area: status; font-size: 12px; opacity: .8; }
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  transition: transform .15s, background .15s, box-shadow .15s, border-color .15s;
+  font-size: 18px;
+}
+.icon-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+.icon-btn:focus { outline: none; border-color: #FFA001; }
+
+/* Состояния бага */
+.bug-item.status-open  { background: #fff2eb; } /* тёплый оттенок */
+.bug-item.status-fixed { background: #eefaf5; opacity: 0.92; } /* зелёный намёк */
+
+/* Подсветка активной кнопки */
+.icon-btn[aria-pressed="true"] { background: #ffe7c2; }
+.btn-fixed[aria-pressed="true"] { background: #c9f2e4; }
+
+/* Тёмная тема */
+html[data-theme="dark"] .bug-panel { background: #1A1A1A; color: #F1F1F1; }
+html[data-theme="dark"] .bug-item { background: #242424; border-left-color: #FFA001; }
+html[data-theme="dark"] .bug-item.status-open  { background: #2a2320; }
+html[data-theme="dark"] .bug-item.status-fixed { background: #1f2a26; }
+html[data-theme="dark"] .icon-btn { background: #16181d; color: #F1F1F1; border-color: rgba(255,255,255,0.08); }
+html[data-theme="dark"] .icon-btn[aria-pressed="true"] { background: #3a2d22; }
+html[data-theme="dark"] .btn-fixed[aria-pressed="true"] { background: #25433a; }
