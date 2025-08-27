@@ -181,6 +181,17 @@ body {
   background-color: rgba(255, 255, 255, 1);
 }
 
+        /* Аккуратно настраиваем только <img>, которые подставляются вместо svg */
+        #tg-links .tg-card img.tg-logo.cat-img,
+        #tg-links .tg-card img.tg-logo.tg-cat {
+          border-radius: 12px;
+          display: block;
+          width: 154px !important;     /* перебиваем инлайн-стили из JS */
+          height: 154px !important;    /* фиксированный квадрат, как было */
+          object-fit: cover;
+          margin: 0 auto 8px;          /* небольшой отступ снизу и центрирование */
+        }
+
 .skills {
   margin: 10px;
   padding: 7px 10px;
