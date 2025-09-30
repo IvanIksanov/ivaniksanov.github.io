@@ -483,12 +483,12 @@ input[type="password"],
 input[type="tel"],
 textarea {
   padding: 7px;
-  margin-bottom: 15px;
+  margin-top: 15px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
   background-color: var(--input-background);
   color: var(--input-text-color);
-  font-size: 10px;
+  font-size: 8px;
   width: 100%;
   box-sizing: border-box;
 }
