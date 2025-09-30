@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="pageBooks.css">
+    <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
 
 </head>
 <body>
@@ -738,6 +739,47 @@
       } else {
         init();
       }
+    })();
+</script>
+<script>
+    (function() {
+      // Список ваших логотипов
+      const imgs = [
+        'img/QAtoDev_(Flappy_Bird_style).png',
+        'img/QAtoDev_Classic.png',
+        'img/QAtoDev_new_year.png',
+        'img/QAtoDev_DayQA.png',
+        'img/QAtoDev_Halloween.png',
+        'img/QAtoDev_BlackAndWhite.png',
+        'img/QAtoDev_CoverChatChannel.png'
+        // …и т.д.
+      ];
+
+      // Восстанавливаем последний индекс (или 0, если нет)
+      let idx = parseInt(localStorage.getItem('logoIdx'), 10);
+      if (isNaN(idx) || idx < 0 || idx >= imgs.length) {
+        idx = 0;
+      }
+
+      const logoImg    = document.querySelector('.logo img');
+      const faviconTag = document.querySelector('link[rel="icon"]');
+
+      // Функция установки текущего логотипа и favicon
+      function updateLogo() {
+        const src = imgs[idx];
+        if (logoImg)    logoImg.src    = src;
+        if (faviconTag) faviconTag.href = src;
+      }
+
+      // Обновляем сразу при загрузке
+      updateLogo();
+
+      // Каждые 60 секунд переключаем и сохраняем индекс
+      setInterval(() => {
+        idx = (idx + 1) % imgs.length;
+        localStorage.setItem('logoIdx', idx);
+        updateLogo();
+      }, 50000);
     })();
 </script>
 </body>
