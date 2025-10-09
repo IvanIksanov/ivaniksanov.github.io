@@ -548,7 +548,7 @@ const systemPrompt =
             {
               id: 'accordion_api_q22',
               title: 'Какие знаете средства тестирования API?',
-              answer: 'Postman. Katalon Studio. SoapUI. Tricentis Tosca. Apigee. Jmeter.'
+              answer: 'Postman. Insomnia. SoapUI. Tricentis Tosca. Apigee. Jmeter.'
             }
           ]
         },
@@ -1170,6 +1170,8 @@ const systemPrompt =
         ]
         }
       ];
+      window.questionsData = data; // делаем массив доступным глобально
+
 
   // --- UI elements: поиск, AI, переключатель модели ---
   const searchInput   = document.getElementById("search-input");

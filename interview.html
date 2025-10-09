@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Конструктор собеседования — QAtoDev</title>
+    <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
+    <link rel="stylesheet" href="header.css">
+    <link rel="stylesheet" href="interview.css">
+</head>
+<body>
+<nav>
+    <div class="burger-menu"></div>
+    <ul>
+        <li><a href="hwois.html">Кто такой тестировщик?</a></li>
+        <li><a href="roadmap.html">Roadmap</a></li>
+        <li><a href="questions.html">Вопросы</a></li>
+        <li><a href="pageBooks.html">Книги</a></li>
+        <li><a  href="loginSandbox.html">Логин</a></li>
+        <li><a href="index.html" style="background-color: #FFA001;">Интервью</a></li>
+        <li><a href="swagger_api.html">Практика API (Swagger)</a></li>
+    </ul>
+</nav>
+
+<!-- Небольшой хеддер в духе страницы «Вопросы» -->
+<header class="welcome">
+    <div class="header-container">
+        <div class="logo" style="cursor:pointer" onclick="location.href='index.html'">
+            <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="QAtoDev" />
+        </div>
+        <h5 class="site-title">На главную</h5>
+    </div>
+    <!-- выносим кнопку -->
+    <div class="theme-switcher">
+        <button
+                id="theme-toggle"
+                class="clean-btn toggleButton_gllP"
+                type="button"
+                title="Переключить тему"
+                aria-label="Переключить тему"
+                aria-live="polite"
+        >
+            <!-- Солнце для светлой темы -->
+            <svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR">
+                <path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path>
+            </svg>
+            <!-- Полумесяц для тёмной темы -->
+            <svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR">
+                <path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path>
+            </svg>
+        </button>
+    </div>
+</header>
+<br><br>
+<main class="main-content">
+    <div id="category-filters" class="category-filters" aria-label="Фильтры категорий"></div>
+    <figure class="photo-3x2" id="question-photo">
+        <img src="img/call-cats2.jpeg" alt="Подключение к звонку">
+    </figure>
+    <section id="stage" class="stage" aria-live="polite" aria-atomic="true">
+        <div class="stage-header">
+            <span id="badge-category" class="badge">—</span>
+            <span id="counter" class="counter">0 / 0</span>
+        </div>
+        <article class="card" role="group" aria-labelledby="question-title">
+            <h2 id="question-title" class="question-title">Загружаю вопросы…</h2>
+            <button id="toggle-answer" class="btn btn-outline" type="button" aria-expanded="false" aria-controls="answer" title="Посмотреть ответ (Пробел)">Посмотреть ответ</button>
+            <div id="answer" class="answer" hidden></div>
+        </article>
+        <div class="nav">
+            <button id="skip-btn" class="btn btn-secondary" type="button" title="Пропустить вопрос (→)">Пропустить вопрос</button>
+            <button id="accept-btn" class="btn" type="button" title="Засчитать ответ (Enter)">Засчитать ответ</button>
+        </div>
+    </section>
+    <br><br><br>
+</main>
+
+
+
+<!-- Очень важно: сначала подключаем файл с данными -->
+<script src="questions.js"></script>
+<script>
+    (function(){
+      const root=document.documentElement;const btn=document.getElementById('theme-toggle');const saved=localStorage.getItem('theme');if(saved==='dark'||saved==='light'){root.setAttribute('data-theme',saved);btn.classList.toggle('active',saved==='dark')}btn.addEventListener('click',()=>{const next=root.getAttribute('data-theme')==='dark'?'light':'dark';root.setAttribute('data-theme',next);localStorage.setItem('theme',next);btn.classList.toggle('active',next==='dark')})
+    })();
+    function getRawDataFromQuestionsJS(){try{if(typeof questionsData!=='undefined')return questionsData}catch(e){}try{if(typeof data!=='undefined')return data}catch(e){}try{if(typeof questions!=='undefined')return questions}catch(e){}return[]}
+    function shuffleInPlace(arr){for(let i=arr.length-1;i>0;i--){let j;if(window.crypto&&crypto.getRandomValues){const b=new Uint32Array(1);crypto.getRandomValues(b);j=b[0]%(i+1)}else{j=Math.floor(Math.random()*(i+1))}[arr[i],arr[j]]=[arr[j],arr[i]]}return arr}
+    function randInt(min,max){if(window.crypto&&crypto.getRandomValues){const b=new Uint32Array(1);crypto.getRandomValues(b);return min+(b[0]%(max-min+1))}return Math.floor(Math.random()*(max-min+1))+min}
+    function flatten(raw){const flat=[];(raw||[]).forEach(cat=>{(cat.items||[]).forEach(item=>{flat.push({id:item.id||'',title:item.title||'Без названия',answer:item.answer||'',category:cat.category||'Без категории'})})});return flat}
+    function collectCategories(raw){const s=new Set();(raw||[]).forEach(cat=>s.add(cat.category||'Без категории'));return Array.from(s)}
+    function normalizeChipTitle(category){switch((category||'').trim()){case 'ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ':return 'Теория';case 'БАЗЫ ДАННЫХ':return 'Базы данных';case 'GIT + IDE + SELENIUM':return 'Git + IDE';case 'Вопросы к руководителю | команде | HR':return 'HR';default:return category}}
+    function isExcludedCategory(category){const t=(category||'').trim();if(t==='Вопросы к руководителю | команде | HR')return true;if(normalizeChipTitle(t)==='HR')return true;return false}
+    let RAW=[];let ALL_CATEGORIES=[];let selectedCategories=new Set();let pool=[];let index=0;let acceptedCount=0;let skippedCount=0;
+
+    /* === Новая логика состояния старта собеседования === */
+    let interviewStarted=true; // при первой загрузке — как раньше (автостарт). После смены фильтров — false до старта.
+
+    const filtersWrap=document.getElementById('category-filters');const badge=document.getElementById('badge-category');const counterEl=document.getElementById('counter');const titleEl=document.getElementById('question-title');const answerEl=document.getElementById('answer');const toggleBtn=document.getElementById('toggle-answer');const skipBtn=document.getElementById('skip-btn');const acceptBtn=document.getElementById('accept-btn');
+    function renderFilterChips(){filtersWrap.innerHTML='';ALL_CATEGORIES.forEach(cat=>{const chip=document.createElement('button');chip.className='filter-chip';chip.dataset.category=cat;chip.textContent=normalizeChipTitle(cat);if(selectedCategories.has(cat))chip.classList.add('active');filtersWrap.appendChild(chip)});filtersWrap.querySelectorAll('.filter-chip').forEach(chip=>{chip.addEventListener('click',()=>onChipClick(chip))})}
+    function onChipClick(chip){const key=chip.dataset.category;if(selectedCategories.has(key)){if(selectedCategories.size>1){selectedCategories.delete(key)}}else{selectedCategories.add(key)}localStorage.setItem('interview_selected_categories',JSON.stringify(Array.from(selectedCategories)));renderFilterChips();resetProgress();rebuildPoolAndStart(true) /* после смены фильтров — режим ожидания старта */}
+    function rebuildPoolAndStart(deferStart=false){const flat=flatten(RAW).filter(q=>selectedCategories.has(q.category)&&!isExcludedCategory(q.category));pool=buildSample(flat,Array.from(selectedCategories));shuffleInPlace(pool);index=0;interviewStarted=!deferStart;renderCard()}
+    function buildSample(list,selected){const byCat=new Map();selected.forEach(c=>{if(isExcludedCategory(c))return;byCat.set(c,[])});
+    list.forEach(q=>{if(byCat.has(q.category))byCat.get(q.category).push(q)});
+    byCat.forEach((arr,cat)=>shuffleInPlace(arr));
+    let target=randInt(20,25);const cats=Array.from(byCat.keys());if(cats.length===0){return[]}if(list.length<=target){return shuffleInPlace(list.slice())}
+    const result=[];const quotas=new Map();const base=Math.floor(target/cats.length);let rem=target%cats.length;cats.forEach(c=>{let need=base+(rem>0?1:0);rem=Math.max(0,rem-1);const src=byCat.get(c)||[];const take=Math.min(need,src.length);for(let i=0;i<take;i++)result.push(src[i]);quotas.set(c,take)});
+    let total=result.length;if(total<target){const pools=cats.map(c=>byCat.get(c));let ptrs={};cats.forEach(c=>{ptrs[c]=quotas.get(c)||0});outer:while(total<target){for(let i=0;i<pools.length;i++){const c=cats[i];const src=pools[i];let p=ptrs[c];if(p<src.length){result.push(src[p]);ptrs[c]=p+1;total++;if(total>=target)break outer}}break}
+    }
+    if(result.length>target){shuffleInPlace(result);return result.slice(0,target)}return result}
+    function currentItem(){if(!pool||pool.length===0)return null;if(index<0)index=0;if(index>=pool.length)index=pool.length-1;return pool[index]}
+    function renderCard(){
+        const item=currentItem();
+        const has=!!item;
+
+        // Нет данных — старая логика
+        toggleBtn.disabled=!has;
+        acceptBtn.disabled=!has;
+        skipBtn.disabled=!has;
+
+        if(!has){
+            badge.textContent='—';
+            counterEl.textContent='0 / 0';
+            titleEl.textContent='Нет данных для выбранных категорий';
+            answerEl.hidden=true;
+            answerEl.innerHTML='';
+            toggleBtn.setAttribute('aria-expanded','false');
+            toggleBtn.textContent='Посмотреть ответ';
+            return;
+        }
+
+        // Новый режим "ожидания старта" после смены фильтров
+        if(!interviewStarted){
+            badge.textContent='—';
+            counterEl.textContent='0 / '+pool.length;
+            titleEl.textContent='Нажмите, чтобы начать устное собеседование по выбранным категориям';
+            answerEl.hidden=true;
+            answerEl.innerHTML='';
+            toggleBtn.setAttribute('aria-expanded','false');
+            toggleBtn.textContent='Посмотреть ответ';
+            toggleBtn.disabled=true;      // «Показать ответ» недоступна
+            skipBtn.disabled=true;        // «Пропустить вопрос» недоступна
+            acceptBtn.disabled=false;     // доступна
+            acceptBtn.textContent='Начать собеседование';
+            acceptBtn.title='Начать собеседование (Enter)';
+            return;
+        }
+
+        // Обычный показ вопроса — старая логика (с сохранением доступности кнопок)
+        badge.textContent=normalizeChipTitle(item.category);
+        counterEl.textContent=(index+1)+' / '+pool.length;
+        titleEl.textContent=item.title||'Без заголовка';
+        answerEl.innerHTML=item.answer||'<em>Ответ отсутствует</em>';
+        answerEl.hidden=true;
+        toggleBtn.setAttribute('aria-expanded','false');
+        toggleBtn.textContent='Посмотреть ответ';
+        toggleBtn.disabled=false;
+        skipBtn.disabled=false;
+        acceptBtn.disabled=false;
+        acceptBtn.textContent='Засчитать ответ';
+        acceptBtn.title='Засчитать ответ (Enter)';
+    }
+    function resetProgress(){acceptedCount=0;skippedCount=0}
+    function finishInterview(){const total=pool.length||1;const percent=Math.round((acceptedCount/total)*100);let text='';if(percent<=10){text='Печально. Советуем пройтись по базовой теории и попробовать ещё раз.'}else if(percent<=30){text='Неплохое начало. Усильте ключевые темы и разберите ошибки.'}else if(percent<=60){text='Середина пути. Виден прогресс, но есть пробелы — закрепите практикой.'}else if(percent<=70){text='Уверенный уровень: большинство базовых вопросов закрыты. Продолжайте тренироваться.'}else if(percent<=90){text='Сильный результат. Осталось отполировать тонкости и довести ответы до краткости.'}else if(percent<100){text='Почти идеально! Шлифуйте слабые места на задачах и кейсах.'}else{text='Идеально! Готовность к собеседованию максимальная.'}
+    badge.textContent='Итог';counterEl.textContent=acceptedCount+' из '+total+' ('+percent+'%)';titleEl.textContent='Процент прохождения: '+percent+'%';answerEl.innerHTML='<p>Засчитано: <strong>'+acceptedCount+'</strong></p><p>Пропущено: <strong>'+skippedCount+'</strong></p><p>'+text+'</p>';answerEl.hidden=false;toggleBtn.setAttribute('aria-expanded','true');toggleBtn.textContent='Скрыть ответ';document.querySelector('.nav').innerHTML='<button id="retry-btn" class="btn" type="button" title="Попробовать снова">Попробовать снова</button>';document.getElementById('retry-btn').addEventListener('click',()=>{resetProgress();rebuildPoolAndStart();const nav=document.querySelector('.nav');nav.innerHTML='';const acc=document.createElement('button');acc.id='accept-btn';acc.className='btn';acc.type='button';acc.title='Засчитать ответ (Enter)';acc.textContent='Засчитать ответ';const sk=document.createElement('button');sk.id='skip-btn';sk.className='btn btn-secondary';sk.type='button';sk.title='Пропустить вопрос (→)';sk.textContent='Пропустить вопрос';nav.appendChild(sk);nav.appendChild(acc);acc.addEventListener('click',onAccept);sk.addEventListener('click',onSkip)})}
+    function onAccept(){
+        if(!pool.length)return;
+
+        // Если собеседование ещё не начато (после смены фильтров) — запускаем
+        if(!interviewStarted){
+            interviewStarted=true;
+            renderCard();
+            return;
+        }
+
+        acceptedCount++;
+        if(index>=pool.length-1){finishInterview();return}
+        index++;
+        renderCard();
+    }
+    function onSkip(){if(!pool.length)return;skippedCount++;if(index>=pool.length-1){finishInterview();return}index++;renderCard()}
+    toggleBtn.addEventListener('click',()=>{if(toggleBtn.disabled)return;const expanded=toggleBtn.getAttribute('aria-expanded')==='true';toggleBtn.setAttribute('aria-expanded',String(!expanded));answerEl.hidden=expanded;toggleBtn.textContent=expanded?'Посмотреть ответ':'Скрыть ответ'});
+    function keyHandler(e){
+        const tag=(e.target&&e.target.tagName)?e.target.tagName.toLowerCase():'';
+        if(tag==='input'||tag==='textarea')return;
+
+        // В режиме ожидания старта: только Enter запускает собеседование
+        if(!interviewStarted){
+            if(e.key==='Enter'){
+                e.preventDefault();
+                onAccept();
+            }
+            return;
+        }
+
+        if(e.code==='Space'||e.key===' '){
+            e.preventDefault();
+            if(!toggleBtn.disabled){toggleBtn.click()}
+        }else if(e.key==='Enter'){
+            e.preventDefault();
+            onAccept()
+        }else if(e.key==='ArrowRight'){
+            e.preventDefault();
+            onSkip()
+        }
+    }
+    document.addEventListener('keydown',keyHandler);
+    (function(){const imgs=['img/QAtoDev_(Flappy_Bird_style).png','img/QAtoDev_Classic.png','img/QAtoDev_new_year.png','img/QAtoDev_DayQA.png','img/QAtoDev_Halloween.png','img/QAtoDev_BlackAndWhite.png','img/QAtoDev_CoverChatChannel.png'];let idx=parseInt(localStorage.getItem('logoIdx'),10);if(isNaN(idx)||idx<0||idx>=imgs.length)idx=0;const logoImg=document.querySelector('.logo img');const faviconTag=document.querySelector('link[rel="icon"]');function updateLogo(){const src=imgs[idx];if(logoImg)logoImg.src=src;if(faviconTag)faviconTag.href=src}updateLogo();setInterval(()=>{idx=(idx+1)%imgs.length;localStorage.setItem('logoIdx',idx);updateLogo()},50000)})();
+    window.addEventListener('DOMContentLoaded',()=>{RAW=getRawDataFromQuestionsJS();ALL_CATEGORIES=collectCategories(RAW).filter(c=>!isExcludedCategory(c));const saved=JSON.parse(localStorage.getItem('interview_selected_categories')||'null');if(saved&&Array.isArray(saved)&&saved.length){selectedCategories=new Set(saved.filter(c=>ALL_CATEGORIES.includes(c)))}else{selectedCategories=new Set(ALL_CATEGORIES)}localStorage.setItem('interview_selected_categories',JSON.stringify(Array.from(selectedCategories)));renderFilterChips();resetProgress();rebuildPoolAndStart();acceptBtn.addEventListener('click',onAccept);skipBtn.addEventListener('click',onSkip)});
+</script>
+<script>
+    (function() {
+      const root = document.documentElement;
+      const btn  = document.getElementById('theme-toggle');
+
+      // Восстановление при загрузке
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') {
+        root.setAttribute('data-theme', saved);
+        btn.classList.toggle('active', saved === 'dark');
+      }
+
+      // Обработчик клика
+      btn.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        btn.classList.toggle('active', next === 'dark');
+      });
+    })();
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Ищем именно ваш тег <img src="img/call-cats2.jpeg" ...>
+      const img = document.querySelector('img[src$="call-cats2.jpeg"]');
+      if (!img) return;
+
+      // Список картинок (примерные пути — замените на свои)
+      const sources = [
+        'img/call-cat.jpeg',
+        'img/call-Bulanova.jpeg',
+        'img/call-anonym.jpeg'
+      ];
+
+      // (необязательно) добавим текущую картинку первой в цикл
+      sources.unshift(img.getAttribute('src'));
+
+      // небольшая подсказка и курсор
+      img.title = 'Нажмите, чтобы сменить картинку';
+      img.style.cursor = 'pointer';
+
+      // предзагрузка
+      sources.forEach(src => { const im = new Image(); im.src = src; });
+
+      let i = 0;
+      img.addEventListener('click', () => {
+        i = (i + 1) % sources.length;
+        img.src = sources[i];
+      });
+    });
+</script>
+
+</body>
+</html>

@@ -22,14 +22,6 @@ header {
   padding: 0;
 }
 
-header.welcome {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background-color: #FAFAFA; /* присутствует только в styles.css, отсутствует в questions.css, roadmap.css, swagger_api.css */
-}
 
 .header-container {
   position: absolute;
@@ -156,6 +148,11 @@ b {
 b:hover {
   background-color: rgba(255, 255, 255, 1);
   color: #1A1A1A;
+}
+
+html[data-theme="dark"] a {
+    background-color: #1A1A1A;
+    color: #FFFFFF;
 }
 
 @media (max-width: 600px) {
