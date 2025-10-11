@@ -3,13 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Практика API (Swagger)</title>
+    <title>API Magic</title>
 
     <!-- Если нужно, подключаем общий styles.css: -->
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="swagger_api.css">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
+
+    <!-- Ace Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ace.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/ext-language_tools.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/mode-json.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-chrome.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.23.4/theme-dracula.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
@@ -39,7 +46,7 @@
         <li><a href="pageBooks.html">Книги</a></li>
         <li><a  href="loginSandbox.html">Логин</a></li>
         <li><a href="interview.html">Интервью</a></li>
-        <li><a href="index.html" style="background-color: #FFA001;">Практика API (Swagger)</a></li>
+        <li><a href="index.html" style="background-color: #FFA001;">API Magic</a></li>
     </ul>
 </nav>
 
@@ -77,107 +84,252 @@
 
 <!-- Основной контент страницы -->
 <section id="swaggerApiCarousel" class="article">
-    <h2>Практика API (Swagger)</h2>
+    <h2>API Magic</h2>
 
     <!-- Обёртка для карусели -->
     <div class="api-carousel">
 
-        <!-- 1. Создать пользователя (POST /user) -->
+        <!-- 1. Создание персонажа (POST /user) -->
         <div class="api-slide active">
-            <h3>1. Создать пользователя</h3>
+            <h3>1. Создай волшебного героя</h3>
             <p>URL: <code>POST {{hostname}}/user</code></p>
-            <label>ID пользователя: <input id="user_id" type="number" value="777"></label><br>
-            <label>Username: <input id="user_username" type="text" value="Barin555"></label><br>
-            <label>Имя: <input id="user_firstName" type="text" value="Ivan"></label><br>
-            <label>Фамилия: <input id="user_lastName" type="text" value="Ivanov"></label><br>
-            <label>Email: <input id="user_email" type="email" value="barin@gmail.com"></label><br>
-            <label>Пароль: <input id="user_password" type="text" value="12345"></label><br>
-            <label>Телефон: <input id="user_phone" type="text" value="89000995903"></label><br>
-            <label>UserStatus: <input id="user_status" type="number" value="5"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Выбери тип в поле <code>character</code> — тебе доступны
+                <code>WizardMaleBlue</code> и <code>WizardFemaleFire</code>. Придумай имя героя в поле <code>firstName</code>.
+                Обязательные поля тела запроса: <code>id</code>, <code>username</code>, <code>firstName</code>, <code>lastName</code>,
+                <code>email</code>, <code>password</code>, <code>phone</code>, <code>userStatus</code>, <code>character</code>.
+                При верном типе персонажа и успешном ответе от бэка появится выбранный тобой волшебный герой.
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_create_user">Сбросить шаблон</button>
+                        <button data-action="broken" data-target="editor_create_user">Задание: исправь ошибки</button>
+                        <button data-action="format" data-target="editor_create_user">Форматировать</button>
+                    </div>
+                    <div id="editor_create_user" class="json-editor"></div>
+                </div>
+
+                <div id="user_create_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="createUser()">Отправить</button>
             <pre id="user_create_response"></pre>
         </div>
 
-        <!-- 2. Получить пользователя по имени (GET /user/{username}) -->
+        <!-- 2. Отправка персонажа в сказочный мир (GET /user/{username}) -->
         <div class="api-slide">
-            <h3>2. Получить пользователя</h3>
+            <h3>2. Отправка персонажа в сказочный мир</h3>
             <p>URL: <code>GET {{hostname}}/user/{{username}}</code></p>
-            <label>Введите username: <input id="get_user_username" type="text" value="Barin555"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Укажи <code>username</code> в JSON-теле. Если сведения о персонаже на сервере совпадут с теми, что ты отправлял при создании (id/username/firstName/lastName/email/phone/userStatus), увидишь героя в волшебном месте. Если нет — покажем лягушку.
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_get_user">Сбросить шаблон</button>
+                        <button data-action="format" data-target="editor_get_user">Форматировать</button>
+                    </div>
+                    <div id="editor_get_user" class="json-editor"></div>
+                </div>
+
+                <div id="get_user_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="getUserByName()">Отправить</button>
             <pre id="get_user_response"></pre>
         </div>
 
-        <!-- 3. Вход пользователя (GET /user/login?username=...&password=...) -->
+        <!-- 3. Врата Святилища Тотемов (GET /user/login) -->
         <div class="api-slide">
-            <h3>3. Вход пользователя</h3>
+            <h3>3. Открой Врата Святилища Тотемов</h3>
             <p>URL: <code>GET {{hostname}}/user/login</code></p>
-            <label>Username: <input id="login_username" type="text" value="Barin555"></label><br>
-            <label>Password: <input id="login_password" type="text" value="55555"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Укажи <code>username</code> и <code>password</code> в JSON-теле. Успешный ответ откроет вход в святилище выбора тотема.
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_login">Сбросить шаблон</button>
+                        <button data-action="broken" data-target="editor_login">Задание: исправь ошибки</button>
+                        <button data-action="format" data-target="editor_login">Форматировать</button>
+                    </div>
+                    <div id="editor_login" class="json-editor"></div>
+                </div>
+
+                <div id="login_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="loginUser()">Отправить</button>
             <pre id="login_response"></pre>
         </div>
 
-        <!-- 4. Новый питомец (POST /pet) -->
+        <!-- 4. Создание своего тотема (POST /pet) -->
         <div class="api-slide">
-            <h3>4. Новый питомец</h3>
+            <h3>4. Создай своего тотема</h3>
             <p>URL: <code>POST {{hostname}}/pet</code></p>
-            <label>ID питомца: <input id="pet_id" type="number" value="15"></label><br>
-            <label>Tag_name: <input id="pet_tag_name" type="text" value="Сибирская"></label><br>
-            <label>Имя питомца: <input id="pet_name" type="text" value="Рыжик"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Заполни JSON питомца и выбери тотем в <code>tags[0].name</code>:
+                <code>catFire</code>, <code>catGreen</code>, <code>catPurple</code> или <code>catSnow</code>.<br>
+                <em>Суперсилы:</em>
+                <ul>
+                    <li><code>catFire</code> — Пылающий рывок: прожигает преграды, устойчив к огню.</li>
+                    <li><code>catGreen</code> — Лесной лекарь: лечит союзников, маскируется в листве.</li>
+                    <li><code>catPurple</code> — Теневой скачок: короткий телепорт, устойчив к контролю.</li>
+                    <li><code>catSnow</code> — Морозный щит: замедляет врагов, оставляет скользкие лужи.</li>
+                </ul>
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_create_pet">Сбросить шаблон</button>
+                        <button data-action="broken" data-target="editor_create_pet">Задание: исправь ошибки</button>
+                        <button data-action="format" data-target="editor_create_pet">Форматировать</button>
+                    </div>
+                    <div id="editor_create_pet" class="json-editor"></div>
+                </div>
+
+                <div id="pet_create_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="createPet()">Отправить</button>
             <pre id="pet_create_response"></pre>
         </div>
 
-        <!-- 5. Получить питомца по ID (GET /pet/{ID_pet}) -->
+        <!-- 5. Проверка создания тотема (GET /pet/{ID_pet}) -->
         <div class="api-slide">
-            <h3>5. Получить питомца по ID</h3>
+            <h3>5. Проверка создания тотема</h3>
             <p>URL: <code>GET {{hostname}}/pet/{{ID_pet}}</code></p>
-            <label>ID питомца: <input id="get_pet_id" type="number" value="15"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Укажи <code>petId</code> в <code>path</code>:
+                <code>{"path": {"petId": 15}}</code>. При успешном ответе появится изображение выбранного тотема.
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_get_pet">Сбросить шаблон</button>
+                        <button data-action="format" data-target="editor_get_pet">Форматировать</button>
+                    </div>
+                    <div id="editor_get_pet" class="json-editor"></div>
+                </div>
+
+                <div id="get_pet_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="getPetById()">Отправить</button>
             <pre id="get_pet_response"></pre>
         </div>
 
-        <!-- 6. Оформить заказ (POST /store/order) -->
+        <!-- 6. Вызов тотема (POST /store/order) -->
         <div class="api-slide">
-            <h3>6. Оформить заказ</h3>
+            <h3>6. Вызов тотема</h3>
             <p>URL: <code>POST {{hostname}}/store/order</code></p>
-            <label>ID заказа: <input id="order_id" type="number" value="1"></label><br>
-            <label>ID питомца: <input id="order_pet_id" type="number" value="15"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Заполни JSON заказа: <code>id</code>, <code>petId</code>,
+                <code>quantity</code>, <code>shipDate</code>, <code>status</code>, <code>complete</code>.
+                Успешный ответ — и ты увидишь тотема «в пути».
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_create_order">Сбросить шаблон</button>
+                        <button data-action="format" data-target="editor_create_order">Форматировать</button>
+                    </div>
+                    <div id="editor_create_order" class="json-editor"></div>
+                </div>
+
+                <div id="create_order_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="createOrder()">Отправить</button>
             <pre id="create_order_response"></pre>
         </div>
 
-        <!-- 7. Найти заказ по ID (GET /store/order/{ID_order}) -->
+        <!-- 7. Проверка воссоединения тотема и персонажа (GET /store/order/{ID_order}) -->
         <div class="api-slide">
-            <h3>7. Найти заказ</h3>
+            <h3>7. Проверка воссоединения тотема и персонажа</h3>
             <p>URL: <code>GET {{hostname}}/store/order/{{ID_order}}</code></p>
-            <label>ID заказа: <input id="get_order_id" type="number" value="1"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Укажи <code>orderId</code> в <code>path</code>:
+                <code>{"path": {"orderId": 1}}</code>. Если заказ найден и совпадает с выбранным тотемом, увидишь героя и тотема вместе.
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_get_order">Сбросить шаблон</button>
+                        <button data-action="format" data-target="editor_get_order">Форматировать</button>
+                    </div>
+                    <div id="editor_get_order" class="json-editor"></div>
+                </div>
+
+                <div id="get_order_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="getOrderById()">Отправить</button>
             <pre id="get_order_response"></pre>
         </div>
 
-        <!-- 8. Удалить заказ по ID (DELETE /store/order/{ID_order}) -->
+        <!-- 8. Отмена выбора тотема (DELETE /store/order/{ID_order}) -->
         <div class="api-slide">
-            <h3>8. Удалить заказ</h3>
+            <h3>8. Отмена выбора тотема</h3>
             <p>URL: <code>DELETE {{hostname}}/store/order/{{ID_order}}</code></p>
-            <label>ID заказа: <input id="delete_order_id" type="number" value="1"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Укажи <code>orderId</code> в <code>path</code>:
+                <code>{"path": {"orderId": 1}}</code>. При успешном ответе тотем «растворится».
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_delete_order">Сбросить шаблон</button>
+                        <button data-action="format" data-target="editor_delete_order">Форматировать</button>
+                    </div>
+                    <div id="editor_delete_order" class="json-editor"></div>
+                </div>
+
+                <div id="delete_order_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="deleteOrder()">Отправить</button>
             <pre id="delete_order_response"></pre>
         </div>
 
-        <!-- 9. Удалить пользователя по имени (DELETE /user/{username}) -->
+        <!-- 9. Отмена выбора персонажа (DELETE /user/{username}) -->
         <div class="api-slide">
-            <h3>9. Удалить пользователя</h3>
+            <h3>9. Отмена выбора персонажа</h3>
             <p>URL: <code>DELETE {{hostname}}/user/{{username}}</code></p>
-            <label>Username: <input id="delete_user_username" type="text" value="Barin555"></label><br>
+
+            <div class="assignment">
+                <strong>Задание:</strong> Укажи <code>username</code> в <code>path</code>:
+                <code>{"path": {"username": "Barin555"}}</code>. Успех — и персонаж исчезнет (картинка исчезновения).
+            </div>
+
+            <div class="editor-visual-row">
+                <div class="json-editor-container">
+                    <div class="json-toolbar">
+                        <button data-action="reset" data-target="editor_delete_user">Сбросить шаблон</button>
+                        <button data-action="format" data-target="editor_delete_user">Форматировать</button>
+                    </div>
+                    <div id="editor_delete_user" class="json-editor"></div>
+                </div>
+
+                <div id="delete_user_visual" class="story-visual"></div>
+            </div>
 
             <button onclick="deleteUser()">Отправить</button>
             <pre id="delete_user_response"></pre>
@@ -190,10 +342,6 @@
         <button id="api-prev" class="carousel-button">&larr; Назад</button>
         <button id="api-next" class="carousel-button">Вперёд &rarr;</button>
     </div>
-</section>
-
-<section id="swaggerApiTask" class="article">
-    <h2>Протестируй API PetStore</h2>
 </section>
 
 <footer class="qatodev">
@@ -258,7 +406,7 @@
       // Обновляем сразу при загрузке
       updateLogo();
 
-      // Каждые 60 секунд переключаем и сохраняем индекс
+      // Каждые 50 секунд переключаем и сохраняем индекс
       setInterval(() => {
         idx = (idx + 1) % imgs.length;
         localStorage.setItem('logoIdx', idx);
