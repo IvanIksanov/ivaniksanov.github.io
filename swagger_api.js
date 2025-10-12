@@ -274,13 +274,17 @@ document.addEventListener('DOMContentLoaded', function() {
 }`,
         editor_create_order: `{
   "id": 1987,
-  "petId": 156931428,
+  "petId": 156941429,
   "quantity": 1,
   "shipDate": "2024-04-10T19:16:28.625+0000",
   "status": "placed",
   "complete": true
 }`,
-        editor_get_order: ``,
+        editor_get_order: `{
+  "path": {
+    "orderId":
+  }
+}`,
         editor_delete_order: `{
   "path": {
     "orderId": 1983
@@ -702,7 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
-                    'Тотем не подтверждён. Проверь petId или создай тотем заново.'
+                    'Тотем не подтверждён. Проверь petId или создай тотем заново. Важно. что petId = Id из прошлого запроса.'
                 );
             }
         })
@@ -752,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     caption
                 );
             } else {
-                updateVisual(visualId, IMAGES.scenes.placeholder, 'Не удалось вызвать тотема.');
+                updateVisual(visualId, IMAGES.scenes.placeholder, 'Не удалось вызвать тотема. Важно, что orderId = Id из прошлого запроса.');
             }
         })
         .catch(err => {
@@ -805,7 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
-                    'Не удалось подтвердить воссоединение. Проверь orderId/petId.'
+                    'Не удалось подтвердить воссоединение. Проверь petId из 5 и 6 запросов, они должны совпадать при отправке. В этом (7) запросе orderId = Id из 6 запроса.'
                 );
             }
         })
