@@ -30,6 +30,10 @@ html, body {
   --visual-bg-dark: #171a1e;
   --visual-border-light: #e6ebf2;
   --visual-border-dark: #2a2f37;
+
+  /* Полоса прогресса */
+  --progress-gap: 10px;
+  --progress-gap-mobile: 6px;
 }
 
 /* Автоматическая адаптация под системную тему */
@@ -336,6 +340,65 @@ pre {
 @media (max-width: 900px) {
   .json-editor {
     height: auto !important;           /* позволяем Ace менять высоту */
-    min-height: calc(1.2em * 13);       /* визуальный запас ≈ 5 строк, если пусто */
+    min-height: calc(1.2em * 13);      /* визуальный запас (компактная высота) */
+  }
+}
+
+/* ============================================================
+   НОВОЕ: Глобальный визуал + полоса карточек прогресса
+   ============================================================ */
+
+.progress-strip {
+  max-width: 800px;            /* соответствует ширине article */
+  margin: 0 auto 14px auto;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr); /* 9 колонок всегда в одну линию */
+  gap: var(--progress-gap);
+  box-sizing: border-box;
+}
+
+.progress-card {
+  position: relative;
+  display: block;
+  background: var(--visual-bg-light);     /* не белый — под прозрачными PNG/WEBP не режет глаз */
+  border: 1px solid var(--visual-border-light);
+  border-radius: 8px;
+  box-shadow: none;                        /* без тени, чтобы ничего не обрезалось визуально */
+  overflow: hidden;
+  aspect-ratio: 1 / 1;                     /* всегда квадрат */
+  cursor: pointer;
+  outline: none;
+}
+[data-theme="dark"] .progress-card {
+  background: var(--visual-bg-dark);
+  border-color: var(--visual-border-dark);
+}
+
+.progress-card img {
+  width: 100%;
+  object-fit: cover;
+  background: transparent;                 /* без белой подложки */
+  display: block;
+}
+
+.progress-card__badge {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4f3d70;
+  color: #fff;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+}
+
+/* Скрыть полосу прогресса на устройствах ≤ 900px */
+@media (max-width: 900px) {
+  .progress-strip {
+    display: none;
   }
 }

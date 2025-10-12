@@ -1,7 +1,7 @@
 /****************************************************
  *  БЛОК 1. Карусель, Ace-редакторы, визуал, fetch(...)
  *  Старая логика сетевых вызовов сохранена, добавлена
- *  «сказочная» логика поверх ответов.
+ *  «сказочная» логика поверх ответов + прогресс-карточки.
  ****************************************************/
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const slides = document.querySelectorAll('.api-slide');
     const prevBtn = document.getElementById('api-prev');
     const nextBtn = document.getElementById('api-next');
+    const progressStripEl = document.getElementById('progress-strip');
+
     let currentSlide = 0; // индекс текущего слайда
 
     function showSlide(index) {
@@ -28,6 +30,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
+    }
+    function goToSlide(idx) {
+        currentSlide = (idx + slides.length) % slides.length;
+        showSlide(currentSlide);
     }
     showSlide(currentSlide);
 
@@ -66,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
             uniteFCatSnow: 'img/wizard/uniteFCatSnow.webp',
             vanishCat: 'img/wizard/vanishCat.webp',
             vanishChar: 'img/wizard/vanishChar.webp',
-            // ВАЖНО: здесь error2.webp используется как "placeholder" для ошибок.
+            // placeholder для ошибок
             placeholder: 'img/wizard/placeholder.webp'
         },
         totems: {
@@ -100,7 +106,101 @@ document.addEventListener('DOMContentLoaded', function() {
     const ALLOWED_CHARACTERS = ['WizardMaleBlue', 'WizardFemaleFire'];
     const ALLOWED_TOTEMS = Object.keys(TOTEM_INFO);
 
-    // Состояние игры, храним в localStorage
+    // Заглушка ТОЛЬКО для карточек прогресса
+    const PROGRESS_PLACEHOLDER = 'img/wizard/placePaw.webp'; // положите вашу картинку по этому пути
+
+    // ----------------------------
+    // Прогресс: карточки и last image
+    // ----------------------------
+    const PROGRESS_KEY = 'qa_magic_progress';       // массив из 9 строк (имя файла) или null
+
+    function getBasename(path) {
+        if (!path) return '';
+        try {
+            const q = path.split('?')[0];
+            const h = q.split('#')[0];
+            return h.split('/').pop() || '';
+        } catch { return ''; }
+    }
+    function buildPathFromName(name) {
+        const n = String(name || '').trim();
+        return n ? `img/wizard/${n}` : PROGRESS_PLACEHOLDER;
+    }
+
+    function ensureProgressInit() {
+        try {
+            const raw = localStorage.getItem(PROGRESS_KEY);
+            if (!raw) {
+                const arr = Array(9).fill(getBasename(PROGRESS_PLACEHOLDER));
+                localStorage.setItem(PROGRESS_KEY, JSON.stringify(arr));
+                return arr;
+            }
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length === 9) return parsed;
+            const fixed = Array(9).fill(getBasename(PROGRESS_PLACEHOLDER));
+            localStorage.setItem(PROGRESS_KEY, JSON.stringify(fixed));
+            return fixed;
+        } catch {
+            const arr = Array(9).fill(getBasename(PROGRESS_PLACEHOLDER));
+            try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(arr)); } catch {}
+            return arr;
+        }
+    }
+
+    function readProgress() {
+        return ensureProgressInit();
+    }
+    function writeProgress(arr) {
+        try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(arr)); } catch {}
+    }
+    function setProgress(stepIndex1to9, imgPath) {
+        const idx = Math.min(9, Math.max(1, Number(stepIndex1to9))) - 1;
+        const arr = readProgress();
+        arr[idx] = getBasename(imgPath) || getBasename(PROGRESS_PLACEHOLDER);
+        writeProgress(arr);
+    }
+
+    function renderProgressCards() {
+        const wrap = document.getElementById('progress-strip');
+        if (!wrap) return;
+        const arr = readProgress();
+        let html = '';
+        for (let i = 0; i < 9; i++) {
+            const name = arr[i];
+            const stepNum = i + 1;
+            const src = buildPathFromName(name);
+            html += `
+              <div class="progress-card" data-step="${stepNum}" title="Этап ${stepNum}" role="button" tabindex="0" aria-label="Перейти к этапу ${stepNum}">
+                <div class="progress-card__badge">${stepNum}</div>
+                <img loading="lazy" src="${src}" alt="Этап ${stepNum}" onerror="this.src='${PROGRESS_PLACEHOLDER}'" />
+              </div>
+            `;
+        }
+        wrap.innerHTML = html;
+    }
+
+    // При загрузке — отрисовать карточки
+    renderProgressCards();
+
+    // Делегирование кликов/клавиш на полосу прогресса — открыть нужный слайд
+    if (progressStripEl) {
+        progressStripEl.addEventListener('click', (e) => {
+            const card = e.target.closest('.progress-card');
+            if (!card) return;
+            const step = Number(card.dataset.step) || 1;
+            goToSlide(step - 1);
+        });
+        progressStripEl.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const card = e.target.closest('.progress-card');
+            if (!card) return;
+            e.preventDefault();
+            const step = Number(card.dataset.step) || 1;
+            goToSlide(step - 1);
+        });
+    }
+
+    // Состояние игры, храним в localStorage (как было)
     let gameState = loadState();
 
     function loadState() {
@@ -131,7 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         saveState();
     }
 
-    // Вспомогательный визуал
+    // Вспомогательный визуал (оставлено, без изменения)
     function updateVisual(containerId, imgSrc, caption) {
         const el = document.getElementById(containerId);
         if (!el) return;
@@ -146,42 +246,24 @@ document.addEventListener('DOMContentLoaded', function() {
         el.classList.add('visible');
     }
 
-    /**
-     * Возвращает true, если выбран «мужской» персонаж.
-     */
+    // Хелперы выбора изображений
     function isMaleWizard() {
         return gameState?.character?.type === 'WizardMaleBlue';
     }
-
-    /**
-     * Подбор картинки «волшебное место» в зависимости от персонажа.
-     */
     function getMagicPlaceImage() {
         if (isMaleWizard()) return IMAGES.scenes.magicPlaceM;
         if (gameState?.character?.type === 'WizardFemaleFire') return IMAGES.scenes.magicPlaceF;
         return IMAGES.scenes.placeholder;
     }
-
-    /**
-     * Подбор картинки «врата святилища тотемов» в зависимости от персонажа.
-     */
     function getTotemTempleImage() {
         if (isMaleWizard()) return IMAGES.scenes.totemTempleM;
         if (gameState?.character?.type === 'WizardFemaleFire') return IMAGES.scenes.totemTempleF;
         return IMAGES.scenes.placeholder;
     }
-
-    /**
-     * Подбор картинки «воссоединение» в зависимости от персонажа и тотема.
-     * Карты соответствуют:
-     *  - Мужчина: uniteMCatFire/Green/Purple/Snow
-     *  - Женщина: uniteFCatFire/Green/Purple/Snow
-     */
     function getUniteImage(charType, totemType) {
         const isM = charType === 'WizardMaleBlue';
         const isF = charType === 'WizardFemaleFire';
         const t = String(totemType || '').trim();
-
         if (isM) {
             if (t === 'catFire')   return IMAGES.scenes.uniteMCatFire;
             if (t === 'catGreen')  return IMAGES.scenes.uniteMCatGreen;
@@ -196,11 +278,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return IMAGES.scenes.placeholder;
     }
-
-    /**
-     * МАППИНГ для шага 4: по выбранному тегу тотема вернуть
-     * соответствующую иконку-предпросмотр (PawCat...).
-     */
     function getPawImageForTag(tagName) {
         switch (String(tagName || '').trim()) {
             case 'catFire':   return IMAGES.totems.PawCatFire;
@@ -210,11 +287,6 @@ document.addEventListener('DOMContentLoaded', function() {
             default:          return IMAGES.scenes.placeholder;
         }
     }
-
-    /**
-     * МАППИНГ для шага 6: по выбранному тегу тотема вернуть
-     * соответствующую "бегущую" картинку (RunCat...).
-     */
     function getRunImageForTag(tagName) {
         switch (String(tagName || '').trim()) {
             case 'catFire':   return IMAGES.totems.RunCatFire;
@@ -431,6 +503,12 @@ document.addEventListener('DOMContentLoaded', function() {
         return keys.every(k => String(obj?.[k]) === String(ref?.[k]));
     }
 
+    // Хелпер: записать прогресс + глобальное изображение и перерисовать карточки
+    function recordProgress(stepIndex, imgPath) {
+        setProgress(stepIndex, imgPath);
+        renderProgressCards(); // делегирование событий остаётся на контейнере
+    }
+
     // ==========================================================
     // 4.3. Функции для запросов (+ сказочная визуализация)
     // ==========================================================
@@ -447,6 +525,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            // Даже placeholder фиксируем в прогрессе
+            recordProgress(1, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -467,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Сохраняем состояние + ЛОГИН/ПАРОЛЬ для шага 3
                 gameState.character.type = charType;
                 gameState.character.name = bodyData?.firstName || bodyData?.username || 'Герой';
-                gameState.character.payload = bodyData; // тут есть username и password
+                gameState.character.payload = bodyData;
                 saveState();
 
                 const img = IMAGES.characters[charType] || IMAGES.scenes.placeholder;
@@ -476,13 +556,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `Поздравляю, вы создали персонажа <strong>${gameState.character.name}</strong>!`
                 );
+
+                // Прогресс: шаг 1
+                recordProgress(1, img);
             } else {
                 updateVisual(visualId, IMAGES.scenes.placeholder, 'Здесь точно что-то не так...Проверь тип персонажа (character) и повтори отправку.');
+                // Фиксируем placeholder в прогрессе
+                recordProgress(1, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            // Фиксируем placeholder в прогрессе
+            recordProgress(1, IMAGES.scenes.placeholder);
         });
     };
 
@@ -498,12 +585,14 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(2, IMAGES.scenes.placeholder);
             return;
         }
         const usernameValue = dataPath?.path?.username;
         if (!usernameValue) {
             showError(preId, "Укажи username в { \"path\": { \"username\": \"...\" } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан username.');
+            recordProgress(2, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -520,26 +609,32 @@ document.addEventListener('DOMContentLoaded', function() {
             if (gameState.character.payload && equalsSubset(data, gameState.character.payload, keys)) {
                 const heroName = gameState.character.name || data.firstName || 'Герой';
                 // Выбираем сцену по персонажу (magicPlaceM/F)
+                const img = getMagicPlaceImage();
                 updateVisual(
                     visualId,
-                    getMagicPlaceImage(),
+                    img,
                     `${heroName} в волшебных землях!`
                 );
+
+                // Прогресс: шаг 2
+                recordProgress(2, img);
             } else {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
                     'Данные персонажа на сервере не совпали с созданием. Сервер мог не успеть сохранить данные...Попробуй снова'
                 );
+                recordProgress(2, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(2, IMAGES.scenes.placeholder);
         });
     };
 
-    // (3) Врата Святилища Тотемов (login) — ДОБАВЛЕНА проверка логина/пароля с регистрацией
+    // (3) Врата Святилища Тотемов (login)
     window.loginUser = function() {
         const editorId = 'editor_login';
         const preId = 'login_response';
@@ -551,6 +646,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(3, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -560,6 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!usernameValue || !passwordValue) {
             showError(preId, "Укажи \"query\": { \"username\": \"...\", \"password\": \"...\" }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Требуются username и password.');
+            recordProgress(3, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -580,6 +677,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Сначала создайте персонажа (шаг 1), затем входите в святилище.'
                 );
+                recordProgress(3, IMAGES.scenes.placeholder);
                 return;
             }
 
@@ -588,27 +686,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (Number(data.code) === 200 && sameUser && samePass) {
                 // Врата святилища — картинка зависит от персонажа (totemTempleM/F)
+                const img = getTotemTempleImage();
                 updateVisual(
                     visualId,
-                    getTotemTempleImage(),
+                    img,
                     'Врата святилища открыты — теперь переходи к выбору своего тотема!'
                 );
+
+                // Прогресс: шаг 3
+                recordProgress(3, img);
             } else {
-                // Показываем error2 (в константах это placeholder)
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
                     'Ваш логин и/или пароль отличаются от указанных при регистрации.'
                 );
+                recordProgress(3, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(3, IMAGES.scenes.placeholder);
         });
     };
 
-    // (4) Создание своего тотема — ВЫВОДИМ PawCat... (предпросмотр), а НЕ животных cat...
+    // (4) Создание своего тотема — показываем PawCat...
     window.createPet = function() {
         const editorId = 'editor_create_pet';
         const preId = 'pet_create_response';
@@ -620,6 +723,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(4, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -649,17 +753,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `Тотем выбран: <strong>${info.title}</strong>. ${info.power}`
                 );
+
+                // Прогресс: шаг 4
+                recordProgress(4, img);
             } else {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
                     'Проверь выбор тотема в tags[0].name (catFire/catGreen/catPurple/catSnow).'
                 );
+                recordProgress(4, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(4, IMAGES.scenes.placeholder);
         });
     };
 
@@ -674,6 +783,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(5, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -681,6 +791,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (getPetIdValue === undefined || getPetIdValue === null || getPetIdValue === "") {
             showError(preId, "Укажи petId в { \"path\": { \"petId\": 15 } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан petId.');
+            recordProgress(5, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -702,17 +813,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `Тотем подтверждён: <strong>${info.title}</strong>. ${info.power}`
                 );
+
+                // Прогресс: шаг 5
+                recordProgress(5, img);
             } else {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
                     'Тотем не подтверждён. Проверь petId или создай тотем заново. Важно. что petId = Id из прошлого запроса.'
                 );
+                recordProgress(5, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(5, IMAGES.scenes.placeholder);
         });
     };
 
@@ -728,6 +844,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(6, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -755,13 +872,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     runImg,
                     caption
                 );
+
+                // Прогресс: шаг 6
+                recordProgress(6, runImg);
             } else {
                 updateVisual(visualId, IMAGES.scenes.placeholder, 'Не удалось вызвать тотема. Важно, что orderId = Id из прошлого запроса.');
+                recordProgress(6, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(6, IMAGES.scenes.placeholder);
         });
     };
 
@@ -777,6 +899,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(7, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -784,6 +907,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (getOrderIdValue === undefined || getOrderIdValue === null || getOrderIdValue === "") {
             showError(preId, "Укажи orderId в { \"path\": { \"orderId\": 1 } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан orderId.');
+            recordProgress(7, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -805,17 +929,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     uniteImg,
                     'Воссоединение состоялось: персонаж и тотем вместе!'
                 );
+
+                // Прогресс: шаг 7
+                recordProgress(7, uniteImg);
             } else {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
                     'Не удалось подтвердить воссоединение. Проверь petId из 5 и 6 запросов, они должны совпадать при отправке. В этом (7) запросе orderId = Id из 6 запроса.'
                 );
+                recordProgress(7, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(7, IMAGES.scenes.placeholder);
         });
     };
 
@@ -831,6 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(8, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -838,6 +968,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (deleteOrderIdValue === undefined || deleteOrderIdValue === null || deleteOrderIdValue === "") {
             showError(preId, "Укажи orderId в { \"path\": { \"orderId\": 1 } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан orderId.');
+            recordProgress(8, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -854,8 +985,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Сбрасываем состояние заказа
                     gameState.order = { id: null, payload: null };
                     saveState();
+
+                    // Прогресс: шаг 8
+                    recordProgress(8, IMAGES.scenes.vanishCat);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить тотем, похоже его не существует.');
+                    recordProgress(8, IMAGES.scenes.placeholder);
                 }
             } catch {
                 document.getElementById(preId).textContent = `Статус: ${res.status} ${res.statusText}`;
@@ -863,14 +998,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateVisual(visualId, IMAGES.scenes.vanishCat, 'Вы отменили выбор тотема. Он растворился в воздухе...');
                     gameState.order = { id: null, payload: null };
                     saveState();
+
+                    // Прогресс: шаг 8
+                    recordProgress(8, IMAGES.scenes.vanishCat);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить тотем.');
+                    recordProgress(8, IMAGES.scenes.placeholder);
                 }
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(8, IMAGES.scenes.placeholder);
         });
     };
 
@@ -886,6 +1026,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            recordProgress(9, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -893,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!deleteUsernameValue) {
             showError(preId, "Укажи username в { \"path\": { \"username\": \"...\" } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан username.');
+            recordProgress(9, IMAGES.scenes.placeholder);
             return;
         }
 
@@ -908,22 +1050,31 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateVisual(visualId, IMAGES.scenes.vanishChar, 'Вы отменили выбор персонажа. Он исчезает...');
                     // Полный сброс прогресса
                     clearState();
+
+                    // Прогресс: шаг 9
+                    recordProgress(9, IMAGES.scenes.vanishChar);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа.');
+                    recordProgress(9, IMAGES.scenes.placeholder);
                 }
             } catch {
                 document.getElementById(preId).textContent = `Статус: ${res.status} ${res.statusText}`;
                 if (res.ok) {
                     updateVisual(visualId, IMAGES.scenes.vanishChar, 'Вы отменили выбор персонажа. Он исчезает...');
                     clearState();
+
+                    // Прогресс: шаг 9
+                    recordProgress(9, IMAGES.scenes.vanishChar);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа.');
+                    recordProgress(9, IMAGES.scenes.placeholder);
                 }
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            recordProgress(9, IMAGES.scenes.placeholder);
         });
     };
 });
