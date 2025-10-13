@@ -1,44 +1,132 @@
+/* ============================
+   БАЗОВЫЕ ПЕРЕМЕННЫЕ ТЕМЫ
+   Лаконичная палитра в духе GPT
+   ============================ */
+:root {
+  --bg: #ffffff;
+  --text: #0f172a;              /* почти чёрный с синим подтоном */
+  --muted: #6b7280;             /* серый для вторичного текста */
+  --surface: #ffffff;           /* фон карточек */
+  --card-border: #e5e7eb;       /* светлая рамка карточек */
+  --accent: #44BBC1;            /* фирменная акцентная */
+  --accent-weak: rgba(68,187,193,0.15);
+  --ring: rgba(15, 23, 42, 0.06);
+  --shadow: 0 1px 2px rgba(0,0,0,0.04), 0 2px 10px rgba(0,0,0,0.04);
+
+  --radius: 14px;
+  --radius-inner: 12px;
+
+  --container-w: 1200px;        /* макс-ширина контента */
+  --timeline-x: 14px;           /* радиус маркера на таймлайне */
+}
+
+/* Тёмная тема на тех же токенах */
+html[data-theme="dark"] {
+  --bg: #0b0d10;              /* фон всей страницы */
+  --text: #e5e7eb;            /* базовый текст */
+  --muted: #9ca3af;           /* вторичный текст */
+  --surface: #12151a;         /* фон карточек */
+  --card-border: #1f2937;     /* рамка карточек */
+  --accent: #44BBC1;          /* акцент не меняем */
+  --accent-weak: rgba(68,187,193,0.18);
+  --ring: rgba(100,116,139,0.16);
+  --shadow: 0 1px 2px rgba(0,0,0,0.5), 0 10px 24px rgba(0,0,0,0.35);
+}
+
+/* Базовая подложка страницы */
+html, body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Глобальные улучшения текста и ссылок */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
 /* Заголовок страницы */
 .page-header {
   text-align: center;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  margin: 0 auto 1.5rem auto;
+  max-width: var(--container-w);
+}
+.page-header h2 {
+  font-size: clamp(1.35rem, 1.1rem + 1vw, 1.9rem);
+  margin: 0 0 .35rem 0;
+}
+.page-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+/* ============================
+   РАЗМЕТКА ROADMAP
+   - на мобильных: один столбец + стрелки
+   - на ≥900px: сетка с сайдбаром и таймлайном
+   ============================ */
+.roadmap-layout {
+  width: 100%;
+  max-width: var(--container-w);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr; /* по умолчанию один столбец */
+  gap: 1.25rem;
+}
+
+/* Сайдбар скрыт на мобильных */
+.roadmap-aside {
+  display: none;
 }
 
 /* Контейнер дорожной карты */
 .roadmap-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 90%;
+  align-items: stretch;
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
 }
 
-/* Стили карточек */
+/* Карточки — чистая “бумага” с тонкой рамкой */
 .roadmap-card {
-  border: 2px solid #44BBC1;
-  border-radius: 8px;
-  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.1rem;
   width: 100%;
-  text-align: center;
+  text-align: left;
   margin: 0.5rem 0;
   position: relative;
+  transition: border-color .2s ease, transform .08s ease;
+  scroll-margin-top: 80px; /* якоря не прячутся под шапкой */
 }
 
+.roadmap-card { box-sizing: border-box; max-width: 100%; }
+
+
+/* Заголовок карточки */
 .roadmap-card h3 {
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.4rem 0;
+  font-size: 1.05rem;
 }
 
+/* Текст карточки */
 .roadmap-card p {
-  margin-bottom: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--text);
 }
 
-/* Стрелка между карточками */
+/* Стрелка между карточками (мобайл) */
 .arrow {
-  font-size: 2rem;
-  color: #44BBC1;
-  margin: 0.5rem 0;
+  font-size: 1.8rem;
+  color: var(--accent);
+  margin: 0.35rem 0 0.65rem 0;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -47,37 +135,65 @@
   }
 }
 
-/* Стили карточки с ветвлением */
+/* Ветвление — вложенные небольшие карточки */
 .branch {
-  border-color: #44BBC1;
+  border-color: var(--accent);
 }
-
 .branch-container {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
-
 .branch-card {
-  border: 2px solid #44BBC1;
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-inner);
   padding: 0.75rem;
   flex: 1 1 250px;
-  text-align: center;
+  text-align: left;
+  box-shadow: var(--shadow);
 }
-
 .branch-card h4 {
-  margin-bottom: 0.5rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.35rem 0;
+  font-size: 1.02rem;
 }
 
-/* Адаптивные настройки: ширина бордера на мобильных экранов*/
-@media (max-width: 768px) {
-  .roadmap-container {
-    width: 90%;
-  }
+/* Ссылки-навыки — чипы */
+.skill-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+.skill-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border: 1px solid var(--card-border);
+  background: #e0f7fa;
+  color: var(--text);
+  padding: .4rem .6rem;
+  border-radius: 999px;
+  font-size: .92rem;
+  white-space: nowrap;
+  transition: border-color .2s ease, background-color .2s ease, transform .05s ease;
+}
+.skill-links a:active {
+  transform: translateY(1px);
+}
+.skill-links .skill-counter {
+  display: inline-block;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: .75rem;
+  line-height: 18px;
+  text-align: center;
 }
 
 /* ==============================
@@ -87,20 +203,28 @@
   position: fixed;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(2, 6, 12, 0.55); /* под тёмный/светлый одинаково уместно */
   display: none;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 .overlay.active {
   display: flex;
 }
-/* Используем уже существующий .article для внутреннего окна */
+/* Окно-статья внутри оверлея */
 .overlay .article {
-  max-width: 70%;
-  max-height: 80%;
+  width: 100%;
+  max-width: 820px;
+  max-height: 80vh;
   overflow-y: auto;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.1rem 1.1rem;
 }
 
 /* делаем .article «позиционно-контейнером» для абсолютного позиционирования внутри */
@@ -110,42 +234,155 @@
 
 /* кнопка «×» внутри .article в правом верхнем углу, отступ задаётся через респонсивные единицы */
 #skill-overlay .article .overlay-close {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.8rem;
-  /* никаких width/height — размер текста + padding */
+  position: sticky; /* остаётся в видимой области при прокрутке модалки */
+  top: .25rem;
+  float: right;
+  margin-left: .5rem;
   padding: 0.25rem;
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   line-height: 1;
   cursor: pointer;
+  color: var(--muted);
 }
-
-/* hover-эффект для кнопки закрытия: инверсия цвета в зависимости от темы */
 #skill-overlay .article .overlay-close:hover {
-  color: #44BBC1;
+  color: var(--accent);
   transition: color 0.2s;
 }
-[data-theme="dark"] #skill-overlay .article .overlay-close:hover {
-  color: #44BBC1;
+
+/* Заголовок и список ссылок в модалке */
+#skill-overlay .article h3 {
+  margin: 0 0 .75rem 0;
+}
+#plan-list ul {
+  margin: 0;
+  padding-left: 1.05rem;
+}
+#plan-list li {
+  margin: .3rem 0;
+}
+#plan-list a {
+  word-break: break-all;
 }
 
-
+/* ============================
+   ТЁМНАЯ ТЕМА ДОПОЛНИТЕЛЬНО
+   (уточняем пару мест, если нужно)
+   ============================ */
 html[data-theme="dark"] body {
-    background-color: #1A1A1A;
-        color: #F1F1F1;
-   }
-
-html[data-theme="dark"] .branch-card {
-    border-color: #44BBC1;
-  }
-
+  background-color: var(--bg);
+  color: var(--text);
+}
+html[data-theme="dark"] .branch-card,
 html[data-theme="dark"] .roadmap-card {
-    border-color: #44BBC1;
+  border-color: var(--card-border);
+}
+
+/* ============================
+   ШИРОКИЕ ЭКРАНЫ (≥900px)
+   - сайдбар-оглавление (sticky)
+   - сетка 280px / 1fr
+   - таймлайн: вертикальная нить + точки у карточек
+   - скрываем стрелки между карточками
+   ============================ */
+@media (min-width: 900px) {
+  .roadmap-layout {
+    grid-template-columns: 280px 1fr;
+    align-items: start;
+    gap: 1.5rem;
   }
 
-html[data-theme="dark"] .page-header {
-    background-color: #1A1A1A;
-    color: #fff;
+  .roadmap-aside {
+    display: block;
+    position: sticky;
+    top: 72px; /* ниже хедера */
+    height: max-content;
   }
+
+  .aside-inner {
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 0.9rem 0.9rem;
+  }
+
+  .aside-title {
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+  }
+
+  .toc {
+    list-style: none;
+    margin: 0.25rem 0 0.6rem 0;
+    padding: 0;
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .toc a {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    border-radius: 8px;
+    padding: .35rem .5rem;
+    color: var(--text);
+    border: 1px solid transparent;
+  }
+  .toc a:hover {
+    background: var(--accent-weak);
+    text-decoration: none;
+  }
+
+  .aside-note {
+    margin-top: 0.4rem;
+    color: var(--muted);
+    font-size: .9rem;
+  }
+
+  /* Главная колонка превращается в таймлайн */
+  .roadmap-main {
+    position: relative;
+    padding-left: calc(var(--timeline-x) * 2 + 10px);
+  }
+
+  /* Вертикальная линия таймлайна */
+  .roadmap-main::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--timeline-x) + 2px);
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(var(--accent), var(--accent));
+    opacity: .35;
+    border-radius: 2px;
+  }
+
+  /* Стрелки между карточками на десктопе не нужны */
+  .arrow {
+    display: none;
+  }
+
+  /* Чипы компактнее на десктопе */
+  .skill-links a {
+    font-size: .88rem;
+    padding: .35rem .55rem;
+  }
+}
+
+/* Адаптивные настройки: ширина контейнера на мобильных */
+@media (max-width: 768px) {
+  .roadmap-container {
+    width: 92%;
+  }
+}
+
+/* Предпочтение пользователя «уменьшить движение» */
+@media (prefers-reduced-motion: reduce) {
+  .roadmap-card,
+  .skill-links a {
+    transition: none;
+  }
+}

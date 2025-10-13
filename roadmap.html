@@ -59,111 +59,140 @@
     <p>План развития тестировщика: с нуля до автоматизации и CI/CD.</p>
 </div>
 
-<div class="roadmap-container">
-    <div class="roadmap-card">
-        <h3>Теория тестирования</h3>
-        <p>Обеспечение качества, отличие тестировщика от QA, AQA, QC и Head of QA, методы тестирования (Белый, Серый, Черный ящик), приоритизация багов, виды и уровни тестирования.</p>
-        <div class="skill-links">
-            <a data-skill-id="web-mobile-testing" data-plan="https://selectel.ru/blog/testing-mobile-applications/ | https://sky.pro/media/kak-testirovat-igry/ | https://gist.github.com/Rende11/1db5dc9470c9659976eae6d6e4e1a271#file-mobile-md">Web/Mobile testing<span class="skill-counter"></span></a>
-            <a data-skill-id="quality-assurance" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/obshee/qa-qc-testing | https://skillbox.ru/media/code/bol-testirovshchika-s-kakimi-problemami-stalkivayutsya-qainzhenery/ | https://tproger.ru/articles/instrumenty-i-frejmvorki-qa--kotorye--ne--nuzhno-znat | https://thecode.media/qa-engineer-2023/">Обеспечение качества<span class="skill-counter"></span></a>
-            <a data-skill-id="cross-browser" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/vidy-metody-urovni-testirovaniya/krossbrauzernoe-testirovanie-cross-browser-testing | https://testengineer.ru/chto-takoe-kross-brauzernoe-testirovanie/ | https://serpstat.com/ru/blog/kak-proverit-otobrazhenie-sajta-vo-vseh-brauzerah/">Кроссбраузерное<span class="skill-counter"></span></a>
+<!-- ====== НОВАЯ ОБЩАЯ РАЗМЕТКА ДЛЯ РЕСПОНСИВА ======
+     На ≥900px появляется левый сайдбар-оглавление (sticky).
+     На мобильных остаётся линейная лента со стрелками.
+-->
+<div class="roadmap-layout">
+    <!-- Сайдбар-оглавление (доступно только на широких экранах) -->
+    <aside class="roadmap-aside" aria-label="Содержание (доступно на ≥900px)">
+        <div class="aside-inner">
+            <div class="aside-title">Содержание</div>
+            <ol class="toc">
+                <li><a href="#sec-theory">Теория тестирования</a></li>
+                <li><a href="#sec-sdlc">Методология разработки ПО</a></li>
+                <li><a href="#sec-test-design">Тест-дизайн</a></li>
+                <li><a href="#sec-techniques">Техники тестирования</a></li>
+                <li><a href="#sec-automation">Выбор технологий автоматизации</a></li>
+                <li><a href="#sec-security">Тестирование безопасности</a></li>
+                <li><a href="#sec-load">Нагрузочное и стресс тестирование</a></li>
+                <li><a href="#sec-monitoring">Мониторинг и логи</a></li>
+                <li><a href="#sec-cicd">CI/CD</a></li>
+            </ol>
+            <div class="aside-note">Некоторые функции доступны только на широких экранах (≥900px).</div>
         </div>
-    </div>
-    <div class="arrow">↓</div>
+    </aside>
 
-    <div class="roadmap-card">
-        <h3>Методология разработки ПО</h3>
-        <p>V-Model, Waterfall, Agile (Scrum, Kanban, XP, SAFe), TDD, работа с Jira.</p>
-        <div class="skill-links">
-            <a data-skill-id="scrum" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/sdlc-i-stlc/scrum | https://stepik.org/course/172187/promo? | https://practicum.yandex.ru/blog/chto-takoe-scrum-metodologiya/ | https://thecode.media/scrum/ | https://blog.skillfactory.ru/kto-takoy-scrum-master-chem-zanimaetsya/ | https://doka.guide/tools/agile/ | https://blog.skedraw.ru/articles/urovni-razrabotki-programmnogo-obespecheniya">Scrum<span class="skill-counter"></span></a>
-            <a data-skill-id="test-design" data-plan="https://stepik.org/course/218257/promo? | https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
-            <a data-skill-id="mindmap" data-plan="https://skillbox.ru/media/base/chto-takoe-intellektkarty | https://vc.ru/services/1553974-top-15-luchshih-servisov-dlya-sozdaniya-intellekt-kart? | https://fb2-book.com/book/152103-intellekt-karty-polnoe-rukovodstvo-po-moshchnomu | https://habr.com/ru/articles/857390/ | https://www.mindmeister.com/app/map/470194599?fullscreen=1&v=public">Составление MindMap<span class="skill-counter"></span></a>
-            <a data-skill-id="bdd-tdd" data-plan="https://testengineer.ru/guide-to-tdd-bdd-and-atdd/ | https://github.com/stankin/design-part-2/wiki/exam06-4 | https://blog.skedraw.ru/articles/chto-takoe-tdd-i-bdd-testirovanie/ | https://doka.guide/tools/tdd/ | https://thecode.media/tdd/">BDD/TDD<span class="skill-counter"></span></a>
-            <a data-skill-id="github" data-plan="https://doka.guide/recipes/github-new-repo">GitHub<span class="skill-counter"></span></a>
-            <a data-skill-id="jira" data-plan="https://stepik.org/course/10425/promo? | https://blog.skillfactory.ru/glossary/jira/ | https://practicum.yandex.ru/blog/chto-takoe-bug-report-kak-ego-sostavit/ | https://testengineer.ru/bag-trekingovye-sistemy-jira-i-alternativnye-varianty/">Работа с Jira<span class="skill-counter"></span></a>
-            <a data-skill-id="bitbucket" data-plan="https://blog.skillfactory.ru/glossary/bitbucket/?ysclid=m72gaboxsz333521041">Bitbucket<span class="skill-counter"></span></a>
-            <a data-skill-id="confluence" data-plan="https://stepik.org/course/220495/promo? | https://practicum.yandex.ru/blog/confluence-dlya-sovmestnoy-raboty-komand/">Confluence<span class="skill-counter"></span></a>
-        </div>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card">
-        <h3>Тест-дизайн</h3>
-        <p>Изучение документации, работа без требований, поиск серых зон, тест-планирование, написание чек-листа, создание тест-кейсов, проверка совместимости, верификация и валидация.</p>
-        <div class="skill-links">
-            <a data-skill-id="test-design" data-plan="https://stepik.org/course/218257/promo? | https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
-        </div>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card">
-        <h3>Техники тестирования</h3>
-        <p>Функциональное тестирование: UAT, регресс, интеграционное, смоук, санитарное, исследовательское.</p>
-        <p>Нефункциональное тестирование: нагрузочное, стресс, безопасность, доступность.</p>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card branch">
-        <h3>Выбор технологий автоматизации</h3>
-        <div class="branch-container">
-            <div class="branch-card">
-                <h4>Frontend</h4>
-                <p>Инструменты: Cypress, Selenium, Playwright, Puppeteer.</p>
+    <!-- Основная колонка с карточками -->
+    <main class="roadmap-main">
+        <div class="roadmap-container">
+            <div class="roadmap-card" id="sec-theory">
+                <h3>Теория тестирования</h3>
+                <p>Обеспечение качества, отличие тестировщика от QA, AQA, QC и Head of QA, методы тестирования (Белый, Серый, Черный ящик), приоритизация багов, виды и уровни тестирования.</p>
                 <div class="skill-links">
-                    <a data-skill-id="cypress" data-plan="https://testengineer.ru/chto-takoe-cypress-vvedenie-i-arhitektura/ | https://testengineer.ru/playwright-vs-cypress-vs-selenium/ | https://ru.hexlet.io/blog/posts/avtomatizatsiya-testirovaniya-s-cypress-osnovy-dlya-junior-qa">Cypress<span class="skill-counter"></span></a>
-                    <a data-skill-id="jmeter" data-plan="https://testengineer.ru/jmeter-guide/?ysclid=m72g44bqot855676748 | https://habr.com/ru/companies/tochka/articles/741698/">JMeter<span class="skill-counter"></span></a>
-                    <a data-skill-id="selenium" data-plan="https://ru.hexlet.io/blog/posts/chto-takoe-selenium-webdriver | https://stepik.org/course/119495/promo? | https://stepik.org/course/188355/promo? | https://tproger.ru/articles/prakticheskoe-rukovodstvo-po-testirovaniyu-prilozhenij-s-ispolzovaniem-selenium | https://testengineer.ru/selenium-2024/ | https://vvrozhkova.github.io/chto-takoe-selenium/">Selenium<span class="skill-counter"></span></a>
-                    <a data-skill-id="selenide" data-plan="https://github.com/selenide-examples | https://github.com/angry-qa/Selenide-snippets-by-Vinoradoff/blob/main/snippets.java | https://github.com/selenide/selenide/wiki/Selenide-vs-Selenium">Selenide<span class="skill-counter"></span></a>
-                    </div>
+                    <a data-skill-id="web-mobile-testing" data-plan="https://selectel.ru/blog/testing-mobile-applications/ | https://sky.pro/media/kak-testirovat-igry/ | https://gist.github.com/Rende11/1db5dc9470c9659976eae6d6e4e1a271#file-mobile-md">Web/Mobile testing<span class="skill-counter"></span></a>
+                    <a data-skill-id="quality-assurance" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/obshee/qa-qc-testing | https://skillbox.ru/media/code/bol-testirovshchika-s-kakimi-problemami-stalkivayutsya-qainzhenery/ | https://tproger.ru/articles/instrumenty-i-frejmvorki-qa--kotorye--ne--nuzhno-znat | https://thecode.media/qa-engineer-2023/">Обеспечение качества<span class="skill-counter"></span></a>
+                    <a data-skill-id="cross-browser" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/vidy-metody-urovni-testirovaniya/krossbrauzernoe-testirovanie-cross-browser-testing | https://testengineer.ru/chto-takoe-kross-brauzernoe-testirovanie/ | https://serpstat.com/ru/blog/kak-proverit-otobrazhenie-sajta-vo-vseh-brauzerah/">Кроссбраузерное<span class="skill-counter"></span></a>
+                </div>
             </div>
-            <div class="branch-card">
-                <h4>Backend</h4>
-                <p>Инструменты: Karate, SoapUI, Postman, REST Assured.</p>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-sdlc">
+                <h3>Методология разработки ПО</h3>
+                <p>V-Model, Waterfall, Agile (Scrum, Kanban, XP, SAFe), TDD, работа с Jira.</p>
                 <div class="skill-links">
-                    <a data-skill-id="rest-assured" data-plan="https://www.youtube.com/watch?v=8nAgzJea1L8 | https://habr.com/ru/companies/ssp-soft/articles/772088/ | https://testengineer.ru/rest-assured-tutorial/?ysclid=m71ju1jfjk353497505 | https://qa.crtweb.ru/docs/testing/auto/api/pojo/ | https://github.com/angry-qa/first-java-autotests/blob/04-api-test/src/test/java/APITests.java | https://habr.com/ru/companies/alfa/articles/745854/ | https://automatenow.io/rest-assured-api-testing-tutorial/ | https://github.com/rest-assured/rest-assured/wiki/Spring | https://www.youtube.com/watch?v=Ob2mdng_dMI | https://otus.ru/nest/post/1271/">REST-assured<span class="skill-counter"></span></a>
-                    </div>
+                    <a data-skill-id="scrum" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/sdlc-i-stlc/scrum | https://stepik.org/course/172187/promo? | https://practicum.yandex.ru/blog/chto-takoe-scrum-metodologiya/ | https://thecode.media/scrum/ | https://blog.skillfactory.ru/kto-takoy-scrum-master-chem-zanimaetsya/ | https://doka.guide/tools/agile/ | https://blog.skedraw.ru/articles/urovni-razrabotki-programmnogo-obespecheniya">Scrum<span class="skill-counter"></span></a>
+                    <a data-skill-id="test-design" data-plan="https://stepik.org/course/218257/promo? | https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
+                    <a data-skill-id="mindmap" data-plan="https://skillbox.ru/media/base/chto-takoe-intellektkarty | https://vc.ru/services/1553974-top-15-luchshih-servisov-dlya-sozdaniya-intellekt-kart? | https://fb2-book.com/book/152103-intellekt-karty-polnoe-rukovodstvo-po-moshchnomu | https://habr.com/ru/articles/857390/ | https://www.mindmeister.com/app/map/470194599?fullscreen=1&v=public">Составление MindMap<span class="skill-counter"></span></a>
+                    <a data-skill-id="bdd-tdd" data-plan="https://testengineer.ru/guide-to-tdd-bdd-and-atdd/ | https://github.com/stankin/design-part-2/wiki/exam06-4 | https://blog.skedraw.ru/articles/chto-takoe-tdd-i-bdd-testirovanie/ | https://doka.guide/tools/tdd/ | https://thecode.media/tdd/">BDD/TDD<span class="skill-counter"></span></a>
+                    <a data-skill-id="github" data-plan="https://doka.guide/recipes/github-new-repo">GitHub<span class="skill-counter"></span></a>
+                    <a data-skill-id="jira" data-plan="https://stepik.org/course/10425/promo? | https://blog.skillfactory.ru/glossary/jira/ | https://practicum.yandex.ru/blog/chto-takoe-bug-report-kak-ego-sostavit/ | https://testengineer.ru/bag-trekingovye-sistemy-jira-i-alternativnye-varianty/">Работа с Jira<span class="skill-counter"></span></a>
+                    <a data-skill-id="bitbucket" data-plan="https://blog.skillfactory.ru/glossary/bitbucket/?ysclid=m72gaboxsz333521041">Bitbucket<span class="skill-counter"></span></a>
+                    <a data-skill-id="confluence" data-plan="https://stepik.org/course/220495/promo? | https://practicum.yandex.ru/blog/confluence-dlya-sovmestnoy-raboty-komand/">Confluence<span class="skill-counter"></span></a>
+                </div>
             </div>
-            <div class="branch-card">
-                <h4>Мобилка</h4>
-                <p>Инструменты: Appium, Espresso, Detox, XCUITest.</p>
-                <div class="skill-links"><a data-skill-id="appium" data-plan="https://testengineer.ru/appium-gaid/? | https://logrocon.ru/news/firsttest_appium">Appium<span class="skill-counter"></span></a>
-                    <a data-skill-id="allure" data-plan="https://allurereport.org/docs/#_java | https://dzen.ru/a/ZjhzjBFonwO037Ph?ysclid=m9emxi8dh8611781998">Allure<span class="skill-counter"></span></a>
-                    <a data-skill-id="junit" data-plan="https://proselyte.net/tutorials/junit/ | https://easyjava.ru/testirovanie/junit-2/">JUnit<span class="skill-counter"></span></a>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-test-design">
+                <h3>Тест-дизайн</h3>
+                <p>Изучение документации, работа без требований, поиск серых зон, тест-планирование, написание чек-листа, создание тест-кейсов, проверка совместимости, верификация и валидация.</p>
+                <div class="skill-links">
+                    <a data-skill-id="test-design" data-plan="https://stepik.org/course/218257/promo? | https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-techniques">
+                <h3>Техники тестирования</h3>
+                <p>Функциональное тестирование: UAT, регресс, интеграционное, смоук, санитарное, исследовательское.</p>
+                <p>Нефункциональное тестирование: нагрузочное, стресс, безопасность, доступность.</p>
+            </div>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card branch" id="sec-automation">
+                <h3>Выбор технологий автоматизации</h3>
+                <div class="branch-container">
+                    <div class="branch-card">
+                        <h4>Frontend</h4>
+                        <p>Инструменты: Cypress, Selenium, Playwright, Puppeteer.</p>
+                        <div class="skill-links">
+                            <a data-skill-id="cypress" data-plan="https://testengineer.ru/chto-takoe-cypress-vvedenie-i-arhitektura/ | https://testengineer.ru/playwright-vs-cypress-vs-selenium/ | https://ru.hexlet.io/blog/posts/avtomatizatsiya-testirovaniya-s-cypress-osnovy-dlya-junior-qa">Cypress<span class="skill-counter"></span></a>
+                            <a data-skill-id="jmeter" data-plan="https://testengineer.ru/jmeter-guide/?ysclid=m72g44bqot855676748 | https://habr.com/ru/companies/tochka/articles/741698/">JMeter<span class="skill-counter"></span></a>
+                            <a data-skill-id="selenium" data-plan="https://ru.hexlet.io/blog/posts/chto-takoe-selenium-webdriver | https://stepik.org/course/119495/promo? | https://stepik.org/course/188355/promo? | https://tproger.ru/articles/prakticheskoe-rukovodstvo-po-testirovaniyu-prilozhenij-s-ispolzovaniem-selenium | https://testengineer.ru/selenium-2024/ | https://vvrozhkova.github.io/chto-takoe-selenium/">Selenium<span class="skill-counter"></span></a>
+                            <a data-skill-id="selenide" data-plan="https://github.com/selenide-examples | https://github.com/angry-qa/Selenide-snippets-by-Vinoradoff/blob/main/snippets.java | https://github.com/selenide/selenide/wiki/Selenide-vs-Selenium">Selenide<span class="skill-counter"></span></a>
+                        </div>
+                    </div>
+                    <div class="branch-card">
+                        <h4>Backend</h4>
+                        <p>Инструменты: Karate, SoapUI, Postman, REST Assured.</p>
+                        <div class="skill-links">
+                            <a data-skill-id="rest-assured" data-plan="https://www.youtube.com/watch?v=8nAgzJea1L8 | https://habr.com/ru/companies/ssp-soft/articles/772088/ | https://testengineer.ru/rest-assured-tutorial/?ysclid=m71ju1jfjk353497505 | https://qa.crtweb.ru/docs/testing/auto/api/pojo/ | https://github.com/angry-qa/first-java-autotests/blob/04-api-test/src/test/java/APITests.java | https://habr.com/ru/companies/alfa/articles/745854/ | https://automatenow.io/rest-assured-api-testing-tutorial/ | https://github.com/rest-assured/rest-assured/wiki/Spring | https://www.youtube.com/watch?v=Ob2mdng_dMI | https://otus.ru/nest/post/1271/">REST-assured<span class="skill-counter"></span></a>
+                        </div>
+                    </div>
+                    <div class="branch-card">
+                        <h4>Мобилка</h4>
+                        <p>Инструменты: Appium, Espresso, Detox, XCUITest.</p>
+                        <div class="skill-links">
+                            <a data-skill-id="appium" data-plan="https://testengineer.ru/appium-gaid/? | https://logrocon.ru/news/firsttest_appium">Appium<span class="skill-counter"></span></a>
+                            <a data-skill-id="allure" data-plan="https://allurereport.org/docs/#_java | https://dzen.ru/a/ZjhzjBFonwO037Ph?ysclid=m9emxi8dh8611781998">Allure<span class="skill-counter"></span></a>
+                            <a data-skill-id="junit" data-plan="https://proselyte.net/tutorials/junit/ | https://easyjava.ru/testirovanie/junit-2/">JUnit<span class="skill-counter"></span></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-security">
+                <h3>Тестирование безопасности</h3>
+                <p>Аутентификация, OSINT, сканирование уязвимостей, OWASP Top 10, вектор атак.</p>
+                <div class="skill-links" id="superpower-skills">
+                    <a data-skill-id="sec-test" data-plan="https://stepik.org/course/123935/promo? | https://github.com/curiv/russian-offensive-security-questions | https://habr.com/ru/companies/redmadrobot/articles/544198/ | https://habr.com/ru/company/pentestit/blog/526878/ | https://tproger.ru/translations/webapp-security/ | https://youtube.com/playlist?list=PLp2kHCN7pLe1azEbJa5ucnLpD0nGex0tg | https://selectel.ru/blog/ddos-attacks/ | https://doka.guide/tools/web-security | https://github.com/BEPb/tryhackme?tab=readme-ov-file | https://hacksplaining.com/lessons">Тестирование безопасности<span class="skill-counter"></span></a>
+                </div>
+            </div>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-load">
+                <h3>Нагрузочное и стресс тестирование</h3>
+                <p>JMeter, Gatling, K6, Locust, Vegeta, Artillery, Lighthouse.</p>
+            </div>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-monitoring">
+                <h3>Мониторинг и логи</h3>
+                <p>New Relic, Kibana, Datadog, Grafana, Sentry, RunScope.</p>
+            </div>
+            <div class="arrow">↓</div>
+
+            <div class="roadmap-card" id="sec-cicd">
+                <h3>CI/CD</h3>
+                <p>Jenkins, GitLab CI, CircleCI, Bamboo, TeamCity, Azure DevOps.</p>
+                <div class="skill-links">
+                    <a data-skill-id="ci-cd" data-plan="https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#развертывание-cicd | https://doka.guide/tools/ci-cd/">CI CD<span class="skill-counter"></span></a>
+                    <a data-skill-id="jenkins" data-plan="https://www.youtube.com/watch?v=yTNQnSKqKis | https://habr.com/ru/companies/yoomoney/articles/538664/ | https://www.litres.ru/book/brent-laster-21051066/jenkins-2-pristupaem-k-rabote-48411335/">Jenkins<span class="skill-counter"></span></a>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card">
-        <h3>Тестирование безопасности</h3>
-        <p>Аутентификация, OSINT, сканирование уязвимостей, OWASP Top 10, вектор атак.</p>
-        <div class="skill-links" id="superpower-skills">
-            <a data-skill-id="sec-test" data-plan="https://stepik.org/course/123935/promo? | https://github.com/curiv/russian-offensive-security-questions | https://habr.com/ru/companies/redmadrobot/articles/544198/ | https://habr.com/ru/company/pentestit/blog/526878/ | https://tproger.ru/translations/webapp-security/ | https://youtube.com/playlist?list=PLp2kHCN7pLe1azEbJa5ucnLpD0nGex0tg | https://selectel.ru/blog/ddos-attacks/ | https://doka.guide/tools/web-security | https://github.com/BEPb/tryhackme?tab=readme-ov-file | https://hacksplaining.com/lessons">Тестирование безопасности<span class="skill-counter"></span></a>
-        </div>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card">
-        <h3>Нагрузочное и стресс тестирование</h3>
-        <p>JMeter, Gatling, K6, Locust, Vegeta, Artillery, Lighthouse.</p>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card">
-        <h3>Мониторинг и логи</h3>
-        <p>New Relic, Kibana, Datadog, Grafana, Sentry, RunScope.</p>
-    </div>
-    <div class="arrow">↓</div>
-
-    <div class="roadmap-card">
-        <h3>CI/CD</h3>
-        <p>Jenkins, GitLab CI, CircleCI, Bamboo, TeamCity, Azure DevOps.</p>
-        <div class="skill-links">
-            <a data-skill-id="ci-cd" data-plan="https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#развертывание-cicd | https://doka.guide/tools/ci-cd/">CI CD<span class="skill-counter"></span></a>
-            <a data-skill-id="jenkins" data-plan="https://www.youtube.com/watch?v=yTNQnSKqKis | https://habr.com/ru/companies/yoomoney/articles/538664/ | https://www.litres.ru/book/brent-laster-21051066/jenkins-2-pristupaem-k-rabote-48411335/">Jenkins<span class="skill-counter"></span></a>
-        </div>
-    </div>
+    </main>
 </div>
 
 <footer class="qatodev">

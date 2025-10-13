@@ -774,7 +774,7 @@ canvas {
 }
 
 .skill-links a:hover {
-  background-color: #1e1e1e;
+  background-color: #111111;
   color: #F1F1F1;
 }
 
@@ -1027,7 +1027,7 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
   }
 
   html[data-theme="dark"] a:hover {
-      background-color: #F1F1F1;
+      background-color: #f0f8ff;
       color: #1A1A1A;
   }
 
@@ -1039,7 +1039,7 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
       color: #F1F1F1;
     }
     html[data-theme="dark"] .skill-links a:hover {
-      background-color: rgba(255, 255, 255, 1);
+      background-color: #f0f8ff;
       color: #000;
     }
     html[data-theme="dark"] .skill-links a.selected {
@@ -1171,7 +1171,7 @@ a.answer-link {
 }
 
 a:hover { /*темная тема осталась в styles.css questions.css */
-  background-color: #1A1A1A;
+  background-color: #111111;
   color: #F1F1F1;
 }
 
