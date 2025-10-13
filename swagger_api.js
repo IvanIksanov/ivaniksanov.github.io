@@ -622,7 +622,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateVisual(
                     visualId,
                     IMAGES.scenes.placeholder,
-                    'Данные персонажа на сервере не совпали с созданием. Сервер мог не успеть сохранить данные...Попробуй снова'
+                    'Данные персонажа на сервере не совпали с созданием. Данный запрос отдает информацию через раз...Попробуй снова. Здесь нужен username из 1 запроса'
                 );
                 recordProgress(2, IMAGES.scenes.placeholder);
             }
@@ -1054,19 +1054,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Прогресс: шаг 9
                     recordProgress(9, IMAGES.scenes.vanishChar);
                 } else {
-                    updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа.');
+                    updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа. Проверь username и сравни его в 1 запросе.');
                     recordProgress(9, IMAGES.scenes.placeholder);
                 }
             } catch {
                 document.getElementById(preId).textContent = `Статус: ${res.status} ${res.statusText}`;
                 if (res.ok) {
-                    updateVisual(visualId, IMAGES.scenes.vanishChar, 'Вы отменили выбор персонажа. Он исчезает...');
+                    updateVisual(visualId, IMAGES.scenes.vanishChar, 'Вы отменили выбор персонажа. Он исчезает... Теперь попробуй выбрать другой тотем и персонажа...');
                     clearState();
 
                     // Прогресс: шаг 9
                     recordProgress(9, IMAGES.scenes.vanishChar);
                 } else {
-                    updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа.');
+                    updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа. Проверь username и сравни его в 1 запросе');
                     recordProgress(9, IMAGES.scenes.placeholder);
                 }
             }
