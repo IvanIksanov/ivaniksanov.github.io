@@ -9,7 +9,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 17px;
-  background-color: #F1F1F1; // если удалить, то светлая тема не работает в telegram mini apps
+  background-color: #F1F1F1;
 }
 
 h1, h2, h4, h5, h6 {
