@@ -39,7 +39,24 @@ header {
   margin-right: 5px;
 }
 
+.welcome {
+      border-radius: 0;
+      padding: 0;
+      margin: 1rem 0;
+      color: #44BBC1;
+    }
+
+@media (max-width: 600px) {
+    .welcome {
+      border-radius: 0;
+      padding: 0;
+      margin: 3rem 0;
+      color: #44BBC1;
+    }
+}
+
 .site-title { /*темная тема осталась в styles.css questions.css */
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
   font-size: 10px;
   color: #1e1e1e;
 }

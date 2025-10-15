@@ -2,25 +2,25 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Глобальные улучшения текста и ссылок */
 body {
-  font-family: "Fira Code", monospace;
-  margin: 20px;
-  padding: 0;
-  background-color: #e7e7e7;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-size: 17px;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Fira Code", monospace;
+}
+
 
 @media (max-width: 600px) {
   body {
     margin: 10px;
     padding: 0;
   }
-}
-
-.fira-code-<uniquifier> {
-  font-family: "Fira Code", monospace;
-  font-optical-sizing: auto;
-  font-weight: <weight>;
-  font-style: normal;
 }
 
 .frame {
@@ -50,13 +50,6 @@ body {
 .noneframe {
   padding: 1rem;
   margin: 1rem 0;
-}
-
-.welcome {
-  border-radius: 0;
-  padding: 0;
-  margin: 1rem 0;
-  color: #44BBC1;
 }
 
 .custom-links {
@@ -333,6 +326,7 @@ h2 {
 
 .t849__trigger-button {
   font-family: "Fira Code", monospace;
+  word-spacing: -0.1em;
   background: none;
   border: none;
   width: 100%;

@@ -39,15 +39,22 @@ html[data-theme="dark"] {
   --chip-active-fg:#fff;
 }
 
-/* Сбросы и базовая типографика */
-* { box-sizing: border-box; }
+
 html, body { height: 100%; }
 body {
-  margin: 20px;
-  font-family: "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  margin: 8px;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.55;
+  font-size: 17px;
   background: var(--bg);
   color: var(--text);
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Fira Code", monospace;
+}
+
+
 @media (max-width: 600px) {
   body { margin: 10px; }
 }
