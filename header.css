@@ -76,7 +76,6 @@ nav {
 
 @media (max-width: 600px) {
   nav {
-    max-width: 340px;   /* общий контейнер уже */
     margin: 0 auto;     /* выравниваем по центру */
   }
 }
