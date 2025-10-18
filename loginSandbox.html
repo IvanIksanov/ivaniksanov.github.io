@@ -10,72 +10,383 @@
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
     <!-- Доп. минимальные стили только для поп-апа -->
     <style>
-        /* Базовая подложка модального окна */
-        .modal-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
-          display: none; /* по умолчанию скрыто */
+        :root {
+          --login-bg: #fafafa;
+          --login-card: #ffffff;
+          --login-text: #1a1a1a;
+          --login-muted: #6b7280;
+          --login-border: #e5e7eb;
+          --login-accent: #ffa001;
+          --login-accent-2: #44bbc1;
+          --login-ring: rgba(255,160,1,.35);
+          --ok: #16a34a;
+          --bad: #ef4444;
+          --pending: #9ca3af;
+
+          /* Лейаут */
+          --page-max: 1160px;
+          --gap: 16px;
+          --stick-top: 16px; /* отступ для sticky-формы слева */
+          --checks-max-h: calc(100vh - var(--stick-top) - 160px); /* высота скролла чек-листа */
+
+          /* Задание (слайдер) */
+          --task-border: #ffd9a6; /* светло-оранжевая рамка */
+          --task-bg: #fffdf8;
+          --task-dot-bg: #ffe7c4;
+          --task-dot-active: #ffa001;
+          --task-shadow: 0 2px 10px rgba(255,160,1,.15);
+        }
+        :root[data-theme="dark"] {
+          --login-bg: #1a1a1a;
+          --login-card: #242424;
+          --login-text: #e7e7e7;
+          --login-muted: #a1a1aa;
+          --login-border: #383838;
+          --login-accent: #ffa001;
+          --login-accent-2: #44bbc1;
+          --login-ring: rgba(255,160,1,.55);
+          --ok: #22c55e;
+          --bad: #f87171;
+          --pending: #9ca3af;
+
+          /* Задание (слайдер) */
+          --task-border: #ffb869;
+          --task-bg: #2a241b;
+          --task-dot-bg: #3b3022;
+          --task-dot-active: #ffa001;
+          --task-shadow: 0 2px 10px rgba(255,160,1,.18);
+        }
+
+         /* Вместо глобального reset */
+        .login-scope,
+        .login-scope * ,
+        .login-scope *::before,
+        .login-scope *::after {
+          box-sizing: border-box;
+        }
+
+        /* Общие правки для устойчивости */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* === Плашка заданий — компактная версия === */
+        /* Вставь этот блок НИЖЕ текущих стилей, чтобы он их перекрыл */
+
+        .task-slider {
+          padding: 10px 12px;              /* было 14px 16px */
+          border-radius: 10px;             /* чуть компактнее скругление */
+          border: 1px solid var(--task-border);
+          background: var(--task-bg);
+          box-shadow: var(--task-shadow);
+          margin: 10px auto;               /* немного меньше внешние отступы */
+          max-width: var(--page-max);
+        }
+
+        .task-slider-header {
+          margin-bottom: 6px;              /* было 10px */
+        }
+
+        .task-slider-title {
+          margin: 0;
+          font-size: 1rem;                 /* было 1.05rem */
+          line-height: 1.2;                /* плотнее заголовок */
+          color: var(--login-text);
+          font-family: "Fira Code", monospace;
+        }
+
+        .task-viewport {
+          overflow: hidden;
+          border-radius: 8px;
+          min-height: 48px;                /* было 64px — меньше высота без прыжков */
+          background: transparent;
+        }
+
+        .task-track {
+          display: flex;
+          width: 400%;
+          transform: translateX(0%);
+          transition: transform .25s ease;
+          will-change: transform;
+        }
+
+        .task-slide {
+          flex: 0 0 25%;
+          width: 100%;
+          padding: 4px 6px 6px;            /* было 8px 6px 10px */
+        }
+
+        .task-item {
+          margin: 0;
+          font-size: .95rem;               /* чуть меньше текст */
+          line-height: 1.28;               /* плотнее межстрочный интервал */
+          color: var(--login-text);
+        }
+
+        /* Пагинация сделана компактнее */
+        .task-pagination {
+          display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 9999;
+          gap: 6px;                        /* было 8px */
+          margin-top: 6px;                 /* было 10px */
+          padding-top: 4px;                /* было 6px */
+          border-top: 1px dashed var(--task-border);
         }
-        .modal-backdrop.show {
-          display: flex;
-        }
-        /* Контейнер модального окна */
-        .modal {
-          background: var(--ifm-background-color, #fff);
-          color: var(--ifm-font-color-base, #111);
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-          width: min(90vw, 420px);
-          padding: 20px 20px 16px;
-          position: relative;
-        }
-        .modal h3 {
-          margin: 0 0 8px 0;
-          font-size: 18px;
-          line-height: 1.3;
-        }
-        .modal p {
-          margin: 0 0 16px 0;
-          font-size: 15px;
-        }
-        .modal .modal-actions {
-          display: flex;
-          gap: 8px;
-          justify-content: flex-end;
-        }
-        .modal .btn {
-          cursor: pointer;
-          border: none;
-          border-radius: 10px;
-          padding: 10px 14px;
-          font-size: 14px;
-        }
-        .modal .btn-primary {
-          background: #FFA001;
-          color: #111;
-        }
-        .modal .btn-secondary {
-          background: #e5e7eb;
-          color: #111;
-        }
-        /* Кнопка закрытия (икс) */
-        .modal .close-x {
-          position: absolute;
-          top: 8px;
-          right: 10px;
-          font-size: 22px;
-          line-height: 1;
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: inherit;
-        }
-    </style>
 
+        .task-dot {
+          width: 26px;                     /* было 30px */
+          height: 26px;
+          border-radius: 999px;
+          border: 1px solid var(--task-border);
+          background: var(--task-dot-bg);
+          color: var(--login-text);
+          font-size: .9rem;                /* было .95rem */
+          line-height: 1;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform .08s ease, background-color .15s ease, border-color .15s ease;
+        }
+
+        .task-dot:hover { transform: translateY(-1px); }
+
+        .task-dot[aria-pressed="true"] {
+          background: var(--task-dot-active);
+          color: #1a1a1a;
+          border-color: var(--task-dot-active);
+        }
+
+        /* Ещё более плотный режим на узких экранах */
+        @media (max-width: 480px) {
+          .task-slider       { padding: 8px 10px; }
+          .task-viewport     { min-height: 44px; }
+          .task-item         { font-size: .93rem; line-height: 1.24; }
+          .task-dot          { width: 24px; height: 24px; font-size: .85rem; }
+        }
+
+
+        /* ====== ДВУХКОЛОНОЧНЫЙ ЛЕЙАУТ: слева форма (sticky), справа чек-лист (скролл) ====== */
+        .login-layout {
+          max-width: var(--page-max);
+          margin: 1rem auto 1.25rem;
+          display: grid;
+          grid-template-columns: minmax(300px, 460px) minmax(0, 1fr);
+          gap: var(--gap);
+          align-items: start;
+          padding-inline: 0px;
+        }
+        .login-left .login-wrap {
+          position: sticky;
+          top: var(--stick-top);
+          margin: 0;
+          width: 100%;
+        }
+        .login-right .checks-panel {
+          border: 1px solid var(--login-border);
+          border-radius: 14px;
+          padding: .75rem;
+          background: color-mix(in oklab, var(--login-card) 92%, var(--login-bg));
+          max-height: var(--checks-max-h);
+          overflow: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 900px) {
+          .login-layout {
+            grid-template-columns: 1fr;
+          }
+          .login-left .login-wrap { position: static; }
+          .login-right .checks-panel {
+            max-height: none;
+            overflow: visible;
+          }
+        }
+        .checks-title {
+          margin: 0 .25rem .5rem;
+          font-family: "Fira Code", monospace;
+          font-size: 1.0rem;
+          color: var(--login-text);
+        }
+
+        /* ====== Контейнер формы ====== */
+        .login-wrap {
+          background: var(--login-card);
+          border: 1px solid var(--login-border);
+          border-radius: 16px;
+          padding: 1rem;
+        }
+
+        /* ====== Инлайн-ошибка вместо поп-апа ====== */
+        .inline-error {
+          display: none;
+          border: 1px solid var(--bad);
+          background: rgba(239,68,68,.10);
+          background: color-mix(in oklab, var(--bad) 10%, transparent);
+          color: var(--bad);
+          padding: .6rem .75rem;
+          border-radius: 10px;
+          margin: 0 0 .75rem 0;
+          font-size: .95rem;
+        }
+        .inline-error.show { display: block; }
+        .inline-error small { color: var(--login-muted); display:block; margin-top: .25rem; }
+
+        /* ====== Свитчер (Телефон / Email) ====== */
+        .segmented {
+          position: relative;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          background: var(--login-bg);
+          border: 1px solid var(--login-border);
+          border-radius: 999px;
+          padding: 4px;
+          margin: .25rem auto 1rem;
+          max-width: 360px;
+        }
+        .segmented .thumb {
+          position: absolute;
+          top: 4px; bottom: 4px;
+          width: calc(50% - 4px);
+          background: var(--login-card);
+          border: 1px solid var(--login-border);
+          border-radius: 999px;
+          transition: transform .25s ease;
+          will-change: transform;
+        }
+        .segmented[data-active="email"] .thumb { transform: translateX(100%); }
+        .segmented button {
+          position: relative;
+          z-index: 1;
+          border: 0;
+          background: transparent;
+          color: var(--login-text);
+          padding: .5rem .75rem;
+          border-radius: 999px;
+          cursor: pointer;
+          font-size: .95rem;
+        }
+        .segmented button[aria-pressed="true"] { color: var(--login-accent-2); }
+        .segmented button:hover { color: var(--login-accent); }
+
+        /* ====== Поля ввода ====== */
+        .input-container { margin-bottom: .85rem; }
+        .field {
+          position: relative;
+          display: flex;
+          align-items: center;
+          background: var(--login-bg);
+          border: 1px solid var(--login-border);
+          border-radius: 12px;
+          padding: .0rem .1rem .1rem .65rem;
+          transition: box-shadow .2s ease, border-color .2s ease, background .2s ease;
+        }
+        .field:focus-within {
+          border-color: var(--login-accent);
+          box-shadow: 0 0 0 4px var(--login-ring);
+          background: #ffffff;
+          background: color-mix(in oklab, var(--login-bg) 70%, white);
+        }
+        .field input {
+          width: 100%;
+          background: transparent;
+          border: 0;
+          outline: none;
+          padding: .7rem .6rem;
+          color: var(--login-text);
+          font-size: 1rem;
+        }
+        .field .clear-btn {
+          appearance: none;
+          border: 0;
+          background: transparent;
+          font-size: 20px;
+          line-height: 1;
+          cursor: pointer;
+          padding: .3rem .55rem;
+          color: var(--login-muted);
+          display: none;
+        }
+        .field .clear-btn:hover { color: var(--login-text); }
+        .hint {
+          display: block;
+          color: var(--login-muted);
+          font-size: .85rem;
+          margin-top: .35rem;
+          padding-left: .25rem;
+        }
+
+        /* ====== Кнопка Войти ====== */
+        #login-button.carousel-button {
+          font-size: 1rem;
+          padding: .65rem 1.1rem;
+          border-radius: 12px;
+          background: var(--login-card);
+          border: 1px solid var(--login-border);
+        }
+
+        /* Светлый текст кнопки "Войти" в тёмной теме */
+        :root[data-theme="dark"] #login-button.carousel-button {
+        color: #f5f5f5; /* или color: var(--login-text); если используешь переменную */
+        }
+
+        #login-button.carousel-button:hover {
+          background: #ffffff;
+          background: color-mix(in oklab, var(--login-card) 70%, white);
+        }
+        #login-button[disabled] { opacity: .6; cursor: not-allowed; }
+
+        /* ====== Чек-лист — одна карточка в ряд ====== */
+        .checks-grid {
+          display: grid;
+          grid-template-columns: 1fr; /* строго одна колонка */
+          gap: .6rem;
+        }
+        .check-card {
+          background: var(--login-card);
+          border: 1px solid var(--login-border);
+          border-radius: 12px;
+          padding: .75rem .75rem .6rem;
+          display: grid;
+          gap: .55рем;
+        }
+        .check-text { color: var(--login-text); }
+        .check-actions {
+          display: flex;
+          gap: .5rem;
+          flex-wrap: wrap;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .check-buttons { display: flex; gap: .5rem; }
+        .btn {
+          appearance: none;
+          border: 1px solid var(--login-border);
+          background: var(--login-bg);
+          color: var(--login-text);
+          padding: .45rem .7rem;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: .9rem;
+          transition: background .15s ease, border-color .15s ease, color .15s ease, transform .05s ease;
+        }
+        .btn:hover { background: #ffffff; background: color-mix(in oklab, var(--login-bg) 60%, white); }
+        .btn:active { transform: translateY(1px); }
+        .btn-ok   { border-color: color-mix(in oklab, var(--ok) 40%, var(--login-border)); }
+        .btn-bad  { border-color: color-mix(in oklab, var(--bad) 40%, var(--login-border)); }
+        .status {
+          font-size: .85rem;
+          margin-left: auto;
+          padding: .2rem .5rem;
+          border-radius: 999px;
+          border: 1px solid var(--login-border);
+          color: var(--login-muted);
+        }
+        .status.ok { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 40%, var(--login-border)); }
+        .status.bad { color: var(--bad); border-color: color-mix(in oklab, var(--bad) 40%, var(--login-border)); }
+        .status.pending { color: var(--pending); }
+
+        /* Утилиты */
+        .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+    </style>
 </head>
 <body>
 <nav>
@@ -90,6 +401,8 @@
     </ul>
 </nav>
 
+<!-- Хэддер (не трогаем) -->
+<div class="login-scope">
 <header class="welcome">
     <div class="header-container">
         <div class="logo"
@@ -120,236 +433,121 @@
     </div>
 </header>
 
-<div class="page-header article">
-    <h2>Протестируй страницу авторизации</h2>
-</div>
-    <br><br>
-    <!-- Переключатель способа входа -->
-    <div class="login-toggle" style="text-align:center; margin-bottom:15px;">
-        <label><input type="radio" name="login-method" value="phone" checked> Телефон</label>
-        &nbsp;&nbsp;
-        <label><input type="radio" name="login-method" value="email"> Email</label>
+<!-- ЗАДАНИЕ-СЛАЙДЕР (заместо заголовка) -->
+<section class="task-slider" role="region" aria-label="Задание">
+    <div class="task-slider-header">
+        <h2 class="task-slider-title">Задание</h2>
     </div>
-
-<!-- Модалка ошибок логина -->
-<div id="error-modal-backdrop" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="error-modal-title">
-        <button id="error-modal-close-x" class="close-x" aria-label="Закрыть">×</button>
-        <h3 id="error-modal-title">Упс! Повторите попытку позже</h3>
-        <p id="error-modal-text">Что-то пошло не так</p>
-        <div class="modal-actions">
-            <button id="error-modal-details" class="btn btn-secondary" type="button">Подробнее</button>
-            <button id="error-modal-ok" class="btn btn-primary" type="button">Ок</button>
+    <div class="task-viewport" id="taskViewport">
+        <div class="task-track" id="taskTrack" style="transform: translateX(0%);">
+            <div class="task-slide" data-idx="0">
+                <p class="task-item"> Проверь логин-форму по чек-листу справа — отметь <i>Passed</i> / <i>Failed</i> для каждого пункта.</p>
+            </div>
+            <div class="task-slide" data-idx="1">
+                <p class="task-item"> Сформируй <i>3 тест-кейса</i> для авторизации, по которым ты проведешь регресс.</p>
+            </div>
+            <div class="task-slide" data-idx="2">
+                <p class="task-item"> Проведи <i>ad-hoc</i> тестирование и зафиксируй наблюдения/идеи улучшений.</p>
+            </div>
+            <div class="task-slide" data-idx="3">
+                <p class="task-item"> Предложи, какие проверки <i>убрать/добавить</i> в чек-лист и почему.</p>
+            </div>
         </div>
     </div>
-</div>
-
-
-    <!-- Форма входа -->
-    <form id="login-form" style="max-width:400px; margin:0 auto; display:flex; flex-direction:column;">
-        <!-- Телефон -->
-        <div id="phone-container" class="input-container">
-            <div class="input-wrapper" style="position:relative;">
-                <input type="tel" id="phone-input" placeholder="+7 (___) ___-__-__">
-                <button type="button" class="clean-btn" id="clear-phone"
-                        style="position:absolute; right:10px; top:50%; transform:translateY(-50%); display:none; font-size:16px; background:none; border:none; cursor:pointer;">
-                    &times;
-                </button>
-            </div>
-            <small class="hint">Номер должен содержать 10 цифр (вместе с +7)</small>
-        </div>
-
-        <!-- Email -->
-        <div id="email-container" class="input-container" style="display:none;">
-            <div class="input-wrapper" style="position:relative;">
-                <input type="email" id="email-input" placeholder="primer@mail.ru">
-                <button type="button" class="clean-btn" id="clear-email"
-                        style="position:absolute; right:10px; top:50%; transform:translateY(-50%); display:none; font-size:16px; background:none; border:none; cursor:pointer;">
-                    &times;
-                </button>
-            </div>
-            <small class="hint">Введите корректный email</small>
-        </div>
-
-        <!-- Пароль -->
-        <div class="input-container">
-            <div class="input-wrapper" style="position:relative;">
-                <input type="password" id="password-input" placeholder="Пароль">
-                <button type="button" class="clean-btn" id="clear-password"
-                        style="position:absolute; right:10px; top:50%; transform:translateY(-50%); display:none; font-size:16px; background:none; border:none; cursor:pointer;">
-                    &times;
-                </button>
-            </div>
-            <small id="password-strength" class="hint"></small>
-        </div>
-
-        <!-- Кнопка входа -->
-        <button type="button" id="login-button" class="carousel-button" style="align-self:center; margin-top:10px;">
-            Войти
-        </button>
-    </form>
-    <br><br>
-
-<section id="instruction" class="article">
-    <div class="selection-container">
-        <div class="selection-item">
-            <p>Это самое популярное практическое задание, которое дают тестировщику для отбора на техническое собеседование. Практика тебе точно не помешает! Чтобы приступить, выбери одно из условий тестового задания:<br><br>
-                1) Проверь логин форму по структурированному чек-листу - справа внизу (лёгкий)<br><br>
-                2) Протестируй страницу авторизации с помощью трех тест-кейсов (средний)<br><br>
-                3) Проведи ad-hoc тестирование, опираясь на свой пользовательский опыт (сложный)<br><br>
-                4) Какие по вашему мнению проверки стоит убрать из чек-листа, а какие стоит добавить? (дополнительно)
-            </p>
-        </div>
+    <div class="task-pagination" role="tablist" aria-label="Переключение заданий">
+        <button type="button" class="task-dot" data-go="0" aria-pressed="true" aria-label="Задание 1">1</button>
+        <button type="button" class="task-dot" data-go="1" aria-pressed="false" aria-label="Задание 2">2</button>
+        <button type="button" class="task-dot" data-go="2" aria-pressed="false" aria-label="Задание 3">3</button>
+        <button type="button" class="task-dot" data-go="3" aria-pressed="false" aria-label="Задание 4">4</button>
     </div>
 </section>
 
+<!-- ДВЕ КОЛОНКИ: слева форма (sticky), справа чек-лист (скролл, 1 в ряд) -->
+<section class="login-layout" aria-label="Логин и чек-лист">
+    <!-- ЛЕВАЯ КОЛОНКА -->
+    <div class="login-left">
+        <section class="login-wrap">
+            <!-- Инлайн-ошибка -->
+            <div id="inline-error" class="inline-error" role="alert" aria-live="polite"></div>
+
+            <!-- Свитчер способа входа -->
+            <div class="segmented" id="login-segmented" data-active="phone" role="tablist" aria-label="Способ входа">
+                <span class="thumb" aria-hidden="true"></span>
+                <button type="button" id="tab-phone" role="tab" aria-selected="true" aria-pressed="true">Телефон</button>
+                <button type="button" id="tab-email" role="tab" aria-selected="false" aria-pressed="false">Email</button>
+            </div>
+
+            <form id="login-form" novalidate>
+                <!-- Телефон -->
+                <div id="phone-container" class="input-container">
+                    <label for="phone-input" class="sr-only">Номер телефона</label>
+                    <div class="field">
+                        <input type="tel" id="phone-input" placeholder="+7 (___) ___-__-__" inputmode="tel" autocomplete="tel" />
+                        <button type="button" class="clear-btn" id="clear-phone" aria-label="Очистить">&times;</button>
+                    </div>
+                    <small class="hint">Номер должен содержать 11 цифр (вместе с +7)</small>
+                </div>
+
+                <!-- Email -->
+                <div id="email-container" class="input-container" style="display:none;">
+                    <label for="email-input" class="sr-only">Email</label>
+                    <div class="field">
+                        <input type="email" id="email-input" placeholder="primer@mail.ru" autocomplete="email" />
+                        <button type="button" class="clear-btn" id="clear-email" aria-label="Очистить">&times;</button>
+                    </div>
+                    <small class="hint">Введите корректный email</small>
+                </div>
+
+                <!-- Пароль -->
+                <div class="input-container">
+                    <label for="password-input" class="sr-only">Пароль</label>
+                    <div class="field">
+                        <input type="password" id="password-input" placeholder="Пароль" autocomplete="current-password" />
+                        <button type="button" class="clear-btn" id="clear-password" aria-label="Очистить">&times;</button>
+                    </div>
+                    <small id="password-strength" class="hint"></small>
+                </div>
+
+                <!-- Кнопка входа -->
+                <div style="display:flex; justify-content:center; margin-top:.25rem;">
+                    <button type="button" id="login-button" class="carousel-button">Войти</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <!-- ПРАВАЯ КОЛОНКА -->
+    <div class="login-right">
+        <section class="checks-panel" role="region" aria-label="Список проверок">
+            <h3 class="checks-title">Список проверок (чек-лист)</h3>
+            <div id="checks-grid" class="checks-grid" aria-live="polite"></div>
+
+            <!-- Шаблон карточки проверки -->
+            <template id="check-card-tpl">
+                <div class="check-card" data-id="">
+                    <div class="check-text"></div>
+                    <div class="check-actions">
+                        <div class="check-buttons">
+                            <button class="btn btn-bad btn-failed" type="button" aria-pressed="false">Failed</button>
+                            <button class="btn btn-ok btn-passed"  type="button" aria-pressed="false">Passed</button>
+                        </div>
+                        <span class="status pending">Статус: не проверено</span>
+                    </div>
+                </div>
+            </template>
+        </section>
+    </div>
+</section>
+</div>
+
 <footer class="qatodev">
     <p>
-        <a href="https://t.me/QAtoDev" target="_blank" style="background-color: #FFA001;">Telegram</a>
-        <a href="https://set.ki/channel/PJnPK69" target="_blank" style="background-color: #FFA001;">Сетка</a>
+        <a href="https://t.me/QAtoDev" target="_blank" style="background-color:#FFA001;">Telegram</a>
+        <a href="https://set.ki/channel/PJnPK69" target="_blank" style="background-color:#FFA001;">Сетка</a>
     </p>
 </footer>
 
-<!-- Кнопка -->
-<button class="bug-fab" id="bugFabB" title="Показать чек-лист">✍🏻</button>
-
-<!-- Панель чек-листа -->
-<div class="bug-panel" id="bugPanelB" role="dialog" aria-label="Список проверок">
-    <h4>Список проверок (чек-лист):</h4>
-
-    <!-- Контейнер для списка -->
-    <div class="bug-list" id="bugListB"></div>
-
-    <!-- Единый HTML-шаблон одного пункта -->
-    <template id="bugItemTplB">
-        <div class="bug-item" data-bug-id="" style="margin: 8px 0;">
-            <div class="bug-text"></div>
-            <div class="bug-actions">
-                <button class="icon-btn btn-open"  title="Баг" aria-label="Баг">🐞</button>
-                <button class="icon-btn btn-fixed" title="Успешно"      aria-label="Успешно">👍</button>
-            </div>
-            <div class="bug-status" aria-live="polite"></div>
-        </div>
-    </template>
-</div>
-
-<script>
-    (function(){
-      const fab   = document.getElementById('bugFabB');
-      const panel = document.getElementById('bugPanelB');
-      const list  = document.getElementById('bugListB');
-      const tpl   = document.getElementById('bugItemTplB');
-
-      // УНИКАЛЬНЫЙ ключ хранилища для этой страницы
-      const LS_KEY = 'qa_checks_status__PAGE_B';
-
-      // Массив проверок
-      const CHECKS = [
-        { id: 'mask-default-plus7',      text: 'По умолчанию в поле ввода телефона маска +7 ХХХ ХХХ ХХ ХХ' },
-        { id: 'enter-7-autoprefix',      text: 'Ввод цифры 7 приводит к автоподстановке маски +7' },
-        { id: 'enter-not7-add-plus7',    text: 'Если первая введённая цифра — не 7, к номеру автоматически проставляется +7' },
-        { id: 'clear-cross-appears',     text: 'При вводе первой цифры отображается крестик — нажатие удаляет данные в поле' },
-        { id: 'clear-cross-disappears',  text: 'Крестик пропадает, если поле очищено' },
-        { id: 'checkpass6',  text: 'Нет возможности в поле телефон ввести символы и буквы (только цифры)' },
-        { id: 'checkpass7',  text: 'Под полем ввода отображается подсказ "Номер должен содержать 11 цифр (вместе с +7)"' },
-        { id: 'checkpass8',  text: 'При переключении способа входа - введенные данные сохраняются' },
-        { id: 'checkpass9',  text: 'Стереть данные в полях можно кнопкой backspace и командой ctrA + delete' },
-        { id: 'checkpass10',  text: 'При вводе пароля подсвечивается статус защищенности' },
-        { id: 'checkpass11',  text: 'При вводе первого символа отображается крестик — нажатие удаляет данные в поле' },
-        { id: 'checkpass12',  text: 'При нажатии на крестик - данные стираются + пропадает статус защищенности' },
-        { id: 'checkpass13',  text: 'Статус защищенности делится на: легкий, средний, хороший' },
-        { id: 'checkpass14',  text: 'Статус хороший - если в пароле есть цифры, нижний и верхний регистр и символы (не менее 8)' },
-        { id: 'checkpass15',  text: 'Статус средний - если цифры и буквы (не более 8)' },
-        { id: 'checkpass16',  text: 'При нажатии на кнопку войти отправляется Post запрос' },
-        { id: 'checkpass17',  text: 'Post запрос передает логин и пароль в зашифрованном виде' },
-        { id: 'checkpass18',  text: 'При ошибке входа отображается "Упс! Не можем впустить Вас"' },
-        { id: 'checkpass19',  text: 'На Post запрос приходит токен авторизации' },
-        { id: 'checkpass20',  text: 'Поп-ап отображает заголовок, подзаголовок, кнопка "Отчет об ошибке", ок и крестик' },
-        { id: 'checkpass21',  text: 'Вкладка Email содержит поля имейл и пароль' },
-        { id: 'checkpass22',  text: 'Маска поля email проверяет символ @ и домен ru' },
-        { id: 'checkpass23',  text: 'При нарушении маски под полем отображается подсказка' },
-        { id: 'checkpass24',  text: 'Подсказка содержит "Введите корректный email"' },
-        { id: 'checkpass25',  text: 'При обновлении данные полей ввода/вкладки сохраняются' }
-      ];
-
-      function readStatuses(){
-        try {
-          const raw = localStorage.getItem(LS_KEY);
-          const parsed = raw ? JSON.parse(raw) : {};
-          return (parsed && typeof parsed === 'object') ? parsed : {};
-        } catch(e){ return {}; }
-      }
-      function writeStatuses(map){
-        try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch(e){}
-      }
-
-      // добавили поддержку 'pending' (по умолчанию)
-      function applyStatus(itemEl, status){
-        const statusEl = itemEl.querySelector('.bug-status');
-        const btnOpen  = itemEl.querySelector('.btn-open');
-        const btnFixed = itemEl.querySelector('.btn-fixed');
-
-        itemEl.classList.remove('status-open','status-fixed','status-pending');
-        btnOpen.setAttribute('aria-pressed','false');
-        btnFixed.setAttribute('aria-pressed','false');
-
-        if (status === 'fixed'){
-          itemEl.classList.add('status-fixed');
-          statusEl.textContent = 'Статус: успешно';
-          btnFixed.setAttribute('aria-pressed','true');
-        } else if (status === 'open'){
-          itemEl.classList.add('status-open');
-          statusEl.textContent = 'Статус: баг';
-          btnOpen.setAttribute('aria-pressed','true');
-        } else {
-          // по умолчанию — не проверено
-          itemEl.classList.add('status-pending');
-          statusEl.textContent = 'Статус: не проверено';
-          // обе кнопки остаются не нажаты
-        }
-      }
-
-      function renderList(){
-        const statuses = readStatuses();
-        list.innerHTML = '';
-
-        CHECKS.forEach(check => {
-          const node = tpl.content.firstElementChild.cloneNode(true);
-          node.setAttribute('data-bug-id', check.id);
-          node.querySelector('.bug-text').textContent = check.text;
-
-          // если статуса нет — 'pending'
-          const current = statuses[check.id] || 'pending';
-          applyStatus(node, current);
-
-          node.querySelector('.btn-open').addEventListener('click', () => {
-            statuses[check.id] = 'open';
-            writeStatuses(statuses);
-            applyStatus(node, 'open');
-          });
-          node.querySelector('.btn-fixed').addEventListener('click', () => {
-            statuses[check.id] = 'fixed';
-            writeStatuses(statuses);
-            applyStatus(node, 'fixed');
-          });
-
-          list.appendChild(node);
-        });
-      }
-
-      fab.addEventListener('click', () => {
-        panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
-        if(panel.style.display === 'flex') renderList();
-      });
-
-      document.addEventListener('DOMContentLoaded', () => {
-        if(getComputedStyle(panel).display !== 'none') renderList();
-      });
-    })();
-</script>
-
-
-<!-- Сценарии -->
+<!-- Скрипты темы (оставляем без изменений) -->
 <script>
     (function() {
       const root = document.documentElement;
@@ -395,150 +593,144 @@
       }, 50000);
     })();
 </script>
+
+<!-- Логика страницы логина -->
 <script>
     document.addEventListener('DOMContentLoaded', function(){
-        const phoneContainer = document.getElementById('phone-container');
-        const emailContainer = document.getElementById('email-container');
-        document.querySelectorAll('input[name="login-method"]').forEach(radio=>{
-            radio.addEventListener('change', ()=> {
-                if(radio.value==='phone'){
-                    phoneContainer.style.display='block';
-                    emailContainer.style.display='none';
-                } else {
-                    phoneContainer.style.display='none';
-                    emailContainer.style.display='block';
-                }
-            });
-        });
 
-        function setupClear(inputId, clearBtnId){
-            const input = document.getElementById(inputId);
-            const btn = document.getElementById(clearBtnId);
-            input.addEventListener('input', function(){
-                btn.style.display = input.value ? 'block':'none';
-            });
-            btn.addEventListener('click', function(){
-                input.value = '';
-                input.dispatchEvent(new Event('input'));
-                input.focus();
-            });
+      /* --- Слайдер ЗАДАНИЯ --- */
+      (function initTaskSlider(){
+        const track = document.getElementById('taskTrack');
+        const dots = Array.from(document.querySelectorAll('.task-dot'));
+        const TOTAL = 4;
+        let current = 0;
+
+        function goTo(idx) {
+          const i = Math.max(0, Math.min(TOTAL - 1, idx));
+          current = i;
+          const offset = -(i * 25); /* т.к. каждая карточка = 25% ширины трека */
+          track.style.transform = 'translateX(' + offset + '%)';
+          dots.forEach((d, n) => d.setAttribute('aria-pressed', n === i ? 'true' : 'false'));
         }
-        setupClear('phone-input','clear-phone');
-        setupClear('email-input','clear-email');
-        setupClear('password-input','clear-password');
 
-        // Маска телефона
-        const phoneInput = document.getElementById('phone-input');
-        phoneInput.addEventListener('input', function(){
-            let val = phoneInput.value.replace(/\D/g, '');
-            if(val.startsWith('8')) val = '7' + val.slice(1);
-            if(!val.startsWith('7')) val = '7'+val;
-            let formatted = '+7';
-            if(val.length>1) formatted += ' ('+val.slice(1,4);
-            if(val.length>=4) formatted += ') '+val.slice(4,7);
-            if(val.length>=7) formatted += '-'+val.slice(7,9);
-            if(val.length>=9) formatted += '-'+val.slice(9,11);
-            phoneInput.value = formatted;
+        dots.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.go, 10);
+            goTo(idx);
+          });
         });
 
-        // Сила пароля
-        const pwdInput = document.getElementById('password-input');
-        const strengthText = document.getElementById('password-strength');
-        pwdInput.addEventListener('input', function(){
-            const v = pwdInput.value;
-            let score=0;
-            if(v.length>=6) score++;
-            if(/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
-            if(/\d/.test(v)) score++;
-            if(/[\W_]/.test(v)) score++;
-            let text='', color='';
-            if(score<=1){ text='Лёгкий'; color='red'; }
-            else if(score==2){ text='Средний'; color='orange'; }
-            else{ text='Достойный'; color='green'; }
-            strengthText.textContent = text;
-            strengthText.style.color = color;
+        // Стрелки клавиатуры для доступности
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') goTo(current + 1);
+          if (e.key === 'ArrowLeft')  goTo(current - 1);
         });
-    });
-</script>
 
-<!-- === Новая логика: отправка запроса на логин + показ поп-апа при 4XX/5XX === -->
-<script>
-    (function(){
-      // Выбираем элементы, которые уже есть в DOM
-      const loginBtn = document.getElementById('login-button');
+        // Инициализация
+        goTo(0);
+      })();
+
+      /* --- Свитчер Телефон/Email --- */
+      const segmented   = document.getElementById('login-segmented');
+      const tabPhone    = document.getElementById('tab-phone');
+      const tabEmail    = document.getElementById('tab-email');
+      const phoneBox    = document.getElementById('phone-container');
+      const emailBox    = document.getElementById('email-container');
+
+      function activate(mode) {
+        segmented.setAttribute('data-active', mode);
+        const phoneActive = mode === 'phone';
+        tabPhone.setAttribute('aria-pressed', phoneActive ? 'true' : 'false');
+        tabPhone.setAttribute('aria-selected', phoneActive ? 'true' : 'false');
+        tabEmail.setAttribute('aria-pressed', !phoneActive ? 'true' : 'false');
+        tabEmail.setAttribute('aria-selected', !phoneActive ? 'true' : 'false');
+        phoneBox.style.display = phoneActive ? 'block' : 'none';
+        emailBox.style.display = phoneActive ? 'none' : 'block';
+      }
+      tabPhone.addEventListener('click', () => activate('phone'));
+      tabEmail.addEventListener('click', () => activate('email'));
+
+      /* --- Крестики очистки --- */
+      function setupClear(inputId, btnId){
+        const input = document.getElementById(inputId);
+        const btn   = document.getElementById(btnId);
+        function toggle() { btn.style.display = input.value ? 'inline' : 'none'; }
+        input.addEventListener('input', toggle);
+        btn.addEventListener('click', () => { input.value=''; input.dispatchEvent(new Event('input')); input.focus(); });
+        toggle();
+      }
+      setupClear('phone-input','clear-phone');
+      setupClear('email-input','clear-email');
+      setupClear('password-input','clear-password');
+
+      /* --- Маска телефона --- */
       const phoneInput = document.getElementById('phone-input');
+      if (phoneInput) {
+        phoneInput.addEventListener('input', function(){
+          let val = phoneInput.value.replace(/\D/g, '');
+          if (val.startsWith('8')) val = '7' + val.slice(1);
+          if (!val.startsWith('7')) val = '7' + val;
+          let formatted = '+7';
+          if (val.length > 1)  formatted += ' (' + val.slice(1,4);
+          if (val.length >= 4) formatted += ') ' + val.slice(4,7);
+          if (val.length >= 7) formatted += '-' + val.slice(7,9);
+          if (val.length >= 9) formatted += '-' + val.slice(9,11);
+          phoneInput.value = formatted;
+        });
+      }
+
+      /* --- Сила пароля --- */
+      const pwdInput = document.getElementById('password-input');
+      const strengthText = document.getElementById('password-strength');
+      if (pwdInput && strengthText) {
+        pwdInput.addEventListener('input', function(){
+          const v = pwdInput.value;
+          let score=0;
+          if(v.length>=6) score++;
+          if(/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
+          if(/\d/.test(v)) score++;
+          if(/[\W_]/.test(v)) score++;
+          let text='', color='';
+          if(score<=1){ text='Лёгкий'; color='var(--bad)'; }
+          else if(score==2){ text='Средний'; color='orange'; }
+          else{ text='Достойный'; color='var(--ok)'; }
+          strengthText.textContent = text;
+          strengthText.style.color = color;
+        });
+      }
+
+      /* --- Отправка запроса (инлайн-ошибка вместо модалки) --- */
+      const loginBtn = document.getElementById('login-button');
       const emailInput = document.getElementById('email-input');
-      const passwordInput = document.getElementById('password-input');
+      const inlineError = document.getElementById('inline-error');
 
-      // Элементы модального окна (ошибки)
-      const backdrop = document.getElementById('error-modal-backdrop');
-      const closeX   = document.getElementById('error-modal-close-x');
-      const okBtn    = document.getElementById('error-modal-ok');
-      const detailsBtn = document.getElementById('error-modal-details');
-      const modalText = document.getElementById('error-modal-text');
-
-      // Вспомогательные функции управления модалкой
-      function showErrorModal(message, details) {
-        if (typeof message === 'string' && message.trim()) {
-          modalText.textContent = message;
-        } else {
-          modalText.textContent = 'Произошла ошибка при попытке входа. Попробуйте ещё раз позже.';
-        }
-        backdrop.classList.add('show');
-        backdrop.setAttribute('aria-hidden', 'false');
-
-        // Обработчик "Подробнее" — выводит полезные сведения в консоль
-        detailsBtn.onclick = function() {
-          console.group('Детали ошибки логина');
-          console.log('Сообщение:', message);
-          console.log('Технические детали:', details);
-          console.groupEnd();
-        };
+      function showInlineError(message, details) {
+        inlineError.classList.add('show');
+        inlineError.innerHTML = message + (details ? '<small>' + details + '</small>' : '');
       }
-      function hideErrorModal() {
-        backdrop.classList.remove('show');
-        backdrop.setAttribute('aria-hidden', 'true');
+      function hideInlineError() {
+        inlineError.classList.remove('show');
+        inlineError.textContent = '';
       }
 
-      // Закрытия модалки
-      closeX.addEventListener('click', hideErrorModal);
-      okBtn.addEventListener('click', hideErrorModal);
-      // Клик по подложке закрывает окно
-      backdrop.addEventListener('click', function(e){
-        if (e.target === backdrop) hideErrorModal();
-      });
-      // Esc тоже закрывает окно
-      document.addEventListener('keydown', function(e){
-        if (e.key === 'Escape') hideErrorModal();
-      });
-
-      // Основная логика отправки запроса
       loginBtn.addEventListener('click', async function(){
-        // Не меняем валидации и существующие обработчики — просто берём значения как есть
-        const selectedMethod = document.querySelector('input[name="login-method"]:checked')?.value || 'phone';
-        const password = passwordInput.value || '';
+        hideInlineError();
 
-        // Нормализуем номер: берём только цифры, чтобы на бэкенде было удобнее
+        const selectedMethod = segmented.getAttribute('data-active') === 'email' ? 'email' : 'phone';
+        const password = (pwdInput.value || '');
         const rawPhoneDigits = (phoneInput.value || '').replace(/\D/g, '');
         const phoneNormalized = rawPhoneDigits.startsWith('7') ? rawPhoneDigits : ('7' + rawPhoneDigits);
-
         const email = (emailInput.value || '').trim();
 
-        // Формируем тело запроса: передаём и метод, и то, что ввёл пользователь.
-        // Это удобно для тестов — видно, что реально улетает на сервер.
         const payload = {
-          method: selectedMethod,               // 'phone' | 'email'
-          phone: selectedMethod === 'phone' ? phoneNormalized : null,
-          email: selectedMethod === 'email' ? email : null,
+          method: selectedMethod,
+          phone:  selectedMethod === 'phone' ? phoneNormalized : null,
+          email:  selectedMethod === 'email' ? email : null,
           password: password
         };
 
-        // Придуманный (и реальный) адрес для тренировки:
-        // https://httpstat.us/500 — возвращает 500 (5XX) при любом методе.
-        // Добавим параметр ?sleep=800, чтобы было ощущение реального запроса.
         const LOGIN_ENDPOINT = 'https://httpstat.us/500?sleep=800';
 
-        // Блокируем кнопку на время запроса, чтобы избежать дабл-кликов
         const originalText = loginBtn.textContent;
         loginBtn.disabled = true;
         loginBtn.textContent = 'Входим...';
@@ -546,54 +738,158 @@
         try {
           const resp = await fetch(LOGIN_ENDPOINT, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            // Отправляем JSON с телефоном/емейлом и паролем
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
 
-          // Для демонстрации: читаем текст (если есть) и логируем
           let respText = '';
-          try {
-            respText = await resp.text();
-          } catch(e) {
-            // ignore
-          }
+          try { respText = await resp.text(); } catch(e) {}
 
           console.group('Результат логина');
           console.log('URL:', LOGIN_ENDPOINT);
-          console.log('Статус:', resp.status);
-          console.log('Статус OK:', resp.ok);
+          console.log('Статус:', resp.status, 'OK:', resp.ok);
           console.log('Тело ответа:', respText);
-          console.log('Отправленный payload:', payload);
+          console.log('Payload:', payload);
           console.groupEnd();
 
-          // ТЗ: при 4XX или 5XX — показываем поп-ап "Что-то пошло не так"
           if (!resp.ok) {
-            showErrorModal('Что-то пошло не так', {
-              status: resp.status,
-              ok: resp.ok,
-              responseText: respText
-            });
-            return; // дальше не идём
+            showInlineError('Упс! Не можем впустить Вас. Попробуйте позже.', 'HTTP ' + resp.status);
+            return;
           }
 
-          // Если вдруг эндпоинт вернул 2XX (не должен, но на всякий случай):
-          // можно было бы редиректить или показывать успех. Оставим лог в консоль.
           console.info('Успешный вход (демо).');
 
         } catch (err) {
-          // Сетевые/непредвиденные ошибки тоже показывают поп-ап
           console.error('Network/Fetch error:', err);
-          showErrorModal('Что-то пошло не так', { error: String(err) });
+          showInlineError('Что-то пошло не так', String(err));
         } finally {
-          // Возвращаем кнопку к нормальному состоянию
           loginBtn.disabled = false;
           loginBtn.textContent = originalText;
         }
       });
-    })();
+
+      /* --- Чек-лист (плашки справа, 1 в ряд) --- */
+      const CHECKS = [
+        { id: 'mask-default-plus7',      text: 'По умолчанию в поле ввода телефона маска +7 ХХХ ХХХ ХХ ХХ' },
+        { id: 'enter-7-autoprefix',      text: 'Ввод цифры 7 приводит к автоподстановке маски +7' },
+        { id: 'enter-not7-add-plus7',    text: 'Если первая введённая цифра — не 7, к номеру автоматически проставляется +7' },
+        { id: 'clear-cross-appears',     text: 'При вводе первой цифры отображается крестик — нажатие удаляет данные в поле' },
+        { id: 'clear-cross-disappears',  text: 'Крестик пропадает, если поле очищено' },
+        { id: 'checkpass6',              text: 'Нет возможности в поле телефон ввести символы и буквы (только цифры)' },
+        { id: 'checkpass7',              text: 'Под полем телефона отображается подсказка про 11 цифр' },
+        { id: 'checkpass8',              text: 'При переключении способа входа — введённые данные сохраняются' },
+        { id: 'checkpass9',              text: 'Стереть данные можно backspace и Ctrl/⌘+A → Delete' },
+        { id: 'checkpass10',             text: 'При вводе пароля подсвечивается статус защищенности' },
+        { id: 'checkpass11',             text: 'При вводе первого символа пароля появляется крестик' },
+        { id: 'checkpass12',             text: 'Нажатие на крестик стирает пароль + пропадает статус' },
+        { id: 'checkpass13',             text: 'Статусы: лёгкий / средний / достойный' },
+        { id: 'checkpass14',             text: '«Достойный»: цифры + нижний/верхний регистр + символы (≥ 8)' },
+        { id: 'checkpass15',             text: '«Средний»: есть цифры и буквы (≤ 8)' },
+        { id: 'checkpass16',             text: 'Кнопка «Войти» отправляет POST-запрос' },
+        { id: 'checkpass17',             text: 'Логин и пароль передаются в теле запроса (демо)' },
+        { id: 'checkpass18',             text: 'При ошибке входа отображается сообщение об ошибке' },
+        { id: 'checkpass19',             text: 'На POST приходит токен авторизации (демо)' },
+        { id: 'checkpass20',             text: 'Поп-ап с деталями ошибки (legacy) — теперь должен быть Failed' },
+        { id: 'checkpass21',             text: 'Вкладка/свитчер Email содержит поля Email и Пароль' },
+        { id: 'checkpass22',             text: 'Проверка формата email включает @ и домен' },
+        { id: 'checkpass23',             text: 'При нарушении маски email — подсказка под полем' },
+        { id: 'checkpass24',             text: 'Подсказка: «Введите корректный email»' },
+        { id: 'checkpass25',             text: 'После обновления страницы выбранный способ и введённые данные сохраняются' }
+      ];
+
+      const LS_KEY = 'qa_checks_status__LOGIN_INLINE';
+      const grid   = document.getElementById('checks-grid');
+      const tpl    = document.getElementById('check-card-tpl');
+
+      function readStatuses(){
+        try {
+          const raw = localStorage.getItem(LS_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return (parsed && typeof parsed === 'object') ? parsed : {};
+        } catch(e){ return {}; }
+      }
+      function writeStatuses(map){
+        try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch(e){}
+      }
+
+      function applyStatus(card, status) {
+        const stEl = card.querySelector('.status');
+        const btnF = card.querySelector('.btn-failed');
+        const btnP = card.querySelector('.btn-passed');
+
+        stEl.classList.remove('ok','bad','pending');
+        btnF.setAttribute('aria-pressed','false');
+        btnP.setAttribute('aria-pressed','false');
+
+        if (status === 'ok') {
+          stEl.textContent = 'Статус: успешно';
+          stEl.classList.add('ok');
+          btnP.setAttribute('aria-pressed','true');
+        } else if (status === 'bad') {
+          stEl.textContent = 'Статус: баг';
+          stEl.classList.add('bad');
+          btnF.setAttribute('aria-pressed','true');
+        } else {
+          stEl.textContent = 'Статус: не проверено';
+          stEl.classList.add('pending');
+        }
+      }
+
+      function renderChecks(){
+        const statuses = readStatuses();
+        grid.innerHTML = '';
+        CHECKS.forEach(ch => {
+          const node = tpl.content.firstElementChild.cloneNode(true);
+          node.dataset.id = ch.id;
+          node.querySelector('.check-text').textContent = ch.text;
+          applyStatus(node, statuses[ch.id] || 'pending');
+
+          node.querySelector('.btn-failed').addEventListener('click', () => {
+            statuses[ch.id] = 'bad';
+            writeStatuses(statuses);
+            applyStatus(node, 'bad');
+          });
+          node.querySelector('.btn-passed').addEventListener('click', () => {
+            statuses[ch.id] = 'ok';
+            writeStatuses(statuses);
+            applyStatus(node, 'ok');
+          });
+
+          grid.appendChild(node);
+        });
+      }
+
+      // Персист UI (метод, значения)
+      (function persistUI(){
+        const phoneInput = document.getElementById('phone-input');
+        const emailInput = document.getElementById('email-input');
+        const pwdInput   = document.getElementById('password-input');
+
+        const saved = JSON.parse(localStorage.getItem('login_form__persist') || '{}');
+        if (saved.method) activate(saved.method);
+        if (saved.phone)  { phoneInput.value   = saved.phone;  phoneInput.dispatchEvent(new Event('input')); }
+        if (saved.email)  { emailInput.value   = saved.email;  emailInput.dispatchEvent(new Event('input')); }
+        if (saved.pass)   { pwdInput.value     = saved.pass;    pwdInput.dispatchEvent(new Event('input')); }
+
+        function save() {
+          localStorage.setItem('login_form__persist', JSON.stringify({
+            method: segmented.getAttribute('data-active'),
+            phone: phoneInput.value,
+            email: emailInput.value,
+            pass:  pwdInput.value
+          }));
+        }
+        ['input','change','blur'].forEach(ev => {
+          phoneInput.addEventListener(ev, save);
+          emailInput.addEventListener(ev, save);
+          pwdInput.addEventListener(ev, save);
+          tabPhone.addEventListener('click', save);
+          tabEmail.addEventListener('click', save);
+        });
+      })();
+
+      renderChecks();
+    });
 </script>
 </body>
 </html>
