@@ -59,33 +59,6 @@ h1, h2, h3, h4, h5, h6 {
   body { margin: 10px; }
 }
 
-.theme-switcher {
-  position: absolute;
-  top: -55px;
-  right: 16px;
-  z-index: 10;
-}
-@media (max-width: 600px) {
-  .theme-switcher { right: 8px; }
-}
-
-.theme-switcher button {
-  color: var(--text);
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
-  transition: background .2s;
-}
-.toggleButton_gllP:hover { background: rgba(255, 165, 0, 0.1); color: var(--accent); }
-.lightToggleIcon_pyhR, .darkToggleIcon_wfgR { display: none; }
-html[data-theme="light"] .lightToggleIcon_pyhR { display: block; }
-html[data-theme="dark"]  .darkToggleIcon_wfgR { display: block; }
-@media (prefers-color-scheme: light) { html:not([data-theme]) .lightToggleIcon_pyhR { display: block; } }
-@media (prefers-color-scheme: dark)  { html:not([data-theme]) .darkToggleIcon_wfgR  { display: block; } }
-
 /* Главная колонка */
 .main-content {
   display: flex;
@@ -345,5 +318,4 @@ html[data-theme="dark"] .site-title { color: #FFFFFF; }
   border-radius: 12px; /* закругление */
   display: block;
 }
-
 

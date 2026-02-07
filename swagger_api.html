@@ -38,6 +38,7 @@
 </head>
 
 <body>
+<div class="site-header">
 <nav>
     <ul>
         <li><a href="hwois.html">Кто такой тестировщик?</a></li>
@@ -61,7 +62,9 @@
     </div>
 
     <!-- выносим кнопку -->
-    <div class="theme-switcher">
+    
+</header>
+<div class="theme-switcher">
         <button
                 id="theme-toggle"
                 class="clean-btn toggleButton_gllP"
@@ -80,7 +83,7 @@
             </svg>
         </button>
     </div>
-</header>
+</div>
 
 <!-- Основной контент страницы -->
 <section id="swaggerApiCarousel" class="article">
@@ -353,6 +356,7 @@
 
 <!-- Подключаем скрипт, где все функции fetch(...) -->
 <script src="swagger_api.js"></script>
+  <script src="header.js"></script>
 </body>
 <script>
     (function() {

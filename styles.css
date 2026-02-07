@@ -174,17 +174,6 @@ h1, h2, h4, h5, h6 {
   color: #000;
 }
 
-        /* Аккуратно настраиваем только <img>, которые подставляются вместо svg */
-        #tg-links .tg-card img.tg-logo.cat-img,
-        #tg-links .tg-card img.tg-logo.tg-cat {
-          border-radius: 12px;
-          display: block;
-          width: 154px !important;     /* перебиваем инлайн-стили из JS */
-          height: 154px !important;    /* фиксированный квадрат, как было */
-          object-fit: cover;
-          margin: 0 auto 8px;          /* небольшой отступ снизу и центрирование */
-        }
-
 .skills {
   margin: 10px;
   padding: 7px 10px;
@@ -835,60 +824,6 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
   }
 }
 
-.theme-switcher {
-  position: absolute;
-  top: -55px;
-  right: 16px;
-  z-index: 10;
-  transform: none;
-}
-
-@media (max-width: 600px) {
-  .theme-switcher {
-    top: -55px;
-    right: 8px;
-  }
-}
-
-/* Убираем лишний margin-left, задаём отступы внутри */
-.theme-switcher button {
-  color: #1A1A1A;
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  margin: 0;       /* сброс margin-left: auto */
-  padding: 6px;    /* можно подогнать паддинги */
-}
-
-/* Подсветка при активной теме */
-.theme-switcher button.active {
-  color: #F1F1F1;
-}
-
-/* Подсветка при наведении */
-.theme-switcher button:hover {
-  background: rgba(255, 165, 0, 0.1); /* лёгкий оранжевый фон */
-  color: #FFA001;                     /* окрашиваем иконку в оранжевый */
-}
-
-/* Размер кнопки */
-.toggleButton_gllP {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: none;
-  border: none;
-  width: 2rem;
-  height: 2rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.toggleButton_gllP:hover {
-  background: var(--ifm-color-emphasis-200);
-}
-
 /* ---------- Блок Telegram-ссылок ---------- */
 #tg-links {
   /* вместо margin: 2rem 0; */
@@ -925,11 +860,36 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
   text-decoration: none;
   color: inherit;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  --tg-icon-color: #000;
+}
+
+/* Компактная дефолтная иконка для карточек Telegram */
+.tg-card::before {
+  content: "";
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0.5rem;
+  display: block;
+  background-color: var(--tg-icon-color);
+  -webkit-mask: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTYgMTJsMTItNS00LjUgMTItMi41LTQtNS0zeiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==") no-repeat center / contain;
+  mask: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTYgMTJsMTItNS00LjUgMTItMi41LTQtNS0zeiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==") no-repeat center / contain;
 }
 
 .tg-card:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tg-card:hover::before {
+  background-image: linear-gradient(120deg, #ff2d55, #00e0ff, #ceff44, #8aff6c);
+  background-size: 300% 300%;
+  animation: tg-icon-gradient 1.6s ease-in-out infinite;
+}
+
+@keyframes tg-icon-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .tg-logo {
@@ -948,32 +908,6 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
   text-align: center;
   margin: 0;
 }
-
-
-
-/* Иконки */
-.lightToggleIcon_pyhR,
-.darkToggleIcon_wfgR {
-  display: none;
-}
-html[data-theme="light"] .lightToggleIcon_pyhR {
-  display: block;
-}
-html[data-theme="dark"] .darkToggleIcon_wfgR {
-  display: block;
-}
-
-   /* сразу после ваших общих правил для svg-hidden */
-   @media (prefers-color-scheme: light) {
-     html:not([data-theme]) .lightToggleIcon_pyhR {
-       display: block;
-     }
-   }
-   @media (prefers-color-scheme: dark) {
-     html:not([data-theme]) .darkToggleIcon_wfgR {
-       display: block;
-     }
-   }
 
 /* === ПОСЛЕ ВСЕХ МЕДИА-ЗАПРОСОВ === */
 /* когда либо система в dark-режиме, либо мы сами явно включили dark-mode → применять тёмные переменные */
@@ -1049,9 +983,13 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
       color: #000;
     }
 
-    html[data-theme="dark"] .card {
+  html[data-theme="dark"] .card {
       background-color: #1A1A1A;
       border: 1px solid #fff;
+    }
+
+    html[data-theme="dark"] .tg-card {
+      --tg-icon-color: #fff;
     }
 
      html[data-theme="dark"] :root {
@@ -1066,146 +1004,6 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
     color: #1A1A1A;
   }
   /* … */
-}
-
-/* header.css — общие стили для <header> и навигации */
-
-/* Отключаем выделение и тач‐меню в шапке сайта */
-header {
-  -webkit-touch-callout: none;   /* отключить меню при долгом таче */
-  -webkit-user-select: none;     /* Safari */
-  -khtml-user-select: none;      /* Konqueror */
-  -moz-user-select: none;        /* Firefox */
-  -ms-user-select: none;         /* Internet Explorer/Edge */
-  user-select: none;             /* стандарт */
-  touch-action: manipulation;    /* запретить двойной тап-зум/скролл */
-}
-header a, header .header-container, header .site-title {
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
-
-header {
-  position: relative;
-  padding: 0;
-}
-
-header.welcome {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  background-color: #FAFAFA; /* присутствует только в styles.css, отсутствует в questions.css, roadmap.css, swagger_api.css */
-}
-
-.header-container {
-  position: absolute;
-  top: 20px;
-  left: 10px;
-  display: flex;
-  align-items: center;
-  margin-top: -80px;
-}
-
-.logo img {
-  padding: 0;
-  width: 40px;
-  height: 40px;
-  margin-right: 5px;
-}
-
-.site-title { /*темная тема осталась в styles.css questions.css */
-  font-size: 10px;
-  color: #1e1e1e;
-}
-@media (max-width: 1200px) {
-  .site-title {
-    display: none;
-  }
-}
-
-nav {
-  padding: 8px;
-  text-align: center;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-}
-
-nav ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 10px 0; /* в styles.css: 10px 0; в questions.css: 10px 10px */
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  row-gap: 20px;
-}
-
-nav li {
-  margin-right: 8px;
-}
-
-a {
-  text-decoration: none;
-  padding: 7px 10px;
-  border-radius: 10px;
-  color: #1A1A1A;
-  transition: background-color 0.2s;
-}
-
-a.answer-link {
-  background-color: #929292; /* есть в questions.css, отсутствует в styles.css */
-  color: #F1F1F1;            /* есть в questions.css, отсутствует в styles.css */
-}
-
-a:hover { /*темная тема осталась в styles.css questions.css */
-  background-color: #111111;
-  color: #F1F1F1;
-}
-
-a.answer-link:hover {
-  background-color: #1A1A1A; /* есть в questions.css, отсутствует в styles.css */
-  color: #F1F1F1;            /* есть в questions.css, отсутствует в styles.css */
-}
-
-b {
-  text-decoration: none;
-  padding: 7px 10px;
-  border-radius: 10px;
-  background-color: #58BEFE;
-  color: #FFFFFF;
-  transition: background-color 0.2s;
-  cursor: pointer;
-}
-
-b:hover {
-  background-color: rgba(255, 255, 255, 1);
-  color: #1A1A1A;
-}
-
-@media (max-width: 600px) {
-  a, b {
-    margin-top: 7px;
-    margin-bottom: 7px;
-  }
-}
-
-@media (pointer: coarse) {
-  html {
-    -webkit-user-select: none !important;
-    -moz-user-select: none !important;
-    -ms-user-select: none !important;
-    user-select: none !important;
-
-    -webkit-touch-callout: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-
-    touch-action: manipulation !important;
-  }
 }
 
 /* ===== Новые стили для чек-листа и результатов ===== */
