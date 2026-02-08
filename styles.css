@@ -218,12 +218,17 @@ h1, h2, h4, h5, h6 {
         .skill-links a.selected .skill-counter {
             display: inline-block;
         }
-        /* Стили для контейнера с планом изучения */
-        #study-plan {
-            margin-top: 20px;
-            padding: 10px;
-            border-top: 2px solid red;
-        }
+/* Стили для контейнера с планом изучения */
+#study-plan {
+    margin-top: 20px;
+    padding: 16px 10px 6px;
+    border-top: 2px solid red;
+}
+.study-plan-note {
+    margin: 0 0 16px;
+    font-size: 0.9rem;
+    color: #444;
+}
 
         /* Плашки чек-листа: full-width до 600px, дальше не шире 600px */
         #checklist-items .skill-links .skill-link {
@@ -787,43 +792,157 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
 
 
 
-#plan-list ul {
-  display: block;
-  list-style-type: none;
-  padding-left: 20px;
-  margin: 10px 10px 20px 10px;
+#plan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-#plan-list li {
-  margin-bottom: 20px;
+.plan-group h3 {
+  margin: 0 0 12px;
+}
+
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.resource-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #fff;
+  border: 1px solid #ececec;
+  text-decoration: none;
+  color: inherit;
+  min-height: 120px;
+  transition: transform 0.65s ease, box-shadow 0.65s ease, border-color 0.65s ease;
+}
+
+.resource-card:hover {
+  transition-delay: 0.2s;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-color: #d5d5d5;
+}
+
+.resource-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #111;
+  color: #fff;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.resource-type {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background-color: #f2f2f2;
+  color: #333;
+  margin-right: auto;
+}
+
+.resource-visited {
+  font-size: 11px;
+  color: #2e7d32;
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+
+.resource-visited::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #2e7d32;
+  display: inline-block;
+}
+
+.resource-card.is-visited .resource-visited {
+  display: inline-flex;
+}
+
+
+.resource-title {
+  font-weight: 600;
+  font-size: 14px;
   white-space: nowrap;
-  text-overflow: ellipsis;
   overflow: hidden;
-  border-radius: 8px;
-  padding: 5px;
+  text-overflow: ellipsis;
 }
 
-#plan-list li {
-  box-sizing: border-box;
-  border-radius: 10px;
+.resource-subtitle {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 1200px) {
-  #plan-list li a {
-    display: block;
-    width: 100%;
-    max-width: calc(100% - 10px);
-    box-sizing: border-box;
-    border-radius: 12px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+@media (max-width: 700px) {
+  .plan-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .resource-card {
+    padding: 10px;
+    min-height: 110px;
   }
 }
 
-#plan-list li img {
-  vertical-align: middle;
+@media (min-width: 900px) {
+  .plan-grid {
+    gap: 18px;
+  }
+  .resource-card {
+    padding: 16px;
+  }
 }
+
+html[data-theme="dark"] .study-plan-note {
+  color: #c7c7c7;
+}
+
+html[data-theme="dark"] .resource-card {
+  background-color: #1f1f1f;
+  border-color: #2f2f2f;
+}
+
+html[data-theme="dark"] .resource-card:hover {
+  border-color: #3b3b3b;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+
+html[data-theme="dark"] .resource-type {
+  background-color: #2b2b2b;
+  color: #f1f1f1;
+}
+
+html[data-theme="dark"] .resource-number {
+  background-color: #f1f1f1;
+  color: #000;
+}
+
+html[data-theme="dark"] .resource-subtitle {
+  color: #bdbdbd;
+}
+
 
 .selection-item img {
   width: 40%;

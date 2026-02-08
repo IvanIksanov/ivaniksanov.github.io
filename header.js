@@ -48,6 +48,10 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     updateHeaderState();
+    const year = new Date().getFullYear();
+    document.querySelectorAll('[data-footer-year]').forEach((el) => {
+      el.textContent = year;
+    });
     window.addEventListener('scroll', onScroll, { passive: true });
     document.querySelectorAll('.site-header nav a').forEach((link) => {
       link.addEventListener('click', handleNavClick);

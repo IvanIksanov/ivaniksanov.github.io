@@ -431,6 +431,7 @@
         <button id="get-plan">Получить план</button>
         <!-- Контейнер для отображения плана изучения (ссылки выбранных навыков) -->
         <div id="study-plan" style="display: none;">
+            <p class="study-plan-note">Все ссылки ведут на сторонние источники. При нажатии вы переходите на статью, тренажер или видео в новой вкладке.</p>
             <div id="plan-list"></div>
         </div>
     </section>
@@ -549,7 +550,7 @@
 
 </main>
 <footer class="qatodev">
-    <p>&copy; 2025 QAtoDev</p>
+    <p>&copy; <span class="footer-year" data-footer-year></span> QAtoDev</p>
 </footer>
 <script>
     (function() {
