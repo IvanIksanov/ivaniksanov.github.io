@@ -915,10 +915,7 @@ document.addEventListener('DOMContentLoaded', function(){
     ];
     const courseHosts = [
       'stepik.org',
-      'karpov.courses',
-      'practicum.yandex.ru',
-      'otus.ru',
-      'sky.pro'
+      'karpov.courses'
     ];
     const courseHostSuffixes = [
       '.teachable.com'
