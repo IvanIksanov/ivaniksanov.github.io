@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <title>Вопросы для тестировщика</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark' || saved === 'light') {
+                document.documentElement.setAttribute('data-theme', saved);
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="questions.css">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
@@ -132,6 +140,9 @@
         <button class="filter-chip" data-category="AQA JS">JS</button>
     </div>
 </div>
+
+<!-- Нижняя панель категорий (появляется при скролле) -->
+<div id="category-filters-bottom" class="category-filters bottom-filters" aria-label="Категории"></div>
 
 <section id="ai-response" class="article"></section>
 

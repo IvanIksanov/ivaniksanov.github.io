@@ -12,6 +12,7 @@ body {
   background-color: #F1F1F1;
 }
 
+
 h1, h2, h4, h5, h6 {
   font-family: "Fira Code", monospace;
   word-spacing: -0.3em;
@@ -746,17 +747,20 @@ canvas {
 .skill-links a {
   margin: 0 5px 5px 0;
   display: inline-block;
-  text-decoration: none;
   padding: 7px 10px;
   border-radius: 10px;
   background-color: #FAFAFA;
   color: #000;
-  transition: background-color 0.3s;
 }
 
-.skill-links a:hover {
-  background-color: #111111;
+html[data-theme="dark"] .skill-links a {
+  background-color: #242424;
   color: #F1F1F1;
+}
+
+html[data-theme="dark"] .skill-links a:hover {
+  background-color: #F1F1F1;
+  color: #000;
 }
 
 #checklist-items .skill-links .skill-link:hover {
@@ -799,9 +803,21 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
   padding: 5px;
 }
 
-@media (max-width: 600px) {
-  #plan-list li {
-    max-width: 100%;
+#plan-list li {
+  box-sizing: border-box;
+  border-radius: 10px;
+}
+
+@media (max-width: 1200px) {
+  #plan-list li a {
+    display: block;
+    width: 100%;
+    max-width: calc(100% - 10px);
+    box-sizing: border-box;
+    border-radius: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
@@ -960,18 +976,10 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
     html[data-theme="dark"] .skill-category h3 {
       color: #FFFFFF;
     }
-    html[data-theme="dark"] .skill-links a {
-      background-color: #242424;
-      color: #F1F1F1;
-    }
-    html[data-theme="dark"] .skill-links a:hover {
-      background-color: #f0f8ff;
-      color: #000;
-    }
-    html[data-theme="dark"] .skill-links a.selected {
-      background-color: #FFFFFF;
-      color: #000;
-    }
+html[data-theme="dark"] .skill-links a.selected {
+  background-color: #FFFFFF;
+  color: #000;
+}
 
     html[data-theme="dark"] #toggle-button {
         background-color: rgba(255, 255, 255, 0.7);

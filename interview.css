@@ -42,7 +42,7 @@ html[data-theme="dark"] {
 
 html, body { height: 100%; }
 body {
-  margin: 8px;
+  margin: 0;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
   line-height: 1.55;
   font-size: 17px;
@@ -56,7 +56,7 @@ h1, h2, h3, h4, h5, h6 {
 
 
 @media (max-width: 600px) {
-  body { margin: 10px; }
+  body { margin: 0; }
 }
 
 /* Главная колонка */
@@ -257,10 +257,6 @@ body { font-size: var(--fs-body); }
 .card { padding: var(--sp-3); }
 .answer { padding: var(--sp-2); }
 
-html[data-theme="dark"] a:hover {
-      background-color: #F1F1F1;
-      color: #1A1A1A;
-  }
 html[data-theme="dark"] .site-title { color: #FFFFFF; }
 
 
@@ -276,7 +272,7 @@ html[data-theme="dark"] .site-title { color: #FFFFFF; }
 }
 
 @media (max-width: 600px) {
-  body { margin: 10px; }
+  body { margin: 0; }
 
   .category-filters { gap: var(--sp-1); }
   .filter-chip { padding: var(--sp-1) var(--sp-2); }
@@ -318,4 +314,3 @@ html[data-theme="dark"] .site-title { color: #FFFFFF; }
   border-radius: 12px; /* закругление */
   display: block;
 }
-

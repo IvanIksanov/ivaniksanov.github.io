@@ -587,7 +587,7 @@ const systemPrompt =
             {
               id: 'accordion_db_q4',
               title: 'Назови структуру запроса в БД (SELECT FROM WHERE ORDER BY GROUP BY)',
-              answer: 'SELECT - Определяет, какие столбцы или выражения извлекаются<br>DISTINCT - Убирает повторяющиеся строки из результатов<br>FROM - Указывает таблицу(ы) или подзапрос, откуда берутся данные<br>JOIN - Объединяет данные из нескольких таблиц<br>WHERE - Фильтрует строки до группировки<br>GROUP BY - Группирует строки по значениям одного или нескольких столбцов<br>HAVING - Фильтрует группы после группировки<br>UNION / INTERSECT/ EXCEPT - Оперирует над результатами нескольких запросов<br>ORDER BY - Сортирует результат по одному или нескольким столбцам<br>LIMIT - Ограничивает количество возвращаемых строк<br>OFFSET - Пропускает указанное количество строк в выводе<br><br>Пример:<br><br>SELECT DISTINCT department, COUNT(*) AS total<br>FROM employees<br>JOIN departments ON employees.dept_id = departments.id<br>WHERE salary > 50000<br>GROUP BY department<br>HAVING COUNT(*) > 3<br>ORDER BY total DESC<br>LIMIT 10 OFFSET 5;<br>'
+              answer: 'SELECT - Определяет, какие столбцы или выражения извлекаются<br>DISTINCT - Убирает повторяющиеся строки из результатов<br>FROM - Указывает таблицу(ы) или подзапрос, откуда берутся данные<br>JOIN - Объединяет данные из нескольких таблиц<br>WHERE - Фильтрует строки до группировки<br>GROUP BY - Группирует строки по значениям одного или нескольких столбцов<br>HAVING - Фильтрует группы после группировки<br>UNION / INTERSECT/ EXCEPT - Оперирует над результатами нескольких запросов<br>ORDER BY - Сортирует результат по одному или нескольким столбцам<br>LIMIT - Ограничивает количество возвращаемых строк<br>OFFSET - Пропускает указанное количество строк в выводе<br><br>Пример:<br><br><code>SELECT DISTINCT department, COUNT(*) AS total<br>FROM employees<br>JOIN departments ON employees.dept_id = departments.id<br>WHERE salary > 50000<br>GROUP BY department<br>HAVING COUNT(*) > 3<br>ORDER BY total DESC<br>LIMIT 10 OFFSET 5;</code><br>'
             },
             {
               id: 'accordion_db_q5',
@@ -604,22 +604,22 @@ const systemPrompt =
             {
               id: 'accordion_db_q7',
               title: 'Какая разница между DROP, TRUNCATE и DELETE?',
-              answer: 'DROP удаляет таблицу вместе со структурой.<br>Пример: DROP TABLE employees;<br><br>TRUNCATE удаляет все записи, сохраняя структуру таблицы.<br>Пример: TRUNCATE TABLE employees;<br><br>DELETE удаляет строки из таблицы (можно использовать WHERE).<br>Пример: DELETE FROM employees WHERE department = "Sales";'
+              answer: 'DROP удаляет таблицу вместе со структурой.<br>Пример: <code>DROP TABLE employees;</code><br><br>TRUNCATE удаляет все записи, сохраняя структуру таблицы.<br>Пример: <code>TRUNCATE TABLE employees;</code><br><br>DELETE удаляет строки из таблицы (можно использовать WHERE).<br>Пример: <code>DELETE FROM employees WHERE department = "Sales";</code>'
             },
             {
               id: 'accordion_db_q8',
               title: 'Назови порядок выполнения SELECT-запроса',
-              answer: '1.	FROM — выбор таблицы или таблиц (и JOIN’ы, если есть)<br>2.	WHERE — фильтрация строк<br>3.	GROUP BY — группировка строк<br>4.	HAVING — фильтрация групп (после группировки)<br>5.	SELECT — выбор нужных столбцов и выражений<br>6.	DISTINCT — удаление дубликатов (если есть)<br>7.	ORDER BY — сортировка результата<br>8.	LIMIT / OFFSET — ограничение количества строк<br><br>Пример:<br><br>SELECT department, COUNT(*) AS total_employees<br>FROM employees<br>WHERE salary > 50000<br>GROUP BY department<br>HAVING COUNT(*) > 5<br>ORDER BY total_employees DESC<br>LIMIT 10;<br>'
+              answer: '1.	FROM — выбор таблицы или таблиц (и JOIN’ы, если есть)<br>2.	WHERE — фильтрация строк<br>3.	GROUP BY — группировка строк<br>4.	HAVING — фильтрация групп (после группировки)<br>5.	SELECT — выбор нужных столбцов и выражений<br>6.	DISTINCT — удаление дубликатов (если есть)<br>7.	ORDER BY — сортировка результата<br>8.	LIMIT / OFFSET — ограничение количества строк<br><br>Пример:<br><br><code>SELECT department, COUNT(*) AS total_employees<br>FROM employees<br>WHERE salary > 50000<br>GROUP BY department<br>HAVING COUNT(*) > 5<br>ORDER BY total_employees DESC<br>LIMIT 10;</code><br>'
             },
             {
               id: 'accordion_db_q9',
               title: 'Выведи из таблицы Product пять продуктов, у которых price выше 1000',
-              answer: 'SELECT *<br>FROM Product<br>WHERE price > 1000<br>ORDER BY price DESC<br>LIMIT 5;<br>'
+              answer: '<code>SELECT *<br>FROM Product<br>WHERE price > 1000<br>ORDER BY price DESC<br>LIMIT 5;</code><br>'
             },
             {
               id: 'accordion_db_q10',
               title: 'Как объединить 2 таблицы?',
-              answer: '1. INNER JOIN — внутреннее соединение:<br>Выбирает только совпадающие строки из обеих таблиц по условию.<br><br>SELECT *<br>FROM table1<br>INNER JOIN table2<br>ON table1.id = table2.id;<br><br>2. LEFT JOIN (или LEFT OUTER JOIN):<br>Берёт все строки из левой таблицы, и только совпадающие — из правой. Если в правой нет соответствия — подставляется NULL.<br><br>SELECT *<br>FROM table1<br>LEFT JOIN table2<br>ON table1.id = table2.id;<br><br>3. RIGHT JOIN (или RIGHT OUTER JOIN):<br>То же самое, но наоборот: все строки из правой таблицы, и только совпадающие — из левой.<br><br>SELECT *<br>FROM table1<br>RIGHT JOIN table2<br>ON table1.id = table2.id;<br><br>4. FULL JOIN (или FULL OUTER JOIN):<br>Возвращает все строки из обеих таблиц. Там, где нет совпадений, подставляется NULL.<br><br>SELECT *<br>FROM table1<br>FULL JOIN table2<br>ON table1.id = table2.id;<br>'
+              answer: '1. INNER JOIN — внутреннее соединение:<br>Выбирает только совпадающие строки из обеих таблиц по условию.<br><br><code>SELECT *<br>FROM table1<br>INNER JOIN table2<br>ON table1.id = table2.id;</code><br><br>2. LEFT JOIN (или LEFT OUTER JOIN):<br>Берёт все строки из левой таблицы, и только совпадающие — из правой. Если в правой нет соответствия — подставляется NULL.<br><br><code>SELECT *<br>FROM table1<br>LEFT JOIN table2<br>ON table1.id = table2.id;</code><br><br>3. RIGHT JOIN (или RIGHT OUTER JOIN):<br>То же самое, но наоборот: все строки из правой таблицы, и только совпадающие — из левой.<br><br><code>SELECT *<br>FROM table1<br>RIGHT JOIN table2<br>ON table1.id = table2.id;</code><br><br>4. FULL JOIN (или FULL OUTER JOIN):<br>Возвращает все строки из обеих таблиц. Там, где нет совпадений, подставляется NULL.<br><br><code>SELECT *<br>FROM table1<br>FULL JOIN table2<br>ON table1.id = table2.id;</code><br>'
             },
             {
               id: 'accordion_db_q11',
@@ -653,7 +653,7 @@ const systemPrompt =
             {
               id: 'accordion_db_q16',
               title: 'Самая популярная агрегатная функция (COUNT)?',
-              answer: 'COUNT подсчитывает количество строк или ненулевых значений в наборе данных.<br><br>Примеры:<br><br>– SELECT COUNT(*) FROM table — общее число строк<br><br>– SELECT COUNT(column) FROM table — число ненулевых значений в column<br><br>– SELECT COUNT(DISTINCT column) FROM table — число уникальных значений column'
+              answer: 'COUNT подсчитывает количество строк или ненулевых значений в наборе данных.<br><br>Примеры:<br><br>– <code>SELECT COUNT(*) FROM table</code> — общее число строк<br><br>– <code>SELECT COUNT(column) FROM table</code> — число ненулевых значений в column<br><br>– <code>SELECT COUNT(DISTINCT column) FROM table</code> — число уникальных значений column'
             },
             {
               id: 'accordion_db_q17',
@@ -989,194 +989,344 @@ const systemPrompt =
             {
               id: 'accordion_aqajava_q1',
               title: 'Какие инструменты вы используете для автоматизации тестирования?',
-              answer: 'Сборщики (Maven, Gradle), фреймворки (TestNG, JUnit), библиотеки для отправки HTTP запросов, например RestAssured или Retrofit.',
+              answer: 'Для Full Stack QA на Java обычно используется связка: сборка и зависимости — Maven или Gradle, юнит/компонентные тесты — JUnit или TestNG, UI — Selenium или Selenide, API — Rest Assured, отчеты — Allure, запуск в CI — Jenkins/GitLab CI/GitHub Actions. <br><br>Пример запуска смоук-набора через Maven: <br><br><code>mvn clean test -Dgroups=smoke<br># или через Gradle<br>./gradlew test -Dgroups=smoke</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q2',
               title: 'Какие существуют Java-фреймворки для автотестов?',
-              answer: 'JUnit, TestNG, Selenium WebDriver, Rest Assured, Cucumber.',
+              answer: 'Для UI: Selenium WebDriver (базовый стандарт), Selenide (удобная надстройка с автоожиданиями). <br><br>Для API: Rest Assured, Retrofit + OkHttp. <br><br>Для BDD: Cucumber. <br><br>Для юнитов: JUnit, TestNG. <br><br>Пример теста на TestNG: <br><br><code>@Test<br>public void loginTest() {<br>  // шаги логина<br>  // проверки<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q3',
               title: 'Что такое интерфейсы и в каких случаях их следует использовать?',
-              answer: 'Это набор методов без их реализации. Можно использовать в тестировании для описания контрактов тестовых компонентов, например, для тестирования REST API.',
+              answer: 'Интерфейс — это контракт, который описывает набор методов без реализации. В автотестах интерфейсы удобны, когда нужно абстрагировать разные реализации клиентов или драйверов. <br><br>Пример: общий контракт для API-клиента: <br><br><code>public interface ApiClient {<br>  Response get(String url);<br>  Response post(String url, Object body);<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q4',
-              title: 'Как Java обрабатывает исключения?',
-              answer: 'С помощью конструкции try-catch или путём передачи их вызывающему коду. Это позволяет обрабатывать ошибки, которые могут возникнуть в процессе выполнения тестов.',
+              title: 'Как Java обрабатывает исключения в автотестах?',
+              answer: 'Через конструкцию try-catch или проброс исключений выше. В тестах это используется для логирования, скриншотов, сохранения HTML страницы, чтобы было видно причину падения. <br><br>Пример: <br><br><code>try {<br>  loginPage.submit();<br>} catch (TimeoutException e) {<br>  takeScreenshot();<br>  throw e;<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q5',
               title: 'Как организовать тестовые сценарии на Java?',
-              answer: 'В виде методов тестовых классов, а также с использованием аннотаций, таких как @Test в JUnit или @Test в TestNG.',
+              answer: 'Тестовые сценарии оформляют как методы в тестовых классах. Действия и локаторы выносятся в Page Object, а API-вызовы — в отдельные клиенты. Для данных используют фикстуры или DataProvider. <br><br>Пример структуры: <br><br><code>LoginPage loginPage = new LoginPage(driver);<br>loginPage.login("qa", "123");<br>assertTrue(dashboard.isVisible());</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q6',
               title: 'В чём отличие микросервисов от монолита в тестировании?',
-              answer: 'В микросервисной архитектуре каждый сервис тестируется отдельно, что требует большего усилия в создании и поддержке набора тестов. В монолитной архитектуре тестирование может быть более централизованным.',
+              answer: 'В микросервисах чаще используют контрактные и интеграционные тесты для каждого сервиса отдельно, а также проверяют взаимодействия между сервисами. В монолитах больше UI и сквозных сценариев, потому что логика сосредоточена в одном приложении. <br><br>Пример: для микросервиса оплаты отдельно тестируется API, а для монолита — единая цепочка заказа через UI.',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q7',
-              title: 'Назовите отличительные характеристики тестирования API?',
-              answer: 'Тестирование без GUI, что позволяет обнаруживать проблемы на ранних этапах разработки.<br><br>Углублённое тестирование ключевой функциональности. Позволяет оценить качество приложения на ранних этапах разработки и устранять ошибки до их распространения.<br><br>Экономия времени за счёт небольшого количества кода и рутинных операций.<br><br>Использование XML или JSON для передачи данных, благодаря чему тестирование<br><br>API не зависит от конкретного языка программирования.',
+              title: 'Назовите отличительные характеристики тестирования API',
+              answer: 'API-тесты не зависят от интерфейса, быстрее UI, дают стабильные проверки бизнес-логики и интеграций. Для Full Stack QA это основной слой тестовой пирамиды. <br><br>Пример проверки Rest Assured: <br><br><code>given()<br>  .when().get("/users/1")<br>  .then().statusCode(200)<br>  .body("id", equalTo(1));</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q8',
-              title: 'Какие основные отличия между тестированием API и GUI',
-              answer: 'Тестирование API направлено на проверку системных требований, взаимодействия микросервисов "под капотом", передачу данных, безопасность и производительность. Тестирование GUI проверяет «вид и ощущения» от продукта, клиентский путь от А до Я через интерфейс, именно таким образом как это делает обычный пользователь на сайте или в приложении данного продукта.',
+              title: 'Какие основные отличия между тестированием API и GUI?',
+              answer: 'API-тесты проверяют правильность контрактов, статусов, схем данных и бизнес-правил. GUI-тесты проверяют клиентский путь, отображение элементов и UX. <br><br>Пример: API проверяет, что заказ создаётся, а GUI — что заказ отображается в личном кабинете.',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q9',
               title: 'Чем отличаются Selenium, Selenide, Playwright и Cypress?',
-              answer: 'Selenium — это инструмент для автоматизации тестирования веб-приложений.<br><br>Selenide — облегчённая версия Selenium WebDriver, упрощающая автоматизацию тестирования веб-приложений.<br><br>Playwright — инструмент от Microsoft с удобным API и поддержкой нескольких браузеров.<br><br>Cypress — инструмент, предназначенный для тестирования веб-приложений, с высокой производительностью и интеграцией.',
+              answer: 'Selenium — базовый стандарт WebDriver. Selenide — удобная надстройка над Selenium с автоожиданиями. Playwright и Cypress дают быстрые раннеры и более простую работу с асинхронностью. Playwright поддерживает несколько браузеров, включая WebKit. <br><br>Пример Selenide: <br><br><code>$("#login").setValue("qa");<br>$("#password").setValue("123");<br>$("#submit").click();</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q10',
               title: 'Что такое Page Object?',
-              answer: 'Это паттерн проектирования, который помогает отделить логику работы с веб-страницами от тестовых сценариев.',
+              answer: 'Page Object — паттерн, где элементы страницы и действия с ними вынесены в отдельный класс. Это снижает дублирование и упрощает поддержку тестов. <br><br>Пример: <br><br><code>public class LoginPage {<br>  public void login(String user, String pass) { /* шаги */ }<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q11',
               title: 'Можете ли вы объяснить принцип работы Page Factory?',
-              answer: 'Это способ создания экземпляров классов Page Object, который автоматически инициализирует элементы страницы.',
+              answer: 'Page Factory автоматически инициализирует элементы страницы по аннотациям @FindBy. Это уменьшает ручную работу с локаторами. <br><br>Пример: <br><br><code>@FindBy(id = "login")<br>private WebElement login;<br><br>public void enterLogin(String value) {<br>  login.sendKeys(value);<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q12',
               title: 'Что такое Allure и для чего он используется?',
-              answer: 'Это инструмент для создания информативных отчётов о выполнении тестов. Позволяет улучшить визуализацию результатов тестирования и упростить анализ проблем.',
+              answer: 'Allure — инструмент для отчетов. Он показывает шаги, вложения (скриншоты, логи), историю запусков. В Full Stack QA это удобно для анализа падений в CI. <br><br>Пример: <br><br><code>Allure.step("Отправить запрос на /login");</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q13',
-              title: 'Какие инструменты и системы автоматизации сборки и развертывания вы используете? Как интегрировать автотесты в процесс CI/CD?',
-              answer: 'Jenkins, GitLab CI/CD или Travis CI (могут быть TeamCity, Github Actions). Автотесты запускаются на каждом этапе CI/CD, чтобы обеспечить непрерывное тестирование и развертывание.',
+              title: 'Как интегрировать автотесты в CI/CD?',
+              answer: 'Тесты запускаются на каждый коммит/мерж. Быстрые смоук/апи — в PR, UI и регресс — nightly. Результаты складываются в отчеты и артефакты. <br><br>Пример команды: <br><br><code>mvn test -Dgroups=smoke<br>mvn test -Dgroups=ui</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q14',
               title: 'Какие существуют принципы ООП?',
-              answer: 'Инкапсуляция – это свойство системы, позволяющее объединить данные и методы, работающие с ними, в классе и скрыть детали реализации от пользователя, открыв только то, что необходимо при последующем использовании.<br>Цель инкапсуляции — уйти от зависимости внешнего интерфейса класса (то, что могут использовать другие классы) от реализации. Чтобы малейшее изменение в классе не влекло за собой изменение внешнего поведения класса.<br><br>Наследование – это свойство системы, позволяющее описать новый класс на основе уже существующего с частично или полностью заимствующейся функциональностью.Класс, от которого производится наследование, называется предком, базовым или родительским. Новый класс – потомком, наследником или производным классом.<br><br>Полиморфизм – это свойство системы использовать объекты с одинаковым интерфейсом без информации о типе и внутренней структуре объекта.Преимуществом полиморфизма является то, что он помогает снижать сложность программ, разрешая использование одного и того же интерфейса для задания единого набора действий. Выбор же конкретного действия, в зависимости от ситуации, возлагается на компилятор языка программирования. Отсюда следует ключевая особенность полиморфизма - использование объекта производного класса, вместо объекта базового (потомки могут изменять родительское поведение, даже если обращение к ним будет производиться по ссылке родительского типа).<br><br>Абстрагирование – это способ выделить набор общих характеристик объекта, исключая из рассмотрения частные и незначимые. Соответственно, абстракция – это набор всех таких характеристик.',
+              answer: 'Инкапсуляция, наследование, полиморфизм, абстракция. В тестах это помогает сделать повторно используемые базовые страницы, клиенты и утилиты. <br><br>Пример: <br><br><code>public abstract class BasePage {<br>  protected WebDriver driver;<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q15',
               title: 'В чем разница между интерфейсом и абстрактным классом?',
-              answer: 'Интерфейс:<br><br>С Java 8 может содержать default и static методы с реализацией<br>Все методы по умолчанию public abstract (до Java 8)<br>Поля всегда public static final<br>Класс может реализовывать несколько интерфейсов<br>Не может содержать конструктор<br>Не может иметь состояния (полей экземпляра)<br><br>Абстрактный класс:<br><br>Может содержать абстрактные и конкретные методы<br>Может иметь поля экземпляра и состояние<br>Может содержать конструктор<br>Класс может наследовать только один абстрактный класс<br><br>В Java класс может одновременно реализовать несколько интерфейсов, но наследоваться только от одного класса.<br>Абстрактные классы используются только тогда, когда присутствует тип отношений «is a» (является). Интерфейсы могут реализоваться классами, которые не связаны друг с другом.<br><br>Абстрактный класс - средство, позволяющее избежать написания повторяющегося кода, инструмент для частичной реализации поведения. Интерфейс - это средство выражения семантики класса, контракт, описывающий возможности. Все методы интерфейса неявно объявляются как public abstract или (начиная с Java 8) default - методами с реализацией по-умолчанию, а поля - public static final.<br>Интерфейсы позволяют создавать структуры типов без иерархии.<br>Наследуясь от абстрактного, класс «растворяет» собственную индивидуальность. Реализуя интерфейс, он расширяет собственную функциональность.<br><br>Абстрактные классы содержат частичную реализацию, которая дополняется или расширяется в подклассах. При этом все подклассы схожи между собой в части реализации, унаследованной от абстрактного класса, и отличаются лишь в части собственной реализации абстрактных методов родителя. Поэтому абстрактные классы применяются в случае построения иерархии однотипных, очень похожих друг на друга классов. В этом случае наследование от абстрактного класса, реализующего поведение объекта по умолчанию может быть полезно, так как позволяет избежать написания повторяющегося кода. Во всех остальных случаях лучше использовать интерфейсы.',
+              answer: 'Интерфейс задает контракт без состояния, абстрактный класс может хранить поля и реализовывать общие методы. В тестах удобно иметь абстрактный BasePage и интерфейсы для общих действий. <br><br>Пример: <br><br><code>public interface Clickable {<br>  void click();<br>}<br><br>public abstract class BasePage {<br>  protected WebDriver driver;<br>}</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q16',
               title: 'Какие существуют модификаторы доступа?',
-              answer: 'private (приватный): члены класса доступны только внутри класса. Для обозначения используется служебное слово private.<br><br>default, package-private, package level (доступ на уровне пакета): видимость класса/членов класса только внутри пакета. Является модификатором доступа по умолчанию - специальное обозначение не требуется.<br><br>protected (защищённый): члены класса доступны внутри пакета и в наследниках. Для обозначения используется служебное слово protected.<br><br>public (публичный): класс/члены класса доступны всем. Для обозначения используется служебное слово public.<br><br>Последовательность модификаторов по возрастанию уровня закрытости: public, protected, default, private.<br><br>Во время наследования возможно изменения модификаторов доступа в сторону большей видимости (для поддержания соответствия принципу подстановки Барбары Лисков).',
+              answer: 'public, protected, default, private. Для тестов часто делают локаторы private, а действия — public. <br><br>Пример: <br><br><code>private By login = By.id("login");<br>public void enterLogin(String value) { /* ... */ }</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q17',
               title: 'О чем говорит ключевое слово final?',
-              answer: 'Модификатор final может применяться к переменным, параметрам методов, полям и методам класса или самим классам.<br><br>Класс не может иметь наследников;<br><br>Метод не может быть переопределен в классах наследниках;<br><br>Поле не может изменить свое значение после инициализации;<br><br>Параметры методов не могут изменять своё значение внутри метода;<br><br>Локальные переменные не могут быть изменены после присвоения им значения.',
+              answer: 'final фиксирует значение переменной или запрещает наследование класса/переопределение метода. В тестах удобно для констант и базовых URL. <br><br>Пример: <br><br><code>private static final String BASE_URL = "https://site";</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q18',
               title: 'Какие логические операции и операторы вы знаете?',
-              answer: '&: Логическое AND (И);<br><br>&&: Сокращённое AND;<br><br>|: Логическое OR (ИЛИ);<br><br>||: Сокращённое OR;<br><br>^: Логическое XOR (исключающее OR (ИЛИ));<br><br>!: Логическое унарное NOT (НЕ);<br><br>&=: AND с присваиванием;<br><br>|=: OR с присваиванием;<br><br>^=: XOR с присваиванием;<br><br>==: Равно;<br><br>!=: Не равно;<br><br>?:: Тернарный (троичный) условный оператор.',
+              answer: '&&, ||, !, ==, !=, >, <, >=, <= и др. В тестах используются в ассертах и проверках. <br><br>Пример: <br><br><code>assertTrue(status == 200 && body.contains("ok"));</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqajava_q19',
               title: 'Что такое REST Assured?',
-              answer: 'Библиотека, которая позволяет писать автотесты для проверки rest api (эндпоинты/ручки/запросы), без проверки интерфейса тестируемого продукта (UI). Библиотека REST Assured используется на языке Java и является более расширенным способом написания api-автотестов в сравнении с Postman и Insomnia.',
+              answer: 'REST Assured — библиотека для API-автотестов на Java. Позволяет писать проверки в стиле given/when/then. <br><br>Пример: <br><br><code>given()<br>  .body(payload)<br>  .post("/login")<br>  .then().statusCode(200);</code>',
               moreLink: 'https://www.youtube.com/watch?v=8nAgzJea1L8'
+            },
+            {
+              id: 'accordion_aqajava_q20',
+              title: 'Как отличить стабильный UI-локатор от хрупкого?',
+              answer: 'Стабильные локаторы — data-testid, aria-label, фиксированные id. Хрупкие — по тексту или по сложной иерархии DOM. <br><br>Пример: <br><br><code>By.cssSelector("[data-testid="submit"]")</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q21',
+              title: 'Имплицитные и эксплицитные ожидания: в чем разница?',
+              answer: 'Implicit Wait задается глобально для всех локаторов. Explicit Wait применяется точечно к конкретному условию, обычно более надежен. <br><br>Пример: <br><br><code>WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));<br>wait.until(ExpectedConditions.visibilityOf(element));</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q22',
+              title: 'Как делать data-driven тесты в TestNG?',
+              answer: 'Использовать @DataProvider и параметризовать тесты данными. <br><br>Пример: <br><br><code>@DataProvider<br>public Object[][] users() {<br>  return new Object[][]{{"admin","123"},{"user","qwe"}};<br>}<br><br>@Test(dataProvider = "users")<br>public void login(String u, String p) { /* ... */ }</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q23',
+              title: 'Как проверять JSON в ответе API?',
+              answer: 'В Rest Assured удобно использовать JSONPath и матчеры, а также проверять схему. <br><br>Пример: <br><br><code>then()<br>  .body("user.id", equalTo(1))<br>  .body("user.role", equalTo("ADMIN"));</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q24',
+              title: 'Как бороться с флаппи-тестами?',
+              answer: 'Убирать Thread.sleep, использовать явные ожидания, стабилизировать локаторы, изолировать данные, добавлять логи и скрины. Повторный запуск допустим только для диагностики. <br><br>Пример: заменить <code>Thread.sleep(3000)</code> на Explicit Wait.',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q25',
+              title: 'Как организовать уровни тестов для Full Stack QA?',
+              answer: 'Тестовая пирамида: много API/интеграционных тестов, меньше UI и минимум end-to-end. Это дает стабильность и скорость. <br><br>Пример: API-smoke на каждый PR, UI-регресс nightly.',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q26',
+              title: 'Как хранить тестовые данные и секреты?',
+              answer: 'Данные — в json/yaml или базе тестовых данных, секреты — в переменных окружения или секрет-хранилищах CI. <br><br>Пример: <br><br><code>String token = System.getenv("TOKEN");</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajava_q27',
+              title: 'Как валидировать данные в БД после API-операции?',
+              answer: 'После API-запроса можно подключиться к базе и проверить, что запись появилась или изменилась статус. Это полезно для Full Stack QA, когда важно проверить интеграцию сервиса и БД. <br><br>Пример JDBC: <br><br><code>Connection c = DriverManager.getConnection(url, user, pass);<br>PreparedStatement st = c.prepareStatement("SELECT status FROM orders WHERE id=?");<br>st.setInt(1, id);<br>ResultSet rs = st.executeQuery();<br>// assert по статусу</code>',
+              moreLink: ''
             }
         ]
         },
         {
-          category: 'AQA Python',
+category: 'AQA Python',
           items: [
             {
               id: 'accordion_aqapython_q1',
               title: 'Какие Python-фреймворки для тестирования вы знаете?',
-              answer: 'Pytest, Unittest, Behave, Robot Framework, Playwright, Lettuce.',
+              answer: 'Для автоматизации в Python чаще всего используют pytest (основной стандарт), unittest (базовый модуль), Robot Framework и Behave для BDD. Для UI — Playwright или Selenium, для API — requests + pytest. <br><br>Пример запуска smоke: <br><br><code>pytest -m smoke</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqapython_q2',
-              title: 'Что такое тюплы?',
-              answer: 'Тюплы (или кортежи) — неизменяемые последовательности, подобные спискам. В тюплах используются круглые скобки, а не квадратные.',
+              title: 'Что такое кортежи (tuple) и где они полезны в тестах?',
+              answer: 'Кортеж — неизменяемая последовательность. Удобен как контейнер тестовых наборов, чтобы случайно не изменить данные в процессе теста. <br><br>Пример: <br><br><code>cases = (<br>  ("admin", "123"),<br>  ("user", "qwe")<br>)</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqapython_q3',
               title: 'Какие существуют правила наименования в Python?',
-              answer: 'Имена переменных должны начинаться с буквы или нижнего подчеркивания "_". В именах допускаются только буквы, цифры, и "_".',
+              answer: 'Переменные — snake_case, классы — PascalCase, константы — UPPER_CASE. Это важно для читаемости тестов. <br><br>Пример: <br><br><code>BASE_URL = "https://api"<br>class LoginPage:<br>    pass</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqapython_q4',
-              title: 'Расскажите о unittest одной фразой',
-              answer: 'Это стандартный модуль для юнит-тестов, который поддерживает шеринг сетапов, автоматизацию и группировку тестов в коллекции.',
+              title: 'Что такое unittest одной фразой?',
+              answer: 'Это стандартный модуль Python для написания юнит-тестов с классами, setUp/tearDown и ассертом. <br><br>Пример: <br><br><code>import unittest<br><br>class TestLogin(unittest.TestCase):<br>    def test_login(self):<br>        self.assertTrue(True)</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqapython_q5',
               title: 'Как конвертировать число в строку?',
-              answer: 'Встроенной функцией str().',
+              answer: 'Через функцию str(). Это часто используется при формировании параметров запроса. <br><br>Пример: <br><br><code>user_id = 10<br>url = "/users/" + str(user_id)</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqapython_q6',
               title: 'Какие задачи Python решает в тестировании?',
-              answer: 'Генерация тестовых данных.<br><br>Обработка результатов тестирования<br><br>Создание отчётов.<br><br>Тестирование API-вызовов.<br><br>Экстракция требований из документов.<br><br>Автоматизация задач.<br><br>Настройка тестовых окружений.<br><br>Получение и обработка данных при тестировании производительности.<br><br>Автоматизация тестов в Selenium.<br><br>Быстрое создание приложений для тестирования.<br><br>Манипуляции с тестовыми данными.<br><br>Создание и поддержка тестовых окружений.',
+              answer: 'Python используют для API- и UI-автотестов, генерации данных, работы с логами, создания утилит для CI/CD. Он удобен из-за лаконичного синтаксиса и огромной экосистемы. <br><br>Пример API-проверки: <br><br><code>import requests<br><br>r = requests.get("/health")<br>assert r.status_code == 200</code>',
               moreLink: ''
             },
             {
               id: 'accordion_aqapython_q7',
               title: 'Неизменяемые типы данных в Python?',
-              answer: 'В Python неизменяемые (immutable) типы данных — это объекты, которые нельзя изменить после создания. Основные примеры:<br><br>Числа: int, float, complex<br><br>Строки: str<br><br>Кортежи: tuple<br><br>Булевы значения: bool<br><br>Замороженные множества: frozenset',
+              answer: 'int, float, str, tuple, bool, frozenset. В тестах часто используют для констант. <br><br>Пример: <br><br><code>STATUSES = (200, 201, 204)</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q8',
+              title: 'Что такое фикстуры pytest и зачем нужны?',
+              answer: 'Фикстуры подготавливают окружение, тестовые данные и клиентов. Это упрощает поддержку и уменьшает дублирование. <br><br>Пример: <br><br><code>@pytest.fixture<br>def token():<br>    return login()</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q9',
+              title: 'Как параметризовать тесты в pytest?',
+              answer: 'Использовать @pytest.mark.parametrize, чтобы прогонять тест на разных входных данных. <br><br>Пример: <br><br><code>@pytest.mark.parametrize("user,code", [<br>    ("admin", 200),<br>    ("guest", 403)<br>])<br>def test_access(user, code):<br>    pass</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q10',
+              title: 'Как проверить JSON-ответ API в Python?',
+              answer: 'Делаем запрос, вызываем json(), проверяем ключи. Можно использовать pydantic/JSON schema для валидации. <br><br>Пример: <br><br><code>r = requests.get("/users/1")<br>data = r.json()<br>assert data["id"] == 1</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q11',
+              title: 'Как запускать UI и API тесты в одном пайплайне?',
+              answer: 'Разделять по маркерам: api — быстрые проверки в PR, ui — ночной прогон. Это оптимально для Full Stack QA. <br><br>Пример: <br><br><code>pytest -m api<br>pytest -m ui</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q12',
+              title: 'Как работать с ожиданиями в Playwright (Python)?',
+              answer: 'Playwright имеет автоожидания, но можно использовать явные ожидания для сложных условий. <br><br>Пример: <br><br><code>page.goto(url)<br>page.wait_for_selector("#login")<br>page.fill("#login", "qa")</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q13',
+              title: 'Как бороться с флаппи-тестами в Python?',
+              answer: 'Убирать sleep, использовать ожидания, стабилизировать локаторы, изолировать тестовые данные, сохранять логи и видео. <br><br>Пример: заменить time.sleep на ожидание элемента.',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q14',
+              title: 'Как хранить секреты и конфиги в Python-тестах?',
+              answer: 'Использовать env переменные или отдельные конфиги для сред. В CI секреты — через vault/секрет-менеджер. <br><br>Пример: <br><br><code>import os<br>TOKEN = os.getenv("TOKEN")</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqapython_q15',
+              title: 'Как проверить данные в БД после теста?',
+              answer: 'Подключаемся к БД (psycopg2/SQLAlchemy), делаем запрос, сверяем результат. Это важно для Full Stack QA. <br><br>Пример: <br><br><code>cur.execute("SELECT status FROM orders WHERE id=%s", (order_id,))<br>assert cur.fetchone()[0] == "PAID"</code>',
               moreLink: ''
             }
         ]
         },
         {
-          category: 'AQA JS',
+category: 'AQA JS',
           items: [
             {
               id: 'accordion_aqajs_q1',
-              title: 'Что такое NodeJS?',
-              answer: 'Node.js — это способ запускать JavaScript-код не только в браузере. За выполнение JavaScript в браузере Google Chrome (и других браузерах основанных на Chromium — Edge, Яндекс.Браузер, Opera) отвечает движок V8, разработанный в Google. В 2009 году Райан Даль, в качестве эксперимента, создал платформу Node.js, которая использует V8 для выполнения JavaScript-кода вне браузера.',
+              title: 'Что такое NodeJS и зачем он QA-автоматизатору?',
+              answer: 'Node.js позволяет запускать JS вне браузера и использовать тест-раннеры (Playwright, Cypress). Это удобно для Full Stack QA, потому что можно тестировать UI и API одной средой. <br><br>Пример: <br><br><code>npx playwright test</code>',
               moreLink: 'https://doka-guide.vercel.app/tools/nodejs/'
             },
             {
               id: 'accordion_aqajs_q2',
               title: 'Основные типы данных в JavaScript?',
-              answer: 'В JavaScript есть 8 основных типов данных:<br><br>Примитивные (immutable):<br><br>number (целые и дробные числа, Infinity, NaN)<br>string (текст, "hello", "world", `template ${var}`)<br>boolean (true, false)<br>null (специальное значение "ничего")<br>undefined (значение по умолчанию для неинициализированных переменных)<br>symbol (уникальные идентификаторы, Symbol("id"))<br>bigint (большие целые числа, 123n)<br><br>Объекты (mutable):<br><br>object (коллекции данных, включая массивы [], функции function() {}, даты new Date() и др.)',
+              answer: 'Примитивы: number, string, boolean, null, undefined, symbol, bigint. Объекты: object (включая массивы и функции). В тестах это важно при сравнении и валидации данных. <br><br>Пример: <br><br><code>const ids = [<br>  1,<br>  2,<br>  3<br>];</code>',
               moreLink: 'https://codechick.io/tutorials/javascript/js-data-types'
             },
             {
               id: 'accordion_aqajs_q3',
-              title: 'Разница между двойным и тройным равно?',
-              answer: 'В JavaScript оператор == выполняет нестрогое сравнение с приведением типов, а === — строгое сравнение без приведения. <br><br>Примеры: <br><br><code>console.log(5 == "5");  // true (значения одинаковы после приведения)<br>console.log(5 === "5"); // false (разные типы)<br>console.log(null == undefined);  // true (специальное правило)<br>console.log(null === undefined); // false (разные типы)</code>',
+              title: 'Разница между == и ===?',
+              answer: '== приводит типы, === сравнивает строго. В тестах лучше использовать строгое сравнение, чтобы избежать ложных совпадений. <br><br>Пример: <br><br><code>console.log(5 == "5");  // true<br>console.log(5 === "5"); // false</code>',
               moreLink: 'https://habr.com/ru/articles/138272/'
             },
             {
               id: 'accordion_aqajs_q4',
               title: 'Что такое конструкция switch-case?',
-              answer: 'Конструкция switch-case — это управляющая структура, позволяющая выбирать один из множества блоков кода для выполнения на основе значения выражения.<br><br> <code>int day = 3;<br>switch (day) {<br>    case 1:<br>        System.out.println("Monday");<br>        break;<br>    case 2:<br>        break;<br>    case 3:<br>        break;<br>    default:<br>        System.out.println("Invalid day");<br>}</code>',
+              answer: 'switch-case — конструкция для выбора ветки по значению. Полезна, когда в тестах нужно обрабатывать несколько состояний ответа. <br><br>Пример: <br><br><code>const day = 3;<br>switch (day) {<br>  case 1:<br>    break;<br>  case 2:<br>    break;<br>  default:<br>    break;<br>}</code>',
               moreLink: 'https://learn.javascript.ru/switch',
               authorCheck: 'https://t.me/QAtoDev',
               avatar: 'img/QAtoDev_PageIcon.png'
+            },
+            {
+              id: 'accordion_aqajs_q5',
+              title: 'Что такое async/await и зачем это QA в UI/API тестах?',
+              answer: 'Async/await делает асинхронный код читаемым. В UI/API тестах это основа: запросы, ожидания элементов, загрузка страниц. <br><br>Пример: <br><br><code>const res = await request.get("/users/1");<br>expect(res.status()).toBe(200);</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q6',
+              title: 'Cypress или Playwright: когда что выбрать?',
+              answer: 'Cypress удобен для UI и быстрых e2e, но ограничен Chromium. Playwright подходит для кроссбраузерности и сложных сценариев (Safari/WebKit). <br><br>Пример: Playwright позволяет запускать один и тот же тест в Chromium, Firefox и WebKit.',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q7',
+              title: 'Как тестировать API в JS-автотестах?',
+              answer: 'Можно использовать встроенный request в Playwright или axios/fetch. Проверяем статус и тело ответа. <br><br>Пример: <br><br><code>const r = await request.get("/health");<br>expect(r.status()).toBe(200);<br>const body = await r.json();</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q8',
+              title: 'Что такое network intercept и зачем он?',
+              answer: 'Интерсепт позволяет мокать ответы API и проверять, какие запросы отправляет UI. Это делает тесты стабильнее. <br><br>Пример: <br><br><code>await page.route("**/api/**", route =><br>  route.fulfill({ status: 200, body: "{}" })<br>);</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q9',
+              title: 'Как выбирать стабильные локаторы?',
+              answer: 'Использовать data-testid и aria-label. Избегать хрупких селекторов по структуре DOM. <br><br>Пример: <br><br><code>page.locator("[data-testid=\"submit\"]")</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q10',
+              title: 'Как устроить запуск тестов в CI/CD?',
+              answer: 'Запускать тесты на коммит/PR, хранить отчеты и артефакты. Для UI часто сохраняют скрины/видео. <br><br>Пример: <br><br><code>npx playwright test --reporter=html</code>',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q11',
+              title: 'Как бороться с флаппи-тестами в JS?',
+              answer: 'Убирать sleep, использовать автоожидания, стабилизировать селекторы, изолировать данные. Полезно сохранять трассы и видео. <br><br>Пример: заменить <code>page.waitForTimeout</code> на ожидание локатора.',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q12',
+              title: 'Что такое тестовая пирамида для Full Stack QA?',
+              answer: 'Основа — API/интеграционные тесты, далее UI, на вершине немного E2E. Такой подход дает скорость и стабильность. <br><br>Пример: API-smoke на каждый PR, UI — nightly.',
+              moreLink: ''
+            },
+            {
+              id: 'accordion_aqajs_q13',
+              title: 'Как валидировать данные в БД из JS-тестов?',
+              answer: 'Можно подключаться через pg/mysql2 и сверять данные после API-операции. Это часто требуется Full Stack QA. <br><br>Пример: <br><br><code>const client = new Client(cfg);<br>await client.connect();<br>const res = await client.query(<br>  "SELECT status FROM orders WHERE id=$1",<br>  [id]<br>);</code>',
+              moreLink: ''
             }
         ]
         }
@@ -1217,6 +1367,100 @@ const systemPrompt =
   // --- Render accordion sections & items ---
   const container = document.getElementById("accordion-container");
   const tpl       = document.getElementById("accordion-item-template");
+
+  function escapeHtml(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function detectLanguage(code) {
+    const text = code.toUpperCase();
+    if (/(SELECT|INSERT|UPDATE|DELETE|FROM|WHERE|JOIN|GROUP BY|ORDER BY|VALUES|CREATE|ALTER|DROP)\b/.test(text)) {
+      return 'sql';
+    }
+    if (/(SYSTEM\.OUT\.PRINT|PUBLIC\s+CLASS|STATIC\s+VOID|STRING\s+|INT\s+)/.test(code)) {
+      return 'java';
+    }
+    if (/(CONSOLE\.LOG|=>|\bLET\b|\bCONST\b|\bVAR\b|\bFUNCTION\b|\bASYNC\b|\bAWAIT\b)/i.test(code)) {
+      return 'javascript';
+    }
+    if (/(DEF\s+|PRINT\(|\bNONE\b|\bTRUE\b|\bFALSE\b)/i.test(code)) {
+      return 'python';
+    }
+    return '';
+  }
+
+  function highlightCode(code, lang) {
+    let html = escapeHtml(code);
+
+    // Comments
+    if (lang === 'sql') {
+      html = html.replace(/(--.*)$/gm, '<span class="tok-comment">$1</span>');
+    } else {
+      html = html.replace(/(\/\/.*)$/gm, '<span class="tok-comment">$1</span>');
+      html = html.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="tok-comment">$1</span>');
+    }
+
+    // Strings
+    html = html.replace(/("([^"\\]|\\.)*")/g, '<span class="tok-string">$1</span>');
+    html = html.replace(/('([^'\\]|\\.)*')/g, '<span class="tok-string">$1</span>');
+
+    // Numbers
+    html = html.replace(/\b(\d+(\.\d+)?)\b/g, '<span class="tok-number">$1</span>');
+
+    // Keywords
+    let keywords = [];
+    if (lang === 'sql') {
+      keywords = [
+        'SELECT','FROM','WHERE','JOIN','LEFT','RIGHT','INNER','OUTER','GROUP','BY','ORDER','INSERT','UPDATE','DELETE',
+        'CREATE','ALTER','DROP','DISTINCT','LIMIT','VALUES','INTO','AS','ON','AND','OR','NOT','NULL','IS','IN',
+        'BETWEEN','LIKE','COUNT','AVG','MIN','MAX','SUM'
+      ];
+      const re = new RegExp(`\\b(${keywords.join('|')})\\b`, 'gi');
+      html = html.replace(re, '<span class="tok-keyword">$1</span>');
+    } else if (lang === 'java' || lang === 'javascript' || lang === 'python') {
+      keywords = [
+        'public','class','static','void','int','string','new','return','if','else','switch','case','break','default',
+        'for','while','try','catch','throw','const','let','var','function','async','await','extends','import','from'
+      ];
+      const re = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+      html = html.replace(re, '<span class="tok-keyword">$1</span>');
+    }
+
+    return html;
+  }
+
+  function enhanceAnswerBlock(textEl) {
+    const codeNodes = Array.from(textEl.querySelectorAll('code'));
+    codeNodes.forEach(codeEl => {
+      const rawHtml = codeEl.innerHTML || '';
+      const text = codeEl.textContent || '';
+      const hasBreaks = /<br\s*\/?>/i.test(rawHtml) || text.includes('\n');
+      const lang = detectLanguage(text);
+      const looksLikeSqlStatement = lang === 'sql' && /\\b(SELECT|INSERT|UPDATE|DELETE|WITH)\\b/i.test(text);
+
+      if (hasBreaks || looksLikeSqlStatement) {
+        const pre = document.createElement('pre');
+        pre.className = 'code-block';
+        const code = document.createElement('code');
+        if (lang) code.className = `language-${lang}`;
+        const normalized = rawHtml
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/<[^>]*>/g, '');
+        code.innerHTML = highlightCode(normalized, lang);
+        pre.appendChild(code);
+        codeEl.replaceWith(pre);
+      } else {
+        codeEl.classList.add('code-inline');
+        codeEl.textContent = text;
+      }
+    });
+  }
 
   data.forEach(cat => {
     // 1. Создаем <section>
@@ -1309,6 +1553,7 @@ const systemPrompt =
 
       // вставляем в ответ
       textEl.innerHTML = item.answer + extraLinks;
+      enhanceAnswerBlock(textEl);
 
       textEl.insertAdjacentHTML('beforeend', `
         <div style="margin-top:1rem;">
@@ -1542,7 +1787,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ждем полной загрузки DOM перед работой с фильтрами
 
   const categoryFilters = document.getElementById('category-filters');
+  const categoryFiltersBottom = document.getElementById('category-filters-bottom');
   const filterChips = categoryFilters.querySelectorAll('.filter-chip');
+  const bottomChips = [];
+
+  // Клонируем чипы в нижнюю панель
+  if (categoryFiltersBottom) {
+    filterChips.forEach(chip => {
+      if (chip.dataset.category === 'Все') return;
+      const clone = chip.cloneNode(true);
+      if (clone.dataset.category === 'БАЗЫ ДАННЫХ') {
+        clone.textContent = 'БД';
+      }
+      categoryFiltersBottom.appendChild(clone);
+      bottomChips.push(clone);
+    });
+  }
+
+  const allChips = [...filterChips, ...bottomChips];
 
   // Модифицированная функция фильтрации
   function applyCategoryFilter(category) {
@@ -1566,6 +1828,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function scrollToCategory(category) {
+    const sections = document.querySelectorAll('#accordion-container .article');
+    const targetSection = category === 'Все'
+      ? sections[0]
+      : [...sections].find(section => {
+          return section.querySelector('.category-title')?.textContent === category;
+        });
+    if (targetSection) {
+      const headerOffset = 120;
+      const rect = targetSection.getBoundingClientRect();
+      const top = window.pageYOffset + rect.top - headerOffset;
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }
+  }
+
+  function setActive(category) {
+    allChips.forEach(c => {
+      c.classList.toggle('active', c.dataset.category === category);
+    });
+    if (categoryFiltersBottom) {
+      const activeBottom = categoryFiltersBottom.querySelector(
+        `.filter-chip[data-category="${category}"]`
+      );
+      if (activeBottom) {
+        const container = categoryFiltersBottom;
+        const chipRect = activeBottom.getBoundingClientRect();
+        const contRect = container.getBoundingClientRect();
+        const current = container.scrollLeft;
+        const target = current + (chipRect.left - contRect.left) - (contRect.width / 2) + (chipRect.width / 2);
+        container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+      }
+    }
+  }
+
   // Восстановление состояния после полной загрузки
   function restoreFilterState() {
     const savedFilter = localStorage.getItem('selectedFilter');
@@ -1574,31 +1870,33 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     if (activeChip) {
-      activeChip.classList.add('active');
+      setActive(savedFilter);
+      if (categoryFiltersBottom) {
+        setTimeout(() => setActive(savedFilter), 0);
+        setTimeout(() => setActive(savedFilter), 50);
+        setTimeout(() => setActive(savedFilter), 150);
+      }
       // Добавляем небольшую задержку для гарантированного рендера карточек
       setTimeout(() => {
         applyCategoryFilter(savedFilter);
       }, 50);
     } else {
       // По умолчанию активируем "Все"
-      const allChip = document.querySelector('.filter-chip[data-category="Все"]');
-      if (allChip) {
-        allChip.classList.add('active');
-        localStorage.setItem('selectedFilter', 'Все');
-      }
+      setActive('Все');
+      localStorage.setItem('selectedFilter', 'Все');
       applyCategoryFilter('Все');
     }
   }
 
   // Обработчики для чипов
-  filterChips.forEach(chip => {
+  allChips.forEach(chip => {
     chip.addEventListener('click', () => {
-      filterChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
+      setActive(chip.dataset.category);
 
       const category = chip.dataset.category;
       localStorage.setItem('selectedFilter', category);
       applyCategoryFilter(category);
+      scrollToCategory(category);
 
       // Очищаем поиск
       searchInput.value = '';
@@ -1608,4 +1906,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Инициализация после полной загрузки
   restoreFilterState();
+
+  // Показ нижней панели: скрываем только когда верхние чипы реально видны пользователю
+  if (categoryFiltersBottom && categoryFilters) {
+    const headerOffset = 120; // высота фиксированного хедера
+    const updateBottomVisibility = () => {
+      const rect = categoryFilters.getBoundingClientRect();
+      const fullyVisible =
+        rect.top >= headerOffset &&
+        rect.bottom <= window.innerHeight;
+      categoryFiltersBottom.classList.toggle('visible', !fullyVisible);
+    };
+    window.addEventListener('scroll', updateBottomVisibility, { passive: true });
+    window.addEventListener('resize', updateBottomVisibility);
+    updateBottomVisibility();
+  }
 });
