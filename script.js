@@ -751,30 +751,161 @@ document.addEventListener('DOMContentLoaded', function(){
     const studyPlan = document.getElementById('study-plan');
     const planList = document.getElementById('plan-list');
     planList.innerHTML = ''; // Очистка предыдущего содержимого
-    // Для каждого выбранного навыка создаём группу: заголовок + список ссылок
+    const visitedKey = 'studyPlanVisitedLinks';
+    const visitedMap = loadVisitedLinks(visitedKey);
+    // Для каждого выбранного навыка создаём группу: заголовок + плитки ссылок
     selectedSkills.forEach(function(skill){
-      let planLinkData = skill.getAttribute('data-plan');
+      let planLinkData = skill.getAttribute('data-plan') || '';
       let skillName = skill.firstChild.textContent.trim();
+      let skillId = skill.getAttribute('data-skill-id') || '';
+
+      let group = document.createElement('div');
+      group.className = 'plan-group';
+      if (skillId === 'java') {
+        group.classList.add('plan-group-java');
+      }
+
       let groupHeader = document.createElement('h3');
       groupHeader.textContent = skillName;
-      planList.appendChild(groupHeader);
-      let ul = document.createElement('ul');
+      group.appendChild(groupHeader);
+
+      let grid = document.createElement('div');
+      grid.className = 'plan-grid';
+
       // Разбиваем data-plan по разделителю "|"
       let links = planLinkData.split('|');
-      links.forEach(function(link){
-        let li = document.createElement('li');
-        let a = document.createElement('a');
-        a.href = link.trim();
-        a.textContent = link.trim();
-        a.target = '_blank';
-        li.appendChild(a);
-        ul.appendChild(li);
+      links.forEach(function(link, index){
+        let url = link.trim();
+        if (!url) return;
+
+        let parsed = parseResourceUrl(url);
+        let typeLabel = getResourceType(parsed.hostname);
+
+        let card = document.createElement('a');
+        card.href = url;
+        card.target = '_blank';
+        card.rel = 'noopener noreferrer';
+        card.className = 'resource-card';
+        card.dataset.url = url;
+        card.dataset.type = typeLabel;
+        if (visitedMap[url]) {
+          card.classList.add('is-visited');
+        }
+        if (skillId === 'java') {
+          card.classList.add('resource-java');
+        }
+
+        let top = document.createElement('div');
+        top.className = 'resource-top';
+
+        let number = document.createElement('span');
+        number.className = 'resource-number';
+        number.textContent = index + 1;
+
+        let type = document.createElement('span');
+        type.className = 'resource-type';
+        type.textContent = typeLabel;
+
+        let visited = document.createElement('span');
+        visited.className = 'resource-visited';
+        visited.textContent = 'Открыто';
+
+        let external = document.createElement('span');
+        top.appendChild(number);
+        top.appendChild(type);
+        top.appendChild(visited);
+
+        let title = document.createElement('div');
+        title.className = 'resource-title';
+        title.textContent = parsed.displayHost || parsed.fallback;
+
+        let subtitle = document.createElement('div');
+        subtitle.className = 'resource-subtitle';
+        subtitle.textContent = parsed.displayPath || parsed.fallback;
+
+        card.appendChild(top);
+        card.appendChild(title);
+        card.appendChild(subtitle);
+
+        card.addEventListener('click', function(){
+          visitedMap[url] = true;
+          saveVisitedLinks(visitedKey, visitedMap);
+          card.classList.add('is-visited');
+        });
+
+        grid.appendChild(card);
       });
-      planList.appendChild(ul);
+
+      group.appendChild(grid);
+      planList.appendChild(group);
     });
     studyPlan.style.display = 'block';
     studyPlan.scrollIntoView({ behavior: 'smooth' });
   });
+
+  function parseResourceUrl(url) {
+    try {
+      let parsed = new URL(url);
+      let host = parsed.hostname.replace(/^www\./, '');
+      let path = parsed.pathname.replace(/\/$/, '');
+      let displayPath = path ? host + path : host;
+      return {
+        hostname: host,
+        displayHost: host,
+        displayPath: displayPath,
+        fallback: url
+      };
+    } catch (e) {
+      return { hostname: '', displayHost: url, displayPath: url, fallback: url };
+    }
+  }
+
+  function loadVisitedLinks(key) {
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveVisitedLinks(key, map) {
+    localStorage.setItem(key, JSON.stringify(map));
+  }
+
+  function getResourceType(hostname) {
+    const host = (hostname || '').toLowerCase();
+    const videoHosts = [
+      'youtube.com',
+      'youtu.be',
+      'rutube.ru',
+      'vk.com',
+      'vimeo.com',
+      'live.dzen.ru'
+    ];
+    const trainerHosts = [
+      'stepik.org',
+      'karpov.courses',
+      'sql-academy.org',
+      'mystery.knightlab.com',
+      'edclub.com',
+      'keybr.com',
+      'klava.org',
+      'duolingo.com',
+      'puzzle-english.com',
+      'puzzle-movies.com',
+      'learngitbranching.js.org',
+      'hacksplaining.com'
+    ];
+
+    if (videoHosts.some((item) => host === item || host.endsWith('.' + item))) {
+      return 'Видео';
+    }
+    if (trainerHosts.some((item) => host === item || host.endsWith('.' + item))) {
+      return 'Тренажер';
+    }
+    return 'Статья';
+  }
 });
 
 document.addEventListener("DOMContentLoaded", function() {
