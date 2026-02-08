@@ -778,19 +778,45 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link:hover {
   color: #F1F1F1;
 }
 
-/* Отключаем белый hover для плашек навыков и чек-листов */
-.skill-links a:hover,
-#checklist-items .skill-links .skill-link:hover {
-  background-color: transparent;
-  color: inherit;
-  box-shadow: none;
+/* Нейтральный hover для плашек навыков и чек-листов */
+.skill-links a:hover {
+  background-color: #FAFAFA;
+  color: #000;
 }
 
-html[data-theme="dark"] .skill-links a:hover,
+html[data-theme="dark"] .skill-links a:hover {
+  background-color: #242424;
+  color: #F1F1F1;
+}
+
+.skill-links a.selected:hover {
+  background-color: #1e1e1e;
+  color: #F1F1F1;
+}
+
+html[data-theme="dark"] .skill-links a.selected:hover {
+  background-color: #FFFFFF;
+  color: #000;
+}
+
+#checklist-items .skill-links .skill-link:hover {
+  background-color: #FAFAFA;
+  color: #000;
+}
+
 html[data-theme="dark"] #checklist-items .skill-links .skill-link:hover {
-  background-color: transparent;
-  color: inherit;
-  box-shadow: none;
+  background-color: #242424;
+  color: #F1F1F1;
+}
+
+#checklist-items .skill-links .skill-link.selected:hover {
+  background-color: #59c3c8;
+  color: #000;
+}
+
+html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected:hover {
+  background-color: #59c3c8;
+  color: #F1F1F1;
 }
 
 /* Сам ховер не сработает - чтобы ликвидировать ховеры из других стилей */
