@@ -741,6 +741,13 @@ document.addEventListener('DOMContentLoaded', function(){
     localStorage.setItem('selectedSkills', JSON.stringify(selectedIds));
   }
 
+  const studyPlan = document.getElementById('study-plan');
+  const planList = document.getElementById('plan-list');
+  const shouldShowPlan = localStorage.getItem('showStudyPlan') === 'true';
+  if (shouldShowPlan && selectedSkills.length > 0) {
+    renderStudyPlan(false);
+  }
+
   // Обработка кнопки "Получить план изучения"
   const getPlanButton = document.getElementById('get-plan');
   getPlanButton.addEventListener('click', function(){
@@ -748,12 +755,14 @@ document.addEventListener('DOMContentLoaded', function(){
       alert('Выбери навык для изучения :)');
       return;
     }
-    const studyPlan = document.getElementById('study-plan');
-    const planList = document.getElementById('plan-list');
-    planList.innerHTML = ''; // Очистка предыдущего содержимого
+    localStorage.setItem('showStudyPlan', 'true');
+    renderStudyPlan(true);
+  });
+
+  function renderStudyPlan(shouldScroll) {
+    planList.innerHTML = '';
     const visitedKey = 'studyPlanVisitedLinks';
     const visitedMap = loadVisitedLinks(visitedKey);
-    // Для каждого выбранного навыка создаём группу: заголовок + плитки ссылок
     selectedSkills.forEach(function(skill){
       let planLinkData = skill.getAttribute('data-plan') || '';
       let skillName = skill.firstChild.textContent.trim();
@@ -772,14 +781,13 @@ document.addEventListener('DOMContentLoaded', function(){
       let grid = document.createElement('div');
       grid.className = 'plan-grid';
 
-      // Разбиваем data-plan по разделителю "|"
       let links = planLinkData.split('|');
       links.forEach(function(link, index){
         let url = link.trim();
         if (!url) return;
 
         let parsed = parseResourceUrl(url);
-        let typeLabel = getResourceType(parsed.hostname);
+        let typeLabel = getResourceType(parsed);
 
         let card = document.createElement('a');
         card.href = url;
@@ -810,7 +818,6 @@ document.addEventListener('DOMContentLoaded', function(){
         visited.className = 'resource-visited';
         visited.textContent = 'Открыто';
 
-        let external = document.createElement('span');
         top.appendChild(number);
         top.appendChild(type);
         top.appendChild(visited);
@@ -840,8 +847,10 @@ document.addEventListener('DOMContentLoaded', function(){
       planList.appendChild(group);
     });
     studyPlan.style.display = 'block';
-    studyPlan.scrollIntoView({ behavior: 'smooth' });
-  });
+    if (shouldScroll) {
+      studyPlan.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
 
   function parseResourceUrl(url) {
     try {
@@ -851,12 +860,13 @@ document.addEventListener('DOMContentLoaded', function(){
       let displayPath = path ? host + path : host;
       return {
         hostname: host,
+        pathname: parsed.pathname || '',
         displayHost: host,
         displayPath: displayPath,
         fallback: url
       };
     } catch (e) {
-      return { hostname: '', displayHost: url, displayPath: url, fallback: url };
+      return { hostname: '', pathname: '', displayHost: url, displayPath: url, fallback: url };
     }
   }
 
@@ -873,8 +883,9 @@ document.addEventListener('DOMContentLoaded', function(){
     localStorage.setItem(key, JSON.stringify(map));
   }
 
-  function getResourceType(hostname) {
-    const host = (hostname || '').toLowerCase();
+  function getResourceType(resource) {
+    const host = (resource.hostname || '').toLowerCase();
+    const path = (resource.pathname || '').toLowerCase();
     const videoHosts = [
       'youtube.com',
       'youtu.be',
@@ -897,9 +908,35 @@ document.addEventListener('DOMContentLoaded', function(){
       'learngitbranching.js.org',
       'hacksplaining.com'
     ];
+    const postHosts = [
+      't.me',
+      'telegram.me',
+      'set.ki'
+    ];
+    const courseHosts = [
+      'stepik.org',
+      'karpov.courses',
+      'practicum.yandex.ru',
+      'otus.ru',
+      'sky.pro'
+    ];
+    const courseHostSuffixes = [
+      '.teachable.com'
+    ];
 
     if (videoHosts.some((item) => host === item || host.endsWith('.' + item))) {
       return 'Видео';
+    }
+    if (postHosts.some((item) => host === item || host.endsWith('.' + item))) {
+      return 'Пост';
+    }
+    if (
+      courseHosts.some((item) => host === item || host.endsWith('.' + item)) ||
+      courseHostSuffixes.some((item) => host.endsWith(item)) ||
+      host.includes('course') ||
+      path.includes('course')
+    ) {
+      return 'Курс';
     }
     if (trainerHosts.some((item) => host === item || host.endsWith('.' + item))) {
       return 'Тренажер';

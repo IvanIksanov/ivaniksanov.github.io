@@ -820,14 +820,16 @@ html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
   text-decoration: none;
   color: inherit;
   min-height: 120px;
-  transition: transform 0.65s ease, box-shadow 0.65s ease, border-color 0.65s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .resource-card:hover {
-  transition-delay: 0.2s;
+  transition-delay: 0.1s;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   border-color: #d5d5d5;
+  background-color: #1A1A1A;
+  color: #F1F1F1;
 }
 
 .resource-top {
@@ -927,11 +929,18 @@ html[data-theme="dark"] .resource-card {
 html[data-theme="dark"] .resource-card:hover {
   border-color: #3b3b3b;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  background-color: #F1F1F1;
+  color: #1A1A1A;
 }
 
 html[data-theme="dark"] .resource-type {
   background-color: #2b2b2b;
   color: #f1f1f1;
+}
+
+html[data-theme="dark"] .tg-card:hover {
+  background-color: #F1F1F1;
+  color: #1A1A1A;
 }
 
 html[data-theme="dark"] .resource-number {
@@ -941,6 +950,36 @@ html[data-theme="dark"] .resource-number {
 
 html[data-theme="dark"] .resource-subtitle {
   color: #bdbdbd;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .skill-links a:hover,
+  #checklist-items .skill-links .skill-link:hover,
+  .resource-card:hover,
+  .tg-card:hover {
+    background-color: #fff;
+    color: inherit;
+    box-shadow: none;
+    transform: none;
+    border-color: #ececec;
+  }
+
+  html[data-theme="dark"] .skill-links a:hover,
+  html[data-theme="dark"] #checklist-items .skill-links .skill-link:hover,
+  html[data-theme="dark"] .resource-card:hover,
+  html[data-theme="dark"] .tg-card:hover {
+    background-color: #1f1f1f;
+    color: inherit;
+    box-shadow: none;
+    transform: none;
+    border-color: #2f2f2f;
+  }
+
+  .tg-card:hover::before,
+  html[data-theme="dark"] .tg-card:hover::before {
+    background-image: none;
+    animation: none;
+  }
 }
 
 
@@ -1011,8 +1050,11 @@ html[data-theme="dark"] .resource-subtitle {
 }
 
 .tg-card:hover {
+  transition-delay: 0.25s;
   transform: scale(1.05);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #1A1A1A;
+  color: #F1F1F1;
 }
 
 .tg-card:hover::before {
