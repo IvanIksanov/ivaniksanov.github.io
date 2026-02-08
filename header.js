@@ -48,6 +48,9 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     updateHeaderState();
+    if (!document.documentElement.hasAttribute('data-theme')) {
+      document.documentElement.setAttribute('data-theme', 'light');
+    }
     const year = new Date().getFullYear();
     document.querySelectorAll('[data-footer-year]').forEach((el) => {
       el.textContent = year;
