@@ -123,6 +123,49 @@ document.addEventListener('DOMContentLoaded', function(){
 
   const studyPlan = document.getElementById('study-plan');
   const planList = document.getElementById('plan-list');
+  const planFilters = document.getElementById('plan-filters');
+
+  function getActiveTypes() {
+    if (!planFilters) return null;
+    const active = new Set();
+    planFilters.querySelectorAll('.plan-filter-chip').forEach(function(chip) {
+      if (!chip.classList.contains('is-disabled')) {
+        active.add(chip.dataset.type);
+      }
+    });
+    return active;
+  }
+
+  function applyPlanFilters() {
+    if (!planFilters || !planList) return;
+    const activeTypes = getActiveTypes();
+    if (!activeTypes) return;
+
+    const groups = planList.querySelectorAll('.plan-group');
+    groups.forEach(function(group) {
+      const cards = group.querySelectorAll('.resource-card');
+      let anyVisible = false;
+      cards.forEach(function(card) {
+        const type = card.dataset.type || '';
+        const isVisible = activeTypes.has(type);
+        card.style.display = isVisible ? '' : 'none';
+        if (isVisible) {
+          anyVisible = true;
+        }
+      });
+      group.style.display = anyVisible ? '' : 'none';
+    });
+  }
+
+  if (planFilters) {
+    planFilters.querySelectorAll('.plan-filter-chip').forEach(function(chip) {
+      chip.classList.remove('is-disabled');
+      chip.addEventListener('click', function() {
+        chip.classList.toggle('is-disabled');
+        applyPlanFilters();
+      });
+    });
+  }
   const shouldShowPlan = localStorage.getItem('showStudyPlan') === 'true';
   if (shouldShowPlan && selectedSkills.length > 0) {
     renderStudyPlan(false);
@@ -227,6 +270,7 @@ document.addEventListener('DOMContentLoaded', function(){
       planList.appendChild(group);
     });
     studyPlan.style.display = 'block';
+    applyPlanFilters();
     if (shouldScroll) {
       studyPlan.scrollIntoView({ behavior: 'smooth' });
     }
@@ -295,7 +339,8 @@ document.addEventListener('DOMContentLoaded', function(){
     ];
     const courseHosts = [
       'stepik.org',
-      'karpov.courses'
+      'karpov.courses',
+      'javarush.com'
     ];
     const courseHostSuffixes = [
       '.teachable.com'

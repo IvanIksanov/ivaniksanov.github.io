@@ -15,11 +15,13 @@
   --primary-ink:   #0f5b5f;
   --accent:        #FFA001;
   --border:        #000;
-  --chip-bg:       #FAFAFA;
+  --chip-bg:       transparent;
   --chip-text:     #333;
-  --chip-hover:    #f2fafb;
-  --chip-active-bg:#44BBC1;
-  --chip-active-fg:#fff;
+  --chip-hover:    #f2f2f2;
+  --chip-active-bg:#f4f4f4;
+  --chip-active-fg:#1a1a1a;
+  --chip-active-border: #bdbdbd;
+  --chip-disabled: #9a9a9a;
 }
 
 /* Тёмная тема (переключается атрибутом на <html>) */
@@ -32,11 +34,13 @@ html[data-theme="dark"] {
   --primary-ink:   #d2ffff;
   --accent:        #FFA001;
   --border:        #fff;
-  --chip-bg:       #2b2b2b;
+  --chip-bg:       transparent;
   --chip-text:     #eee;
-  --chip-hover:    #3a3a3a;
-  --chip-active-bg:#44BBC1;
-  --chip-active-fg:#fff;
+  --chip-hover:    #2a2a2a;
+  --chip-active-bg:#2a2a2a;
+  --chip-active-fg:#f1f1f1;
+  --chip-active-border: #4a4a4a;
+  --chip-disabled: #7a7a7a;
 }
 
 
@@ -67,6 +71,27 @@ h1, h2, h3, h4, h5, h6 {
   gap: .75rem;
 }
 
+/* строка фильтров + подсказка */
+.filters-row {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+}
+.filters-row .study-plan-note {
+  margin: 0;
+  font-size: .9rem;
+  color: var(--muted);
+  min-height: 1.4em;
+  transition: opacity .2s ease;
+}
+.filters-row .study-plan-note.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
 /* Чипы категорий (мультивыбор) */
 .category-filters {
   display: flex;
@@ -80,17 +105,30 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 20px;
   background: var(--chip-bg);
   color: var(--chip-text);
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: background-color .2s;
+  transition: background-color .2s, border-color .2s, color .2s, opacity .2s;
   font-size: .85rem;
 }
-.filter-chip:hover { background: var(--chip-hover); }
+.filter-chip:hover { background: var(--chip-hover); border-color: var(--chip-active-border); }
 .filter-chip.active {
   background: var(--chip-active-bg);
   color: var(--chip-active-fg);
+  border-color: var(--chip-active-border);
+}
+.filter-chip:not(.active) {
+  background: transparent;
+  border-color: transparent;
+  color: var(--chip-disabled);
+  opacity: 0.7;
+}
+.filter-chip:not(.active):hover {
+  background: transparent;
+  border-color: transparent;
 }
 @media (max-width: 600px) {
+  .filters-row { gap: .4rem; }
+  .filters-row .study-plan-note { font-size: .8rem; }
   .filter-chip { padding: .4rem .8rem; font-size: .8rem; }
 }
 

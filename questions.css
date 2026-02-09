@@ -442,6 +442,12 @@ html[data-theme="dark"] .code-inline {
 
 /* Новое: подсветка текста вопроса при hover и открытом состоянии */
 /* Для заголовка (вся кнопка-триггер наследует цвет) */
+.t849__header.studied .t849__trigger-button {
+  color: #44BBC1;
+}
+.t849__header.unclear .t849__trigger-button {
+  color: #FFA500;
+}
 .t849__header.studied:hover .t849__trigger-button,
 .t849__header.studied.t849__opened .t849__trigger-button {
   color: #44BBC1;

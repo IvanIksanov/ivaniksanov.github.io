@@ -75,7 +75,10 @@
 </div>
 <br><br>
 <main class="main-content">
-    <div id="category-filters" class="category-filters" aria-label="Фильтры категорий"></div>
+    <div class="filters-row">
+        <p id="category-note" class="study-plan-note">По умолчанию выбраны все категории.</p>
+        <div id="category-filters" class="category-filters" aria-label="Фильтры категорий"></div>
+    </div>
     <figure class="photo-3x2" id="question-photo">
         <img src="img/call-cats2.jpeg" alt="Подключение к звонку">
     </figure>
@@ -117,8 +120,8 @@
     /* === Новая логика состояния старта собеседования === */
     let interviewStarted=true; // при первой загрузке — как раньше (автостарт). После смены фильтров — false до старта.
 
-    const filtersWrap=document.getElementById('category-filters');const badge=document.getElementById('badge-category');const counterEl=document.getElementById('counter');const titleEl=document.getElementById('question-title');const answerEl=document.getElementById('answer');const toggleBtn=document.getElementById('toggle-answer');const skipBtn=document.getElementById('skip-btn');const acceptBtn=document.getElementById('accept-btn');
-    function renderFilterChips(){filtersWrap.innerHTML='';ALL_CATEGORIES.forEach(cat=>{const chip=document.createElement('button');chip.className='filter-chip';chip.dataset.category=cat;chip.textContent=normalizeChipTitle(cat);if(selectedCategories.has(cat))chip.classList.add('active');filtersWrap.appendChild(chip)});filtersWrap.querySelectorAll('.filter-chip').forEach(chip=>{chip.addEventListener('click',()=>onChipClick(chip))})}
+    const filtersWrap=document.getElementById('category-filters');const noteEl=document.getElementById('category-note');const badge=document.getElementById('badge-category');const counterEl=document.getElementById('counter');const titleEl=document.getElementById('question-title');const answerEl=document.getElementById('answer');const toggleBtn=document.getElementById('toggle-answer');const skipBtn=document.getElementById('skip-btn');const acceptBtn=document.getElementById('accept-btn');
+    function renderFilterChips(){filtersWrap.innerHTML='';ALL_CATEGORIES.forEach(cat=>{const chip=document.createElement('button');chip.className='filter-chip';chip.dataset.category=cat;chip.textContent=normalizeChipTitle(cat);if(selectedCategories.has(cat))chip.classList.add('active');filtersWrap.appendChild(chip)});filtersWrap.querySelectorAll('.filter-chip').forEach(chip=>{chip.addEventListener('click',()=>onChipClick(chip))});if(noteEl){noteEl.classList.toggle('is-hidden',selectedCategories.size!==ALL_CATEGORIES.length)}}
     function onChipClick(chip){const key=chip.dataset.category;if(selectedCategories.has(key)){if(selectedCategories.size>1){selectedCategories.delete(key)}}else{selectedCategories.add(key)}localStorage.setItem('interview_selected_categories',JSON.stringify(Array.from(selectedCategories)));renderFilterChips();resetProgress();rebuildPoolAndStart(true) /* после смены фильтров — режим ожидания старта */}
     function rebuildPoolAndStart(deferStart=false){const flat=flatten(RAW).filter(q=>selectedCategories.has(q.category)&&!isExcludedCategory(q.category));pool=buildSample(flat,Array.from(selectedCategories));shuffleInPlace(pool);index=0;interviewStarted=!deferStart;renderCard()}
     function buildSample(list,selected){const byCat=new Map();selected.forEach(c=>{if(isExcludedCategory(c))return;byCat.set(c,[])});
