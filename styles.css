@@ -224,10 +224,6 @@ h1, h2, h4, h5, h6 {
     width: 100%;
     max-width: 100%;
   }
-  #practice-covers {
-    margin-left: -10px;
-    margin-right: -10px;
-  }
 }
 
 .carousel-button:hover {
@@ -1206,6 +1202,12 @@ html[data-theme="dark"] .skills-cover-cta:hover {
   mask: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTEiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTYgMTJsMTItNS00LjUgMTItMi41LTQtNS0zeiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==") no-repeat center / contain;
 }
 
+/* Иконка ноутбука для карточек блока "Тренажеры и обучение" */
+#practice-covers .tg-card::before {
+  -webkit-mask: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHJlY3QgeD0iMyIgeT0iNCIgd2lkdGg9IjE4IiBoZWlnaHQ9IjEyIiByeD0iMiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNOCAyMGg4IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTEyIDE2djQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=") no-repeat center / contain;
+  mask: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSI+PHJlY3QgeD0iMyIgeT0iNCIgd2lkdGg9IjE4IiBoZWlnaHQ9IjEyIiByeD0iMiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNOCAyMGg4IiBzdHJva2U9IiNmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTEyIDE2djQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48L3N2Zz4=") no-repeat center / contain;
+}
+
 .tg-card:hover {
   transition-delay: 0.25s;
   transform: scale(1.05);
@@ -1348,7 +1350,19 @@ html[data-theme="dark"] .skill-links a.selected {
 
 /* ===== Новые стили для чек-листа и результатов ===== */
 #practice-covers {
+  margin: 0 auto 1rem;
+}
+
+#practice-covers .carousel {
   width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
+}
+
+@media (max-width: 900px) {
+  #practice-covers .carousel {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
 }

@@ -515,6 +515,22 @@ html[data-theme="dark"] .code-inline {
   visibility: visible;
   opacity: 1;
 }
+
+@media (hover: none) and (pointer: coarse) {
+  .t849__header:hover .t849__icon {
+    display: none;
+  }
+
+  .t849__header.studied:hover .t849__trigger-button,
+  .t849__header.unclear:hover .t849__trigger-button {
+    color: inherit;
+  }
+
+  .t849__header:hover .copy-icon {
+    visibility: hidden;
+    opacity: 0;
+  }
+}
 /* ================= Конец стилей аккордеона ================= */
 
 /* ===================================================================
@@ -1005,6 +1021,13 @@ html[data-theme="dark"] .bottom-filters {
   html[data-theme="dark"] .site-header nav a:hover {
         background-color: #F1F1F1;
         color: #1A1A1A;
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    html[data-theme="dark"] .site-header nav a:hover {
+          background-color: transparent;
+          color: inherit;
+    }
   }
 
   html[data-theme="dark"] a.answer-link {
