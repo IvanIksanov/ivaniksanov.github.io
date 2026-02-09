@@ -42,10 +42,8 @@
         <li style="position: relative;"><a href="hwois.html">Кто такой тестировщик?</a></li>
         <li style="position: relative;"><a href="roadmap.html">Roadmap</a></li>
         <li style="position: relative;"><a href="questions.html">Вопросы</a></li>
-        <li style="position: relative;"><a href="pageBooks.html">Книги</a></li>
-        <li style="position: relative;"><a  href="loginSandbox.html">Логин</a></li>
         <li style="position: relative;"><a href="interview.html">Интервью</a></li>
-        <li style="position: relative;"><a href="swagger_api.html">API Magic</a></li>
+        <li style="position: relative;"><a href="practice.html">Практика</a></li>
     </ul>
 </nav>
 
@@ -83,183 +81,6 @@
 </div>
 
 <main>
-    <canvas id="canvas"></canvas><br>
-
-    <section id="features" class="article"  style="max-width: none; border: 2px solid #44BBC1; text-align: center; padding: 0rem;">
-        <div id="checklist">
-            <div id="checklist-items" class="article">
-                <!-- Навигация по секциям -->
-                <div class="navigation-buttons">
-                    <button id="prev-section">Назад</button>
-                    <button id="next-section">Далее</button>
-                </div><br>
-
-                <!-- Блок 1: Проверка UI -->
-                <div class="section">
-                Проверка UI - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="ui_check1" data-expected="true">Отображается иконка персонажа</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check2" data-expected="true">Отображаются иконки при выборе персонажа</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check3" data-expected="true">Отображаются верхние колонны</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check4" data-expected="true">Отображаются нижние колонны</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check5" data-expected="true">Отображается цветной фон</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check6" data-expected="true">Отображается счетчик очков</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check7" data-expected="true">Отображается нижний фон (земля)</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check8" data-expected="true">Отображаются золотые монеты</a><br>
-                        <a href="#" class="skill-link" data-check-id="ui_check9" data-expected="true">Отображается счетчик монет</a>
-                        <a href="#" class="skill-link" data-check-id="ui_check10" data-expected="false">Отображается кнопка паузы</a>
-                        <a href="#" class="skill-link" data-check-id="ui_check11" data-expected="false">Отображается кнопка автопилота</a>
-                    </div>
-                </div>
-
-                <!-- Блок 2: Адаптивность размеров -->
-                <div class="section">
-                    Адаптивность размеров - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="adapt_check1" data-expected="true">На десктопе доступны все элементы</a><br>
-                        <a href="#" class="skill-link" data-check-id="adapt_check2" data-expected="true">На мобилке доступны все элементы</a><br>
-                        <a href="#" class="skill-link" data-check-id="adapt_check3" data-expected="true">Запуск игры доступен на десктопе и на мобилках</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 3: Адаптивность управления -->
-                <div class="section">
-                    Адаптивность управления - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="control_check1" data-expected="true">Проверить на десктопе (пробел и тап по фрейму)</a><br>
-                        <a href="#" class="skill-link" data-check-id="control_check2" data-expected="true">Проверить на мобилке (тап по фрейму)</a><br>
-                        <a href="#" class="skill-link" data-check-id="control_check3" data-expected="true">Проверить гравитацию на десктопе и на мобилках</a><br>
-                        <a href="#" class="skill-link" data-check-id="control_check4" data-expected="true">Проверить прыжок на десктопе и на мобилках</a><br>
-                        <a href="#" class="skill-link" data-check-id="control_check5" data-expected="true">Проверить включения автопилота через клавишу вверх</a><br>
-                        <a href="#" class="skill-link" data-check-id="control_check6" data-expected="false">Проверить включения автопилота через свайп вверх</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 4: Gray-box тестирование -->
-                <div class="section">
-                    Уровни - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="color_check1" data-expected="false">Бирюзовый + классический 1-10</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check2" data-expected="false">Светло-коричневый + камень 10 - 30</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check3" data-expected="false">Желтый + сердечки 30 - 50</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check4" data-expected="false">Красный + классический 50 - 80</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check5" data-expected="false">Светло-синий + березы 80 - 120</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check6" data-expected="false">Светло-зеленый + здания 120 - 150</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check7" data-expected="false">Розовый + классический 150 - 180</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check8" data-expected="false">Серый + классический 180 - 220</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check9" data-expected="false">Синий + классический 220 - 250</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check10" data-expected="false">Текст счетчика - адаптируется под цвет фона</a><br>
-                        <a href="#" class="skill-link" data-check-id="color_check11" data-expected="true">При переходе уровня колонны заезжают за границу для смены</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 5: Проверка адаптации игры -->
-                <div class="section">
-                    Проверка адаптации игры - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="position_check1" data-expected="true">Проверка старта персонажа 150px от левого края фрейма</a><br>
-                        <a href="#" class="skill-link" data-check-id="position_check2" data-expected="false">Проверка интервала 130px между верхней и нижней колонной</a><br>
-                        <a href="#" class="skill-link" data-check-id="position_check3" data-expected="false">Проверка интервала 130px между препятствиями при старте</a><br>
-                        <a href="#" class="skill-link" data-check-id="position_check4" data-expected="false">Проверка интервала между препятствиями при рестарте - 200px</a><br>
-                        <a href="#" class="skill-link" data-check-id="position_check5" data-expected="false">При рестарте генерация препятствий на расстоянии 200px от персонажа</a><br>
-                        <a href="#" class="skill-link" data-check-id="position_check6" data-expected="false">Проверка размера персонажа 54 на 44px</a><br>
-                        <a href="#" class="skill-link" data-check-id="position_check7" data-expected="true">Проверить отсутствие обрезания или наложения элементов</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 7: Функциональное тестировани -->
-                <div class="section">
-                    Функциональное - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="functional_check1" data-expected="true">Проверить, что после обновления страницы игра стартует автоматически</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check2" data-expected="true">Проверить, что после рестарта игры - старт происходит автоматически</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check3" data-expected="true">Проверить, что до взаимодействия с управлением персонаж на автопилоте</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check4" data-expected="false">Проверить, что персонажа можно выбрать только до прохождения первого препятствия</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check5" data-expected="false">Проверить, что персонаж поднимается на фиксированную высоту при нажатии пробела или клика</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check6" data-expected="true">Проверить корректное поведение персонажа при отсутствии ввода (падение)</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check7" data-expected="true">Проверить увеличение счетчика при успешном прохождении колонны</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check8" data-expected="true">Проверить смену стилей разных уровней</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check9" data-expected="true">Проверить число счетчика при смене стилей разных уровней</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check10" data-expected="true">Проверить остановку игры при столкновении с верхней колонной</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check11" data-expected="true">Проверить остановку игры при столкновении с нижней колонной</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check12" data-expected="true">Проверить остановку игры при столкновении с землей</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check13" data-expected="true">Проверить, что игра не перезапускается автоматически после завершения</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check14" data-expected="true">Проверить возможность перезапуска игры (рестарт)</a><br>
-                        <a href="#" class="skill-link" data-check-id="functional_check15" data-expected="false">Проверить, что при нажатии ESC игра ставится на паузу</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 8: Тестирование производительности -->
-                <div class="section">
-                    Производительность - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="edge_check1" data-expected="false">Проверить поведение персонажа при достижении верхней границы экрана</a><br>
-                        <a href="#" class="skill-link" data-check-id="edge_check2" data-expected="true">Проверить поведение персонажа при достижении нижней границы экрана.</a><br>
-                        <a href="#" class="skill-link" data-check-id="edge_check3" data-expected="true">Проверить корректность счета при прохождении множества колонн.</a><br>
-                        <a href="#" class="skill-link" data-check-id="edge_check4" data-expected="false">Проверить максимальный интервал между колоннами 200 (для больших экранов)</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 9: Проверка негативных сценариев -->
-                <div class="section">
-                Негативные проверки - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="negative_check1" data-expected="false">Проверить, что игра корректно обрабатывает попытку ввода после завершения игры</a><br>
-                        <a href="#" class="skill-link" data-check-id="negative_check2" data-expected="true">Проверить, что персонаж не “проходит” через колонны при медленном FPS.</a><br>
-                        <a href="#" class="skill-link" data-check-id="negative_check3" data-expected="true">Проверить поведение игры при отключении JavaScript</a><br>
-                        <a href="#" class="skill-link" data-check-id="negative_check4" data-expected="true">Проверить поведение игры при отключении CSS</a><br>
-                        <a href="#" class="skill-link" data-check-id="negative_check5" data-expected="true">Проверить поведение игры при отключении HTML</a><br>
-                        <a href="#" class="skill-link" data-check-id="negative_check6" data-expected="true">Проверить, что счетчик не увеличивается при столкновении с колонной.</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 10: Тестирование на кроссбраузерность -->
-                <div class="section">
-                    Кроссбраузерность - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="cross_check1" data-expected="true">Проверить корректность работы игры в Google Chrome</a><br>
-                        <a href="#" class="skill-link" data-check-id="cross_check2" data-expected="true">Проверить корректность работы игры в Mozilla Firefox</a><br>
-                        <a href="#" class="skill-link" data-check-id="cross_check3" data-expected="true">Проверить корректность работы игры в Safari</a><br>
-                        <a href="#" class="skill-link" data-check-id="cross_check4" data-expected="true">Проверить корректность работы игры в Microsoft Edge</a><br>
-                        <a href="#" class="skill-link" data-check-id="cross_check5" data-expected="false">Проверить корректность работы игры на разных движках</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 11: Тестирование с использованием техники серого ящика -->
-                <div class="section">
-                    Метод серого ящика - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="gray_check1" data-expected="true">Проверить скорость обновления позиций объектов</a><br>
-                        <a href="#" class="skill-link" data-check-id="gray_check2" data-expected="true">Проверить скорость обновления счетчика</a><br>
-                        <a href="#" class="skill-link" data-check-id="gray_check3" data-expected="true">Проверить использование ресурсов (CPU, память)</a><br>
-                    </div>
-                </div>
-
-                <!-- Блок 12: Проверка адаптации игры -->
-                <div class="section">
-                Адаптация игры - выбери успешные проверки<br><br>
-                    <div class="skill-links">
-                        <a href="#" class="skill-link" data-check-id="adapt_check1" data-expected="true">Проверить работу на экранах 1920x1080</a><br>
-                        <a href="#" class="skill-link" data-check-id="adapt_check2" data-expected="true">Проверить работу на экранах 1366x768</a><br>
-                        <a href="#" class="skill-link" data-check-id="adapt_check3" data-expected="true">Проверить работу на экранах 360x640</a><br>
-                        <a href="#" class="skill-link" data-check-id="adapt_check4" data-expected="true">Проверить работу во время растягивания окна браузера (пауза игры)</a><br>
-                        <a href="#" class="skill-link" data-check-id="adapt_check5" data-expected="false">Проверить работу игры во время растягивания окна браузера</a><br>
-                    </div>
-
-                    <!-- После последнего блока добавляем кнопку и контейнер для результата -->
-                    <div class="results-container" style="text-align: center; margin-top: 20px;">
-                        <button id="check-results">Проверить результаты покрытия</button>
-                        <div id="resultsPie"></div>
-                        <!-- новый блок для текста -->
-                        <div id="resultsText" class="results-text"></div>
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    </section>
-
     <!-- Yandex.RTB R-A-15042258-1 -->
     <div id="yandex_rtb_R-A-15042258-1"></div>
     <script>
@@ -271,70 +92,91 @@
         })
     </script>
 
-    <section id="testimonials" class="frame1">
-        <h2>Статьи от автора</h2>
+    <section id="practice-covers">
+        <div class="carousel">
+            <div class="carousel-images">
+                <div class="skills-cover carousel-item active">
+                    <a class="skills-cover-link" href="#plan-list">
+                        <img class="skills-cover-img" src="img/cover/skills_cover.webp" alt="Конструктор навыков">
+                    </a>
+                    <a class="skills-cover-cta" href="#plan-list">Конструктор навыков (обучение)</a>
+                </div>
+                <div class="skills-cover carousel-item">
+                    <a class="skills-cover-link" href="questions.html">
+                        <img class="skills-cover-img" src="img/cover/questions_cover.webp" alt="Вопросы на собеседовании">
+                    </a>
+                    <a class="skills-cover-cta" href="questions.html">Подготовка к собеседованию</a>
+                </div>
+                <div class="skills-cover carousel-item">
+                    <a class="skills-cover-link" href="pageBooks.html">
+                        <img class="skills-cover-img" src="img/cover/books_cover.webp" alt="Книги для практики">
+                    </a>
+                    <a class="skills-cover-cta" href="pageBooks.html">Протестировать книжную полку</a>
+                </div>
+                <div class="skills-cover carousel-item">
+                    <a class="skills-cover-link" href="flappy.html">
+                        <img class="skills-cover-img" src="img/cover/flappy_cover.webp" alt="Flappy тренажер">
+                    </a>
+                    <a class="skills-cover-cta" href="flappy.html">Протестировать игру по чек-листу</a>
+                </div>
+                <div class="skills-cover carousel-item">
+                    <a class="skills-cover-link" href="loginSandbox.html">
+                        <img class="skills-cover-img" src="img/cover/login_cover.webp" alt="Login тренажер">
+                    </a>
+                    <a class="skills-cover-cta" href="loginSandbox.html">Логин тренажер (поиск багов)</a>
+                </div>
+                <div class="skills-cover carousel-item">
+                    <a class="skills-cover-link" href="swagger_api.html">
+                        <img class="skills-cover-img" src="img/cover/magic_cover.webp" alt="Swagger тренажер">
+                    </a>
+                    <a class="skills-cover-cta" href="swagger_api.html">API тренажер (Swagger)</a>
+                </div>
+                <div class="skills-cover carousel-item">
+                    <a class="skills-cover-link" href="#tg-links">
+                        <img class="skills-cover-img" src="img/cover/telegram_cover.webp" alt="Посты в телеграм">
+                    </a>
+                    <a class="skills-cover-cta" href="#tg-links">Популярные технические посты</a>
+                </div>
+            </div>
+            <div class="carousel-controls">
+                <button id="prev" class="carousel-button">‹</button>
+                <button id="next" class="carousel-button">›</button>
+            </div>
+        </div>
 
-        <!-- Оболочка карусели -->
-        <div class="habr-carousel">
-            <!-- Кнопка "Назад" -->
-            <button id="habr-prev" class="carousel-button">←</button>
-
-            <!-- Вся "лента" миниатюр -->
-            <div class="habr-carousel-track">
-                <!-- Каждая статья: обёртка <a> с нужным href -->
-                <a href="https://habr.com/ru/companies/sberbank/articles/867366/" target="_blank">
-                    <img src="img/article2.png" alt="Статья 2" />
+        <div class="article">
+            <h2>Тренажеры и обучение</h2>
+            <div class="tg-links-grid">
+                <a href="pageBooks.html" class="tg-card" style="--hover-color: #3091FF;">
+                    <h3 class="tg-title">Книги и материалы</h3>
+                    <p class="tg-subtitle">Подборка для практики и развития инженерного мышления.</p>
                 </a>
-                <a href="https://habr.com/ru/articles/814379/" target="_blank">
-                    <img src="img/article4.jpeg" alt="Статья 4" />
+                <a href="flappy.html" class="tg-card" style="--hover-color: #00FF62;">
+                    <h3 class="tg-title">Flappy тренажер</h3>
+                    <p class="tg-subtitle">Отточить навыки тест-дизайна и наблюдательности.</p>
                 </a>
-                <a href="https://habr.com/ru/articles/810525/" target="_blank">
-                    <img src="img/article5.png" alt="Статья 5" />
+                <a href="loginSandbox.html" class="tg-card" style="--hover-color: #FF82F2;">
+                    <h3 class="tg-title">Login Sandbox</h3>
+                    <p class="tg-subtitle">Проверка формы логина: позитивные и негативные сценарии.</p>
                 </a>
-                <a href="https://habr.com/ru/articles/804171/" target="_blank">
-                    <img src="img/article6.jpeg" alt="Статья 6" />
-                </a>
-                <a href="https://habr.com/ru/articles/792894/" target="_blank">
-                    <img src="img/article7.jpeg" alt="Статья 7" />
-                </a>
-                <a href="https://habr.com/ru/articles/789524/" target="_blank">
-                    <img src="img/article8.jpeg" alt="Статья 8" />
-                </a>
-                <a href="https://habr.com/ru/articles/784710/" target="_blank">
-                    <img src="img/article9.jpeg" alt="Статья 9" />
-                </a>
-                <a href="https://habr.com/ru/articles/784116/" target="_blank">
-                    <img src="img/article10.jpeg" alt="Статья 10" />
-                </a>
-                <a href="https://habr.com/ru/articles/782682/" target="_blank">
-                    <img src="img/article11.jpeg" alt="Статья 11" />
-                </a>
-                <a href="https://habr.com/ru/articles/862232/" target="_blank">
-                    <img src="img/article1.jpeg" alt="Статья 1" />
-                </a>
-                <a href="https://habr.com/ru/articles/843876/" target="_blank">
-                    <img src="img/article3.png" alt="Статья 3" />
+                <a href="swagger_api.html" class="tg-card" style="--hover-color: #FFB35D;">
+                    <h3 class="tg-title">Swagger тренажер</h3>
+                    <p class="tg-subtitle">Практика по API и работе с документацией.</p>
                 </a>
             </div>
-
-            <!-- Кнопка "Вперёд" -->
-            <button id="habr-next" class="carousel-button">→</button>
         </div>
     </section>
 
     <!-- Новый фрейм: Список навыков для QA / тестировщика -->
     <section id="qa-skills" class="article">
         <h2>Конструктор навыков: собери свой план обучения!</h2>
-        <div class="selection-item" style="text-align: center;">
-            <img src="img/qa-skills.png" alt="От выгорания к офферу мечты!">
-        </div>
 
         <div class="skill-category">
             <h3>Тестирование и теория</h3>
             <div class="skill-links">
                 <a data-skill-id="scrum" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/sdlc-i-stlc/scrum | https://stepik.org/course/172187/promo? | https://practicum.yandex.ru/blog/chto-takoe-scrum-metodologiya/ | https://thecode.media/scrum/ | https://blog.skillfactory.ru/kto-takoy-scrum-master-chem-zanimaetsya/ | https://doka.guide/tools/agile/ | https://blog.skedraw.ru/articles/urovni-razrabotki-programmnogo-obespecheniya">Scrum<span class="skill-counter"></span></a>
                 <a data-skill-id="web-mobile-testing" data-plan="https://selectel.ru/blog/testing-mobile-applications/ | https://sky.pro/media/kak-testirovat-igry/ | https://gist.github.com/Rende11/1db5dc9470c9659976eae6d6e4e1a271#file-mobile-md">Web/Mobile testing<span class="skill-counter"></span></a>
-                <a data-skill-id="test-design" data-plan="https://stepik.org/course/218257/promo? | https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
+                <a data-skill-id="test-design" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
                 <a data-skill-id="quality-assurance" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/obshee/qa-qc-testing | https://skillbox.ru/media/code/bol-testirovshchika-s-kakimi-problemami-stalkivayutsya-qainzhenery/ | https://tproger.ru/articles/instrumenty-i-frejmvorki-qa--kotorye--ne--nuzhno-znat | https://thecode.media/qa-engineer-2023/">Обеспечение качества<span class="skill-counter"></span></a>
                 <a data-skill-id="mindmap" data-plan="https://skillbox.ru/media/base/chto-takoe-intellektkarty | https://vc.ru/services/1553974-top-15-luchshih-servisov-dlya-sozdaniya-intellekt-kart? | https://fb2-book.com/book/152103-intellekt-karty-polnoe-rukovodstvo-po-moshchnomu | https://habr.com/ru/articles/857390/ | https://www.mindmeister.com/app/map/470194599?fullscreen=1&v=public">Составление MindMap<span class="skill-counter"></span></a>
                 <a data-skill-id="cross-browser" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/vidy-metody-urovni-testirovaniya/krossbrauzernoe-testirovanie-cross-browser-testing | https://testengineer.ru/chto-takoe-kross-brauzernoe-testirovanie/ | https://serpstat.com/ru/blog/kak-proverit-otobrazhenie-sajta-vo-vseh-brauzerah/">Кроссбраузерное<span class="skill-counter"></span></a>
@@ -357,7 +199,7 @@
         <div class="skill-category">
             <h3>SQL и База Данных</h3>
             <div class="skill-links">
-                <a data-skill-id="MySQL" data-plan="https://karpov.courses/simulator-sql | https://my-js.org/docs/cheatsheet/sql | https://github.com/enhorse/java-interview/blob/master/README.md#sql | https://blog.karpov.courses/sql-chto-eto-takoe-prostymi-slovami-rasshifrovka-kak-rabotaet-yazyk-programmirovaniya-dlya-chego-on-nuzhen-osnovnye-ponyatiya-pri-rabote-s-bazami-dannyh/ | https://www.youtube.com/watch?v=5sG9kmXYsKU | https://mystery.knightlab.com | https://thecode.media/mysql/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#базы-данных | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#sql | https://sql-academy.org/ru/guide | https://blog.skillfactory.ru/polnoe-rukovodstvo-po-zaprosam-sql/ | https://thecode.media/5-db-types/ | https://stepik.org/course/212435/promo?">MySQL<span class="skill-counter"></span></a>
+                <a data-skill-id="MySQL" data-plan="https://karpov.courses/simulator-sql | https://sql-academy.org/ru/guide | https://my-js.org/docs/cheatsheet/sql | https://github.com/enhorse/java-interview/blob/master/README.md#sql | https://www.youtube.com/watch?v=5sG9kmXYsKU | https://mystery.knightlab.com | https://thecode.media/mysql/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#базы-данных | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#sql | https://blog.skillfactory.ru/polnoe-rukovodstvo-po-zaprosam-sql/ | https://thecode.media/5-db-types/ | https://stepik.org/course/212435/promo?">MySQL<span class="skill-counter"></span></a>
                 <a data-skill-id="postgresql" data-plan="https://stepik.org/course/182183/promo? | https://betacode.net/11335/postgresql | https://vc.ru/u/2263319-vladimir-lovcov/987584-stavim-postgresql-na-svoi-pk-praktika-sql-chast-1? | https://practicum.yandex.ru/blog/chto-takoe-subd-postgresql/ | https://skillbox.ru/media/code/postgresql-vsye-chto-nuzhno-znat-dlya-bystrogo-starta/ | https://pro-prof.com/forums/topic/практика-работы-с-postgresql? | https://tproger.ru/articles/osnovy-postgresql-dlya-nachinayushhih--ot-ustanovki-do-pervyh-zaprosov-250851 | https://gitverse.ru/blog/articles/open-source/496-postgresql-chto-eto-za-subd-i-kak-ej-polzovatsya">PostgreSQL<span class="skill-counter"></span></a>
                 <a data-skill-id="oracle" data-plan="https://sky.pro/wiki/sql/besplatnye-bazy-dannykh-oracle-dlya-trenirovki-sql-zaprosov/ | https://skillbox.ru/media/code/baza-dannykh-oracle-db-kak-ona-ustroena-i-chem-khorosha/ | https://betacode.net/10233/sample-oracle-database-for-learning-sql">ORACLE<span class="skill-counter"></span></a>
                 <a data-skill-id="mongodb" data-plan="https://timeweb.cloud/tutorials/mongodb/zaprosy-mongodb-optimizaciya-primery | https://itproger.com/course/mongodb/2 | https://habr.com/ru/articles/217393/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#mongodb | https://andreyex.ru/programmirovanie/python/kak-sozdat-bazu-dannyh-v-mongodb-s-pomoshhyu-python/">MongoDB<span class="skill-counter"></span></a>
@@ -431,6 +273,7 @@
         <button id="get-plan">Получить план</button>
         <!-- Контейнер для отображения плана изучения (ссылки выбранных навыков) -->
         <div id="study-plan" style="display: none;">
+            <h2>Твой план развития, на основе выбранных навыков</h2>
             <p class="study-plan-note">Все ссылки ведут на сторонние источники. При нажатии вы переходите на статью, тренажер или видео в новой вкладке.</p>
             <div id="plan-list"></div>
         </div>
@@ -538,6 +381,57 @@
         </div>
     </section>
 
+    <section id="testimonials" class="frame1">
+        <h2>Статьи от автора</h2>
+
+        <!-- Оболочка карусели -->
+        <div class="habr-carousel">
+            <!-- Кнопка "Назад" -->
+            <button id="habr-prev" class="carousel-button">←</button>
+
+            <!-- Вся "лента" миниатюр -->
+            <div class="habr-carousel-track">
+                <!-- Каждая статья: обёртка <a> с нужным href -->
+                <a href="https://habr.com/ru/companies/sberbank/articles/867366/" target="_blank">
+                    <img src="img/article2.png" alt="Статья 2" />
+                </a>
+                <a href="https://habr.com/ru/articles/814379/" target="_blank">
+                    <img src="img/article4.jpeg" alt="Статья 4" />
+                </a>
+                <a href="https://habr.com/ru/articles/810525/" target="_blank">
+                    <img src="img/article5.png" alt="Статья 5" />
+                </a>
+                <a href="https://habr.com/ru/articles/804171/" target="_blank">
+                    <img src="img/article6.jpeg" alt="Статья 6" />
+                </a>
+                <a href="https://habr.com/ru/articles/792894/" target="_blank">
+                    <img src="img/article7.jpeg" alt="Статья 7" />
+                </a>
+                <a href="https://habr.com/ru/articles/789524/" target="_blank">
+                    <img src="img/article8.jpeg" alt="Статья 8" />
+                </a>
+                <a href="https://habr.com/ru/articles/784710/" target="_blank">
+                    <img src="img/article9.jpeg" alt="Статья 9" />
+                </a>
+                <a href="https://habr.com/ru/articles/784116/" target="_blank">
+                    <img src="img/article10.jpeg" alt="Статья 10" />
+                </a>
+                <a href="https://habr.com/ru/articles/782682/" target="_blank">
+                    <img src="img/article11.jpeg" alt="Статья 11" />
+                </a>
+                <a href="https://habr.com/ru/articles/862232/" target="_blank">
+                    <img src="img/article1.jpeg" alt="Статья 1" />
+                </a>
+                <a href="https://habr.com/ru/articles/843876/" target="_blank">
+                    <img src="img/article3.png" alt="Статья 3" />
+                </a>
+            </div>
+
+            <!-- Кнопка "Вперёд" -->
+            <button id="habr-next" class="carousel-button">→</button>
+        </div>
+    </section>
+
     <section id="about" class="article">
         <h2>О QAtoDev</h2>
         <p>QAtoDev - это сообщество тестировщиков и QA, которые прокачивают технические навыки на уровне разработки.
@@ -614,91 +508,6 @@
         updateLogo();
       }, 50000);
     })();
-</script>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-      document.querySelectorAll('.skill-link').forEach(item => {
-        const id = item.dataset.checkId;
-        if (localStorage.getItem('check_' + id) === 'true') {
-          item.classList.add('selected');
-        }
-        item.addEventListener('click', function(e) {
-          e.preventDefault();
-          item.classList.toggle('selected');
-          localStorage.setItem('check_' + id, item.classList.contains('selected'));
-        });
-      });
-    });
-</script>
-
-<!-- Подсчёт, метки и диаграмма -->
-<script>
-    document.getElementById('check-results').addEventListener('click', function() {
-      // 1. удаляем все старые метки
-      document.querySelectorAll('#checklist-items .mark').forEach(m => m.remove());
-
-      const items = Array.from(document.querySelectorAll('#checklist-items .skill-link'));
-      const totalTrueCount = items.filter(i => i.dataset.expected === 'true').length;
-      let correctCount = 0, wrongCount = 0;
-
-      items.forEach(item => {
-        const expected = item.dataset.expected === 'true';
-        const selected = item.classList.contains('selected');
-
-        // считаем для %
-        if (selected) {
-          if (expected) correctCount++;
-          else wrongCount++;
-        }
-
-        // создаём новую метку
-        const mark = document.createElement('span');
-        mark.classList.add('mark');
-        if (selected && expected) {
-          mark.classList.add('correct');
-          mark.textContent = '✔';
-        } else if (selected && !expected) {
-          mark.classList.add('incorrect');
-          mark.textContent = '✖';
-        } else if (!selected && !expected) {
-          mark.classList.add('unselected');
-          mark.textContent = '✖';
-        } else if (!selected && expected) {
-          mark.classList.add('unselected');
-          mark.textContent = '✔';
-        }
-        item.insertAdjacentElement('afterend', mark);
-      });
-
-      // вычисляем % по старой логике
-      const denom = totalTrueCount + wrongCount;
-      const percent = denom > 0 ? (correctCount / denom) * 100 : 0;
-      const pie = document.getElementById('resultsPie');
-      pie.style.background = `conic-gradient(green 0% ${percent}%, red ${percent}% 100%)`;
-      pie.textContent = `${Math.round(percent)}%`;
-
-      // 3) текстовый отзыв
-      const txt = document.getElementById('resultsText');
-      let message = '';
-      if (percent < 20) {
-        message = 'У тебя откуда руки растут? Ты пропустил очень много багов в прод. ' +
-                  'Попробуй внимательно пройти каждую проверку еще раз. Иначе не пройдешь испыталку :(';
-      } else if (percent < 50) {
-        message = 'Не торопись, тебе есть куда стремиться. ' +
-                  'Вернись к проверкам, возможно, ты что-то упустил. Не опускай руки!';
-      } else if (percent < 80) {
-        message = 'Отличная работа — ты нашёл много критических багов! ' +
-                  'Однако пару моментов всё же пропустил. Большое спасибо за усилия, ' +
-                  'доработай ещё чуть-чуть и получится идеально. Может быть ты нашел баги в проверках, которые значатся как успешные? В таком случае нужно уточнить требования у аналитика.';
-      } else if (percent < 99) {
-        message = 'Ура! Ты продемонстрировал высокий уровень тестирования и внимательность. ' +
-                  'Твой опыт очевиден, и качество покрытия почти идеально. Так держать!';
-      } else {
-        message = 'Ашалеть! Тестировщик-монстр активирован! Мы вовремя успели протестировать функционал. Ты поможешь завести баг-репорты?';
-      }
-      txt.textContent = message;
-    });
 </script>
 
 <script src="script.js"></script>

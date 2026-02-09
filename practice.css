@@ -1,0 +1,39 @@
+.practice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.practice-card {
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 16px;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.practice-card h3 {
+  margin: 0;
+}
+
+.practice-card p {
+  margin: 0;
+}
+
+.practice-card a {
+  align-self: flex-start;
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .practice-card {
+  background-color: #1f1f1f;
+  border-color: #2f2f2f;
+  color: #f1f1f1;
+}
+
+html[data-theme="dark"] .practice-card a {
+  color: #f1f1f1;
+}

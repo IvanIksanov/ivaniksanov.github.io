@@ -1,0 +1,123 @@
+/* Flappy Bird + чек-лист: локальные стили */
+
+#canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0 auto;
+  border-radius: 20px;
+}
+
+@media (max-width: 768px) {
+  #canvas {
+    width: 100%;
+    height: auto;
+  }
+}
+
+/* Плашки чек-листа: full-width до 600px, дальше не шире 600px */
+#checklist-items .skill-links .skill-link {
+  width: 100%;
+  max-width: 600px;
+  margin: 1 auto;
+  text-align: center;
+  font-size: 14px;
+}
+
+@media (max-width: 900px) {
+  #checklist-items .skill-links .skill-link {
+    max-width: 80%;
+    font-size: 12px;
+  }
+
+  #checklist-items .skill-links .skill-link + .mark,
+  #checklist-items .skill-links .skill-link .mark {
+    font-size: 14px;
+  }
+}
+
+#checklist-items .skill-links .skill-link:hover {
+  background-color: #FAFAFA;
+  color: #000;
+}
+
+html[data-theme="dark"] #checklist-items .skill-links .skill-link:hover {
+  background-color: #242424;
+  color: #F1F1F1;
+}
+
+#checklist-items .skill-links .skill-link.selected:hover {
+  background-color: #59c3c8;
+  color: #000;
+}
+
+html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected:hover {
+  background-color: #59c3c8;
+  color: #F1F1F1;
+}
+
+#checklist-items .skill-links .skill-link.selected {
+  background-color: #59c3c8;
+  color: #000;
+}
+
+html[data-theme="dark"] #checklist-items .skill-links .skill-link.selected {
+  background-color: #59c3c8;
+  color: #F1F1F1;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  #checklist-items .skill-links .skill-link:hover {
+    background-color: #fff;
+    color: inherit;
+    box-shadow: none;
+    transform: none;
+    border-color: #ececec;
+  }
+
+  html[data-theme="dark"] #checklist-items .skill-links .skill-link:hover {
+    background-color: #1f1f1f;
+    color: inherit;
+    box-shadow: none;
+    transform: none;
+    border-color: #2f2f2f;
+  }
+}
+
+.results-container button#check-results {
+  background-color: #44BBC1;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#resultsPie {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  margin: 20px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #333;
+  background-color: #ccc;
+}
+
+#resultsPie:empty::before {
+  content: "?";
+}
+
+.mark {
+  display: inline-block;
+  margin-left: 8px;
+  vertical-align: middle;
+  pointer-events: none;
+}
+
+.mark.correct { color: green; }
+.mark.incorrect { color: red; }
+.mark.unselected { color: grey; }
