@@ -174,8 +174,9 @@ h1, h2, h4, h5, h6 {
   right: 0;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   height: 100%;
-  padding: 0 6px;
+  padding: 0;
   transform: translateY(-50%);
   pointer-events: none;
   z-index: 2;
@@ -184,8 +185,8 @@ h1, h2, h4, h5, h6 {
 .carousel-button {
   margin: 0;
   padding: 0;
-  width: 48px;
-  height: 100%;
+  width: 15%;
+  height: calc(100% - 120px);
   font-size: 32px;
   display: inline-flex;
   align-items: center;
@@ -204,6 +205,16 @@ h1, h2, h4, h5, h6 {
 
 .carousel:hover .carousel-button {
   opacity: 1;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .carousel-button {
+    opacity: 1;
+  }
+
+  .carousel-button:hover {
+    color: #fff;
+  }
 }
 
 @media (max-width: 600px) {

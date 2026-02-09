@@ -997,6 +997,16 @@ html[data-theme="dark"] .bottom-filters {
       color: #1A1A1A;
   }
 
+  html[data-theme="dark"] .site-header nav a {
+        background-color: transparent;
+        color: #F1F1F1;
+  }
+
+  html[data-theme="dark"] .site-header nav a:hover {
+        background-color: #F1F1F1;
+        color: #1A1A1A;
+  }
+
   html[data-theme="dark"] a.answer-link {
         background-color: #8CD136;
         color: #1A1A1A;
