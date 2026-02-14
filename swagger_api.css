@@ -34,6 +34,13 @@ html, body {
   /* Полоса прогресса */
   --progress-gap: 10px;
   --progress-gap-mobile: 6px;
+  --surface: #ffffff;
+  --surface-soft: #f6f7fb;
+  --text-main: #1f2937;
+  --text-muted: #6b7280;
+  --border-soft: #e5e7eb;
+  --accent: #4f3d70;
+  --accent-soft: #ede9f8;
 }
 
 /* Автоматическая адаптация под системную тему */
@@ -52,9 +59,21 @@ html, body {
 .api-carousel {
   position: relative;
   overflow: hidden;
-  max-width: 980px;  /* шире, чтобы уместить редактор + визуал справа */
+  max-width: 100%;
   margin: 0 auto;
   min-height: 560px;
+}
+
+#swaggerApiCarousel.article {
+  color: var(--text-main);
+}
+
+#swaggerApiCarousel h2 {
+  color: #1f2937;
+}
+
+[data-theme="dark"] #swaggerApiCarousel h2 {
+  color: #e9f1ff;
 }
 
 /* Фиксированный блок кнопок на экране */
@@ -79,11 +98,29 @@ html, body {
 .api-slide {
   display: none;
   width: 100%;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 16px;
+  box-sizing: border-box;
 }
 
 /* Показываем только активный */
 .api-slide.active {
   display: block;
+}
+
+.api-slide h3 {
+  margin: 0 0 8px;
+}
+
+.api-slide p {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+
+.api-slide code {
+  overflow-wrap: anywhere;
 }
 
 /* Кнопки карусели (локально для swagger_api, чтобы не конфликтовать с глобальным .carousel-button) */
@@ -105,7 +142,7 @@ html, body {
 }
 
 /* Кнопки "Отправить" */
-.api-slide button {
+.api-slide > button {
   background-color: #4f3d70;
   color: var(--button-color);
   border: none;
@@ -115,14 +152,14 @@ html, body {
   margin-top: 12px;
   font-weight: 600;
 }
-.api-slide button:hover {
+.api-slide > button:hover {
   background-color: #679fab;
 }
 
 /* Адаптив базовый */
 @media (max-width: 600px) {
   .api-carousel-controls .carousel-button,
-  .api-slide button {
+  .api-slide > button {
     padding: 10px 20px;
     margin: 0 5px;
     font-size: 16px;
@@ -140,22 +177,22 @@ input { margin-left: 0px; margin-bottom: 10px; }
   margin: 10px 0 8px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #ffd890;
-  color: var(--assignment-text-light);
-  line-height: 1.2;
-  border: 1px solid rgba(0,0,0,0.05);
+  background: #f9fbff;
+  color: #2b3240;
+  line-height: 1.35;
+  border: 1px solid #dfe7f4;
 }
 [data-theme="dark"] .assignment {
-  background: var(--assignment-bg-dark);
-  color: var(--assignment-text-dark);
-  border-color: rgba(255,255,255,0.08);
+  background: #232a34;
+  color: #dfe7f5;
+  border-color: #3c4758;
 }
 
 .json-editor-container {
   border: 1px solid var(--editor-border-light);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--editor-bg-light);
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 10px;
   flex: 1 1 auto; /* внутри ряда будет растягиваться */
   min-width: 0;   /* позволяет Ace ужиматься без переполнения */
@@ -170,37 +207,41 @@ input { margin-left: 0px; margin-bottom: 10px; }
   gap: 8px;
   align-items: center;
   padding: 8px;
-  background: #382b4f;
+  background: #f3f7ff;
   border-bottom: 1px solid var(--editor-toolbar-border-light);
-  flex-wrap: nowrap; /* в ряд */
+  flex-wrap: wrap;
 }
 [data-theme="dark"] .json-toolbar {
-  background: var(--editor-toolbar-bg-dark);
+  background: #202833;
   border-bottom-color: var(--editor-toolbar-border-dark);
 }
 .json-toolbar button {
-  background: transparent;
-  border: 1px solid #FFFFFF;
+  background: #ffffff;
+  border: 1px solid #cedaf0;
+  color: #24416a;
   border-radius: 6px;
   padding: 6px 10px;
   cursor: pointer;
   font-size: 13px;
 }
 [data-theme="dark"] .json-toolbar button {
-  border-color: rgba(255,255,255,0.2);
-  color: #eaeaea;
+  background: #151b23;
+  border-color: #334154;
+  color: #dce8ff;
 }
 .json-toolbar button:hover {
-  background: rgba(0,0,0,0.06);
+  background: #eaf1ff;
 }
 [data-theme="dark"] .json-toolbar button:hover {
-  background: rgba(255,255,255,0.08);
+  background: #263244;
 }
 
 .json-editor {
   position: relative;
   width: 100%;
   height: 260px;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
 }
 
 /* Ряд: редактор слева, визуал справа */
@@ -208,6 +249,9 @@ input { margin-left: 0px; margin-bottom: 10px; }
   display: flex;
   gap: 16px;
   align-items: stretch; /* одинаковая высота у колонок по контенту */
+}
+.editor-visual-row > * {
+  min-width: 0;
 }
 
 /* На узких экранах разрешим перенос вниз, но по умолчанию — справа */
@@ -228,7 +272,7 @@ input { margin-left: 0px; margin-bottom: 10px; }
   background: var(--visual-bg-light);
   border: 1px solid var(--visual-border-light);
   border-radius: 10px;
-  padding: 8px;
+  padding: 10px;
   width: 220px;
   align-self: flex-start; /* выравнять по верхнему краю редактора */
 }
@@ -271,6 +315,11 @@ pre {
   white-space: pre-wrap;
   word-wrap: break-word;
   margin-top: 8px;
+  border: 1px solid var(--border-soft);
+}
+
+.api-slide pre:empty {
+  display: none;
 }
 [data-theme="dark"] pre {
   background: rgba(255,255,255,0.06);
@@ -348,6 +397,15 @@ pre {
     height: auto !important;           /* позволяем Ace менять высоту */
     min-height: calc(1.2em * 13);      /* визуальный запас (компактная высота) */
   }
+
+  .api-slide {
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .assignment {
+    padding: 10px;
+  }
 }
 
 /* ============================================================
@@ -400,6 +458,261 @@ pre {
   font-size: 12px;
   display: grid;
   place-items: center;
+}
+
+/* ------------------------------
+   Step Assist + Quick Tap
+   ------------------------------ */
+.assignment-core {
+  font-size: 14px;
+}
+
+.info-hints {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.info-hint {
+  position: relative;
+}
+
+.info-hint__btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #b9c9e7;
+  background: #fff;
+  color: #2c436f;
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.info-hint__panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 3;
+  width: min(320px, calc(100vw - 44px));
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #c9d7f1;
+  background: #ffffff;
+  color: #2f3947;
+  font-size: 13px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  display: none;
+}
+
+/* Если иконка справа (например в quick-builder), раскрываем панель влево */
+.quick-builder__head .info-hint__panel,
+.info-hints .info-hint:last-child .info-hint__panel {
+  left: auto;
+  right: 0;
+}
+
+.info-hint:hover .info-hint__panel,
+.info-hint:focus-within .info-hint__panel,
+.info-hint.is-open .info-hint__panel {
+  display: block;
+}
+
+.quick-builder {
+  margin-top: 8px;
+  border-top: 1px solid var(--border-soft);
+  padding: 10px;
+  background: #f8fbff;
+  position: relative;
+  z-index: 2;
+}
+.quick-builder__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.quick-builder__head-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #4a5565;
+  text-transform: uppercase;
+}
+.quick-builder__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.quick-chip {
+  border: 1px solid #d7deec;
+  background: #fff;
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 12px;
+  line-height: 1.25;
+  color: #2f3945;
+  text-align: left;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.quick-chip:hover {
+  background: #f3f6fd;
+}
+.quick-chip__key {
+  color: #1f5fbf;
+  font-weight: 600;
+}
+.quick-chip__eq {
+  color: #637086;
+}
+.quick-chip__val {
+  color: #0f7b57;
+}
+
+.step-feedback {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.35;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.step-feedback.is-hidden {
+  display: none;
+}
+.step-feedback strong {
+  font-weight: 600;
+}
+.step-feedback span {
+  color: #5b6574;
+}
+.step-feedback.is-info {
+  background: #eef5ff;
+  border-color: #cfe1ff;
+}
+.step-feedback.is-success {
+  background: #eaf9ef;
+  border-color: #b9e6c6;
+}
+.step-feedback.is-warn {
+  background: #fff6e8;
+  border-color: #f1d3a0;
+}
+.step-feedback.is-error {
+  background: #fff0f0;
+  border-color: #f1b8b8;
+}
+
+[data-theme="dark"] .api-slide,
+[data-theme="dark"] .quick-builder {
+  background: #1f242d;
+  border-color: #303744;
+  color: #d7deea;
+}
+[data-theme="dark"] .assignment-core,
+[data-theme="dark"] .quick-builder__head-title,
+[data-theme="dark"] .step-feedback span,
+[data-theme="dark"] .step-feedback strong {
+  color: #d7deea;
+}
+[data-theme="dark"] .quick-chip,
+[data-theme="dark"] .info-hint__btn,
+[data-theme="dark"] .info-hint__panel {
+  background: #171b22;
+  border-color: #3a4251;
+  color: #d7deea;
+}
+[data-theme="dark"] .quick-chip__key {
+  color: #7eb3ff;
+}
+[data-theme="dark"] .quick-chip__eq {
+  color: #9cb1cc;
+}
+[data-theme="dark"] .quick-chip__val {
+  color: #62d8a6;
+}
+[data-theme="dark"] .step-feedback.is-info {
+  background: #1f2f46;
+  border-color: #35537a;
+}
+[data-theme="dark"] .step-feedback.is-success {
+  background: #203a2b;
+  border-color: #2f6f4a;
+}
+[data-theme="dark"] .step-feedback.is-warn {
+  background: #433217;
+  border-color: #7d602a;
+}
+[data-theme="dark"] .step-feedback.is-error {
+  background: #452425;
+  border-color: #7e3e42;
+}
+
+@media (max-width: 900px) {
+  .quick-builder {
+    margin-top: 6px;
+    padding: 10px 8px;
+    border-radius: 0 0 10px 10px;
+  }
+
+  .quick-chip {
+    font-size: 13px;
+    padding: 7px 11px;
+  }
+
+  .info-hint__panel {
+    width: min(320px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+  }
+
+  .info-hints .info-hint:first-child .info-hint__panel {
+    left: 0;
+    right: auto;
+  }
+
+  .info-hints .info-hint:last-child .info-hint__panel,
+  .quick-builder__head .info-hint__panel {
+    left: auto;
+    right: 0;
+  }
+
+  /* На мобильном для quick-builder панель всегда раскрывается внутри блока */
+  .quick-builder__head .info-hint {
+    position: static;
+  }
+
+  .quick-builder__head .info-hint__panel {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+  }
+
+  /* Для верхнего блока задания: показываем плашку внутри карточки, без выхода за экран */
+  .assignment .info-hints {
+    position: relative;
+  }
+
+  .assignment .info-hints .info-hint {
+    position: static;
+  }
+
+  .assignment .info-hints .info-hint__panel {
+    left: 0;
+    right: 0;
+    width: auto;
+    max-width: none;
+    top: calc(100% + 6px);
+  }
 }
 
 /* Скрыть полосу прогресса на устройствах ≤ 900px */

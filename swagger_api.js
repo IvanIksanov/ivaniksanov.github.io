@@ -402,9 +402,320 @@ document.addEventListener('DOMContentLoaded', function() {
 }`
     };
 
+    const stepMeta = {
+        editor_create_user: {
+            main: "Создай персонажа: заполни обязательные поля и укажи character.",
+            info: "Допустимый character: WizardMaleBlue или WizardFemaleFire. Для тренировки ошибок можно нажать «Задание: исправь ошибки».",
+            troubleshoot: "Если не сработало: проверь запятые, кавычки и значение character.",
+            devtools: "Network -> Fetch/XHR -> POST /user: проверь Request Payload и код ответа."
+        },
+        editor_get_user: {
+            main: "Получи персонажа: укажи path.username.",
+            info: "Используй username из шага 1.",
+            troubleshoot: "Если не сработало: сравни path.username с username из шага 1.",
+            devtools: "Проверь GET /user/{username} и поле username в URL."
+        },
+        editor_login: {
+            main: "Выполни вход: заполни query.username и query.password.",
+            info: "Нужны username/password из шага 1. В этом шаге есть режим «исправь ошибки».",
+            troubleshoot: "Если не сработало: логин/пароль должны полностью совпадать с шагом 1.",
+            devtools: "Открой GET /user/login и проверь query params."
+        },
+        editor_create_pet: {
+            main: "Создай тотема: заполни тело и выбери tags[0].name.",
+            info: "Допустимые значения tags[0].name: catFire/catGreen/catPurple/catSnow.",
+            troubleshoot: "Если не сработало: проверь tags[0].name и структуру массива tags.",
+            devtools: "В POST /pet проверь body: id и tags[0].name."
+        },
+        editor_get_pet: {
+            main: "Проверь тотема: укажи path.petId.",
+            info: "Используй id тотема из шага 4.",
+            troubleshoot: "Если не сработало: сверь path.petId с id из шага 4.",
+            devtools: "Проверь URL GET /pet/{petId}."
+        },
+        editor_create_order: {
+            main: "Создай заказ: заполни id, petId, quantity, shipDate, status, complete.",
+            info: "petId должен указывать на тотем из шага 4.",
+            troubleshoot: "Если не сработало: проверь формат shipDate и соответствие petId.",
+            devtools: "В POST /store/order проверь отправленный JSON."
+        },
+        editor_get_order: {
+            main: "Проверь заказ: укажи path.orderId.",
+            info: "Используй orderId из шага 6.",
+            troubleshoot: "Если не сработало: сверяй orderId из шага 6 и petId тотема.",
+            devtools: "Проверь GET /store/order/{orderId}."
+        },
+        editor_delete_order: {
+            main: "Отмени выбор тотема: укажи path.orderId.",
+            info: "Нужен актуальный orderId.",
+            troubleshoot: "Если не сработало: заказ уже удален или orderId неверный.",
+            devtools: "Проверь DELETE /store/order/{orderId}."
+        },
+        editor_delete_user: {
+            main: "Отмени выбор персонажа: укажи path.username.",
+            info: "Используй username из шага 1.",
+            troubleshoot: "Если не сработало: проверь username из шага 1.",
+            devtools: "Проверь DELETE /user/{username}."
+        }
+    };
+
+    const quickChips = {
+        editor_create_user: [
+            { keyLabel: "character", valueLabel: "\"WizardMaleBlue\"", path: "character", value: "WizardMaleBlue" },
+            { keyLabel: "character", valueLabel: "\"WizardFemaleFire\"", path: "character", value: "WizardFemaleFire" },
+            { keyLabel: "firstName", valueLabel: "\"Merlin\"", path: "firstName", value: "Merlin" },
+            { keyLabel: "firstName", valueLabel: "\"Asha\"", path: "firstName", value: "Asha" }
+        ],
+        editor_get_user: [
+            { keyLabel: "path.username", valueLabel: "(из шага 1)", path: "path.username", fromState: "character.payload.username" },
+            { keyLabel: "path.username", valueLabel: "\"Merlin123\"", path: "path.username", value: "Merlin123" }
+        ],
+        editor_login: [
+            { keyLabel: "query.username", valueLabel: "(из шага 1)", path: "query.username", fromState: "character.payload.username" },
+            { keyLabel: "query.password", valueLabel: "(из шага 1)", path: "query.password", fromState: "character.payload.password" },
+            { keyLabel: "query.password", valueLabel: "\"12345\"", path: "query.password", value: "12345" }
+        ],
+        editor_create_pet: [
+            { keyLabel: "tags[0].name", valueLabel: "\"catFire\"", path: "tags.0.name", value: "catFire" },
+            { keyLabel: "tags[0].name", valueLabel: "\"catGreen\"", path: "tags.0.name", value: "catGreen" },
+            { keyLabel: "tags[0].name", valueLabel: "\"catPurple\"", path: "tags.0.name", value: "catPurple" },
+            { keyLabel: "tags[0].name", valueLabel: "\"catSnow\"", path: "tags.0.name", value: "catSnow" }
+        ],
+        editor_get_pet: [
+            { keyLabel: "path.petId", valueLabel: "(из шага 4)", path: "path.petId", fromState: "totem.id" }
+        ],
+        editor_create_order: [
+            { keyLabel: "petId", valueLabel: "(из шага 4)", path: "petId", fromState: "totem.id" },
+            { keyLabel: "status", valueLabel: "\"placed\"", path: "status", value: "placed" },
+            { keyLabel: "status", valueLabel: "\"approved\"", path: "status", value: "approved" },
+            { keyLabel: "complete", valueLabel: "true", path: "complete", value: true }
+        ],
+        editor_get_order: [
+            { keyLabel: "path.orderId", valueLabel: "(из шага 6)", path: "path.orderId", fromState: "order.id" }
+        ],
+        editor_delete_order: [
+            { keyLabel: "path.orderId", valueLabel: "(из шага 6)", path: "path.orderId", fromState: "order.id" }
+        ],
+        editor_delete_user: [
+            { keyLabel: "path.username", valueLabel: "(из шага 1)", path: "path.username", fromState: "character.payload.username" }
+        ]
+    };
+
+    const stepRuntime = {};
+    const feedbackEls = {};
+
+    function getByPath(obj, dotPath) {
+        if (!dotPath) return undefined;
+        return String(dotPath).split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), obj);
+    }
+
+    function setByPath(obj, dotPath, value) {
+        const parts = String(dotPath).split('.');
+        let ref = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+            const key = parts[i];
+            const nextKey = parts[i + 1];
+            const needsArray = /^\d+$/.test(nextKey);
+            if (ref[key] === undefined || ref[key] === null || typeof ref[key] !== 'object') {
+                ref[key] = needsArray ? [] : {};
+            }
+            ref = ref[key];
+        }
+        ref[parts[parts.length - 1]] = value;
+    }
+
+    function parseEditorOrTemplate(editorId) {
+        const current = editors[editorId]?.getValue() || "{}";
+        try {
+            return JSON.parse(current);
+        } catch {
+            try {
+                return JSON.parse(templates[editorId] || "{}");
+            } catch {
+                return {};
+            }
+        }
+    }
+
+    function escapeRegExp(str) {
+        return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function tryPatchEditorText(editorId, chip, resolvedValue) {
+        const ed = editors[editorId];
+        if (!ed) return false;
+        const text = ed.getValue();
+        let next = text;
+        const jsonValue = JSON.stringify(resolvedValue);
+
+        // Спец-кейс шага 4: не трогаем формат, меняем только tags[0].name
+        if (editorId === 'editor_create_pet' && chip.path === 'tags.0.name') {
+            const reTagsName = /("tags"\s*:\s*\[\s*\{[\s\S]*?"name"\s*:\s*)(?:"(?:\\.|[^"\\])*"|true|false|null|-?\d+(?:\.\d+)?)/;
+            next = text.replace(reTagsName, `$1${jsonValue}`);
+        } else {
+            const key = String(chip.path || '').split('.').pop();
+            if (!key) return false;
+            const re = new RegExp(`("${escapeRegExp(key)}"\\s*:\\s*)(?:"(?:\\\\.|[^"\\\\])*"|true|false|null|-?\\d+(?:\\.\\d+)?)`);
+            next = text.replace(re, `$1${jsonValue}`);
+        }
+
+        if (next !== text) {
+            ed.session.setValue(next);
+            requestAnimationFrame(() => {
+                ed.resize(true);
+                ed.renderer.updateFull();
+            });
+            return true;
+        }
+        return false;
+    }
+
+    function refreshEditor(editorId, valueObj) {
+        const ed = editors[editorId];
+        if (!ed) return;
+        ed.session.setValue(JSON.stringify(valueObj, null, 2));
+        requestAnimationFrame(() => {
+            ed.resize(true);
+            ed.renderer.updateFull();
+        });
+    }
+
+    function setStepFeedback(editorId, type, message, addTroubleshoot = false) {
+        const meta = stepMeta[editorId];
+        const target = feedbackEls[editorId];
+        if (!target) return;
+        target.className = `step-feedback is-${type}`;
+        let html = `<strong>${message}</strong>`;
+        if (addTroubleshoot && meta?.troubleshoot) {
+            html += `<span>${meta.troubleshoot}</span>`;
+        }
+        target.innerHTML = html;
+    }
+
+    function markAttempt(editorId) {
+        if (!stepRuntime[editorId]) stepRuntime[editorId] = { attempts: 0, fails: 0 };
+        stepRuntime[editorId].attempts += 1;
+    }
+
+    function markFailure(editorId, message) {
+        if (!stepRuntime[editorId]) stepRuntime[editorId] = { attempts: 0, fails: 0 };
+        stepRuntime[editorId].fails += 1;
+        const showTroubleshoot = stepRuntime[editorId].fails >= 2;
+        setStepFeedback(editorId, "error", message, showTroubleshoot);
+    }
+
+    function markSuccess(editorId, message) {
+        if (!stepRuntime[editorId]) stepRuntime[editorId] = { attempts: 0, fails: 0 };
+        stepRuntime[editorId].fails = 0;
+        setStepFeedback(editorId, "success", message, false);
+    }
+
+    function applyQuickChip(editorId, chip) {
+        const resolvedValue = chip.fromState ? getByPath(gameState, chip.fromState) : chip.value;
+        if (resolvedValue === undefined || resolvedValue === null || resolvedValue === "") {
+            setStepFeedback(editorId, "warn", "Нет данных из предыдущих шагов. Сначала пройди предыдущий этап.", false);
+            return;
+        }
+
+        // Сначала пробуем точечную замену без переформатирования текущего JSON
+        const patched = tryPatchEditorText(editorId, chip, resolvedValue);
+        if (!patched) {
+            const payload = parseEditorOrTemplate(editorId);
+            setByPath(payload, chip.path, resolvedValue);
+            refreshEditor(editorId, payload);
+        }
+
+        const keyView = chip.keyLabel || chip.path || "field";
+        setStepFeedback(editorId, "info", `Подставлено поле: ${keyView}`, false);
+    }
+
+    function renderStepAssist() {
+        document.querySelectorAll('.api-slide').forEach((slide) => {
+            const editorEl = slide.querySelector('.json-editor');
+            if (!editorEl) return;
+            const editorId = editorEl.id;
+            const meta = stepMeta[editorId];
+            if (!meta) return;
+
+            const assignment = slide.querySelector('.assignment');
+            if (assignment) {
+                assignment.innerHTML = `
+                    <div class="assignment-core"><strong>Задание:</strong> ${meta.main}</div>
+                    <div class="info-hints">
+                        <div class="info-hint">
+                            <button type="button" class="info-hint__btn" aria-label="Подсказка к шагу">!</button>
+                            <div class="info-hint__panel">${meta.info}</div>
+                        </div>
+                        <div class="info-hint">
+                            <button type="button" class="info-hint__btn" aria-label="Подсказка по devtools">!</button>
+                            <div class="info-hint__panel">${meta.devtools}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const editorWrap = slide.querySelector('.json-editor-container');
+            if (editorWrap) {
+                const panel = document.createElement('div');
+                panel.className = 'quick-builder';
+                panel.innerHTML = `
+                    <div class="quick-builder__head">
+                        <div class="quick-builder__head-title">Быстрое заполнение</div>
+                        <div class="info-hint">
+                            <button type="button" class="info-hint__btn" aria-label="Подсказка по чипам">!</button>
+                            <div class="info-hint__panel">Чипы подставляют конкретные поля JSON. Формат: ключ = значение.</div>
+                        </div>
+                    </div>
+                    <div class="quick-builder__chips" data-editor="${editorId}"></div>
+                    <div class="step-feedback is-hidden" data-feedback="${editorId}"></div>
+                `;
+                editorWrap.appendChild(panel);
+                feedbackEls[editorId] = panel.querySelector(`[data-feedback="${editorId}"]`);
+
+                const chipsHost = panel.querySelector('.quick-builder__chips');
+                (quickChips[editorId] || []).forEach((chip) => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'quick-chip';
+                    btn.innerHTML = `<span class="quick-chip__key">${chip.keyLabel || chip.path}</span> <span class="quick-chip__eq">=</span> <span class="quick-chip__val">${chip.valueLabel || "(value)"}</span>`;
+                    btn.addEventListener('click', () => applyQuickChip(editorId, chip));
+                    chipsHost.appendChild(btn);
+                });
+            }
+        });
+
+        document.querySelectorAll('.info-hint__btn').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const wrap = btn.closest('.info-hint');
+                if (!wrap) return;
+                const wasOpen = wrap.classList.contains('is-open');
+                document.querySelectorAll('.info-hint.is-open').forEach(el => el.classList.remove('is-open'));
+                if (!wasOpen) wrap.classList.add('is-open');
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.info-hint')) return;
+            document.querySelectorAll('.info-hint.is-open').forEach(el => el.classList.remove('is-open'));
+        });
+    }
+
     function setEditorTheme(ed) {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         ed.setTheme(isDark ? "ace/theme/dracula" : "ace/theme/chrome");
+    }
+
+    function applyEditorViewportMode(ed) {
+        if (!ed) return;
+        const isMobile = window.matchMedia('(max-width: 900px)').matches;
+        if (isMobile) {
+            ed.setOption('maxLines', Infinity);
+            ed.setOption('minLines', 12);
+        } else {
+            ed.setOption('maxLines', 0);
+            ed.setOption('minLines', 0);
+        }
     }
 
     function initEditor(editorId, initialValue) {
@@ -423,6 +734,7 @@ document.addEventListener('DOMContentLoaded', function() {
             enableSnippets: false,
             showPrintMargin: false
         });
+        applyEditorViewportMode(ed);
         setEditorTheme(ed);
         ed.session.setValue(initialValue || "{}");
 
@@ -450,6 +762,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initEditor("editor_get_order",     templates.editor_get_order);
     initEditor("editor_delete_order",  templates.editor_delete_order);
     initEditor("editor_delete_user",   templates.editor_delete_user);
+    renderStepAssist();
 
     // Тулбар: reset / broken / format
     document.querySelectorAll('.json-toolbar button').forEach(btn => {
@@ -471,8 +784,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 try {
                     const parsed = JSON.parse(ed.getValue());
                     ed.session.setValue(JSON.stringify(parsed, null, 2));
+                    setStepFeedback(target, "info", "JSON отформатирован.", false);
                 } catch (e) {
-                    alert("Невалидный JSON: " + e.message);
+                    setStepFeedback(target, "warn", `Форматирование не выполнено: ${e.message}`, false);
                 }
             }
 
@@ -485,6 +799,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     window.addEventListener('resize', () => {
+        Object.values(editors).forEach(ed => applyEditorViewportMode(ed));
         document.querySelectorAll('.json-editor').forEach(div => {
             const ed = editors[div.id];
             if (ed) ed.resize(true);
@@ -519,12 +834,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'user_create_response';
         const visualId = 'user_create_visual';
         let bodyData;
+        markAttempt(editorId);
 
         try {
             bodyData = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             // Даже placeholder фиксируем в прогрессе
             recordProgress(1, IMAGES.scenes.placeholder);
             return;
@@ -556,11 +873,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `Поздравляю, вы создали персонажа <strong>${gameState.character.name}</strong>!`
                 );
+                markSuccess(editorId, "Шаг пройден. Персонаж создан успешно.");
 
                 // Прогресс: шаг 1
                 recordProgress(1, img);
             } else {
                 updateVisual(visualId, IMAGES.scenes.placeholder, 'Здесь точно что-то не так...Проверь тип персонажа (character) и повтори отправку.');
+                markFailure(editorId, "Шаг не пройден. Проверь обязательные поля и character.");
                 // Фиксируем placeholder в прогрессе
                 recordProgress(1, IMAGES.scenes.placeholder);
             }
@@ -568,6 +887,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             // Фиксируем placeholder в прогрессе
             recordProgress(1, IMAGES.scenes.placeholder);
         });
@@ -579,12 +899,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'get_user_response';
         const visualId = 'get_user_visual';
         let dataPath;
+        markAttempt(editorId);
 
         try {
             dataPath = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(2, IMAGES.scenes.placeholder);
             return;
         }
@@ -592,6 +914,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!usernameValue) {
             showError(preId, "Укажи username в { \"path\": { \"username\": \"...\" } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан username.');
+            markFailure(editorId, "Шаг не пройден. Не заполнен path.username.");
             recordProgress(2, IMAGES.scenes.placeholder);
             return;
         }
@@ -615,6 +938,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `${heroName} в волшебных землях!`
                 );
+                markSuccess(editorId, "Шаг пройден. Персонаж найден и подтвержден.");
 
                 // Прогресс: шаг 2
                 recordProgress(2, img);
@@ -624,12 +948,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Данные персонажа на сервере не совпали с созданием. Данный запрос отдает информацию через раз...Попробуй снова. Здесь нужен username из 1 запроса'
                 );
+                markFailure(editorId, "Шаг не пройден. Проверь username и совпадение данных с шагом 1.");
                 recordProgress(2, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(2, IMAGES.scenes.placeholder);
         });
     };
@@ -640,12 +966,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'login_response';
         const visualId = 'login_visual';
         let dataQuery;
+        markAttempt(editorId);
 
         try {
             dataQuery = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(3, IMAGES.scenes.placeholder);
             return;
         }
@@ -656,6 +984,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!usernameValue || !passwordValue) {
             showError(preId, "Укажи \"query\": { \"username\": \"...\", \"password\": \"...\" }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Требуются username и password.');
+            markFailure(editorId, "Шаг не пройден. Заполни query.username и query.password.");
             recordProgress(3, IMAGES.scenes.placeholder);
             return;
         }
@@ -677,6 +1006,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Сначала создайте персонажа (шаг 1), затем входите в святилище.'
                 );
+                markFailure(editorId, "Шаг не пройден. Сначала заверши шаг 1.");
                 recordProgress(3, IMAGES.scenes.placeholder);
                 return;
             }
@@ -692,6 +1022,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     'Врата святилища открыты — теперь переходи к выбору своего тотема!'
                 );
+                markSuccess(editorId, "Шаг пройден. Вход выполнен корректно.");
 
                 // Прогресс: шаг 3
                 recordProgress(3, img);
@@ -701,12 +1032,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Ваш логин и/или пароль отличаются от указанных при регистрации.'
                 );
+                markFailure(editorId, "Шаг не пройден. Логин/пароль не совпали с шагом 1.");
                 recordProgress(3, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(3, IMAGES.scenes.placeholder);
         });
     };
@@ -717,12 +1050,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'pet_create_response';
         const visualId = 'pet_create_visual';
         let bodyData;
+        markAttempt(editorId);
 
         try {
             bodyData = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(4, IMAGES.scenes.placeholder);
             return;
         }
@@ -753,6 +1088,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `Тотем выбран: <strong>${info.title}</strong>. ${info.power}`
                 );
+                markSuccess(editorId, "Шаг пройден. Тотем создан и сохранен.");
 
                 // Прогресс: шаг 4
                 recordProgress(4, img);
@@ -762,12 +1098,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Проверь выбор тотема в tags[0].name (catFire/catGreen/catPurple/catSnow).'
                 );
+                markFailure(editorId, "Шаг не пройден. Неверный tags[0].name или структура тела.");
                 recordProgress(4, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(4, IMAGES.scenes.placeholder);
         });
     };
@@ -778,11 +1116,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'get_pet_response';
         const visualId = 'get_pet_visual';
         let dataPath;
+        markAttempt(editorId);
         try {
             dataPath = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(5, IMAGES.scenes.placeholder);
             return;
         }
@@ -791,6 +1131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (getPetIdValue === undefined || getPetIdValue === null || getPetIdValue === "") {
             showError(preId, "Укажи petId в { \"path\": { \"petId\": 15 } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан petId.');
+            markFailure(editorId, "Шаг не пройден. Не заполнен path.petId.");
             recordProgress(5, IMAGES.scenes.placeholder);
             return;
         }
@@ -813,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     img,
                     `Тотем подтверждён: <strong>${info.title}</strong>. ${info.power}`
                 );
+                markSuccess(editorId, "Шаг пройден. Тотем подтвержден.");
 
                 // Прогресс: шаг 5
                 recordProgress(5, img);
@@ -822,12 +1164,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Тотем не подтверждён. Проверь petId или создай тотем заново. Важно. что petId = Id из прошлого запроса.'
                 );
+                markFailure(editorId, "Шаг не пройден. petId не совпал с созданным тотемом.");
                 recordProgress(5, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(5, IMAGES.scenes.placeholder);
         });
     };
@@ -838,12 +1182,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'create_order_response';
         const visualId = 'create_order_visual';
         let bodyData;
+        markAttempt(editorId);
 
         try {
             bodyData = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(6, IMAGES.scenes.placeholder);
             return;
         }
@@ -872,17 +1218,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     runImg,
                     caption
                 );
+                markSuccess(editorId, "Шаг пройден. Заказ создан, тотем в пути.");
 
                 // Прогресс: шаг 6
                 recordProgress(6, runImg);
             } else {
                 updateVisual(visualId, IMAGES.scenes.placeholder, 'Не удалось вызвать тотема. Важно, что orderId = Id из прошлого запроса.');
+                markFailure(editorId, "Шаг не пройден. Проверь поля заказа и petId.");
                 recordProgress(6, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(6, IMAGES.scenes.placeholder);
         });
     };
@@ -893,12 +1242,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'get_order_response';
         const visualId = 'get_order_visual';
         let dataPath;
+        markAttempt(editorId);
 
         try {
             dataPath = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(7, IMAGES.scenes.placeholder);
             return;
         }
@@ -907,6 +1258,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (getOrderIdValue === undefined || getOrderIdValue === null || getOrderIdValue === "") {
             showError(preId, "Укажи orderId в { \"path\": { \"orderId\": 1 } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан orderId.');
+            markFailure(editorId, "Шаг не пройден. Не заполнен path.orderId.");
             recordProgress(7, IMAGES.scenes.placeholder);
             return;
         }
@@ -929,6 +1281,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     uniteImg,
                     'Воссоединение состоялось: персонаж и тотем вместе!'
                 );
+                markSuccess(editorId, "Шаг пройден. Заказ и тотем совпали.");
 
                 // Прогресс: шаг 7
                 recordProgress(7, uniteImg);
@@ -938,12 +1291,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Не удалось подтвердить воссоединение. Проверь petId из 5 и 6 запросов, они должны совпадать при отправке. В этом (7) запросе orderId = Id из 6 запроса.'
                 );
+                markFailure(editorId, "Шаг не пройден. Несовпадение orderId/petId между шагами.");
                 recordProgress(7, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(7, IMAGES.scenes.placeholder);
         });
     };
@@ -954,12 +1309,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'delete_order_response';
         const visualId = 'delete_order_visual';
         let dataPath;
+        markAttempt(editorId);
 
         try {
             dataPath = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(8, IMAGES.scenes.placeholder);
             return;
         }
@@ -968,6 +1325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (deleteOrderIdValue === undefined || deleteOrderIdValue === null || deleteOrderIdValue === "") {
             showError(preId, "Укажи orderId в { \"path\": { \"orderId\": 1 } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан orderId.');
+            markFailure(editorId, "Шаг не пройден. Не заполнен path.orderId.");
             recordProgress(8, IMAGES.scenes.placeholder);
             return;
         }
@@ -982,6 +1340,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById(preId).textContent = safeJSONStringify(data);
                 if (Number(data.code) === 200) {
                     updateVisual(visualId, IMAGES.scenes.vanishCat, 'Вы отменили выбор тотема. Он растворился в воздухе...');
+                    markSuccess(editorId, "Шаг пройден. Заказ удален.");
                     // Сбрасываем состояние заказа
                     gameState.order = { id: null, payload: null };
                     saveState();
@@ -990,12 +1349,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     recordProgress(8, IMAGES.scenes.vanishCat);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить тотем, похоже его не существует.');
+                    markFailure(editorId, "Шаг не пройден. Заказ не найден или уже удален.");
                     recordProgress(8, IMAGES.scenes.placeholder);
                 }
             } catch {
                 document.getElementById(preId).textContent = `Статус: ${res.status} ${res.statusText}`;
                 if (res.ok) {
                     updateVisual(visualId, IMAGES.scenes.vanishCat, 'Вы отменили выбор тотема. Он растворился в воздухе...');
+                    markSuccess(editorId, "Шаг пройден. Заказ удален.");
                     gameState.order = { id: null, payload: null };
                     saveState();
 
@@ -1003,6 +1364,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     recordProgress(8, IMAGES.scenes.vanishCat);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить тотем.');
+                    markFailure(editorId, "Шаг не пройден. Заказ не удален.");
                     recordProgress(8, IMAGES.scenes.placeholder);
                 }
             }
@@ -1010,6 +1372,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(8, IMAGES.scenes.placeholder);
         });
     };
@@ -1020,12 +1383,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const preId = 'delete_user_response';
         const visualId = 'delete_user_visual';
         let dataPath;
+        markAttempt(editorId);
 
         try {
             dataPath = JSON.parse(editors[editorId].getValue());
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
+            markFailure(editorId, `Ошибка JSON: ${e.message}`);
             recordProgress(9, IMAGES.scenes.placeholder);
             return;
         }
@@ -1034,6 +1399,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!deleteUsernameValue) {
             showError(preId, "Укажи username в { \"path\": { \"username\": \"...\" } }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Не указан username.');
+            markFailure(editorId, "Шаг не пройден. Не заполнен path.username.");
             recordProgress(9, IMAGES.scenes.placeholder);
             return;
         }
@@ -1048,6 +1414,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById(preId).textContent = safeJSONStringify(data);
                 if (Number(data.code) === 200) {
                     updateVisual(visualId, IMAGES.scenes.vanishChar, 'Вы отменили выбор персонажа. Он исчезает...');
+                    markSuccess(editorId, "Шаг пройден. Персонаж удален.");
                     // Полный сброс прогресса
                     clearState();
 
@@ -1055,18 +1422,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     recordProgress(9, IMAGES.scenes.vanishChar);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа. Проверь username и сравни его в 1 запросе.');
+                    markFailure(editorId, "Шаг не пройден. username не найден.");
                     recordProgress(9, IMAGES.scenes.placeholder);
                 }
             } catch {
                 document.getElementById(preId).textContent = `Статус: ${res.status} ${res.statusText}`;
                 if (res.ok) {
                     updateVisual(visualId, IMAGES.scenes.vanishChar, 'Вы отменили выбор персонажа. Он исчезает... Теперь попробуй выбрать другой тотем и персонажа...');
+                    markSuccess(editorId, "Шаг пройден. Персонаж удален.");
                     clearState();
 
                     // Прогресс: шаг 9
                     recordProgress(9, IMAGES.scenes.vanishChar);
                 } else {
                     updateVisual(visualId, IMAGES.scenes.placeholder, 'Не получилось отменить персонажа. Проверь username и сравни его в 1 запросе');
+                    markFailure(editorId, "Шаг не пройден. Персонаж не удален.");
                     recordProgress(9, IMAGES.scenes.placeholder);
                 }
             }
@@ -1074,6 +1444,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
             recordProgress(9, IMAGES.scenes.placeholder);
         });
     };
