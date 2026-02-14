@@ -123,6 +123,117 @@ html, body {
   overflow-wrap: anywhere;
 }
 
+.request-line {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.request-line__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.request-method {
+  border: 1px solid #d4dce9;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: #fff;
+  color: #1f2f42;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.request-method--get { border-color: #a8d5ff; color: #0b65b1; }
+.request-method--post { border-color: #9fe4c2; color: #117a4f; }
+.request-method--delete { border-color: #f3b8b8; color: #9c2f2f; }
+
+.url-anatomy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-items: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.url-sep {
+  color: #7d8796;
+}
+
+.url-part {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 1px 4px;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+.url-part.is-active {
+  background: rgba(52, 125, 255, 0.08);
+}
+
+.url-part--scheme { color: #8a5fd4; }
+.url-part--host { color: #0b65b1; font-weight: 600; }
+.url-part--base { color: #3c7d44; font-weight: 600; }
+.url-part--segment { color: #24507c; }
+.url-part--param { color: #b8591e; font-weight: 600; }
+.url-part--query { color: #6a4eb4; }
+
+.request-info {
+  border: 1px solid #d6dfef;
+  background: #f7faff;
+  color: #2a3a50;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.request-info.is-hidden {
+  display: none;
+}
+.request-info strong {
+  font-weight: 700;
+}
+.request-info code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: #2f4f86;
+}
+
+.request-tech-popup {
+  position: fixed;
+  z-index: 9999;
+  width: min(360px, calc(100vw - 20px));
+  border: 1px solid #cdd9ee;
+  background: #ffffff;
+  color: #2b3b52;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  font-size: 13px;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.request-tech-popup.is-hidden {
+  display: none;
+}
+.request-tech-popup strong {
+  font-weight: 700;
+}
+.request-tech-popup code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: #315f9b;
+}
+
 /* Кнопки карусели (локально для swagger_api, чтобы не конфликтовать с глобальным .carousel-button) */
 .api-carousel-controls .carousel-button {
   background-color: var(--button-bg);
@@ -510,13 +621,6 @@ pre {
   display: none;
 }
 
-/* Если иконка справа (например в quick-builder), раскрываем панель влево */
-.quick-builder__head .info-hint__panel,
-.info-hints .info-hint:last-child .info-hint__panel {
-  left: auto;
-  right: 0;
-}
-
 .info-hint:hover .info-hint__panel,
 .info-hint:focus-within .info-hint__panel,
 .info-hint.is-open .info-hint__panel {
@@ -617,6 +721,40 @@ pre {
   background: #1f242d;
   border-color: #303744;
   color: #d7deea;
+}
+[data-theme="dark"] .request-method {
+  background: #161c24;
+  color: #d7e5ff;
+  border-color: #38475d;
+}
+[data-theme="dark"] .request-method--get { border-color: #2e70a5; color: #7ebeff; }
+[data-theme="dark"] .request-method--post { border-color: #2d7b5a; color: #73d9a9; }
+[data-theme="dark"] .request-method--delete { border-color: #8d4a4a; color: #ff9c9c; }
+[data-theme="dark"] .url-sep { color: #90a2b7; }
+[data-theme="dark"] .url-part--scheme { color: #be9dff; }
+[data-theme="dark"] .url-part--host { color: #8bc6ff; }
+[data-theme="dark"] .url-part--base { color: #7fdda0; }
+[data-theme="dark"] .url-part--segment { color: #b3ccf1; }
+[data-theme="dark"] .url-part--param { color: #ffc28d; }
+[data-theme="dark"] .url-part--query { color: #c5adff; }
+[data-theme="dark"] .url-part.is-active {
+  background: rgba(114, 167, 255, 0.18);
+}
+[data-theme="dark"] .request-info {
+  background: #1a2432;
+  border-color: #304056;
+  color: #d6e4f9;
+}
+[data-theme="dark"] .request-info code {
+  color: #9ec3ff;
+}
+[data-theme="dark"] .request-tech-popup {
+  background: #1a2432;
+  border-color: #304056;
+  color: #d6e4f9;
+}
+[data-theme="dark"] .request-tech-popup code {
+  color: #9ec3ff;
 }
 [data-theme="dark"] .assignment-core,
 [data-theme="dark"] .quick-builder__head-title,

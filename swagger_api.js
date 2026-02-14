@@ -503,6 +503,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const stepRuntime = {};
     const feedbackEls = {};
+    const METHOD_INFO = {
+        GET: {
+            title: "GET",
+            description: "Чтение данных без изменения состояния ресурса.",
+            extra: "Идемпотентный и безопасный метод: повторный вызов не должен менять данные."
+        },
+        POST: {
+            title: "POST",
+            description: "Создание ресурса или запуск операции на сервере.",
+            extra: "Обычно неидемпотентный: повторный вызов может создать дубликат."
+        },
+        PUT: {
+            title: "PUT",
+            description: "Полная замена ресурса по указанному идентификатору.",
+            extra: "Идемпотентный: одинаковый body при повторе оставляет тот же результат."
+        },
+        PATCH: {
+            title: "PATCH",
+            description: "Частичное обновление ресурса.",
+            extra: "Меняет только переданные поля, обычно не требует полный объект."
+        },
+        DELETE: {
+            title: "DELETE",
+            description: "Удаление ресурса по идентификатору.",
+            extra: "Как правило идемпотентный: повторное удаление не создает новый эффект."
+        }
+    };
 
     function getByPath(obj, dotPath) {
         if (!dotPath) return undefined;
@@ -627,6 +654,216 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const keyView = chip.keyLabel || chip.path || "field";
         setStepFeedback(editorId, "info", `Подставлено поле: ${keyView}`, false);
+    }
+
+    function createEl(tag, className, text) {
+        const el = document.createElement(tag);
+        if (className) el.className = className;
+        if (text !== undefined) el.textContent = text;
+        return el;
+    }
+
+    function normalizeTemplateUrl(raw, apiHost) {
+        return String(raw || "")
+            .replace(/\{\{hostname\}\}/g, apiHost)
+            .replace(/\{\{(\w+)\}\}/g, '{$1}');
+    }
+
+    function getMethodInfoHtml(method) {
+        const current = METHOD_INFO[method] || { title: method, description: "Метод HTTP.", extra: "" };
+        const others = Object.keys(METHOD_INFO)
+            .filter(m => m !== method)
+            .map(m => `<code>${m}</code>`)
+            .join(' ');
+        return `
+            <strong>${current.title}</strong>
+            <span>${current.description}</span>
+            <span>${current.extra}</span>
+            <span>Другие методы: ${others}</span>
+        `;
+    }
+
+    function partMeta(partType, value) {
+        const token = String(value || '').replace(/[{}]/g, '');
+        const sourceMap = {
+            ID_pet: 'path.petId',
+            petId: 'path.petId',
+            ID_order: 'path.orderId',
+            orderId: 'path.orderId',
+            username: 'path.username'
+        };
+        const sourceField = sourceMap[token];
+        switch (partType) {
+            case 'scheme':
+                return { title: 'Схема', text: `Протокол: ${value}. Определяет транспорт и правила соединения.` };
+            case 'host':
+                return { title: 'Хост', text: `Сервер API: ${value}. Здесь расположен backend.` };
+            case 'base':
+                return { title: 'Base Path', text: `Базовый путь API: ${value}. Обычно содержит версию API.` };
+            case 'segment':
+                return { title: 'Path Segment', text: `Сегмент ресурса: ${value}. Уточняет endpoint.` };
+            case 'param':
+                if (sourceField) {
+                    return { title: 'Path Param', text: `Параметр пути: ${value}. Значение зависит от поля JSON: ${sourceField}.` };
+                }
+                return { title: 'Path Param', text: `Параметр пути: ${value}. Значение обычно подставляется из блока path в JSON.` };
+            case 'query':
+                return { title: 'Query', text: `Строка запроса: ${value}. Передает фильтры и дополнительные параметры.` };
+            default:
+                return { title: 'URL Part', text: value };
+        }
+    }
+
+    function createRequestPopup() {
+        let popup = document.getElementById('request-tech-popup');
+        if (popup) return popup;
+        popup = document.createElement('div');
+        popup.id = 'request-tech-popup';
+        popup.className = 'request-tech-popup is-hidden';
+        document.body.appendChild(popup);
+        return popup;
+    }
+
+    function renderInteractiveUrl(urlText, method, host, popupApi) {
+        const wrap = createEl('div', 'url-anatomy');
+        const real = normalizeTemplateUrl(urlText, host);
+        let parsed;
+        try {
+            parsed = new URL(real);
+        } catch {
+            wrap.textContent = real;
+            return wrap;
+        }
+
+        function addInteractivePart(text, cls, type) {
+            const part = createEl('button', `url-part ${cls}`, text);
+            part.type = 'button';
+            const meta = partMeta(type, text);
+            const html = `<strong>${meta.title}</strong><span>${meta.text}</span>`;
+            const activateHover = () => popupApi.show(part, html, false);
+            const activateClick = (e) => {
+                e.preventDefault();
+                popupApi.show(part, html, true);
+            };
+            part.addEventListener('mouseenter', activateHover);
+            part.addEventListener('focus', activateHover);
+            part.addEventListener('click', activateClick);
+            part.addEventListener('mouseleave', () => popupApi.hideIfNotPinned());
+            part.addEventListener('blur', () => popupApi.hideIfNotPinned());
+            wrap.appendChild(part);
+        }
+
+        addInteractivePart(parsed.protocol.replace(':', ''), 'url-part--scheme', 'scheme');
+        wrap.appendChild(createEl('span', 'url-sep', '://'));
+        addInteractivePart(parsed.host, 'url-part--host', 'host');
+
+        const segments = parsed.pathname.split('/').filter(Boolean);
+        segments.forEach((seg, idx) => {
+            wrap.appendChild(createEl('span', 'url-sep', '/'));
+            let decodedSeg = seg;
+            try { decodedSeg = decodeURIComponent(seg); } catch {}
+            const isParam = /^\{.+\}$/.test(decodedSeg);
+            const isBase = idx === 0 && /^v\d+$/i.test(decodedSeg);
+            if (isParam) addInteractivePart(decodedSeg, 'url-part--param', 'param');
+            else if (isBase) addInteractivePart(decodedSeg, 'url-part--base', 'base');
+            else addInteractivePart(decodedSeg, 'url-part--segment', 'segment');
+        });
+
+        if (parsed.search) {
+            addInteractivePart(parsed.search, 'url-part--query', 'query');
+        }
+
+        return wrap;
+    }
+
+    function enhanceRequestUrls(apiHost) {
+        const popup = createRequestPopup();
+        let pinned = false;
+        let currentAnchor = null;
+
+        function positionPopup(anchor) {
+            const rect = anchor.getBoundingClientRect();
+            const pad = 10;
+            const popupRect = popup.getBoundingClientRect();
+            let left = rect.left;
+            let top = rect.bottom + 8;
+
+            if (left + popupRect.width > window.innerWidth - pad) {
+                left = window.innerWidth - popupRect.width - pad;
+            }
+            if (left < pad) left = pad;
+
+            if (top + popupRect.height > window.innerHeight - pad) {
+                top = rect.top - popupRect.height - 8;
+            }
+            if (top < pad) top = pad;
+
+            popup.style.left = `${Math.round(left)}px`;
+            popup.style.top = `${Math.round(top)}px`;
+        }
+
+        const popupApi = {
+            show(anchor, html, stick) {
+                pinned = !!stick;
+                currentAnchor = anchor;
+                popup.innerHTML = html;
+                popup.classList.remove('is-hidden');
+                popup.classList.add('is-visible');
+                positionPopup(anchor);
+            },
+            hide() {
+                pinned = false;
+                currentAnchor = null;
+                popup.classList.add('is-hidden');
+                popup.classList.remove('is-visible');
+                popup.innerHTML = '';
+            },
+            hideIfNotPinned() {
+                if (!pinned) this.hide();
+            }
+        };
+
+        document.querySelectorAll('.api-slide').forEach((slide) => {
+            const urlP = Array.from(slide.querySelectorAll('p')).find(p => p.textContent.includes('URL:'));
+            if (!urlP) return;
+            const codeEl = urlP.querySelector('code');
+            if (!codeEl) return;
+            const raw = codeEl.textContent.trim();
+            const [methodToken, ...rest] = raw.split(/\s+/);
+            const method = (methodToken || '').toUpperCase();
+            const urlTemplate = rest.join(' ');
+
+            const block = createEl('div', 'request-line');
+            const head = createEl('div', 'request-line__head');
+            const methodBtn = createEl('button', `request-method request-method--${method.toLowerCase()}`, method);
+            methodBtn.type = 'button';
+            const methodHtml = getMethodInfoHtml(method);
+            methodBtn.addEventListener('mouseenter', () => popupApi.show(methodBtn, methodHtml, false));
+            methodBtn.addEventListener('focus', () => popupApi.show(methodBtn, methodHtml, false));
+            methodBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                popupApi.show(methodBtn, methodHtml, true);
+            });
+            methodBtn.addEventListener('mouseleave', () => popupApi.hideIfNotPinned());
+            methodBtn.addEventListener('blur', () => popupApi.hideIfNotPinned());
+            head.appendChild(methodBtn);
+            head.appendChild(renderInteractiveUrl(urlTemplate, method, apiHost, popupApi));
+            block.appendChild(head);
+
+            urlP.replaceWith(block);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.url-part') || e.target.closest('.request-method') || e.target.closest('#request-tech-popup')) return;
+            popupApi.hide();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') popupApi.hide();
+        });
+        window.addEventListener('scroll', () => popupApi.hide(), true);
+        window.addEventListener('resize', () => {
+            if (currentAnchor && !popup.classList.contains('is-hidden')) positionPopup(currentAnchor);
+        });
     }
 
     function renderStepAssist() {
@@ -762,6 +999,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initEditor("editor_get_order",     templates.editor_get_order);
     initEditor("editor_delete_order",  templates.editor_delete_order);
     initEditor("editor_delete_user",   templates.editor_delete_user);
+    enhanceRequestUrls(hostname);
     renderStepAssist();
 
     // Тулбар: reset / broken / format
