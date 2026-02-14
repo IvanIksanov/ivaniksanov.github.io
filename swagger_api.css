@@ -86,15 +86,21 @@ html, body {
   display: block;
 }
 
-/* Кнопки карусели */
-.carousel-button {
+/* Кнопки карусели (локально для swagger_api, чтобы не конфликтовать с глобальным .carousel-button) */
+.api-carousel-controls .carousel-button {
   background-color: var(--button-bg);
   color: var(--button-color);
   border: none;
   border-radius: 6px;
   padding: 10px 18px;
   margin: 0 10px;
+  width: auto;
+  height: auto;
+  font-size: 16px;
+  text-shadow: none;
+  opacity: 1;
   cursor: pointer;
+  pointer-events: auto;
   font-weight: 600;
 }
 
@@ -115,7 +121,7 @@ html, body {
 
 /* Адаптив базовый */
 @media (max-width: 600px) {
-  .carousel-button,
+  .api-carousel-controls .carousel-button,
   .api-slide button {
     padding: 10px 20px;
     margin: 0 5px;
@@ -319,7 +325,7 @@ pre {
     padding: 6px 8px;
     border-radius: 10px;
   }
-  .carousel-button {
+  .api-carousel-controls .carousel-button {
     width: 40px;
     height: 40px;
     min-width: 40px;
