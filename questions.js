@@ -1539,7 +1539,8 @@ category: 'AQA JS',
     const timers = [
       setTimeout(() => updateLoaderText(el, "Еще чуть-чуть…"), 3000),
       setTimeout(() => updateLoaderText(el, "Обрабатываю ответ модели"), 6000),
-      setTimeout(() => updateLoaderText(el, "Я обязательно верну ответ"), 9000)
+      setTimeout(() => updateLoaderText(el, "Я обязательно верну ответ"), 9000),
+      setTimeout(() => updateLoaderText(el, "Жду ответ от модели"), 12000)
     ];
     return timers;
   }
@@ -1661,12 +1662,14 @@ category: 'AQA JS',
     renderModelsList(ordered);
   }
 
-  async function requestWithFallback(userQ, preferredModel) {
+  async function requestWithFallback(userQ, preferredModel, onAttempt) {
     const order = getModelOrder(preferredModel);
     let lastErr = null;
     let invalidCount = 0;
-    for (const model of order) {
+    for (let i = 0; i < order.length; i++) {
+      const model = order[i];
       try {
+        if (typeof onAttempt === "function") onAttempt(model, i + 1, order.length);
         const answer = await fetchAnswerOnce(userQ, model);
         return { answer, model };
       } catch (e) {
@@ -1684,8 +1687,10 @@ category: 'AQA JS',
     if (modelListFromCache) {
       const refreshed = await loadModels({ force: true, exclude: order });
       const retryOrder = getModelOrder(getPreferredModel(refreshed));
-      for (const model of retryOrder) {
+      for (let i = 0; i < retryOrder.length; i++) {
+        const model = retryOrder[i];
         try {
+          if (typeof onAttempt === "function") onAttempt(model, i + 1, retryOrder.length);
           const answer = await fetchAnswerOnce(userQ, model);
           return { answer, model };
         } catch (e) {
@@ -1783,13 +1788,23 @@ category: 'AQA JS',
     el.style.display = "block";
   }
 
+  function formatSecondsRu(seconds) {
+    const n = Math.abs(Number(seconds) || 0);
+    const mod100 = n % 100;
+    const mod10 = n % 10;
+    if (mod100 >= 11 && mod100 <= 14) return `${n} секунд`;
+    if (mod10 === 1) return `${n} секунду`;
+    if (mod10 >= 2 && mod10 <= 4) return `${n} секунды`;
+    return `${n} секунд`;
+  }
+
   function renderAiSupplement(el, text, seconds) {
     if (!el) return;
     el.innerHTML = "";
     const title = document.createElement("div");
     title.className = "ai-supplement-title";
     if (seconds) {
-      title.innerHTML = `Ответ ИИ <span class="ai-time">за ${seconds} секунд</span>`;
+      title.innerHTML = `Ответ ИИ <span class="ai-time">за ${formatSecondsRu(seconds)}</span>`;
     } else {
       title.textContent = "Ответ ИИ";
     }
@@ -2199,13 +2214,7 @@ category: 'AQA JS',
           renderAiSupplement(aiSupplementEl, savedSupplement);
         }
       }
-      if (savedSupplement) {
-        btn.setAttribute("aria-expanded", "true");
-        content.style.display = "block";
-        header.classList.add("t849__opened");
-        openSet.add(item.id);
-        localStorage.setItem(openKey, JSON.stringify(Array.from(openSet)));
-      } else if (openSet.has(item.id)) {
+      if (openSet.has(item.id)) {
         btn.setAttribute("aria-expanded", "true");
         content.style.display = "block";
         header.classList.add("t849__opened");
@@ -2219,7 +2228,15 @@ category: 'AQA JS',
           const executeRequest = async () => {
             const startedAt = Date.now();
             const promptWithCategory = `Тема: ${cat.category}. Вопрос: ${item.title}`;
-            const result = await requestWithFallback(promptWithCategory, preferredModel);
+            const result = await requestWithFallback(
+              promptWithCategory,
+              preferredModel,
+              (modelName, attemptNumber) => {
+                // For retries, keep a stable status with concrete model name.
+                if (attemptNumber > 1) stopLoaderPhases(supplementTimer);
+                updateLoaderText(aiSupplementEl, `Жду ответ от ${modelName}`);
+              }
+            );
             stopLoaderPhases(supplementTimer);
             const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
             renderAiSupplement(aiSupplementEl, result.answer, seconds);
