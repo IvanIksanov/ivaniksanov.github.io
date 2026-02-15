@@ -200,11 +200,18 @@
         @media (max-width: 900px) {
           .login-layout {
             grid-template-columns: 1fr;
+            gap: 12px;
+          }
+          .login-left {
+            position: sticky;
+            top: var(--stick-top);
+            z-index: 8;
           }
           .login-left .login-wrap { position: static; }
           .login-right .checks-panel {
-            max-height: none;
-            overflow: visible;
+            max-height: var(--mobile-checks-max-h, 52dvh);
+            overflow: auto;
+            overscroll-behavior: contain;
           }
         }
         .checks-title {
@@ -323,23 +330,47 @@
 
         /* ====== Кнопка Войти ====== */
         #login-button.carousel-button {
+          width: auto;
+          height: auto;
+          margin: 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 1;
+          pointer-events: auto;
+          text-shadow: none;
           font-size: 1rem;
+          line-height: 1.2;
+          font-weight: 600;
+          font-family: "Fira Code", monospace;
           padding: .65rem 1.1rem;
           border-radius: 12px;
-          background: var(--login-card);
-          border: 1px solid var(--login-border);
+          background: var(--login-accent);
+          color: #1a1a1a;
+          border: 1px solid color-mix(in oklab, var(--login-accent) 72%, #9a6200);
+          box-shadow: 0 6px 14px rgba(255, 160, 1, 0.24);
+          transition: transform .08s ease, background-color .15s ease, box-shadow .15s ease;
         }
 
-        /* Светлый текст кнопки "Войти" в тёмной теме */
+        /* Контраст и акцент кнопки "Войти" в тёмной теме */
         :root[data-theme="dark"] #login-button.carousel-button {
-        color: #f5f5f5; /* или color: var(--login-text); если используешь переменную */
+          color: #141414;
+          border-color: color-mix(in oklab, var(--login-accent) 68%, #8b5700);
+          box-shadow: 0 7px 16px rgba(255, 160, 1, 0.3);
         }
 
         #login-button.carousel-button:hover {
-          background: #ffffff;
-          background: color-mix(in oklab, var(--login-card) 70%, white);
+          background: color-mix(in oklab, var(--login-accent) 84%, white);
+          box-shadow: 0 8px 18px rgba(255, 160, 1, 0.28);
         }
-        #login-button[disabled] { opacity: .6; cursor: not-allowed; }
+        #login-button.carousel-button:active {
+          transform: translateY(1px);
+        }
+        #login-button[disabled] {
+          opacity: .6;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
 
         /* ====== Чек-лист — одна карточка в ряд ====== */
         .checks-grid {
@@ -390,6 +421,72 @@
         .status.ok { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 40%, var(--login-border)); }
         .status.bad { color: var(--bad); border-color: color-mix(in oklab, var(--bad) 40%, var(--login-border)); }
         .status.pending { color: var(--pending); }
+        .check-eval {
+          display: none;
+          border-top: 1px dashed var(--login-border);
+          padding-top: .5rem;
+          margin-top: .2rem;
+          font-size: .85rem;
+          color: var(--login-muted);
+        }
+        .check-eval.show { display: block; }
+        .check-eval .eval-row { margin: .15rem 0; }
+        .check-eval .eval-row strong { color: var(--login-text); }
+        .check-eval.ok .eval-summary { color: var(--login-accent-2); }
+        .check-eval.bad .eval-summary { color: var(--login-accent); }
+
+        .checks-verify-wrap {
+          margin-top: .75rem;
+          display: grid;
+          gap: .6rem;
+        }
+        .regress-btn {
+          width: 100%;
+          border: 1px solid var(--login-border);
+          background: var(--login-bg);
+          color: var(--login-text);
+          padding: .6rem .75rem;
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: .95rem;
+          font-family: "Fira Code", monospace;
+        }
+        .regress-btn:hover {
+          background: color-mix(in oklab, var(--login-bg) 70%, white);
+          border-color: var(--login-accent);
+        }
+        .regress-result {
+          display: none;
+          border: 1px solid var(--login-border);
+          border-radius: 10px;
+          padding: .6rem .7rem;
+          background: color-mix(in oklab, var(--login-card) 94%, var(--login-bg));
+        }
+        .regress-result.show { display: block; }
+        .regress-title {
+          margin: 0 0 .45rem 0;
+          color: var(--login-text);
+          font-size: .9rem;
+          font-family: "Fira Code", monospace;
+        }
+        .regress-bar {
+          width: 100%;
+          height: 10px;
+          border-radius: 999px;
+          background: color-mix(in oklab, var(--login-accent) 35%, var(--login-bg));
+          overflow: hidden;
+        }
+        .regress-fill {
+          height: 100%;
+          width: 0%;
+          background: var(--login-accent-2);
+          transition: width .25s ease;
+        }
+        .regress-meta {
+          margin-top: .4rem;
+          color: var(--login-muted);
+          font-size: .85rem;
+        }
 
         /* Утилиты */
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
@@ -544,6 +641,16 @@
             <section class="checks-panel" role="region" aria-label="Список проверок">
                 <h3 class="checks-title">Список проверок (чек-лист)</h3>
                 <div id="checks-grid" class="checks-grid" aria-live="polite"></div>
+                <div class="checks-verify-wrap">
+                    <button type="button" id="regress-check-btn" class="regress-btn">Проверить регресс</button>
+                    <div id="regress-result" class="regress-result" aria-live="polite">
+                        <p class="regress-title">Корректность выполнения регресса</p>
+                        <div class="regress-bar">
+                            <div id="regress-fill" class="regress-fill"></div>
+                        </div>
+                        <div id="regress-meta" class="regress-meta">Пока нет данных</div>
+                    </div>
+                </div>
 
                 <!-- Шаблон карточки проверки -->
                 <template id="check-card-tpl">
@@ -556,6 +663,7 @@
                             </div>
                             <span class="status pending">Статус: не проверено</span>
                         </div>
+                        <div class="check-eval"></div>
                     </div>
                 </template>
             </section>
@@ -793,36 +901,38 @@
 
       /* --- Чек-лист (плашки справа, 1 в ряд) --- */
       const CHECKS = [
-        { id: 'mask-default-plus7',      text: 'По умолчанию в поле ввода телефона маска +7 ХХХ ХХХ ХХ ХХ' },
-        { id: 'enter-7-autoprefix',      text: 'Ввод цифры 7 приводит к автоподстановке маски +7' },
-        { id: 'enter-not7-add-plus7',    text: 'Если первая введённая цифра — не 7, к номеру автоматически проставляется +7' },
-        { id: 'clear-cross-appears',     text: 'При вводе первой цифры отображается крестик — нажатие удаляет данные в поле' },
-        { id: 'clear-cross-disappears',  text: 'Крестик пропадает, если поле очищено' },
-        { id: 'checkpass6',              text: 'Нет возможности в поле телефон ввести символы и буквы (только цифры)' },
-        { id: 'checkpass7',              text: 'Под полем телефона отображается подсказка про 11 цифр' },
-        { id: 'checkpass8',              text: 'При переключении способа входа — введённые данные сохраняются' },
-        { id: 'checkpass9',              text: 'Стереть данные можно backspace и Ctrl/⌘+A → Delete' },
-        { id: 'checkpass10',             text: 'При вводе пароля подсвечивается статус защищенности' },
-        { id: 'checkpass11',             text: 'При вводе первого символа пароля появляется крестик' },
-        { id: 'checkpass12',             text: 'Нажатие на крестик стирает пароль + пропадает статус' },
-        { id: 'checkpass13',             text: 'Статусы: лёгкий / средний / достойный' },
-        { id: 'checkpass14',             text: '«Достойный»: цифры + нижний/верхний регистр + символы (≥ 8)' },
-        { id: 'checkpass15',             text: '«Средний»: есть цифры и буквы (≤ 8)' },
-        { id: 'checkpass16',             text: 'Кнопка «Войти» отправляет POST-запрос' },
-        { id: 'checkpass17',             text: 'Логин и пароль передаются в теле запроса (демо)' },
-        { id: 'checkpass18',             text: 'При ошибке входа отображается сообщение об ошибке' },
-        { id: 'checkpass19',             text: 'На POST приходит токен авторизации (демо)' },
-        { id: 'checkpass20',             text: 'Поп-ап с деталями ошибки (legacy) — теперь должен быть Failed' },
-        { id: 'checkpass21',             text: 'Вкладка/свитчер Email содержит поля Email и Пароль' },
-        { id: 'checkpass22',             text: 'Проверка формата email включает @ и домен' },
-        { id: 'checkpass23',             text: 'При нарушении маски email — подсказка под полем' },
-        { id: 'checkpass24',             text: 'Подсказка: «Введите корректный email»' },
-        { id: 'checkpass25',             text: 'После обновления страницы выбранный способ и введённые данные сохраняются' }
+        { id: 'mask-default-plus7',      text: 'По умолчанию в поле ввода телефона маска +7 ХХХ ХХХ ХХ ХХ', expected: 'bad' },
+        { id: 'enter-7-autoprefix',      text: 'Ввод цифры 7 приводит к автоподстановке маски +7', expected: 'ok' },
+        { id: 'enter-not7-add-plus7',    text: 'Если первая введённая цифра — не 7, к номеру автоматически проставляется +7', expected: 'ok' },
+        { id: 'clear-cross-appears',     text: 'При вводе первой цифры отображается крестик — нажатие удаляет данные в поле', expected: 'bad' },
+        { id: 'clear-cross-disappears',  text: 'Крестик пропадает, если поле очищено', expected: 'ok' },
+        { id: 'checkpass6',              text: 'Нет возможности в поле телефон ввести символы и буквы (только цифры)', expected: 'ok' },
+        { id: 'checkpass7',              text: 'Под полем телефона отображается подсказка про 11 цифр', expected: 'ok' },
+        { id: 'checkpass8',              text: 'При переключении способа входа — введённые данные сохраняются', expected: 'ok' },
+        { id: 'checkpass9',              text: 'Стереть данные можно backspace и Ctrl/⌘+A → Delete', expected: 'bad' },
+        { id: 'checkpass10',             text: 'При вводе пароля подсвечивается статус защищенности', expected: 'ok' },
+        { id: 'checkpass11',             text: 'При вводе первого символа пароля появляется крестик', expected: 'ok' },
+        { id: 'checkpass12',             text: 'Нажатие на крестик стирает пароль + пропадает статус', expected: 'bad' },
+        { id: 'checkpass13',             text: 'Статусы: лёгкий / средний / достойный', expected: 'ok' },
+        { id: 'checkpass14',             text: '«Достойный»: цифры + нижний/верхний регистр + символы (≥ 8)', expected: 'bad' },
+        { id: 'checkpass15',             text: '«Средний»: есть цифры и буквы (≤ 8)', expected: 'ok' },
+        { id: 'checkpass16',             text: 'Кнопка «Войти» отправляет POST-запрос', expected: 'ok' },
+        { id: 'checkpass17',             text: 'Логин и пароль передаются в теле запроса (демо)', expected: 'ok' },
+        { id: 'checkpass18',             text: 'При ошибке входа отображается сообщение об ошибке', expected: 'ok' },
+        { id: 'checkpass21',             text: 'Вкладка Email содержит поля Email и Пароль', expected: 'ok' },
+        { id: 'checkpass22',             text: 'Проверка формата email включает @ и домен', expected: 'bad' },
+        { id: 'checkpass23',             text: 'При нарушении маски email — подсказка под полем', expected: 'bad' },
+        { id: 'checkpass24',             text: 'Подсказка: «Введите корректный email»', expected: 'ok' },
+        { id: 'checkpass25',             text: 'После обновления страницы выбранный способ и введённые данные сохраняются', expected: 'ok' }
       ];
 
       const LS_KEY = 'qa_checks_status__LOGIN_INLINE';
       const grid   = document.getElementById('checks-grid');
       const tpl    = document.getElementById('check-card-tpl');
+      const regressBtn = document.getElementById('regress-check-btn');
+      const regressResult = document.getElementById('regress-result');
+      const regressFill = document.getElementById('regress-fill');
+      const regressMeta = document.getElementById('regress-meta');
 
       function readStatuses(){
         try {
@@ -858,6 +968,67 @@
         }
       }
 
+      function labelByStatus(status){
+        if (status === 'ok') return 'Passed';
+        if (status === 'bad') return 'Failed';
+        return 'Не выбрано';
+      }
+
+      function evaluateRegression(){
+        const panel = regressBtn.closest('.checks-panel');
+
+        const statuses = readStatuses();
+        const cardsById = new Map(
+          Array.from(grid.querySelectorAll('.check-card')).map(card => [card.dataset.id, card])
+        );
+
+        let matches = 0;
+        CHECKS.forEach(ch => {
+          const userStatus = statuses[ch.id] || 'pending';
+          const expectedStatus = ch.expected || 'ok';
+          const isMatch = userStatus === expectedStatus;
+          if (isMatch) matches++;
+
+          const card = cardsById.get(ch.id);
+          if (!card) return;
+          const evalBox = card.querySelector('.check-eval');
+          evalBox.classList.remove('ok', 'bad');
+          evalBox.classList.add('show', isMatch ? 'ok' : 'bad');
+          evalBox.innerHTML =
+            '<div class="eval-row"><strong>Вы выбрали:</strong> ' + labelByStatus(userStatus) + '</div>' +
+            '<div class="eval-row"><strong>Верный ответ:</strong> ' + labelByStatus(expectedStatus) + '</div>' +
+            '<div class="eval-row eval-summary"><strong>' + (isMatch ? 'Совпало' : 'Не совпало') + '</strong></div>';
+        });
+
+        const total = CHECKS.length;
+        const percent = total ? Math.round((matches / total) * 100) : 0;
+        regressResult.classList.add('show');
+        regressFill.style.width = percent + '%';
+        regressFill.style.background = 'var(--login-accent-2)';
+        regressMeta.textContent = 'Успешно: ' + matches + ' из ' + total + ' (' + percent + '%)';
+
+        // После рендера доводим скролл панели до блока результата.
+        requestAnimationFrame(() => {
+          const panelScrollable = panel
+            && panel.scrollHeight > panel.clientHeight + 1
+            && getComputedStyle(panel).overflowY !== 'visible';
+
+          if (panelScrollable) {
+            const resultBottom = regressResult.offsetTop + regressResult.offsetHeight;
+            const targetTop = Math.max(0, resultBottom - panel.clientHeight + 12);
+            panel.scrollTo({ top: targetTop, behavior: 'smooth' });
+            return;
+          }
+          const rect = regressResult.getBoundingClientRect();
+          const deltaDown = rect.bottom - window.innerHeight + 12;
+          if (deltaDown > 0) {
+            window.scrollBy({ top: deltaDown, left: 0, behavior: 'smooth' });
+            return;
+          }
+          regressResult.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+      }
+
       function renderChecks(){
         const statuses = readStatuses();
         grid.innerHTML = '';
@@ -880,6 +1051,27 @@
 
           grid.appendChild(node);
         });
+      }
+
+      function syncMobileChecklistViewport(){
+        const panel = document.querySelector('.login-right .checks-panel');
+        const formWrap = document.querySelector('.login-left .login-wrap');
+        if (!panel || !formWrap) return;
+
+        const isMobile = window.matchMedia('(max-width: 900px)').matches;
+        if (!isMobile) {
+          panel.style.removeProperty('--mobile-checks-max-h');
+          panel.style.removeProperty('max-height');
+          panel.style.removeProperty('overflow');
+          return;
+        }
+
+        const formH = Math.ceil(formWrap.getBoundingClientRect().height);
+        const topOffset = 16;
+        const reserve = 28;
+        const available = Math.floor(window.innerHeight - formH - topOffset - reserve);
+        const panelH = Math.max(240, available);
+        panel.style.setProperty('--mobile-checks-max-h', panelH + 'px');
       }
 
       // Персист UI (метод, значения)
@@ -912,6 +1104,10 @@
       })();
 
       renderChecks();
+      syncMobileChecklistViewport();
+      window.addEventListener('resize', syncMobileChecklistViewport, { passive: true });
+      window.addEventListener('orientationchange', syncMobileChecklistViewport, { passive: true });
+      regressBtn.addEventListener('click', evaluateRegression);
     });
 </script>
   <script src="header.js"></script>
