@@ -1795,7 +1795,12 @@ category: 'AQA JS',
     }
     const body = document.createElement("div");
     body.className = "ai-supplement-text ai-rich";
-    body.innerHTML = formatAiText(text);
+    try {
+      body.innerHTML = formatAiText(String(text || ""));
+    } catch (e) {
+      console.warn("AI render failed, fallback to plain text", e);
+      body.textContent = String(text || "");
+    }
     el.appendChild(title);
     el.appendChild(body);
     el.style.display = "block";
