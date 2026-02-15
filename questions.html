@@ -94,25 +94,9 @@
     <input
             type="text"
             id="search-input"
-            placeholder="Задать вопрос нейросети или найти по ключевым словам вопросы ниже..."
+            placeholder="Найти по ключевым словам вопросы ниже..."
             autocomplete="off"
     />
-    <select id="model-select" title="Выберите модель" style="display:none; margin-left:8px;">
-        <option value="meta-llama/Llama-3.3-70B-Instruct">Llama-3.3-70B-Instruct</option>
-        <option value="ozone-ai/0x-lite">0x-lite</option>
-        <option value="databricks/dbrx-instruct">dbrx-instruct</option>
-        <option value="microsoft/phi-4">phi-4</option>
-        <option value="mistralai/Mistral-Large-Instruct-2411">Mistral-Large-Instruct-2411</option>
-        <option value="neuralmagic/Llama-3.1-Nemotron-70B-Instruct-HF-FP8-dynamic">Llama-3.1-Nemotron-70B-Instruct-HF-FP8-dynamic</option>
-        <option value="deepseek-ai/DeepSeek-R1-Distill-Llama-70B">DeepSeek-R1-Distill-Llama-70B</option>
-    </select>
-    <button
-            type="button"
-            id="ai-btn"
-            class="ai-btn"
-            title="Спросить про термин или задать вопрос нейросеть"
-            style="display:none; margin-left:8px;"
-    >AI</button>
     <button
             type="button"
             id="search-clear-btn"
@@ -121,8 +105,7 @@
             style="display:none; margin-left:4px;"
     >⨯</button>
 </div>
-
-
+    
     <!-- Вставить после .search-container -->
     <div id="category-filters" class="category-filters">
         <button class="filter-chip" data-category="Все">Все</button>
@@ -142,7 +125,6 @@
 <!-- Нижняя панель категорий (появляется при скролле) -->
 <div id="category-filters-bottom" class="category-filters bottom-filters" aria-label="Категории"></div>
 
-<section id="ai-response" class="article"></section>
 
 <!-- шаблон одного пункта аккордеона -->
 <template id="accordion-item-template">
@@ -167,12 +149,6 @@
                             <path d="M5 12 L19 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
                     </button>
-                    <!-- Кнопка копирования -->
-                    <span
-                            class="copy-icon"
-                            title="Копировать вопрос в поиск"
-                            style="cursor:pointer; color:#888; margin-left:8px; font-size:1.2em;"
-                    >©</span>
                 </div>
                 <div class="t849__content" id="" style="display: none;">
                     <div class="t849__textwrapper">
@@ -196,6 +172,21 @@
     <p>Если вы нашли ошибку в материале или хотите добавить информацию к ответу на вопрос, то вы можете отправить сообщение Telegram-каналу QAtoDev. Это поможет другим qa-инженерам лучше подготовится к собеседованию. Если вы автор материала, то свяжитесь со мной для упоминания вашего канала или сервиса в QA песочнице.</p>
     <p><a href="https://t.me/QAtoDev" target="_blank" style="background-color: #FFA001;">Написать</a></p>
 </section>
+
+<div id="api-key-modal" class="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-title" aria-hidden="true">
+    <div class="api-key-card">
+        <h3 id="api-key-title">Нужен новый API‑ключ</h3>
+        <p class="api-key-text">Похоже, текущий ключ не работает. Получите бесплатный ключ в кабинете IO и вставьте его ниже.</p>
+        <p class="api-key-text">
+            <a href="https://ai.io.net/ai/api-keys" target="_blank" rel="noopener noreferrer">Открыть страницу создания ключа</a>
+        </p>
+        <input type="text" id="api-key-input" class="api-key-input" placeholder="Вставьте ваш API‑ключ" autocomplete="off" />
+        <div class="api-key-actions">
+            <button type="button" id="api-key-save" class="api-key-save">Сохранить</button>
+            <button type="button" id="api-key-close" class="api-key-close">Закрыть</button>
+        </div>
+    </div>
+</div>
 
 <script src="questions.js"></script>
   <script src="header.js"></script>

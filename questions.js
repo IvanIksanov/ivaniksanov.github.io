@@ -5,6 +5,9 @@ const systemPrompt =
   "Answer all user queries in Russian and maintain the context of software testing throughout. " +
   "If the user submits only a single term or skill (for example, “Postman” or “SQL”), provide a clear definition, explain its purpose, and describe typical use cases. " +
   "If the user submits a full interview question, respond with a detailed, structured answer in Russian, without generating additional follow-up questions. " +
+  "Provide a concise but rich summary: максимум смысла, минимум воды, основные пункты + практические примеры при необходимости. " +
+  "Суммарный объем ответа должен укладываться в лимит 1000 токенов. " +
+  "Не используй таблицы, графики, диаграммы и лишнее оформление в ответе. " +
   "Do not use markdown, asterisks, or other formatting characters—deliver plain text responses.";
 
       // 2) Ваш полный массив вопросов-ответов:
@@ -1334,21 +1337,431 @@ category: 'AQA JS',
       window.questionsData = data; // делаем массив доступным глобально
 
 
-  // --- UI elements: поиск, AI, переключатель модели ---
-  const searchInput   = document.getElementById("search-input");
-  const modelSelect   = document.getElementById("model-select");
-  const clearBtn      = document.getElementById("search-clear-btn");
-  const aiBtn         = document.getElementById("ai-btn");
-  const aiResponse    = document.getElementById("ai-response");
-  const resultsTitle  = document.getElementById("search-results-title");
-  const about         = document.getElementById("about");
+  const IO_API_BASE = "https://api.intelligence.io.solutions/api/v1";
+  const IO_API_KEY = (() => {
+    const p1 = "io-v2-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.";
+    const p2 = "eyJvd25lciI6IjVhNzhhY2I4LTJkZmUtNGRiNi04N2QxLTkxODZmNTFmZDllZSIsImV4cCI6NDkyNDc3MTU3OH0.";
+    const p3 = "EMXKUEfcMvAbtMt_WodTcNcENyqOXwfuF16wtC4-8i2sJgak6KJODACg3c3tyzwjbacXC1XHUu3jS9E4C14VLw";
+    return p1 + p2 + p3;
+  })();
+  const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
+  const DEFAULT_MODEL = "openai/gpt-oss-20b";
+  const FAST_MODEL_HINTS = [
+    "openai/gpt-oss-20b",
+    "mistralai/Mistral-Nemo-Instruct-2407",
+    "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
+    "moonshotai/Kimi-K2-Instruct-0905",
+    "deepseek-ai/DeepSeek-V3.2"
+  ];
+  const AI_LOADER_HTML = '<span class="ai-loader"><span class="ai-spinner"></span><span class="ai-loader-text">Сейчас модель вернет ответ</span></span>';
+  let currentModels = FAST_MODEL_HINTS.slice(0, 5);
+  const MODEL_TIMINGS_KEY = "model_timings_v1";
+  const MODEL_FAILURES_KEY = "model_failures_v1";
+  const MODEL_WARMUP_KEY = "model_warmup_ts_v1";
+  const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
+  const MODEL_LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+  let modelListFromCache = false;
+  let pendingRetry = null;
 
-  // Восстановление выбранной модели из localStorage
-  const savedModel = localStorage.getItem("selectedModel");
-  if (savedModel) modelSelect.value = savedModel;
-  modelSelect.addEventListener("change", () => {
-    localStorage.setItem("selectedModel", modelSelect.value);
-  });
+  // --- UI elements: поиск, AI, переключатель модели ---
+  const searchInput    = document.getElementById("search-input");
+  const modelsListEl   = document.getElementById("ai-models-list");
+  const clearBtn       = document.getElementById("search-clear-btn");
+  const resultsTitle   = document.getElementById("search-results-title");
+  const about          = document.getElementById("about");
+  const apiKeyModal    = document.getElementById("api-key-modal");
+  const apiKeyInput    = document.getElementById("api-key-input");
+  const apiKeySave     = document.getElementById("api-key-save");
+  const apiKeyClose    = document.getElementById("api-key-close");
+
+  function getAuthKey() {
+    const override = localStorage.getItem(OVERRIDE_API_KEY_STORAGE);
+    return (override && override.trim()) ? override.trim() : IO_API_KEY;
+  }
+
+  function showApiKeyModal() {
+    if (!apiKeyModal) return;
+    apiKeyModal.classList.add("show");
+    apiKeyModal.setAttribute("aria-hidden", "false");
+    if (apiKeyInput) {
+      apiKeyInput.value = localStorage.getItem(OVERRIDE_API_KEY_STORAGE) || "";
+      apiKeyInput.focus();
+    }
+  }
+
+  function hideApiKeyModal() {
+    if (!apiKeyModal) return;
+    apiKeyModal.classList.remove("show");
+    apiKeyModal.setAttribute("aria-hidden", "true");
+  }
+
+  if (apiKeySave) {
+    apiKeySave.addEventListener("click", () => {
+      const v = apiKeyInput?.value?.trim();
+      if (v) {
+        localStorage.setItem(OVERRIDE_API_KEY_STORAGE, v);
+        hideApiKeyModal();
+        if (pendingRetry) {
+          const retry = pendingRetry;
+          pendingRetry = null;
+          retry();
+        }
+      }
+    });
+  }
+
+  if (apiKeyClose) {
+    apiKeyClose.addEventListener("click", () => {
+      pendingRetry = null;
+      hideApiKeyModal();
+    });
+  }
+
+  function renderModelsList(models) {
+    if (!modelsListEl) return;
+    modelsListEl.innerHTML = "";
+    models.forEach(m => {
+      const li = document.createElement("li");
+      li.textContent = m;
+      modelsListEl.appendChild(li);
+    });
+  }
+
+  function getPreferredModel(models) {
+    const savedModel = localStorage.getItem("selectedModel");
+    if (savedModel && models.includes(savedModel)) return savedModel;
+    if (models.includes(DEFAULT_MODEL)) return DEFAULT_MODEL;
+    return models[0] || DEFAULT_MODEL;
+  }
+
+  function applyModelSelection(models) {
+    const preferred = getPreferredModel(models);
+    localStorage.setItem("selectedModel", preferred);
+  }
+
+  function setCurrentModels(models) {
+    currentModels = Array.isArray(models) && models.length ? models.slice(0, 5) : FAST_MODEL_HINTS.slice(0, 5);
+  }
+
+  function readModelTimings() {
+    try {
+      return JSON.parse(localStorage.getItem(MODEL_TIMINGS_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function writeModelTimings(map) {
+    localStorage.setItem(MODEL_TIMINGS_KEY, JSON.stringify(map));
+  }
+
+  function recordModelTiming(model, ms) {
+    const map = readModelTimings();
+    const prev = map[model];
+    if (!prev) {
+      map[model] = { avg: ms, count: 1 };
+    } else {
+      const nextCount = prev.count + 1;
+      const nextAvg = (prev.avg * prev.count + ms) / nextCount;
+      map[model] = { avg: nextAvg, count: nextCount };
+    }
+    writeModelTimings(map);
+  }
+
+  function readModelFailures() {
+    try {
+      return JSON.parse(localStorage.getItem(MODEL_FAILURES_KEY) || "{}");
+    } catch {
+      return {};
+    }
+  }
+
+  function writeModelFailures(map) {
+    localStorage.setItem(MODEL_FAILURES_KEY, JSON.stringify(map));
+  }
+
+  function recordModelFailure(model, reason) {
+    const map = readModelFailures();
+    const now = Date.now();
+    const prev = map[model] || { count: 0, last: 0, reasons: {} };
+    const next = {
+      count: prev.count + 1,
+      last: now,
+      reasons: { ...prev.reasons, [reason]: (prev.reasons[reason] || 0) + 1 }
+    };
+    map[model] = next;
+    writeModelFailures(map);
+  }
+
+  function isModelBlocked(model) {
+    const map = readModelFailures();
+    const info = map[model];
+    if (!info) return false;
+    const hours6 = 6 * 60 * 60 * 1000;
+    const isRecent = (Date.now() - info.last) < hours6;
+    return isRecent && info.count >= 2;
+  }
+
+  function getModelOrder(preferred) {
+    const base = currentModels.length ? currentModels : FAST_MODEL_HINTS.slice(0, 5);
+    const timings = readModelTimings();
+    const filtered = base.filter(m => !isModelBlocked(m));
+    const pool = filtered.length ? filtered : base;
+    const sorted = pool.slice().sort((a, b) => {
+      const ta = timings[a]?.avg ?? Number.POSITIVE_INFINITY;
+      const tb = timings[b]?.avg ?? Number.POSITIVE_INFINITY;
+      if (ta === tb) return 0;
+      return ta - tb;
+    });
+    const ordered = [];
+    if (preferred && base.includes(preferred)) ordered.push(preferred);
+    sorted.forEach(m => {
+      if (!ordered.includes(m)) ordered.push(m);
+    });
+    return ordered;
+  }
+
+  function showLoader(el) {
+    if (!el) return;
+    el.innerHTML = AI_LOADER_HTML;
+    el.classList.add("show");
+  }
+
+  function updateLoaderText(el, text) {
+    if (!el) return;
+    const label = el.querySelector(".ai-loader-text");
+    if (label) label.textContent = text;
+  }
+
+  function startLoaderPhases(el) {
+    if (!el) return null;
+    updateLoaderText(el, "Готовлю запрос");
+    const timers = [
+      setTimeout(() => updateLoaderText(el, "Еще чуть-чуть…"), 3000),
+      setTimeout(() => updateLoaderText(el, "Обрабатываю ответ модели"), 6000),
+      setTimeout(() => updateLoaderText(el, "Я обязательно верну ответ"), 9000)
+    ];
+    return timers;
+  }
+
+  function stopLoaderPhases(timer) {
+    if (!timer) return;
+    if (Array.isArray(timer)) {
+      timer.forEach(t => clearTimeout(t));
+    } else {
+      clearInterval(timer);
+    }
+  }
+
+  async function fetchAnswerOnce(userQ, model) {
+    const startedAt = Date.now();
+    const res = await fetch(`${IO_API_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${getAuthKey()}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user",   content: userQ }
+        ],
+        temperature: 0.7,
+        reasoning_content: false,
+        max_completion_tokens: 1000,
+        stream: false
+      })
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const errJson = await res.json();
+        detail = errJson?.detail || "";
+      } catch {}
+      if (detail && /invalid api key/i.test(detail)) {
+        throw new Error("INVALID_API_KEY");
+      }
+      throw new Error(`AI request failed: ${res.status}`);
+    }
+    const json = await res.json();
+    const msg = json.choices?.[0]?.message;
+    const answer = msg?.content?.trim();
+    if (!answer) {
+      const hasReasoning = Array.isArray(msg?.reasoning_details) && msg.reasoning_details.length > 0;
+      recordModelFailure(model, hasReasoning ? "reasoning_only" : "empty_content");
+      throw new Error("Empty AI answer");
+    }
+    recordModelTiming(model, Date.now() - startedAt);
+    return answer;
+  }
+
+  async function warmupModelOnce(model) {
+    const startedAt = Date.now();
+    const res = await fetch(`${IO_API_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${getAuthKey()}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: "system", content: "Ответь очень кратко одним словом: OK." },
+          { role: "user", content: "OK?" }
+        ],
+        temperature: 0,
+        reasoning_content: false,
+        max_completion_tokens: 32,
+        stream: false
+      })
+    });
+    if (!res.ok) {
+      let detail = "";
+      try {
+        const errJson = await res.json();
+        detail = errJson?.detail || "";
+      } catch {}
+      if (detail && /invalid api key/i.test(detail)) {
+        throw new Error("INVALID_API_KEY");
+      }
+      recordModelFailure(model, `warmup_${res.status}`);
+      throw new Error(`Warmup failed: ${res.status}`);
+    }
+    const json = await res.json();
+    const msg = json.choices?.[0]?.message;
+    const answer = msg?.content?.trim();
+    if (!answer) {
+      const hasReasoning = Array.isArray(msg?.reasoning_details) && msg.reasoning_details.length > 0;
+      recordModelFailure(model, hasReasoning ? "warmup_reasoning_only" : "warmup_empty_content");
+      throw new Error("Warmup empty");
+    }
+    recordModelTiming(model, Date.now() - startedAt);
+    return answer;
+  }
+
+  function shouldWarmup() {
+    const last = Number(localStorage.getItem(MODEL_WARMUP_KEY) || 0);
+    const hours6 = 6 * 60 * 60 * 1000;
+    return !last || (Date.now() - last) > hours6;
+  }
+
+  function markWarmup() {
+    localStorage.setItem(MODEL_WARMUP_KEY, String(Date.now()));
+  }
+
+  async function warmupModels(models) {
+    const list = (models && models.length ? models : currentModels).slice(0, 5);
+    await Promise.allSettled(list.map(m => warmupModelOnce(m)));
+    markWarmup();
+    // Обновляем порядок по скорости и сохраняем самую быструю
+    const ordered = getModelOrder(getPreferredModel(list));
+    setCurrentModels(ordered);
+    applyModelSelection(ordered);
+    renderModelsList(ordered);
+  }
+
+  async function requestWithFallback(userQ, preferredModel) {
+    const order = getModelOrder(preferredModel);
+    let lastErr = null;
+    let invalidCount = 0;
+    for (const model of order) {
+      try {
+        const answer = await fetchAnswerOnce(userQ, model);
+        return { answer, model };
+      } catch (e) {
+        lastErr = e;
+        if (e && String(e.message).includes("INVALID_API_KEY")) {
+          invalidCount += 1;
+        }
+        console.warn(`Model failed: ${model}`, e);
+      }
+    }
+    if (invalidCount === order.length) {
+      showApiKeyModal();
+      throw lastErr || new Error("INVALID_API_KEY");
+    }
+    if (modelListFromCache) {
+      const refreshed = await loadModels({ force: true, exclude: order });
+      const retryOrder = getModelOrder(getPreferredModel(refreshed));
+      for (const model of retryOrder) {
+        try {
+          const answer = await fetchAnswerOnce(userQ, model);
+          return { answer, model };
+        } catch (e) {
+          lastErr = e;
+          console.warn(`Model failed after refresh: ${model}`, e);
+        }
+      }
+    }
+    throw lastErr || new Error("No AI answer");
+  }
+
+  async function loadModels(options = {}) {
+    const { force = false, exclude = [] } = options;
+    const fallback = FAST_MODEL_HINTS.slice(0, 5).filter(m => !exclude.includes(m));
+    if (!force) {
+      const cached = readModelListCache();
+      if (cached && cached.length) {
+        const filtered = cached.filter(m => !exclude.includes(m)).slice(0, 5);
+        const useList = filtered.length ? filtered : cached.slice(0, 5);
+        setCurrentModels(useList);
+        applyModelSelection(useList);
+        renderModelsList(useList);
+        modelListFromCache = true;
+        return useList;
+      }
+    }
+    try {
+      const res = await fetch(`${IO_API_BASE}/models?page_size=100`, {
+        headers: {
+          "Authorization": `Bearer ${getAuthKey()}`
+        }
+      });
+      if (!res.ok) throw new Error(`Models list failed: ${res.status}`);
+      const json = await res.json();
+      const apiModels = (json?.data || [])
+        .filter(m => {
+          const status = (m?.status || "").toLowerCase();
+          if (status && status !== "active") return false;
+          const enable = m?.metadata?.enable_api_chat_completions;
+          if (enable === false) return false;
+          return true;
+        })
+        .map(m => m?.name || m?.id)
+        .filter(Boolean);
+      const noReasoning = apiModels.filter(name => {
+        const n = name.toLowerCase();
+        return !(
+          n.includes("thinking") ||
+          n.includes("reasoning") ||
+          n.includes("deepseek-r1") ||
+          n.includes("r1") ||
+          n.includes("o1") ||
+          n.includes("o3") ||
+          n.includes("vl") ||
+          n.includes("vision")
+        );
+      });
+      const hinted = FAST_MODEL_HINTS.filter(m => noReasoning.includes(m) && !exclude.includes(m));
+      const pool = hinted.length ? hinted : (noReasoning.length ? noReasoning : apiModels);
+      const finalModels = (pool.length ? pool : fallback).filter(m => !exclude.includes(m)).slice(0, 5);
+      setCurrentModels(finalModels);
+      applyModelSelection(finalModels);
+      renderModelsList(finalModels);
+      writeModelListCache(finalModels);
+      modelListFromCache = false;
+      return finalModels;
+    } catch (e) {
+      console.warn("Using fallback model list", e);
+      setCurrentModels(fallback);
+      applyModelSelection(fallback);
+      renderModelsList(fallback);
+      modelListFromCache = false;
+      return fallback;
+    }
+  }
+
 
   // --- Typewriter effect для AI-ответа ---
   function typeWriter(el, text, startSpeed = 50, endSpeed = 0) {
@@ -1362,6 +1775,30 @@ category: 'AQA JS',
         setTimeout(write, Math.max(delay, 0));
       }
     })();
+  }
+
+  function showSupplementLoader(el) {
+    if (!el) return;
+    el.innerHTML = AI_LOADER_HTML;
+    el.style.display = "block";
+  }
+
+  function renderAiSupplement(el, text, seconds) {
+    if (!el) return;
+    el.innerHTML = "";
+    const title = document.createElement("div");
+    title.className = "ai-supplement-title";
+    if (seconds) {
+      title.innerHTML = `Ответ ИИ <span class="ai-time">за ${seconds} секунд</span>`;
+    } else {
+      title.textContent = "Ответ ИИ";
+    }
+    const body = document.createElement("div");
+    body.className = "ai-supplement-text ai-rich";
+    body.innerHTML = formatAiText(text);
+    el.appendChild(title);
+    el.appendChild(body);
+    el.style.display = "block";
   }
 
   // --- Render accordion sections & items ---
@@ -1462,6 +1899,116 @@ category: 'AQA JS',
     });
   }
 
+  function formatAiText(text) {
+    if (!text) return "";
+    const src = String(text);
+    const parts = [];
+    const re = /```(\w+)?\n([\s\S]*?)```/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      if (m.index > last) {
+        parts.push({ type: "text", value: src.slice(last, m.index) });
+      }
+      parts.push({ type: "code", lang: (m[1] || "").toLowerCase(), value: m[2] });
+      last = m.index + m[0].length;
+    }
+    if (last < src.length) parts.push({ type: "text", value: src.slice(last) });
+
+    function renderTextBlock(block) {
+      let t = escapeHtml(block);
+      // Normalize inline numbered lists like "1) ..." into new lines
+      t = t.replace(/(\s)(\d{1,2})\)\s+/g, "\n$2. ");
+      t = t.replace(/^###\s+(.*)$/gm, "<h4>$1</h4>");
+      t = t.replace(/^##\s+(.*)$/gm, "<h3>$1</h3>");
+      t = t.replace(/^#\s+(.*)$/gm, "<h2>$1</h2>");
+      t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      t = t.replace(/\*(.+?)\*/g, "<em>$1</em>");
+      t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+      // Markdown-like tables
+      const lines = t.split(/\r?\n/);
+      const outLines = [];
+      let i = 0;
+      while (i < lines.length) {
+        const line = lines[i];
+        const isTableLine = /\|/.test(line);
+        const next = lines[i + 1] || "";
+        const isSeparator = /^\s*\|?\s*[-:]{3,}\s*(\|\s*[-:]{3,}\s*)+\|?\s*$/.test(next);
+        if (isTableLine && isSeparator) {
+          const headerCells = line.split("|").map(s => s.trim()).filter(s => s.length);
+          const rows = [];
+          i += 2;
+          while (i < lines.length && /\|/.test(lines[i])) {
+            const rowCells = lines[i].split("|").map(s => s.trim()).filter(s => s.length);
+            if (rowCells.length) rows.push(rowCells);
+            i++;
+          }
+          let tableHtml = '<div class="ai-table-wrap"><table class="ai-table"><thead><tr>';
+          headerCells.forEach(c => { tableHtml += `<th>${c}</th>`; });
+          tableHtml += '</tr></thead><tbody>';
+          rows.forEach(r => {
+            tableHtml += '<tr>';
+            headerCells.forEach((_, idx) => {
+              tableHtml += `<td>${r[idx] || ""}</td>`;
+            });
+            tableHtml += '</tr>';
+          });
+          tableHtml += '</tbody></table></div>';
+          outLines.push(tableHtml);
+          continue;
+        }
+        outLines.push(line);
+        i++;
+      }
+
+      const lines2 = outLines;
+      let out = "";
+      let inUl = false;
+      let inOl = false;
+      lines2.forEach(line => {
+        const ulMatch = line.match(/^\s*[-*]\s+(.*)$/);
+        const olMatch = line.match(/^\s*\d+\.\s+(.*)$/);
+        if (ulMatch) {
+          if (inOl) { out += "</ol>"; inOl = false; }
+          if (!inUl) { out += "<ul>"; inUl = true; }
+          out += `<li>${ulMatch[1]}</li>`;
+          return;
+        }
+        if (olMatch) {
+          if (inUl) { out += "</ul>"; inUl = false; }
+          if (!inOl) { out += "<ol>"; inOl = true; }
+          out += `<li>${olMatch[1]}</li>`;
+          return;
+        }
+        if (line.includes("ai-table")) {
+          if (inUl) { out += "</ul>"; inUl = false; }
+          if (inOl) { out += "</ol>"; inOl = false; }
+          out += line;
+          return;
+        }
+        if (inUl) { out += "</ul>"; inUl = false; }
+        if (inOl) { out += "</ol>"; inOl = false; }
+        out += line === "" ? "<br>" : `${line}<br>`;
+      });
+      if (inUl) out += "</ul>";
+      if (inOl) out += "</ol>";
+
+      out = out.replace(/<br>\s*<br>/g, "</p><p>");
+      if (!out.startsWith("<")) out = `<p>${out}</p>`;
+      if (!out.startsWith("<p>")) out = `<p>${out}</p>`;
+      return out;
+    }
+
+    return parts.map(p => {
+      if (p.type === "code") {
+        const code = escapeHtml(p.value);
+        return `<pre class="code-block"><code>${code}</code></pre>`;
+      }
+      return renderTextBlock(p.value);
+    }).join("");
+  }
+
   data.forEach(cat => {
     // 1. Создаем <section>
     const section = document.createElement("section");
@@ -1511,13 +2058,14 @@ category: 'AQA JS',
 
     // 4. Render вопросов
     cat.items.forEach(item => {
+      const openKey = "open_items";
+      const openSet = new Set(JSON.parse(localStorage.getItem(openKey) || "[]"));
       const clone  = tpl.content.cloneNode(true);
       const header = clone.querySelector('.t849__header');
       const btn    = clone.querySelector('.t849__trigger-button');
       const title  = clone.querySelector('.t849__title');
       const content= clone.querySelector('.t849__content');
       const textEl = clone.querySelector('.t849__text');
-      const copy   = clone.querySelector('.copy-icon');
 
       btn.setAttribute('aria-controls', item.id);
       title.textContent = item.title;
@@ -1525,14 +2073,15 @@ category: 'AQA JS',
 
       // Собираем ссылки «Читать» и «Ревью от автора», если они есть
       // Собираем кнопки
-      let links = [];
+      let readLinks = [];
+      let authorLinks = [];
       if (item.moreLink) {
-        links.push(
-          `<a href="${item.moreLink}" target="_blank" rel="noopener noreferrer" class="answer-link">Читать</a>`
+        readLinks.push(
+          `<a href="${item.moreLink}" target="_blank" rel="noopener noreferrer" class="answer-link read-link">Читать</a>`
         );
       }
       if (item.authorCheck) {
-        links.push(`
+        authorLinks.push(`
           <a
             href="${item.authorCheck}"
             target="_blank"
@@ -1545,28 +2094,36 @@ category: 'AQA JS',
         `);
       }
 
-      let extraLinks = '';
-      if (links.length) {
-        // один перенос строки перед всеми кнопками
-        extraLinks = `<br><br><div class="answer-links">${links.join('')}</div>`;
+      let authorLinksBlock = '';
+      if (authorLinks.length) {
+        authorLinksBlock = `<br><br><div class="answer-links">${authorLinks.join('')}</div>`;
       }
 
       // вставляем в ответ
-      textEl.innerHTML = item.answer + extraLinks;
+      textEl.innerHTML = item.answer + authorLinksBlock;
       enhanceAnswerBlock(textEl);
 
       textEl.insertAdjacentHTML('beforeend', `
-        <div style="margin-top:1rem;">
-          <button type="button" class="answer-link study-btn"
-                  data-category="${cat.category}" data-id="${item.id}"
-                  title="Понимаю материал">
-            &#10003;
-          </button>
-          <button type="button" class="unclear-btn"
-                  data-category="${cat.category}" data-id="${item.id}"
-                  title="Не до конца разбираюсь">
-            ?
-          </button>
+        <div class="answer-actions" style="margin-top:1rem;">
+          <div class="answer-actions-left">
+            <button type="button" class="answer-link study-btn"
+                    data-category="${cat.category}" data-id="${item.id}"
+                    title="Понимаю материал">
+              &#10003;
+            </button>
+            <button type="button" class="unclear-btn"
+                    data-category="${cat.category}" data-id="${item.id}"
+                    title="Не до конца разбираюсь">
+              ?
+            </button>
+          </div>
+          <div class="answer-actions-right">
+            ${readLinks.length ? `<div class="answer-links inline-links">${readLinks.join('')}</div>` : ""}
+            <button type="button" class="ai-append-btn" data-id="${item.id}">Дополнить ответ от ИИ</button>
+          </div>
+        </div>
+        <div class="ai-append-wrap" data-id="${item.id}">
+          <div class="ai-supplement" data-id="${item.id}" style="display:none;"></div>
         </div>
       `);
 
@@ -1617,14 +2174,66 @@ category: 'AQA JS',
         btn.setAttribute("aria-expanded", !expanded);
         content.style.display = expanded ? "none" : "block";
         header.classList.toggle("t849__opened", !expanded);
+        if (!expanded) openSet.add(item.id);
+        else openSet.delete(item.id);
+        localStorage.setItem(openKey, JSON.stringify(Array.from(openSet)));
       });
-
-      // Copy title to search
-      copy.addEventListener("click", () => {
-        searchInput.value = item.title;
-        searchInput.dispatchEvent(new Event("input"));
-        searchInput.focus();
-      });
+      const supplementKey = `ai_supplement_${item.id}`;
+      const aiAppendBtn = clone.querySelector(`.ai-append-btn[data-id="${item.id}"]`);
+      const aiSupplementEl = clone.querySelector(`.ai-supplement[data-id="${item.id}"]`);
+      const savedSupplement = localStorage.getItem(supplementKey);
+      if (savedSupplement && aiSupplementEl) {
+        try {
+          const parsed = JSON.parse(savedSupplement);
+          if (parsed && parsed.text) {
+            renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds);
+          } else {
+            renderAiSupplement(aiSupplementEl, savedSupplement);
+          }
+        } catch {
+          renderAiSupplement(aiSupplementEl, savedSupplement);
+        }
+      }
+      if (savedSupplement) {
+        btn.setAttribute("aria-expanded", "true");
+        content.style.display = "block";
+        header.classList.add("t849__opened");
+        openSet.add(item.id);
+        localStorage.setItem(openKey, JSON.stringify(Array.from(openSet)));
+      } else if (openSet.has(item.id)) {
+        btn.setAttribute("aria-expanded", "true");
+        content.style.display = "block";
+        header.classList.add("t849__opened");
+      }
+      if (aiAppendBtn && aiSupplementEl) {
+        aiAppendBtn.addEventListener("click", async () => {
+          const preferredModel = getPreferredModel(currentModels);
+          aiAppendBtn.disabled = true;
+          showSupplementLoader(aiSupplementEl);
+          const supplementTimer = startLoaderPhases(aiSupplementEl);
+          const executeRequest = async () => {
+            const startedAt = Date.now();
+            const promptWithCategory = `Тема: ${cat.category}. Вопрос: ${item.title}`;
+            const result = await requestWithFallback(promptWithCategory, preferredModel);
+            stopLoaderPhases(supplementTimer);
+            const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+            renderAiSupplement(aiSupplementEl, result.answer, seconds);
+            localStorage.setItem(supplementKey, JSON.stringify({ text: result.answer, seconds }));
+          };
+          try {
+            await executeRequest();
+          } catch (e) {
+            if (e && String(e.message).includes("INVALID_API_KEY")) {
+              pendingRetry = executeRequest;
+              updateLoaderText(aiSupplementEl, "Повторяю запрос после сохранения ключа");
+              return;
+            }
+            renderAiSupplement(aiSupplementEl, "Не удалось получить ответ от моделей. Попробуйте позже.");
+          } finally {
+            aiAppendBtn.disabled = false;
+          }
+        });
+      }
 
       section.appendChild(clone);
     });
@@ -1648,8 +2257,6 @@ category: 'AQA JS',
       if (icon) icon.style.display = (has && anyVisible) ? "none" : "";
     });
     clearBtn.style.display     = has ? "inline-block" : "none";
-    modelSelect.style.display  = has ? "inline-block" : "none";
-    aiBtn.style.display        = has ? "inline-block" : "none";
     resultsTitle.style.display = has ? "block"       : "none";
     about.style.display        = has ? "none"        : "";
   });
@@ -1657,59 +2264,40 @@ category: 'AQA JS',
   clearBtn.addEventListener("click", () => {
     searchInput.value = "";
     searchInput.dispatchEvent(new Event("input"));
-    aiResponse.textContent = "";
     searchInput.focus();
   });
+    loadModels().then(() => {
+      if (!shouldWarmup()) return;
+      let hasClicked = false;
+      let hasScrolledToFirst = false;
+      const firstQuestion = document.querySelector("#accordion-container .t-item");
 
-  // --- AI button handler ---
-  aiBtn.addEventListener("click", () => {
-    const userQ = searchInput.value.trim();
-    if (!userQ) return;
-    let countdown = 15;
-    aiResponse.classList.add("show");
-    aiBtn.disabled = true;
-    aiBtn.textContent = "...";
-    aiResponse.textContent = `Верну ответ через ${countdown}`;
-    const countdownInterval = setInterval(() => {
-      countdown--;
-      if (countdown >= 0) aiResponse.textContent = `Верну ответ примерно через ${countdown}`;
-      else clearInterval(countdownInterval);
-    }, 1000);
+      const checkScroll = () => {
+        if (!firstQuestion) return;
+        const rect = firstQuestion.getBoundingClientRect();
+        if (rect.top <= window.innerHeight * 0.85) {
+          hasScrolledToFirst = true;
+          tryStartWarmup();
+        }
+      };
 
-        fetch("https://api.intelligence.io.solutions/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Authorization": "Bearer io-v2-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJvd25lciI6IjVhNzhhY2I4LTJkZmUtNGRiNi04N2QxLTkxODZmNTFmZDllZSIsImV4cCI6NDg5OTgwNzc2NX0.Xj38WAym9TX-UfU_CJmA8_4BvqzGeA4n0UEoXBZagA2BHJdmmpvhDuAFRf8lcZaFT4u2cHY609oxNS9qRfrqZw",
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            model: modelSelect.value,
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user",   content: userQ }
-            ],
-            temperature: 0.7,
-            max_completion_tokens: 600,
-            stream: false
-          })
-        })
-        .then(res => res.json())
-        .then(json => {
-              clearInterval(countdownInterval);
-              aiResponse.textContent = "";
-              const msg     = json.choices?.[0]?.message;
-              const answer  = msg?.content?.trim() || "AI не вернул ответ. Проверь статус код в DevTools";
-              typeWriter(aiResponse, answer, 10, -1000);
-        })
-        .catch(err => {
-          console.error(err);
-          aiResponse.textContent = "Ошибка при запросе к AI. Лимит запросов в сутки, попробуйте другую модель.";
-        })
-        .finally(() => {
-          aiBtn.disabled = false;
-          aiBtn.textContent = "AI";
-        });
-      });
+      const tryStartWarmup = () => {
+        if (hasClicked && hasScrolledToFirst && shouldWarmup()) {
+          warmupModels(currentModels);
+          window.removeEventListener("scroll", checkScroll);
+          window.removeEventListener("resize", checkScroll);
+        }
+      };
+
+      document.addEventListener("click", () => {
+        hasClicked = true;
+        tryStartWarmup();
+      }, { once: true });
+
+      window.addEventListener("scroll", checkScroll, { passive: true });
+      window.addEventListener("resize", checkScroll);
+      checkScroll();
+    });
     });  // — конец DOMContentLoaded
 
 // --- Theme toggle ---
@@ -1798,6 +2386,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const clone = chip.cloneNode(true);
       if (clone.dataset.category === 'БАЗЫ ДАННЫХ') {
         clone.textContent = 'БД';
+      }
+      if (clone.dataset.category === 'GIT + IDE + SELENIUM') {
+        clone.textContent = 'GIT';
       }
       categoryFiltersBottom.appendChild(clone);
       bottomChips.push(clone);
@@ -1922,3 +2513,24 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBottomVisibility();
   }
 });
+  function readModelListCache() {
+    try {
+      const raw = localStorage.getItem(MODEL_LIST_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.models) || !parsed.ts) return null;
+      if ((Date.now() - parsed.ts) > MODEL_LIST_CACHE_TTL_MS) return null;
+      return parsed.models;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeModelListCache(models) {
+    try {
+      localStorage.setItem(MODEL_LIST_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        models
+      }));
+    } catch {}
+  }
