@@ -1524,6 +1524,7 @@ category: 'AQA JS',
   function showLoader(el) {
     if (!el) return;
     el.innerHTML = AI_LOADER_HTML;
+    delete el.dataset.waitingModel;
     el.classList.add("show");
   }
 
@@ -1535,12 +1536,15 @@ category: 'AQA JS',
 
   function startLoaderPhases(el) {
     if (!el) return null;
-    updateLoaderText(el, "Готовлю запрос");
+    updateLoaderText(el, "Жду ответ");
     const timers = [
       setTimeout(() => updateLoaderText(el, "Еще чуть-чуть…"), 3000),
       setTimeout(() => updateLoaderText(el, "Обрабатываю ответ модели"), 6000),
       setTimeout(() => updateLoaderText(el, "Я обязательно верну ответ"), 9000),
-      setTimeout(() => updateLoaderText(el, "Жду ответ от модели"), 12000)
+      setTimeout(() => {
+        const modelName = el.dataset.waitingModel;
+        updateLoaderText(el, modelName ? `Жду ответ от ${modelName}` : "Жду ответ");
+      }, 12000)
     ];
     return timers;
   }
@@ -1785,6 +1789,7 @@ category: 'AQA JS',
   function showSupplementLoader(el) {
     if (!el) return;
     el.innerHTML = AI_LOADER_HTML;
+    delete el.dataset.waitingModel;
     el.style.display = "block";
   }
 
@@ -1798,7 +1803,7 @@ category: 'AQA JS',
     return `${n} секунд`;
   }
 
-  function renderAiSupplement(el, text, seconds) {
+  function renderAiSupplement(el, text, seconds, modelName) {
     if (!el) return;
     el.innerHTML = "";
     const title = document.createElement("div");
@@ -1818,6 +1823,12 @@ category: 'AQA JS',
     }
     el.appendChild(title);
     el.appendChild(body);
+    if (modelName) {
+      const meta = document.createElement("div");
+      meta.className = "ai-supplement-meta";
+      meta.innerHTML = `<span class="ai-time">ответила: ${escapeHtml(modelName)}</span>`;
+      el.appendChild(meta);
+    }
     el.style.display = "block";
   }
 
@@ -2206,7 +2217,7 @@ category: 'AQA JS',
         try {
           const parsed = JSON.parse(savedSupplement);
           if (parsed && parsed.text) {
-            renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds);
+            renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds, parsed.model);
           } else {
             renderAiSupplement(aiSupplementEl, savedSupplement);
           }
@@ -2231,16 +2242,21 @@ category: 'AQA JS',
             const result = await requestWithFallback(
               promptWithCategory,
               preferredModel,
-              (modelName, attemptNumber) => {
-                // For retries, keep a stable status with concrete model name.
-                if (attemptNumber > 1) stopLoaderPhases(supplementTimer);
-                updateLoaderText(aiSupplementEl, `Жду ответ от ${modelName}`);
+              (modelName) => {
+                aiSupplementEl.dataset.waitingModel = modelName;
               }
             );
             stopLoaderPhases(supplementTimer);
             const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-            renderAiSupplement(aiSupplementEl, result.answer, seconds);
-            localStorage.setItem(supplementKey, JSON.stringify({ text: result.answer, seconds }));
+            renderAiSupplement(aiSupplementEl, result.answer, seconds, result.model);
+            try {
+              localStorage.setItem(
+                supplementKey,
+                JSON.stringify({ text: result.answer, seconds, model: result.model })
+              );
+            } catch (storageError) {
+              console.warn("Failed to persist AI supplement in localStorage", storageError);
+            }
           };
           try {
             await executeRequest();
