@@ -1360,6 +1360,8 @@ category: 'AQA JS',
   const MODEL_WARMUP_KEY = "model_warmup_ts_v1";
   const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
   const MODEL_LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+  const AI_SUPPLEMENT_META_KEY = "ai_supplement_meta_v1";
+  const AI_SUPPLEMENT_MAX = 4;
   let modelListFromCache = false;
   let pendingRetry = null;
 
@@ -1373,6 +1375,114 @@ category: 'AQA JS',
   const apiKeyInput    = document.getElementById("api-key-input");
   const apiKeySave     = document.getElementById("api-key-save");
   const apiKeyClose    = document.getElementById("api-key-close");
+
+  function readModelListCache() {
+    try {
+      const raw = localStorage.getItem(MODEL_LIST_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.models) || !parsed.ts) return null;
+      if ((Date.now() - parsed.ts) > MODEL_LIST_CACHE_TTL_MS) return null;
+      return parsed.models;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeModelListCache(models) {
+    try {
+      safeSetItemWithAiEviction(MODEL_LIST_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        models
+      }));
+    } catch {}
+  }
+
+  function isQuotaExceededError(err) {
+    return !!err && (
+      err.name === "QuotaExceededError" ||
+      err.code === 22 ||
+      String(err.message || "").toLowerCase().includes("quota")
+    );
+  }
+
+  function readAiSupplementMeta() {
+    try {
+      const raw = localStorage.getItem(AI_SUPPLEMENT_META_KEY);
+      const parsed = JSON.parse(raw || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeAiSupplementMeta(meta) {
+    try {
+      localStorage.setItem(AI_SUPPLEMENT_META_KEY, JSON.stringify(meta));
+      return true;
+    } catch (e) {
+      console.warn("Failed to write AI supplement meta", e);
+      return false;
+    }
+  }
+
+  function evictOldestAiSupplement(excludeKey) {
+    const meta = readAiSupplementMeta()
+      .filter(x => x && x.key && x.key !== excludeKey)
+      .sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    if (!meta.length) return false;
+    const oldest = meta[0];
+    try {
+      localStorage.removeItem(oldest.key);
+    } catch {}
+    const nextMeta = readAiSupplementMeta().filter(x => x && x.key && x.key !== oldest.key);
+    writeAiSupplementMeta(nextMeta);
+    return true;
+  }
+
+  function safeSetItemWithAiEviction(key, value, excludeAiKey) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch (e) {
+      if (!isQuotaExceededError(e)) {
+        console.warn(`setItem failed for ${key}`, e);
+        return false;
+      }
+      while (evictOldestAiSupplement(excludeAiKey)) {
+        try {
+          localStorage.setItem(key, value);
+          return true;
+        } catch (retryErr) {
+          if (!isQuotaExceededError(retryErr)) {
+            console.warn(`setItem retry failed for ${key}`, retryErr);
+            return false;
+          }
+        }
+      }
+      return false;
+    }
+  }
+
+  function saveAiSupplementWithLimit(key, payload) {
+    const value = JSON.stringify(payload);
+    const written = safeSetItemWithAiEviction(key, value, key);
+    if (!written) return false;
+
+    let meta = readAiSupplementMeta().filter(x => x && x.key && x.key !== key);
+    meta.push({ key, ts: Date.now() });
+    meta.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+
+    const toRemove = meta.slice(AI_SUPPLEMENT_MAX);
+    toRemove.forEach(item => {
+      try {
+        localStorage.removeItem(item.key);
+      } catch {}
+    });
+    meta = meta.slice(0, AI_SUPPLEMENT_MAX);
+    writeAiSupplementMeta(meta);
+    return true;
+  }
 
   function getAuthKey() {
     const override = localStorage.getItem(OVERRIDE_API_KEY_STORAGE);
@@ -1399,7 +1509,7 @@ category: 'AQA JS',
     apiKeySave.addEventListener("click", () => {
       const v = apiKeyInput?.value?.trim();
       if (v) {
-        localStorage.setItem(OVERRIDE_API_KEY_STORAGE, v);
+        safeSetItemWithAiEviction(OVERRIDE_API_KEY_STORAGE, v);
         hideApiKeyModal();
         if (pendingRetry) {
           const retry = pendingRetry;
@@ -1436,7 +1546,7 @@ category: 'AQA JS',
 
   function applyModelSelection(models) {
     const preferred = getPreferredModel(models);
-    localStorage.setItem("selectedModel", preferred);
+    safeSetItemWithAiEviction("selectedModel", preferred);
   }
 
   function setCurrentModels(models) {
@@ -1452,7 +1562,7 @@ category: 'AQA JS',
   }
 
   function writeModelTimings(map) {
-    localStorage.setItem(MODEL_TIMINGS_KEY, JSON.stringify(map));
+    safeSetItemWithAiEviction(MODEL_TIMINGS_KEY, JSON.stringify(map));
   }
 
   function recordModelTiming(model, ms) {
@@ -1477,7 +1587,7 @@ category: 'AQA JS',
   }
 
   function writeModelFailures(map) {
-    localStorage.setItem(MODEL_FAILURES_KEY, JSON.stringify(map));
+    safeSetItemWithAiEviction(MODEL_FAILURES_KEY, JSON.stringify(map));
   }
 
   function recordModelFailure(model, reason) {
@@ -1652,7 +1762,7 @@ category: 'AQA JS',
   }
 
   function markWarmup() {
-    localStorage.setItem(MODEL_WARMUP_KEY, String(Date.now()));
+    safeSetItemWithAiEviction(MODEL_WARMUP_KEY, String(Date.now()));
   }
 
   async function warmupModels(models) {
@@ -2225,8 +2335,8 @@ category: 'AQA JS',
         if (!sArr.includes(id)) {
           sArr.push(id);
           uArr = uArr.filter(x => x !== id);
-          localStorage.setItem(studiedKey, JSON.stringify(sArr));
-          localStorage.setItem(unclearKey, JSON.stringify(uArr));
+          safeSetItemWithAiEviction(studiedKey, JSON.stringify(sArr));
+          safeSetItemWithAiEviction(unclearKey, JSON.stringify(uArr));
           header.classList.remove('unclear');
           header.classList.add('studied');
           updateProgress(c, sArr.length, uArr.length, total);
@@ -2243,8 +2353,8 @@ category: 'AQA JS',
         if (!uArr.includes(id)) {
           uArr.push(id);
           sArr = sArr.filter(x => x !== id);
-          localStorage.setItem(uKey, JSON.stringify(uArr));
-          localStorage.setItem('studied_' + c, JSON.stringify(sArr));
+          safeSetItemWithAiEviction(uKey, JSON.stringify(uArr));
+          safeSetItemWithAiEviction('studied_' + c, JSON.stringify(sArr));
           header.classList.remove('studied');
           header.classList.add('unclear');
           updateProgress(c, sArr.length, uArr.length, total);
@@ -2259,7 +2369,7 @@ category: 'AQA JS',
         header.classList.toggle("t849__opened", !expanded);
         if (!expanded) openSet.add(item.id);
         else openSet.delete(item.id);
-        localStorage.setItem(openKey, JSON.stringify(Array.from(openSet)));
+        safeSetItemWithAiEviction(openKey, JSON.stringify(Array.from(openSet)));
       });
       const supplementKey = `ai_supplement_${item.id}`;
       const aiAppendBtn = clone.querySelector(`.ai-append-btn[data-id="${item.id}"]`);
@@ -2355,9 +2465,9 @@ category: 'AQA JS',
               arrivedAt: result.arrivedAt || Date.now()
             });
             try {
-              localStorage.setItem(
+              saveAiSupplementWithLimit(
                 supplementKey,
-                JSON.stringify({ text: result.answer, seconds, model: result.model })
+                { text: result.answer, seconds, model: result.model }
               );
             } catch (storageError) {
               console.warn("Failed to persist AI supplement in localStorage", storageError);
@@ -2656,24 +2766,3 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBottomVisibility();
   }
 });
-  function readModelListCache() {
-    try {
-      const raw = localStorage.getItem(MODEL_LIST_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.models) || !parsed.ts) return null;
-      if ((Date.now() - parsed.ts) > MODEL_LIST_CACHE_TTL_MS) return null;
-      return parsed.models;
-    } catch {
-      return null;
-    }
-  }
-
-  function writeModelListCache(models) {
-    try {
-      localStorage.setItem(MODEL_LIST_CACHE_KEY, JSON.stringify({
-        ts: Date.now(),
-        models
-      }));
-    } catch {}
-  }
