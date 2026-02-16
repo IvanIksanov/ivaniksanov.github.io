@@ -786,6 +786,43 @@ html[data-theme="dark"] .answer-links .answer-link.read-link:hover {
   margin-bottom: 0.4rem;
 }
 
+.ai-supplement-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ai-supplement-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ai-nav-btn {
+  border: none;
+  background: transparent;
+  color: rgba(47, 92, 138, 0.55);
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  cursor: pointer;
+  line-height: 18px;
+  font-size: 16px;
+}
+
+.ai-nav-btn:hover {
+  color: rgba(47, 92, 138, 0.8);
+}
+
+.ai-nav-index {
+  min-width: 34px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: rgba(47, 92, 138, 0.55);
+  font-weight: 400;
+}
+
 .ai-supplement-title .ai-time {
   color: rgba(47, 92, 138, 0.55);
   font-weight: 400;
@@ -1010,6 +1047,18 @@ html[data-theme="dark"] .ai-supplement-title .ai-time {
 }
 
 html[data-theme="dark"] .ai-supplement-meta .ai-time {
+  color: rgba(158, 195, 255, 0.55);
+}
+
+html[data-theme="dark"] .ai-nav-btn {
+  color: rgba(158, 195, 255, 0.55);
+}
+
+html[data-theme="dark"] .ai-nav-btn:hover {
+  color: rgba(158, 195, 255, 0.85);
+}
+
+html[data-theme="dark"] .ai-nav-index {
   color: rgba(158, 195, 255, 0.55);
 }
 

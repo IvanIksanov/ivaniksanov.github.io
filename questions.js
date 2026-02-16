@@ -1666,44 +1666,70 @@ category: 'AQA JS',
     renderModelsList(ordered);
   }
 
-  async function requestWithFallback(userQ, preferredModel, onAttempt) {
+  function requestBatchWithTimeout(userQ, order, onAttempt, onAdditional) {
+    const ATTEMPT_DELAY_MS = 10000;
+    return new Promise((resolve, reject) => {
+      let completed = 0;
+      let invalidCount = 0;
+      let lastErr = null;
+      let firstResolved = false;
+
+      order.forEach((model, idx) => {
+        setTimeout(async () => {
+          try {
+            if (typeof onAttempt === "function") onAttempt(model, idx + 1, order.length);
+            const answer = await fetchAnswerOnce(userQ, model);
+            const payload = { answer, model, arrivedAt: Date.now() };
+            if (!firstResolved) {
+              firstResolved = true;
+              resolve(payload);
+            } else if (typeof onAdditional === "function") {
+              onAdditional(payload);
+            }
+          } catch (e) {
+            lastErr = e;
+            if (e && String(e.message).includes("INVALID_API_KEY")) invalidCount += 1;
+            console.warn(`Model failed: ${model}`, e);
+          } finally {
+            completed += 1;
+            if (completed === order.length && !firstResolved) {
+              reject({
+                error: lastErr || new Error("No AI answer"),
+                invalidCount,
+                total: order.length,
+                tried: order.slice()
+              });
+            }
+          }
+        }, idx * ATTEMPT_DELAY_MS);
+      });
+    });
+  }
+
+  async function requestWithFallback(userQ, preferredModel, onAttempt, onAdditional) {
     const order = getModelOrder(preferredModel);
-    let lastErr = null;
-    let invalidCount = 0;
-    for (let i = 0; i < order.length; i++) {
-      const model = order[i];
-      try {
-        if (typeof onAttempt === "function") onAttempt(model, i + 1, order.length);
-        const answer = await fetchAnswerOnce(userQ, model);
-        return { answer, model };
-      } catch (e) {
-        lastErr = e;
-        if (e && String(e.message).includes("INVALID_API_KEY")) {
-          invalidCount += 1;
-        }
-        console.warn(`Model failed: ${model}`, e);
+    try {
+      return await requestBatchWithTimeout(userQ, order, onAttempt, onAdditional);
+    } catch (batchErr) {
+      if (batchErr?.invalidCount === batchErr?.total) {
+        showApiKeyModal();
+        throw batchErr.error || new Error("INVALID_API_KEY");
       }
-    }
-    if (invalidCount === order.length) {
-      showApiKeyModal();
-      throw lastErr || new Error("INVALID_API_KEY");
-    }
-    if (modelListFromCache) {
-      const refreshed = await loadModels({ force: true, exclude: order });
-      const retryOrder = getModelOrder(getPreferredModel(refreshed));
-      for (let i = 0; i < retryOrder.length; i++) {
-        const model = retryOrder[i];
+      if (modelListFromCache) {
+        const refreshed = await loadModels({ force: true, exclude: batchErr?.tried || order });
+        const retryOrder = getModelOrder(getPreferredModel(refreshed));
         try {
-          if (typeof onAttempt === "function") onAttempt(model, i + 1, retryOrder.length);
-          const answer = await fetchAnswerOnce(userQ, model);
-          return { answer, model };
-        } catch (e) {
-          lastErr = e;
-          console.warn(`Model failed after refresh: ${model}`, e);
+          return await requestBatchWithTimeout(userQ, retryOrder, onAttempt, onAdditional);
+        } catch (retryErr) {
+          if (retryErr?.invalidCount === retryErr?.total) {
+            showApiKeyModal();
+            throw retryErr.error || new Error("INVALID_API_KEY");
+          }
+          throw retryErr.error || new Error("No AI answer");
         }
       }
+      throw batchErr.error || new Error("No AI answer");
     }
-    throw lastErr || new Error("No AI answer");
   }
 
   async function loadModels(options = {}) {
@@ -1803,15 +1829,41 @@ category: 'AQA JS',
     return `${n} секунд`;
   }
 
-  function renderAiSupplement(el, text, seconds, modelName) {
+  function renderAiSupplement(el, text, seconds, modelName, nav) {
     if (!el) return;
     el.innerHTML = "";
+    const head = document.createElement("div");
+    head.className = "ai-supplement-head";
     const title = document.createElement("div");
     title.className = "ai-supplement-title";
     if (seconds) {
       title.innerHTML = `Ответ ИИ <span class="ai-time">за ${formatSecondsRu(seconds)}</span>`;
     } else {
       title.textContent = "Ответ ИИ";
+    }
+    head.appendChild(title);
+    if (nav && nav.total > 1) {
+      const controls = document.createElement("div");
+      controls.className = "ai-supplement-nav";
+      const prev = document.createElement("button");
+      prev.type = "button";
+      prev.className = "ai-nav-btn";
+      prev.title = "Предыдущий ответ";
+      prev.textContent = "‹";
+      prev.addEventListener("click", nav.onPrev);
+      const index = document.createElement("span");
+      index.className = "ai-nav-index ai-time";
+      index.textContent = `${nav.index + 1}/${nav.total}`;
+      const next = document.createElement("button");
+      next.type = "button";
+      next.className = "ai-nav-btn";
+      next.title = "Следующий ответ";
+      next.textContent = "›";
+      next.addEventListener("click", nav.onNext);
+      controls.appendChild(prev);
+      controls.appendChild(index);
+      controls.appendChild(next);
+      head.appendChild(controls);
     }
     const body = document.createElement("div");
     body.className = "ai-supplement-text ai-rich";
@@ -1821,7 +1873,7 @@ category: 'AQA JS',
       console.warn("AI render failed, fallback to plain text", e);
       body.textContent = String(text || "");
     }
-    el.appendChild(title);
+    el.appendChild(head);
     el.appendChild(body);
     if (modelName) {
       const meta = document.createElement("div");
@@ -2231,6 +2283,41 @@ category: 'AQA JS',
         header.classList.add("t849__opened");
       }
       if (aiAppendBtn && aiSupplementEl) {
+        const runtimeResponses = [];
+        let runtimeIndex = 0;
+
+        const renderCurrentRuntimeResponse = () => {
+          if (!runtimeResponses.length) return;
+          const current = runtimeResponses[runtimeIndex];
+          renderAiSupplement(
+            aiSupplementEl,
+            current.answer,
+            current.seconds,
+            current.model,
+            runtimeResponses.length > 1
+              ? {
+                  index: runtimeIndex,
+                  total: runtimeResponses.length,
+                  onPrev: () => {
+                    runtimeIndex = (runtimeIndex - 1 + runtimeResponses.length) % runtimeResponses.length;
+                    renderCurrentRuntimeResponse();
+                  },
+                  onNext: () => {
+                    runtimeIndex = (runtimeIndex + 1) % runtimeResponses.length;
+                    renderCurrentRuntimeResponse();
+                  }
+                }
+              : null
+          );
+        };
+
+        const pushRuntimeResponse = (resp) => {
+          runtimeResponses.push(resp);
+          runtimeResponses.sort((a, b) => a.arrivedAt - b.arrivedAt);
+          if (runtimeResponses.length === 1) runtimeIndex = 0;
+          renderCurrentRuntimeResponse();
+        };
+
         aiAppendBtn.addEventListener("click", async () => {
           const preferredModel = getPreferredModel(currentModels);
           aiAppendBtn.disabled = true;
@@ -2244,11 +2331,29 @@ category: 'AQA JS',
               preferredModel,
               (modelName) => {
                 aiSupplementEl.dataset.waitingModel = modelName;
+                const currentText = aiSupplementEl.querySelector(".ai-loader-text")?.textContent || "";
+                if (currentText.startsWith("Жду ответ от")) {
+                  updateLoaderText(aiSupplementEl, `Жду ответ от ${modelName}`);
+                }
+              },
+              (extraResult) => {
+                const extraSeconds = Math.max(1, Math.round((extraResult.arrivedAt - startedAt) / 1000));
+                pushRuntimeResponse({
+                  answer: extraResult.answer,
+                  model: extraResult.model,
+                  seconds: extraSeconds,
+                  arrivedAt: extraResult.arrivedAt
+                });
               }
             );
             stopLoaderPhases(supplementTimer);
             const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-            renderAiSupplement(aiSupplementEl, result.answer, seconds, result.model);
+            pushRuntimeResponse({
+              answer: result.answer,
+              model: result.model,
+              seconds,
+              arrivedAt: result.arrivedAt || Date.now()
+            });
             try {
               localStorage.setItem(
                 supplementKey,
