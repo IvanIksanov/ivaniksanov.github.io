@@ -1451,6 +1451,16 @@ html[data-theme="dark"] .answer-links .answer-link.read-link:hover {
   background: #ffb347;
   color: #2a1a05;
 }
+.auth-modal.compact-auth .auth-sync-btn,
+.auth-modal.compact-auth .auth-send-btn {
+  transition: opacity 180ms ease, visibility 180ms ease;
+}
+.auth-modal.compact-auth.auth-profile-pending .auth-sync-btn,
+.auth-modal.compact-auth.auth-profile-pending .auth-send-btn {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 
 html[data-theme="dark"] .api-key-card {
   background: rgba(26, 26, 26, 0.9);

@@ -1877,13 +1877,19 @@ category: 'AQA JS',
         if (authOAuthRow) authOAuthRow.style.display = "";
         if (authEmailToggle) authEmailToggle.style.display = "none";
         authEmailInput.style.display = "none";
+        syncProfileUiFromState();
+        const hasResolvedProfileLabel = !!profileLabel(authProfile);
+        const titleShowsProgressPlaceholder = !!authTitle && authTitle.textContent === "Сохранение прогресса";
+        const canShowAuthorizedActions = hasResolvedProfileLabel && !titleShowsProgressPlaceholder;
+        authModal.classList.toggle("auth-profile-pending", !canShowAuthorizedActions);
         if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
         authSendBtn.textContent = "Выйти";
         authSendBtn.disabled = false;
         authSendBtn.style.display = "";
-        syncProfileUiFromState();
+        authCloseBtn.textContent = "Закрыть";
         return;
       }
+      authModal.classList.remove("auth-profile-pending");
       if (authTitle) authTitle.textContent = "Сохранение прогресса";
       if (authDescription) authDescription.style.display = "";
       if (authLevelWrap) authLevelWrap.style.display = "";
@@ -1968,6 +1974,7 @@ category: 'AQA JS',
     }
     authModalAiGateActive = false;
     setAuthCheckingState(false);
+    authModal.classList.remove("auth-profile-pending");
     authModal.classList.remove("show");
     authModal.setAttribute("aria-hidden", "true");
     setAuthStatus("");
@@ -2048,7 +2055,7 @@ category: 'AQA JS',
   async function refreshAuthUserInBackground(options = {}) {
     const { force = false } = options;
     if (!isCloudReady()) return null;
-    if (!force && isAuthSessionCheckFresh()) return authUser;
+    if (!force && isAuthSessionCheckFresh() && authUser) return authUser;
     if (document.visibilityState === "hidden" && !force) return authUser;
     return refreshAuthUser();
   }
@@ -2863,7 +2870,7 @@ category: 'AQA JS',
 
   if (authOpenBtn) {
     authOpenBtn.addEventListener("click", async () => {
-      if (!isAuthSessionCheckFresh()) {
+      if (!authUser || !isAuthSessionCheckFresh()) {
         refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed", e));
       }
       showAuthModal("");
@@ -3000,6 +3007,17 @@ category: 'AQA JS',
 
   if (authSyncBtn) {
     authSyncBtn.addEventListener("click", async () => {
+      if (!authUser) {
+        setAuthStatus("Сначала войдите");
+        return;
+      }
+      if (!profileLabel(authProfile)) {
+        setAuthStatus("Загружаю профиль...");
+        refreshAuthUserInBackground({ force: true }).catch((e) => {
+          console.warn("Auth profile refresh for sync failed", e);
+        });
+        return;
+      }
       const session = await getActiveSession();
       if (!session?.access_token) {
         authUser = null;
@@ -3059,9 +3077,16 @@ category: 'AQA JS',
   }
 
   if (isCloudReady() && supabaseStore.client?.auth?.onAuthStateChange) {
-    supabaseStore.client.auth.onAuthStateChange(async (_event, session) => {
+    supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
       authUser = session?.user || null;
-      setAuthSessionCheckedNow();
+      if (authUser) {
+        setAuthSessionCheckedNow();
+      } else if (event === "INITIAL_SESSION") {
+        // Don't cache a potentially transient "logged out" state on page reload.
+        authLastSessionCheckTs = 0;
+      } else {
+        setAuthSessionCheckedNow();
+      }
       if (authUser) {
         allowGuestAiRequests = false;
         authModalAiGateActive = false;
@@ -3079,6 +3104,21 @@ category: 'AQA JS',
 
   initializeCloudState().catch((e) => {
     console.warn("Cloud state init skipped", e);
+  });
+  // Supabase session restoration may lag on hard reload; retry a few times quickly.
+  [600, 1800, 4000].forEach((delay) => {
+    setTimeout(async () => {
+      if (authUser) return;
+      try {
+        const user = await refreshAuthUserInBackground({ force: true });
+        if (user) {
+          await syncLocalAndCloudState({ force: true, source: "auth" });
+          await flushPendingMutations();
+        }
+      } catch (e) {
+        console.warn("Startup auth retry failed", e);
+      }
+    }, delay);
   });
   setInterval(() => {
     refreshAuthUserInBackground().catch((e) => console.warn("Periodic auth refresh failed", e));
