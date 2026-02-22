@@ -352,6 +352,9 @@ b:hover {
   margin-right: 4px;
   align-self: center;
   grid-area: theme;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 header.welcome { justify-self: start; }
@@ -494,6 +497,48 @@ header.welcome { justify-self: start; }
 }
 .toggleButton_gllP:hover {
   background: transparent;
+}
+
+.theme-switcher .auth-open-btn {
+  border: var(--header-glass-border, 1px solid rgba(0, 0, 0, 0.05));
+  background: var(--header-glass-bg, rgba(255, 255, 255, 0.22));
+  backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
+  -webkit-backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
+  box-shadow: var(--header-glass-shadow, 0 10px 24px rgba(0, 0, 0, 0.08));
+  border-radius: 999px;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 0;
+  opacity: 0.9;
+  margin-right: 4px;
+  color: #1A1A1A;
+}
+
+.theme-switcher .auth-open-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.theme-switcher .auth-open-btn:hover {
+  background: transparent;
+  color: #FFA001;
+}
+
+html[data-theme="dark"] .theme-switcher .auth-open-btn {
+  color: #F1F1F1;
+}
+
+@media (max-width: 600px) {
+  .theme-switcher .auth-open-btn {
+    width: 1.9rem;
+    height: 1.9rem;
+    margin-right: 2px;
+  }
+  .theme-switcher .auth-open-btn svg {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 /* Иконки */

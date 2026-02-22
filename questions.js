@@ -1,4 +1,12 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+  const SCROLL_POS_KEY = "questions_scroll_y_v1";
+  const savedScrollY = Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
+  window.addEventListener("scroll", () => {
+    sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
+  }, { passive: true });
+  window.addEventListener("beforeunload", () => {
+    sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
+  });
 
 const systemPrompt =
   "You are an AI assistant for interview preparation in the IT field, specializing in roles such as Test Engineer, QA, AQA, and Test Automation. " +
@@ -9,6 +17,14 @@ const systemPrompt =
   "Суммарный объем ответа должен укладываться в лимит 1000 токенов. " +
   "Не используй таблицы, графики, диаграммы и лишнее оформление в ответе. " +
   "Do not use markdown, asterisks, or other formatting characters—deliver plain text responses.";
+
+const refineSystemPrompt =
+  "Ты ИИ-помощник для подготовки к собеседованию QA/тестировщика. " +
+  "Отвечай на русском языке, кратко и по делу, с фокусом на выделенном фрагменте и уточняющем вопросе пользователя. " +
+  "Используй переданный контекст вопроса и предыдущего ответа, не игнорируй его. " +
+  "Дай более детальное пояснение, практичный пример и возможные ошибки/риски в рамках темы. " +
+  "Без таблиц, графиков, диаграмм и лишнего оформления. " +
+  "Ответ в пределах 1000 токенов.";
 
       // 2) Ваш полный массив вопросов-ответов:
      const data = [
@@ -559,7 +575,7 @@ const systemPrompt =
               answer: 'Postman. Insomnia. SoapUI. Tricentis Tosca. Apigee. Jmeter.'
             },
             {
-              id: 'accordion_theory_q23',
+              id: 'accordion_api_q23',
               title: 'Что такое идемпотентность запросов?',
               answer: 'Идемпотентность HTTP-метода — это свойство, при котором повтор одного и того же запроса даёт то же серверное состояние, что и единичный вызов. <br><br>Идемпотентные методы: <br>GET - Чтение ресурса. Повторять можно; не должен менять состояние (логи не в счёт).<br>HEAD - Как GET, но только заголовки.<br>PUT - Полная запись ресурса по известному URI. Повторный такой же PUT оставит ресурс тем же. Подходит для upsert по фиксированному идентификатору. <br>DELETE - Удаление ресурса. Повторный DELETE может дать 404, но состояние сервера одинаковое. <br>OPTIONS - Узнать, что поддерживает сервер/ресурс. <br>TRACE - Диагностика запроса (редко используется).',
               moreLink: 'https://www.securitylab.ru/analytics/563109.php'
@@ -1334,7 +1350,10 @@ category: 'AQA JS',
         ]
         }
       ];
-      window.questionsData = data; // делаем массив доступным глобально
+      const localQuestionsData = data;
+      let runtimeQuestionsData = [];
+      window.questionsDataLocal = localQuestionsData; // локальный источник для диагностики
+      window.questionsData = runtimeQuestionsData; // активный источник для рендера
 
 
   const IO_API_BASE = "https://api.intelligence.io.solutions/api/v1";
@@ -1345,6 +1364,8 @@ category: 'AQA JS',
     return p1 + p2 + p3;
   })();
   const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
+  const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
+  const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
   const FAST_MODEL_HINTS = [
     "openai/gpt-oss-20b",
@@ -1360,7 +1381,10 @@ category: 'AQA JS',
   const MODEL_WARMUP_KEY = "model_warmup_ts_v1";
   const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
   const MODEL_LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+  const QUESTIONS_CACHE_KEY = "questions_db_cache_v1";
+  const QUESTIONS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
   const AI_SUPPLEMENT_META_KEY = "ai_supplement_meta_v1";
+  const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
   const AI_SUPPLEMENT_MAX = 4;
   let modelListFromCache = false;
   let pendingRetry = null;
@@ -1375,6 +1399,36 @@ category: 'AQA JS',
   const apiKeyInput    = document.getElementById("api-key-input");
   const apiKeySave     = document.getElementById("api-key-save");
   const apiKeyClose    = document.getElementById("api-key-close");
+  const authOpenBtn    = document.getElementById("auth-open-btn");
+  const authModal      = document.getElementById("auth-modal");
+  const authCard       = authModal?.querySelector(".auth-card");
+  const authTitle      = document.getElementById("auth-title");
+  const authDescription = document.getElementById("auth-description");
+  const authLevelWrap  = document.getElementById("auth-level-wrap");
+  const authTrackSelect = document.getElementById("auth-track-select");
+  const authGradeSelect = document.getElementById("auth-grade-select");
+  const authOAuthRow    = document.getElementById("auth-oauth-row");
+  const authGoogleBtn   = document.getElementById("auth-google-btn");
+  const authEmailToggle = document.getElementById("auth-email-toggle");
+  const authEmailInput = document.getElementById("auth-email-input");
+  const authSyncBtn    = document.getElementById("auth-sync-btn");
+  const authSendBtn    = document.getElementById("auth-send-btn");
+  const authCloseBtn   = document.getElementById("auth-close-btn");
+  const authStatus     = document.getElementById("auth-status");
+  const supabaseStore  = window.AppSupabase || null;
+  let authUser = null;
+  let authProfile = null;
+  let authEmailLoginExpanded = false;
+  const AUTH_PENDING_PROFILE_KEY = "auth_pending_profile_v1";
+  const CLOUD_SYNC_TS_KEY = "cloud_sync_ts_v1";
+  const PENDING_MUTATIONS_KEY = "cloud_pending_mutations_v1";
+  const CLOUD_SYNC_TTL_MS = 60 * 1000;
+  const CLOUD_OP_TIMEOUT_MS = 10000;
+  const REST_TIMEOUT_MS = 7000;
+  const cloudProgressByQuestion = new Map();
+  const cloudAnswersByQuestion = new Map();
+  const aiItemState = new Map();
+  let cloudSyncPromise = null;
 
   function readModelListCache() {
     try {
@@ -1387,6 +1441,28 @@ category: 'AQA JS',
     } catch {
       return null;
     }
+  }
+
+  function readQuestionsCache() {
+    try {
+      const raw = localStorage.getItem(QUESTIONS_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.data) || !parsed.ts) return null;
+      if ((Date.now() - parsed.ts) > QUESTIONS_CACHE_TTL_MS) return null;
+      return parsed.data;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeQuestionsCache(data) {
+    try {
+      safeSetItemWithAiEviction(QUESTIONS_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        data
+      }));
+    } catch {}
   }
 
   function writeModelListCache(models) {
@@ -1505,6 +1581,997 @@ category: 'AQA JS',
     apiKeyModal.setAttribute("aria-hidden", "true");
   }
 
+  function isCloudReady() {
+    return !!(supabaseStore && supabaseStore.client);
+  }
+
+  function setAuthStatus(message) {
+    if (authStatus) authStatus.textContent = message || "";
+  }
+
+  function readPendingProfile() {
+    try {
+      return JSON.parse(localStorage.getItem(AUTH_PENDING_PROFILE_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writePendingProfile(profile) {
+    try {
+      localStorage.setItem(AUTH_PENDING_PROFILE_KEY, JSON.stringify(profile));
+    } catch {}
+  }
+
+  function clearPendingProfile() {
+    try {
+      localStorage.removeItem(AUTH_PENDING_PROFILE_KEY);
+    } catch {}
+  }
+
+  function profileLabel(profile) {
+    if (!profile?.track || !profile?.grade) return "";
+    return `${profile.track} (${profile.grade})`;
+  }
+
+  function setEmailLoginExpanded(next) {
+    authEmailLoginExpanded = !!next;
+    if (authModal) authModal.classList.toggle("auth-email-expanded", authEmailLoginExpanded);
+    if (authEmailToggle) authEmailToggle.setAttribute("aria-expanded", authEmailLoginExpanded ? "true" : "false");
+  }
+
+  function syncProfileUiFromState() {
+    if (authTrackSelect && authProfile?.track) authTrackSelect.value = authProfile.track;
+    if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
+    if (!authTitle) return;
+    const label = profileLabel(authProfile);
+    authTitle.textContent = label || "Сохранение прогресса";
+  }
+
+  async function applyPendingProfileToCloud() {
+    if (!authUser || !supabaseStore?.upsertUserProfile) return false;
+    const pending = readPendingProfile();
+    if (!pending?.track || !pending?.grade) return false;
+    const payload = {
+      user_id: authUser.id,
+      email: authUser.email || pending.email || null,
+      track: pending.track,
+      grade: pending.grade,
+      updated_at: new Date().toISOString()
+    };
+    const { data: saved, error } = await supabaseStore.upsertUserProfile(payload);
+    if (error) {
+      console.warn("Failed to upsert pending user profile", error);
+      return false;
+    }
+    authProfile = saved || payload;
+    clearPendingProfile();
+    syncProfileUiFromState();
+    return true;
+  }
+
+  function applyAuthModalMode() {
+    if (!authModal || !authEmailInput || !authSendBtn || !authCloseBtn) return;
+    if (authModal.classList.contains("auth-checking")) return;
+    const isAuthorized = !!authUser;
+    const compactAuthorized = isAuthorized;
+    authModal.classList.toggle("compact-auth", compactAuthorized);
+    if (compactAuthorized) {
+      if (authDescription) authDescription.style.display = "none";
+      if (authLevelWrap) authLevelWrap.style.display = "none";
+      if (authOAuthRow) authOAuthRow.style.display = "none";
+      if (authEmailToggle) authEmailToggle.style.display = "none";
+      authEmailInput.style.display = "none";
+      if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
+      authSendBtn.textContent = "Выйти";
+      authSendBtn.disabled = false;
+      authSendBtn.style.display = "";
+      syncProfileUiFromState();
+      return;
+    }
+    if (authTitle) authTitle.textContent = "Сохранение прогресса";
+    if (authDescription) authDescription.style.display = "";
+    if (authLevelWrap) authLevelWrap.style.display = "";
+    if (authOAuthRow) authOAuthRow.style.display = "";
+    if (authEmailToggle) authEmailToggle.style.display = "";
+    authEmailInput.style.display = authEmailLoginExpanded ? "" : "none";
+    if (authSyncBtn) authSyncBtn.style.display = "none";
+    authSendBtn.textContent = "Получить ссылку";
+    authSendBtn.style.display = authEmailLoginExpanded ? "" : "none";
+    authCloseBtn.textContent = "Закрыть";
+  }
+
+  function updateAuthButtonLabel() {
+    if (!authOpenBtn) return;
+    if (authUser?.email) {
+      authOpenBtn.title = `Синхронизация: ${authUser.email}`;
+      authOpenBtn.classList.add("is-auth");
+      return;
+    }
+    authOpenBtn.title = "Войти и сохранить прогресс";
+    authOpenBtn.classList.remove("is-auth");
+  }
+
+  function positionAuthModal() {
+    if (!authModal || !authCard || !authOpenBtn) return;
+    const trigger = authOpenBtn.getBoundingClientRect();
+    const isMobile = window.innerWidth <= 600;
+    const approxW = isMobile
+      ? Math.min(268, Math.floor(window.innerWidth * 0.82))
+      : Math.min(330, Math.floor(window.innerWidth * 0.8));
+    const measuredW = authCard.offsetWidth || approxW;
+    let left = Math.min(
+      Math.max(8, trigger.right - measuredW),
+      window.innerWidth - measuredW - 8
+    );
+    let top = trigger.bottom + 8;
+    authCard.style.right = "auto";
+    authCard.style.left = `${Math.max(8, left)}px`;
+    authCard.style.top = `${Math.max(8, top)}px`;
+    requestAnimationFrame(() => {
+      const rect = authCard.getBoundingClientRect();
+      if (isMobile) {
+        left = Math.max(8, window.innerWidth - rect.width - 8);
+      }
+      if (rect.right > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - rect.width - 8);
+      }
+      if (rect.left < 8) left = 8;
+      if (rect.bottom > window.innerHeight - 8) {
+        top = Math.max(8, window.innerHeight - rect.height - 8);
+      }
+      authCard.style.left = `${left}px`;
+      authCard.style.top = `${top}px`;
+      authCard.style.right = "auto";
+    });
+  }
+
+  function showAuthModal(prefillMessage) {
+    if (!authModal) return;
+    setEmailLoginExpanded(false);
+    if (!authUser) {
+      const pending = readPendingProfile();
+      if (authTrackSelect && pending?.track) authTrackSelect.value = pending.track;
+      if (authGradeSelect && pending?.grade) authGradeSelect.value = pending.grade;
+    }
+    applyAuthModalMode();
+    authModal.classList.add("show");
+    authModal.setAttribute("aria-hidden", "false");
+    positionAuthModal();
+    setAuthStatus(prefillMessage || "");
+    if (authEmailInput && authEmailLoginExpanded && authEmailInput.style.display !== "none") {
+      authEmailInput.focus();
+    }
+  }
+
+  function hideAuthModal() {
+    if (!authModal) return;
+    authModal.classList.remove("show");
+    authModal.setAttribute("aria-hidden", "true");
+    setAuthStatus("");
+  }
+
+  function getCleanRedirectUrl() {
+    return `${window.location.origin}${window.location.pathname}`;
+  }
+
+  async function getActiveSession() {
+    if (!isCloudReady()) return null;
+    try {
+      if (supabaseStore?.getSession) {
+        const session = await withTimeout(supabaseStore.getSession(), 3000, "get session");
+        if (session?.access_token) return session;
+      }
+      const fallback = await withTimeout(
+        supabaseStore.client?.auth?.getSession?.() || Promise.resolve({ data: { session: null } }),
+        3000,
+        "get session fallback"
+      );
+      return fallback?.data?.session || null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function refreshAuthUser() {
+    if (!isCloudReady()) return null;
+    try {
+      const session = await getActiveSession();
+      if (!session?.access_token) {
+        authUser = null;
+        authProfile = null;
+        updateAuthButtonLabel();
+        return null;
+      }
+      authUser = await supabaseStore.getUser();
+      if (authUser) {
+        const { data } = await supabaseStore.getUserProfile(authUser.id);
+        authProfile = data || null;
+        await applyPendingProfileToCloud();
+        syncProfileUiFromState();
+      } else {
+        authProfile = null;
+      }
+      updateAuthButtonLabel();
+      return authUser;
+    } catch (e) {
+      console.warn("Supabase auth init failed", e);
+      authUser = null;
+      authProfile = null;
+      updateAuthButtonLabel();
+      return null;
+    }
+  }
+
+  async function loadCloudProgress() {
+    cloudProgressByQuestion.clear();
+    if (!isCloudReady() || !authUser) return;
+    try {
+      const data = await restRequest("question_progress", {
+        method: "GET",
+        query: `select=user_id,question_id,status,updated_at&user_id=eq.${encodeURIComponent(authUser.id)}`
+      });
+      (data || []).forEach(row => {
+        if (row?.question_id && row?.status) {
+          cloudProgressByQuestion.set(row.question_id, row.status);
+        }
+      });
+    } catch (e) {
+      console.warn("Failed to load question progress from Supabase", e);
+    }
+  }
+
+  async function loadCloudAnswers() {
+    cloudAnswersByQuestion.clear();
+    if (!isCloudReady() || !authUser) return;
+    try {
+      const data = await restRequest("ai_answers", {
+        method: "GET",
+        query: `select=id,question_id,answer_type,model,seconds,content,created_at&user_id=eq.${encodeURIComponent(authUser.id)}&order=created_at.asc`
+      });
+      (data || []).forEach(row => {
+        if (!row?.question_id || !row?.content) return;
+        const list = cloudAnswersByQuestion.get(row.question_id) || [];
+        list.push({
+          cloudId: row.id || null,
+          answer: row.content,
+          model: row.model || "",
+          seconds: row.seconds || 0,
+          arrivedAt: row.created_at ? Date.parse(row.created_at) || Date.now() : Date.now(),
+          answerType: row.answer_type || "append"
+        });
+        cloudAnswersByQuestion.set(row.question_id, list);
+      });
+    } catch (e) {
+      console.warn("Failed to load AI answers from Supabase", e);
+    }
+  }
+
+  async function initializeCloudState() {
+    await refreshAuthUser();
+    if (!authUser) return;
+    await syncLocalAndCloudState({ force: false, source: "init" });
+  }
+
+  function getCloudSyncLastTs() {
+    return Number(localStorage.getItem(CLOUD_SYNC_TS_KEY) || 0);
+  }
+
+  function readPendingMutations() {
+    try {
+      const raw = localStorage.getItem(PENDING_MUTATIONS_KEY);
+      const arr = JSON.parse(raw || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function writePendingMutations(mutations) {
+    try {
+      localStorage.setItem(PENDING_MUTATIONS_KEY, JSON.stringify(mutations.slice(-200)));
+    } catch (e) {
+      console.warn("Failed to persist pending mutations", e);
+    }
+  }
+
+  function mutationKey(type, payload) {
+    if (type === "saveProgress") return `${type}:${payload?.questionId}:${payload?.status}`;
+    if (type === "saveAiAnswer") {
+      const r = payload?.response || {};
+      return `${type}:${payload?.questionId}:${payload?.answerType || r.answerType || "append"}:${r.model || ""}:${String(r.answer || "").slice(0, 200)}`;
+    }
+    if (type === "deleteAiById") return `${type}:${payload?.answerId}`;
+    if (type === "deleteAiByPayload") {
+      const r = payload?.response || {};
+      return `${type}:${payload?.questionId}:${r.answerType || "append"}:${r.model || ""}:${String(r.answer || "").slice(0, 200)}`;
+    }
+    return `${type}:${Date.now()}`;
+  }
+
+  function enqueueMutation(type, payload) {
+    const mutations = readPendingMutations();
+    const key = mutationKey(type, payload);
+    const existingIdx = mutations.findIndex(m => m && m.key === key);
+    if (existingIdx >= 0) {
+      mutations[existingIdx] = {
+        ...mutations[existingIdx],
+        payload,
+        ts: Date.now()
+      };
+    } else {
+      mutations.push({
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        key,
+        type,
+        payload,
+        ts: Date.now(),
+        attempts: 0,
+        nextTs: Date.now()
+      });
+    }
+    writePendingMutations(mutations);
+  }
+
+  function prunePendingSaveForResponse(questionId, response) {
+    if (!questionId || !response?.answer) return;
+    const targetType = response.answerType || "append";
+    const targetModel = response.model || "";
+    const targetAnswer = String(response.answer || "").trim();
+    const mutations = readPendingMutations();
+    const next = mutations.filter((m) => {
+      if (!m || m.type !== "saveAiAnswer") return true;
+      const p = m.payload || {};
+      const r = p.response || {};
+      if (p.questionId !== questionId) return true;
+      const t = p.answerType || r.answerType || "append";
+      const model = r.model || "";
+      const answer = String(r.answer || "").trim();
+      return !(t === targetType && model === targetModel && answer === targetAnswer);
+    });
+    if (next.length !== mutations.length) {
+      writePendingMutations(next);
+      console.info("Pruned pending save mutations for deleted response", {
+        questionId,
+        removed: mutations.length - next.length
+      });
+    }
+  }
+
+  function withTimeout(promise, ms, label) {
+    return Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timeout`)), ms))
+    ]);
+  }
+
+  function markCloudSyncTs() {
+    try { localStorage.setItem(CLOUD_SYNC_TS_KEY, String(Date.now())); } catch {}
+  }
+
+  async function ensureAuthContext() {
+    if (!isCloudReady()) return false;
+    const session = await getActiveSession();
+    if (session?.access_token && authUser?.id) return true;
+    try {
+      authUser = session?.user || null;
+      if (!authUser && supabaseStore?.getUser) {
+        authUser = await supabaseStore.getUser();
+      }
+      if (authUser) {
+        await refreshAuthUser();
+        return true;
+      }
+    } catch (e) {
+      console.warn("ensureAuthContext failed", e);
+    }
+    return false;
+  }
+
+  function buildRestUrl(path, query = "") {
+    const base = supabaseStore?.url || SUPABASE_URL_DIRECT;
+    const q = query ? (query.startsWith("?") ? query : `?${query}`) : "";
+    return `${base}/rest/v1/${path}${q}`;
+  }
+
+  async function restRequest(path, { method = "GET", query = "", body = null, prefer = "return=representation" } = {}) {
+    const key = supabaseStore?.anonKey || SUPABASE_ANON_KEY_DIRECT;
+    const session = await getActiveSession();
+    const accessToken = session?.access_token || null;
+    if (!accessToken) {
+      throw new Error(`AUTH_SESSION_MISSING for ${method} ${path}`);
+    }
+    const headers = {
+      apikey: key,
+      Authorization: `Bearer ${accessToken}`
+    };
+    if (prefer) headers.Prefer = prefer;
+    if (body !== null) headers["Content-Type"] = "application/json";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
+    let res;
+    try {
+      res = await fetch(buildRestUrl(path, query), {
+        method,
+        headers,
+        body: body !== null ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+        signal: controller.signal
+      });
+    } catch (e) {
+      if (e?.name === "AbortError") {
+        throw new Error(`${method} ${path} timeout`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+    const raw = await res.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+    if (!res.ok) {
+      throw new Error(`${method} ${path} failed: ${res.status} ${typeof data === "string" ? data : JSON.stringify(data)}`);
+    }
+    return data;
+  }
+
+  function getLocalProgressRows() {
+    const rows = [];
+    const dedupe = new Map();
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i) || "";
+      if (!key.startsWith("studied_") && !key.startsWith("unclear_")) continue;
+      const status = key.startsWith("studied_") ? "studied" : "unclear";
+      let arr = [];
+      try { arr = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+      if (!Array.isArray(arr)) continue;
+      arr.forEach((questionId) => {
+        if (!questionId) return;
+        dedupe.set(String(questionId), status);
+      });
+    }
+    dedupe.forEach((status, questionId) => {
+      rows.push({
+        user_id: authUser.id,
+        question_id: questionId,
+        status,
+        updated_at: new Date().toISOString()
+      });
+    });
+    return rows;
+  }
+
+  function aiSignature(questionId, answerType, model, content) {
+    return `${questionId}::${answerType || "append"}::${model || ""}::${String(content || "").trim()}`;
+  }
+
+  function readLocalAiResponses(questionId) {
+    if (!questionId) return [];
+    try {
+      const raw = localStorage.getItem(`${AI_RESPONSES_LOCAL_PREFIX}${questionId}`);
+      const arr = JSON.parse(raw || "[]");
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeLocalAiResponses(questionId, responses) {
+    if (!questionId) return;
+    try {
+      const normalized = (Array.isArray(responses) ? responses : [])
+        .filter(x => x && x.answer)
+        .slice(-10)
+        .map(x => ({
+          answer: x.answer,
+          model: x.model || "",
+          seconds: x.seconds || 0,
+          arrivedAt: x.arrivedAt || Date.now(),
+          answerType: x.answerType || "append",
+          cloudId: x.cloudId || null
+        }));
+      if (!normalized.length) {
+        localStorage.removeItem(`${AI_RESPONSES_LOCAL_PREFIX}${questionId}`);
+        return;
+      }
+      safeSetItemWithAiEviction(
+        `${AI_RESPONSES_LOCAL_PREFIX}${questionId}`,
+        JSON.stringify(normalized)
+      );
+    } catch (e) {
+      console.warn("Failed to write local AI responses", e);
+    }
+  }
+
+  function getLocalAiRows(existingSignatures) {
+    const rows = [];
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i) || "";
+      if (!key.startsWith(AI_RESPONSES_LOCAL_PREFIX)) continue;
+      const questionId = key.slice(AI_RESPONSES_LOCAL_PREFIX.length);
+      if (!questionId) continue;
+      let arr = [];
+      try { arr = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
+      if (!Array.isArray(arr)) continue;
+      arr.forEach((entry) => {
+        const content = String(entry?.answer || "").trim();
+        if (!content) return;
+        const answerType = entry?.answerType || "append";
+        const model = entry?.model || null;
+        const seconds = Number(entry?.seconds) || null;
+        const signature = aiSignature(questionId, answerType, model, content);
+        if (existingSignatures.has(signature)) return;
+        existingSignatures.add(signature);
+        rows.push({
+          user_id: authUser.id,
+          question_id: questionId,
+          answer_type: answerType,
+          model,
+          seconds,
+          content
+        });
+      });
+    }
+
+    // legacy fallback: single supplement entry
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i) || "";
+      if (!key.startsWith("ai_supplement_")) continue;
+      const questionId = key.slice("ai_supplement_".length);
+      if (!questionId) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      let content = "";
+      let model = null;
+      let seconds = null;
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          content = String(parsed.text || "").trim();
+          model = parsed.model || null;
+          seconds = Number(parsed.seconds) || null;
+        } else {
+          content = String(parsed || "").trim();
+        }
+      } catch {
+        content = String(raw || "").trim();
+      }
+      if (!content) continue;
+      const signature = aiSignature(questionId, "append", model, content);
+      if (existingSignatures.has(signature)) continue;
+      existingSignatures.add(signature);
+      rows.push({
+        user_id: authUser.id,
+        question_id: questionId,
+        answer_type: "append",
+        model,
+        seconds,
+        content
+      });
+    }
+    return rows;
+  }
+
+  function applyCloudStateToUi() {
+    runtimeQuestionsData.forEach((cat) => {
+      const studiedKey = `studied_${cat.category}`;
+      const unclearKey = `unclear_${cat.category}`;
+      const studiedArr = JSON.parse(localStorage.getItem(studiedKey) || "[]");
+      const unclearArr = JSON.parse(localStorage.getItem(unclearKey) || "[]");
+      cat.items.forEach((item) => {
+        const cloudStatus = cloudProgressByQuestion.get(item.id);
+        if (cloudStatus === "studied") {
+          if (!studiedArr.includes(item.id)) studiedArr.push(item.id);
+          const idx = unclearArr.indexOf(item.id);
+          if (idx >= 0) unclearArr.splice(idx, 1);
+        } else if (cloudStatus === "unclear") {
+          if (!unclearArr.includes(item.id)) unclearArr.push(item.id);
+          const idx = studiedArr.indexOf(item.id);
+          if (idx >= 0) studiedArr.splice(idx, 1);
+        }
+        const actionBtn = document.querySelector(`.study-btn[data-id="${item.id}"]`);
+        const header = actionBtn?.closest(".t-item")?.querySelector(".t849__header");
+        if (header) {
+          header.classList.remove("studied", "unclear");
+          if (cloudStatus === "studied") header.classList.add("studied");
+          if (cloudStatus === "unclear") header.classList.add("unclear");
+        }
+      });
+      safeSetItemWithAiEviction(studiedKey, JSON.stringify(studiedArr));
+      safeSetItemWithAiEviction(unclearKey, JSON.stringify(unclearArr));
+      updateProgress(cat.category, studiedArr.length, unclearArr.length, cat.items.length);
+    });
+
+    cloudAnswersByQuestion.forEach((rows, questionId) => {
+      const state = aiItemState.get(questionId);
+      if (!state || !Array.isArray(rows) || !rows.length) return;
+      const existed = new Set(
+        state.runtimeResponses.map((x) => aiSignature(questionId, x.answerType, x.model, x.answer))
+      );
+      rows.forEach((resp) => {
+        const signature = aiSignature(questionId, resp.answerType, resp.model, resp.answer);
+        if (existed.has(signature)) return;
+        existed.add(signature);
+        state.runtimeResponses.push(resp);
+      });
+      state.runtimeResponses.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
+      if (state.runtimeResponses.length && typeof state.renderCurrentRuntimeResponse === "function") {
+        state.renderCurrentRuntimeResponse();
+      }
+    });
+  }
+
+  async function syncLocalAndCloudState(options = {}) {
+    const { force = false, source = "auto" } = options;
+    if (!isCloudReady() || !authUser) return { ok: false };
+    const now = Date.now();
+    if (!force && cloudSyncPromise) return cloudSyncPromise;
+    if (!force && (now - getCloudSyncLastTs()) < CLOUD_SYNC_TTL_MS) {
+      return { ok: true, skipped: true };
+    }
+    cloudSyncPromise = (async () => {
+      try {
+        if (source === "manual") setAuthStatus("Синхронизация...");
+        await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "initial cloud load");
+
+        const localProgressRows = getLocalProgressRows();
+        if (localProgressRows.length) {
+          if (supabaseStore.upsertQuestionProgressBulk) {
+            const { error } = await withTimeout(
+              supabaseStore.upsertQuestionProgressBulk(localProgressRows),
+              CLOUD_OP_TIMEOUT_MS,
+              "progress bulk upsert"
+            );
+            if (error) {
+              console.warn("Bulk progress sync failed, fallback to row upsert", error);
+              await Promise.all(localProgressRows.map((r) => saveProgressCloud(r.question_id, r.status)));
+            }
+          } else {
+            await Promise.all(localProgressRows.map((r) => saveProgressCloud(r.question_id, r.status)));
+          }
+        }
+
+        const cloudSignatures = new Set();
+        cloudAnswersByQuestion.forEach((list, questionId) => {
+          (list || []).forEach((resp) => {
+            cloudSignatures.add(aiSignature(questionId, resp.answerType, resp.model, resp.answer));
+          });
+        });
+        const localAiRows = getLocalAiRows(cloudSignatures);
+        if (localAiRows.length) {
+          if (supabaseStore.saveAiAnswersBulk) {
+            const { error } = await withTimeout(
+              supabaseStore.saveAiAnswersBulk(localAiRows),
+              CLOUD_OP_TIMEOUT_MS,
+              "ai answers bulk insert"
+            );
+            if (error) {
+              console.warn("Bulk AI answers sync failed", error);
+            }
+          } else {
+            await Promise.all(localAiRows.map((row) =>
+              saveAiAnswerCloud(row.question_id, row.answer_type, {
+                answer: row.content,
+                model: row.model,
+                seconds: row.seconds
+              })
+            ));
+          }
+        }
+
+        if (localProgressRows.length || localAiRows.length || force) {
+          await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "final cloud reload");
+        }
+        applyCloudStateToUi();
+        markCloudSyncTs();
+        if (source === "manual") {
+          setAuthStatus("Синхронизировано");
+          setTimeout(() => {
+            if ((authStatus?.textContent || "").includes("Синхронизировано")) setAuthStatus("");
+          }, 1800);
+        }
+        await flushPendingMutations();
+        return { ok: true };
+      } catch (e) {
+        if (source === "manual") {
+          const msg = String(e?.message || "");
+          if (msg.includes("timeout")) {
+            setAuthStatus("Синхронизация: таймаут. Повторите.");
+          } else {
+            setAuthStatus("Синхронизация не удалась. Проверьте RLS.");
+          }
+        }
+        console.warn("Cloud sync failed", e);
+        return { ok: false, error: e };
+      } finally {
+        cloudSyncPromise = null;
+      }
+    })();
+    return cloudSyncPromise;
+  }
+
+  function mapQuestionsPayload(sections, questions) {
+    const grouped = new Map();
+    (questions || []).forEach((q) => {
+      const list = grouped.get(q.section_id) || [];
+      list.push({
+        id: q.id,
+        title: q.title,
+        answer: q.answer_html,
+        moreLink: q.more_link || "",
+        authorCheck: q.author_check || "",
+        avatar: q.avatar || ""
+      });
+      grouped.set(q.section_id, list);
+    });
+    const mapped = (sections || [])
+      .map((s) => ({
+        category: s.title,
+        items: grouped.get(s.id) || []
+      }))
+      .filter((s) => s.items.length);
+    return mapped.length ? mapped : null;
+  }
+
+  async function loadQuestionsFromDbViaRest() {
+    const base = supabaseStore?.url || SUPABASE_URL_DIRECT;
+    const key = supabaseStore?.anonKey || SUPABASE_ANON_KEY_DIRECT;
+    if (!base || !key) return null;
+    const headers = {
+      apikey: key,
+      Authorization: `Bearer ${key}`
+    };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    console.info("Loading questions from Supabase REST...");
+    let sectionsRes;
+    let questionsRes;
+    try {
+      [sectionsRes, questionsRes] = await Promise.all([
+        fetch(`${base}/rest/v1/question_sections?select=id,title,sort_order&order=sort_order.asc`, {
+          headers,
+          mode: "cors",
+          cache: "no-store",
+          signal: controller.signal
+        }),
+        fetch(`${base}/rest/v1/questions?select=id,section_id,title,answer_html,more_link,author_check,avatar,sort_order&order=sort_order.asc`, {
+          headers,
+          mode: "cors",
+          cache: "no-store",
+          signal: controller.signal
+        })
+      ]);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+    if (!sectionsRes.ok || !questionsRes.ok) {
+      throw new Error(`REST load failed: sections=${sectionsRes.status}, questions=${questionsRes.status}`);
+    }
+    const [sections, questions] = await Promise.all([sectionsRes.json(), questionsRes.json()]);
+    const mapped = mapQuestionsPayload(sections, questions);
+    console.info(`Supabase REST loaded: sections=${Array.isArray(sections) ? sections.length : 0}, questions=${Array.isArray(questions) ? questions.length : 0}`);
+    return mapped;
+  }
+
+  async function loadQuestionsFromDbViaSdk() {
+    const [sectionsRes, questionsRes] = await Promise.all([
+      supabaseStore.client
+        .from("question_sections")
+        .select("id,title,sort_order")
+        .order("sort_order", { ascending: true }),
+      supabaseStore.client
+        .from("questions")
+        .select("id,section_id,title,answer_html,more_link,author_check,avatar,sort_order")
+        .order("sort_order", { ascending: true })
+    ]);
+    if (sectionsRes.error) throw sectionsRes.error;
+    if (questionsRes.error) throw questionsRes.error;
+    return mapQuestionsPayload(sectionsRes.data || [], questionsRes.data || []);
+  }
+
+  async function loadQuestionsFromDb() {
+    try {
+      if (isCloudReady()) {
+        try {
+          const sdkData = await Promise.race([
+            loadQuestionsFromDbViaSdk(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("SDK timeout")), 2500))
+          ]);
+          if (sdkData) return sdkData;
+        } catch (sdkErr) {
+          console.warn("Supabase SDK questions load failed, fallback to REST", sdkErr);
+        }
+      }
+      return await loadQuestionsFromDbViaRest();
+    } catch (e) {
+      console.warn("Failed to load questions from Supabase, fallback to local data", e);
+      return null;
+    }
+  }
+
+  async function loadQuestionsFromDbWithTimeout() {
+    return loadQuestionsFromDb();
+  }
+
+  async function saveProgressCloud(questionId, status, options = {}) {
+    const { enqueueOnFail = true } = options;
+    const hasAuth = await ensureAuthContext();
+    if (!isCloudReady() || !hasAuth || !questionId) {
+      console.warn("Skip cloud progress save: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
+      if (enqueueOnFail) enqueueMutation("saveProgress", { questionId, status });
+      return;
+    }
+    const payload = {
+      user_id: authUser.id,
+      question_id: questionId,
+      status,
+      updated_at: new Date().toISOString()
+    };
+    try {
+      await withTimeout(
+        restRequest("question_progress", {
+          method: "POST",
+          query: "on_conflict=user_id,question_id",
+          body: payload,
+          prefer: "resolution=merge-duplicates,return=representation"
+        }),
+        CLOUD_OP_TIMEOUT_MS,
+        "save progress"
+      );
+      console.info("Cloud progress saved", { questionId, status });
+    } catch (e) {
+      console.warn("Failed to save question progress to Supabase", e);
+      if (enqueueOnFail) enqueueMutation("saveProgress", { questionId, status });
+    }
+  }
+
+  async function saveAiAnswerCloud(questionId, answerType, response, options = {}) {
+    const { enqueueOnFail = true } = options;
+    const hasAuth = await ensureAuthContext();
+    if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
+      console.warn("Skip cloud AI save: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
+      if (enqueueOnFail && questionId && response?.answer) {
+        enqueueMutation("saveAiAnswer", { questionId, answerType, response });
+      }
+      return null;
+    }
+    const payload = {
+      user_id: authUser.id,
+      question_id: questionId,
+      answer_type: answerType || response.answerType || "append",
+      model: response.model || null,
+      seconds: response.seconds || null,
+      content: response.answer
+    };
+    try {
+      const data = await withTimeout(
+        restRequest("ai_answers", {
+          method: "POST",
+          body: payload,
+          prefer: "return=representation"
+        }),
+        CLOUD_OP_TIMEOUT_MS,
+        "save ai answer"
+      );
+      const row = Array.isArray(data) ? data[0] : data;
+      console.info("Cloud AI answer saved", { questionId, answerType: payload.answer_type, model: payload.model });
+      return row?.id || null;
+    } catch (e) {
+      console.warn("Failed to save AI answer to Supabase", e);
+      if (enqueueOnFail) enqueueMutation("saveAiAnswer", { questionId, answerType, response });
+      return null;
+    }
+  }
+
+  async function deleteAiAnswerCloud(answerId, options = {}) {
+    const { enqueueOnFail = true } = options;
+    const hasAuth = await ensureAuthContext();
+    if (!isCloudReady() || !hasAuth || !answerId) {
+      console.warn("Skip cloud AI delete by id: no auth/cloud", { answerId, hasCloud: isCloudReady(), hasAuth });
+      if (enqueueOnFail && answerId) enqueueMutation("deleteAiById", { answerId });
+      return false;
+    }
+    try {
+      const data = await withTimeout(
+        restRequest("ai_answers", {
+          method: "DELETE",
+          query: `id=eq.${encodeURIComponent(answerId)}&user_id=eq.${encodeURIComponent(authUser.id)}`,
+          prefer: "return=representation"
+        }),
+        CLOUD_OP_TIMEOUT_MS,
+        "delete ai by id"
+      );
+      console.info("Cloud AI answer deleted by id", { answerId });
+      return Array.isArray(data) ? data.length > 0 : true;
+    } catch (e) {
+      console.warn("Failed to delete AI answer from Supabase", e);
+      if (enqueueOnFail) enqueueMutation("deleteAiById", { answerId });
+      return false;
+    }
+  }
+
+  async function deleteAiAnswerCloudByPayload(questionId, response, options = {}) {
+    const { enqueueOnFail = true } = options;
+    const hasAuth = await ensureAuthContext();
+    if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
+      console.warn("Skip cloud AI delete by payload: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
+      if (enqueueOnFail && questionId && response?.answer) enqueueMutation("deleteAiByPayload", { questionId, response });
+      return false;
+    }
+    let query = `user_id=eq.${encodeURIComponent(authUser.id)}&question_id=eq.${encodeURIComponent(questionId)}&content=eq.${encodeURIComponent(response.answer)}&answer_type=eq.${encodeURIComponent(response.answerType || "append")}`;
+    if (response.model) query += `&model=eq.${encodeURIComponent(response.model)}`;
+    try {
+      const data = await withTimeout(
+        restRequest("ai_answers", {
+          method: "DELETE",
+          query,
+          prefer: "return=representation"
+        }),
+        CLOUD_OP_TIMEOUT_MS,
+        "delete ai by payload"
+      );
+      console.info("Cloud AI answer deleted by payload", { questionId });
+      return Array.isArray(data) ? data.length > 0 : true;
+    } catch (e) {
+      console.warn("Failed to delete AI answer by payload from Supabase", e);
+      if (enqueueOnFail) enqueueMutation("deleteAiByPayload", { questionId, response });
+      return false;
+    }
+  }
+
+  async function flushPendingMutations() {
+    if (!isCloudReady() || !authUser) return;
+    const queue = readPendingMutations();
+    if (!queue.length) return;
+    const now = Date.now();
+    const failed = [];
+    for (const m of queue) {
+      if ((m?.nextTs || 0) > now) {
+        failed.push(m);
+        continue;
+      }
+      try {
+        if (m.type === "saveProgress") {
+          await saveProgressCloud(m.payload.questionId, m.payload.status, { enqueueOnFail: false });
+        } else if (m.type === "saveAiAnswer") {
+          const id = await saveAiAnswerCloud(m.payload.questionId, m.payload.answerType, m.payload.response, { enqueueOnFail: false });
+          if (!id) throw new Error("saveAiAnswer retry failed");
+        } else if (m.type === "deleteAiById") {
+          const ok = await deleteAiAnswerCloud(m.payload.answerId, { enqueueOnFail: false });
+          if (!ok) throw new Error("deleteAiById retry failed");
+        } else if (m.type === "deleteAiByPayload") {
+          const ok = await deleteAiAnswerCloudByPayload(m.payload.questionId, m.payload.response, { enqueueOnFail: false });
+          if (!ok) throw new Error("deleteAiByPayload retry failed");
+        }
+      } catch {
+        const attempts = Number(m?.attempts || 0) + 1;
+        const backoffMs = Math.min(120000, 5000 * attempts);
+        failed.push({
+          ...m,
+          attempts,
+          nextTs: Date.now() + backoffMs
+        });
+      }
+    }
+    writePendingMutations(failed);
+    if (!failed.length) {
+      console.info("Pending mutations flushed");
+    } else {
+      console.warn("Pending mutations left", failed.length);
+    }
+  }
+
+  async function ensureAuthForAiAction() {
+    if (!isCloudReady()) {
+      showAuthModal("Supabase не подключен. Перезагрузите страницу.");
+      return false;
+    }
+    const hasAuth = await ensureAuthContext();
+    if (hasAuth) return true;
+    showAuthModal("");
+    return false;
+  }
+
   if (apiKeySave) {
     apiKeySave.addEventListener("click", () => {
       const v = apiKeyInput?.value?.trim();
@@ -1525,6 +2592,234 @@ category: 'AQA JS',
       pendingRetry = null;
       hideApiKeyModal();
     });
+  }
+
+  if (authOpenBtn) {
+    authOpenBtn.addEventListener("click", async () => {
+      showAuthModal("");
+      authModal?.classList.add("auth-checking");
+      setAuthStatus("Проверяю сессию...");
+      try {
+        await refreshAuthUser();
+      } finally {
+        authModal?.classList.remove("auth-checking");
+      }
+      applyAuthModalMode();
+      setAuthStatus("");
+    });
+  }
+
+  if (authSendBtn) {
+    authSendBtn.addEventListener("click", async () => {
+      if (!isCloudReady()) {
+        setAuthStatus("Supabase не подключен.");
+        return;
+      }
+      const isAuthorizedView = !!authUser;
+      if (isAuthorizedView) {
+        try {
+          const session = await getActiveSession();
+          if (!session?.access_token) {
+            authUser = null;
+            authProfile = null;
+            updateAuthButtonLabel();
+            applyAuthModalMode();
+            setAuthStatus("Сессия истекла. Войдите заново.");
+            return;
+          }
+          const signOutFn = supabaseStore.signOut || (supabaseStore.client?.auth?.signOut
+            ? () => supabaseStore.client.auth.signOut()
+            : null);
+          if (!signOutFn) {
+            setAuthStatus("Выход недоступен. Обновите страницу.");
+            return;
+          }
+          const { error } = await signOutFn();
+          if (error) {
+            setAuthStatus("Не удалось выйти. Попробуйте снова.");
+            return;
+          }
+          authUser = null;
+          authProfile = null;
+          updateAuthButtonLabel();
+          hideAuthModal();
+        } catch (e) {
+          console.warn("Sign out failed", e);
+          setAuthStatus("Не удалось выйти. Попробуйте снова.");
+        }
+        return;
+      }
+      await refreshAuthUser();
+      const track = (authTrackSelect?.value || "").trim();
+      const grade = (authGradeSelect?.value || "").trim();
+      if (!track || !grade) {
+        setAuthStatus("Выберите направление и уровень.");
+        return;
+      }
+      const email = (authEmailInput?.value || "").trim();
+      if (!email) {
+        setAuthStatus("Введите email.");
+        return;
+      }
+      writePendingProfile({ email, track, grade, ts: Date.now() });
+      setAuthStatus("Отправляю ссылку для входа...");
+      const redirectTo = getCleanRedirectUrl();
+      const { error } = await supabaseStore.signInWithOtp(email, redirectTo);
+      if (error) {
+        const errCode = String(error.code || "");
+        const errMsg = String(error.message || "").toLowerCase();
+        if (errCode === "over_email_send_rate_limit" || errMsg.includes("email rate limit exceeded")) {
+          setAuthStatus("Лимит писем Supabase исчерпан. Подождите 60 сек и попробуйте снова.");
+          authSendBtn.disabled = true;
+          setTimeout(() => {
+            authSendBtn.disabled = false;
+          }, 60000);
+          return;
+        }
+        setAuthStatus("Не удалось отправить ссылку. Проверьте email и повторите.");
+        return;
+      }
+      setAuthStatus("Ссылка отправлена. Откройте письмо и вернитесь на страницу.");
+    });
+  }
+
+  if (authEmailToggle) {
+    authEmailToggle.addEventListener("click", () => {
+      if (authUser) return;
+      setEmailLoginExpanded(!authEmailLoginExpanded);
+      applyAuthModalMode();
+      positionAuthModal();
+      if (authEmailLoginExpanded && authEmailInput) {
+        requestAnimationFrame(() => authEmailInput.focus());
+      }
+    });
+  }
+
+  if (authGoogleBtn) {
+    authGoogleBtn.addEventListener("click", async () => {
+      if (!isCloudReady()) {
+        setAuthStatus("Supabase не подключен.");
+        return;
+      }
+      const track = (authTrackSelect?.value || "").trim();
+      const grade = (authGradeSelect?.value || "").trim();
+      if (!track || !grade) {
+        setAuthStatus("Выберите направление и уровень.");
+        return;
+      }
+      writePendingProfile({
+        email: (authEmailInput?.value || "").trim() || null,
+        track,
+        grade,
+        ts: Date.now()
+      });
+      setAuthStatus("Перенаправляю в Google...");
+      const redirectTo = getCleanRedirectUrl();
+      const signInOAuthFn = supabaseStore.signInWithOAuth || (supabaseStore.client?.auth?.signInWithOAuth
+        ? (provider, rt) => supabaseStore.client.auth.signInWithOAuth({ provider, options: { redirectTo: rt } })
+        : null);
+      if (!signInOAuthFn) {
+        setAuthStatus("Google вход недоступен. Обновите страницу.");
+        return;
+      }
+      const { error } = await signInOAuthFn("google", redirectTo);
+      if (error) {
+        console.warn("Google OAuth sign-in failed", error);
+        setAuthStatus("Не удалось открыть Google вход.");
+      }
+    });
+  }
+
+  if (authCloseBtn) {
+    authCloseBtn.addEventListener("click", hideAuthModal);
+  }
+
+  if (authSyncBtn) {
+    authSyncBtn.addEventListener("click", async () => {
+      const session = await getActiveSession();
+      if (!session?.access_token) {
+        authUser = null;
+        authProfile = null;
+        updateAuthButtonLabel();
+        applyAuthModalMode();
+        setAuthStatus("Сессия истекла. Войдите заново.");
+        return;
+      }
+      await refreshAuthUser();
+      if (!authUser) {
+        setAuthStatus("Сначала войдите");
+        return;
+      }
+      authSyncBtn.disabled = true;
+      try {
+        // явный REST ping, чтобы в Network всегда был виден запрос синхронизации
+        await restRequest("question_progress", {
+          method: "GET",
+          query: `select=question_id&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`
+        });
+        await syncLocalAndCloudState({ force: true, source: "manual" });
+      } finally {
+        authSyncBtn.disabled = false;
+      }
+    });
+  }
+
+  if (authModal) {
+    authModal.addEventListener("click", (e) => {
+      if (e.target === authModal) hideAuthModal();
+    });
+  }
+
+  window.addEventListener("resize", () => {
+    if (authModal?.classList.contains("show")) {
+      applyAuthModalMode();
+      positionAuthModal();
+    }
+  });
+  window.addEventListener("scroll", () => {
+    if (authModal?.classList.contains("show")) positionAuthModal();
+  }, { passive: true });
+
+  if (isCloudReady() && supabaseStore.client?.auth?.onAuthStateChange) {
+    supabaseStore.client.auth.onAuthStateChange(async (_event, session) => {
+      authUser = session?.user || null;
+      if (authUser) {
+        await refreshAuthUser();
+        setAuthStatus("");
+        await syncLocalAndCloudState({ force: true, source: "auth" });
+        await flushPendingMutations();
+      } else {
+        authProfile = null;
+        updateAuthButtonLabel();
+      }
+      applyAuthModalMode();
+    });
+  }
+
+  initializeCloudState().catch((e) => {
+    console.warn("Cloud state init skipped", e);
+  });
+  setInterval(() => {
+    if (!authUser) return;
+    flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
+  }, 15000);
+  const cachedQuestionsData = readQuestionsCache();
+  if (Array.isArray(cachedQuestionsData) && cachedQuestionsData.length) {
+    runtimeQuestionsData = cachedQuestionsData;
+    window.questionsData = runtimeQuestionsData;
+    console.info(`Questions source: local cache (${runtimeQuestionsData.length} sections)`);
+  } else {
+    const dbData = await loadQuestionsFromDbWithTimeout();
+    if (Array.isArray(dbData) && dbData.length) {
+      runtimeQuestionsData = dbData;
+      window.questionsData = runtimeQuestionsData;
+      writeQuestionsCache(dbData);
+      console.info(`Questions source: Supabase (${runtimeQuestionsData.length} sections)`);
+    } else {
+      runtimeQuestionsData = [];
+      window.questionsData = runtimeQuestionsData;
+      console.error("Questions source: Supabase load failed or returned empty. Front fallback is disabled.");
+    }
   }
 
   function renderModelsList(models) {
@@ -1668,7 +2963,8 @@ category: 'AQA JS',
     }
   }
 
-  async function fetchAnswerOnce(userQ, model) {
+  async function fetchAnswerOnce(userQ, model, options = {}) {
+    const { system = systemPrompt } = options;
     const startedAt = Date.now();
     const res = await fetch(`${IO_API_BASE}/chat/completions`, {
       method: "POST",
@@ -1679,7 +2975,7 @@ category: 'AQA JS',
       body: JSON.stringify({
         model,
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: system },
           { role: "user",   content: userQ }
         ],
         temperature: 0.7,
@@ -1776,7 +3072,7 @@ category: 'AQA JS',
     renderModelsList(ordered);
   }
 
-  function requestBatchWithTimeout(userQ, order, onAttempt, onAdditional) {
+  function requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options = {}) {
     const ATTEMPT_DELAY_MS = 10000;
     return new Promise((resolve, reject) => {
       let completed = 0;
@@ -1786,9 +3082,14 @@ category: 'AQA JS',
 
       order.forEach((model, idx) => {
         setTimeout(async () => {
+          // Если первый ответ уже получен, новые запросы к моделям не запускаем.
+          if (firstResolved) {
+            completed += 1;
+            return;
+          }
           try {
             if (typeof onAttempt === "function") onAttempt(model, idx + 1, order.length);
-            const answer = await fetchAnswerOnce(userQ, model);
+            const answer = await fetchAnswerOnce(userQ, model, options);
             const payload = { answer, model, arrivedAt: Date.now() };
             if (!firstResolved) {
               firstResolved = true;
@@ -1816,10 +3117,10 @@ category: 'AQA JS',
     });
   }
 
-  async function requestWithFallback(userQ, preferredModel, onAttempt, onAdditional) {
+  async function requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, options = {}) {
     const order = getModelOrder(preferredModel);
     try {
-      return await requestBatchWithTimeout(userQ, order, onAttempt, onAdditional);
+      return await requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options);
     } catch (batchErr) {
       if (batchErr?.invalidCount === batchErr?.total) {
         showApiKeyModal();
@@ -1829,7 +3130,7 @@ category: 'AQA JS',
         const refreshed = await loadModels({ force: true, exclude: batchErr?.tried || order });
         const retryOrder = getModelOrder(getPreferredModel(refreshed));
         try {
-          return await requestBatchWithTimeout(userQ, retryOrder, onAttempt, onAdditional);
+          return await requestBatchWithTimeout(userQ, retryOrder, onAttempt, onAdditional, options);
         } catch (retryErr) {
           if (retryErr?.invalidCount === retryErr?.total) {
             showApiKeyModal();
@@ -1939,7 +3240,19 @@ category: 'AQA JS',
     return `${n} секунд`;
   }
 
-  function renderAiSupplement(el, text, seconds, modelName, nav) {
+  function normalizeCategoryKey(category) {
+    const value = String(category || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+    if (!value || value === "ВСЕ") return "ALL";
+    if (value === "БД" || value === "БАЗЫ ДАННЫХ") return "БАЗЫ ДАННЫХ";
+    if (value === "GIT" || value === "GIT + IDE" || value === "GIT + IDE + SELENIUM") return "GIT";
+    if (value === "ТЕОРИЯ") return "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ";
+    return value;
+  }
+
+  function renderAiSupplement(el, text, seconds, modelName, nav, statusText) {
     if (!el) return;
     el.innerHTML = "";
     const head = document.createElement("div");
@@ -1952,6 +3265,12 @@ category: 'AQA JS',
       title.textContent = "Ответ ИИ";
     }
     head.appendChild(title);
+    if (statusText) {
+      const inlineStatus = document.createElement("div");
+      inlineStatus.className = "ai-supplement-inline-status";
+      inlineStatus.innerHTML = `<span class="ai-inline-spinner"></span><span class="ai-time">${escapeHtml(statusText)}</span>`;
+      head.appendChild(inlineStatus);
+    }
     if (nav && nav.total > 1) {
       const controls = document.createElement("div");
       controls.className = "ai-supplement-nav";
@@ -1973,6 +3292,34 @@ category: 'AQA JS',
       controls.appendChild(prev);
       controls.appendChild(index);
       controls.appendChild(next);
+      if (typeof nav.onDelete === "function") {
+        const del = document.createElement("button");
+        del.type = "button";
+        del.className = "ai-nav-delete";
+        del.title = "Удалить этот ответ";
+        del.textContent = "🗑";
+        del.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          nav.onDelete();
+        });
+        controls.appendChild(del);
+      }
+      head.appendChild(controls);
+    } else if (nav && typeof nav.onDelete === "function") {
+      const controls = document.createElement("div");
+      controls.className = "ai-supplement-nav";
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "ai-nav-delete";
+      del.title = "Удалить этот ответ";
+      del.textContent = "🗑";
+      del.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        nav.onDelete();
+      });
+      controls.appendChild(del);
       head.appendChild(controls);
     }
     const body = document.createElement("div");
@@ -1992,6 +3339,256 @@ category: 'AQA JS',
       el.appendChild(meta);
     }
     el.style.display = "block";
+  }
+
+  let refineContext = null;
+
+  const refineAction = document.createElement("button");
+  refineAction.type = "button";
+  refineAction.className = "ai-refine-action";
+  refineAction.textContent = "Уточнить у ИИ";
+  refineAction.style.display = "none";
+  document.body.appendChild(refineAction);
+
+  const refinePanel = document.createElement("div");
+  refinePanel.className = "ai-refine-panel";
+  refinePanel.style.display = "none";
+  refinePanel.innerHTML = `
+    <input type="text" class="ai-refine-input" placeholder="Что уточнить по выделенному тексту?" />
+    <button type="button" class="ai-refine-send">Отправить</button>
+    <button type="button" class="ai-refine-cancel">Закрыть</button>
+  `;
+  document.body.appendChild(refinePanel);
+
+  const refineInput = refinePanel.querySelector(".ai-refine-input");
+  const refineSend = refinePanel.querySelector(".ai-refine-send");
+  const refineCancel = refinePanel.querySelector(".ai-refine-cancel");
+
+  function hideRefineUi() {
+    refineAction.style.display = "none";
+    refinePanel.style.display = "none";
+  }
+
+  function buildRefinePrompt(context, userFollowup) {
+    return [
+      `Тема: ${context.category}`,
+      `Основной вопрос: ${context.questionTitle}`,
+      `Базовый ответ: ${context.baseAnswer}`,
+      `Текущий ответ ИИ (если есть): ${context.currentAiAnswer || "нет"}`,
+      `Выделенный фрагмент: ${context.selectedText}`,
+      `Уточнение пользователя: ${userFollowup}`
+    ].join("\n\n");
+  }
+
+  function showRefineAction(selection, context) {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    if (!rect || (!rect.width && !rect.height)) return;
+    refineContext = context;
+    refineAction.style.display = "inline-flex";
+    const left = Math.min(
+      Math.max(8, rect.left + window.scrollX),
+      window.scrollX + window.innerWidth - refineAction.offsetWidth - 8
+    );
+    refineAction.style.left = `${left}px`;
+    refineAction.style.top = `${Math.max(8, rect.bottom + window.scrollY + 8)}px`;
+  }
+
+  function getSelectionContext(selection) {
+    if (!selection || selection.rangeCount === 0) return null;
+    const anchorNode = selection.anchorNode;
+    const root = anchorNode && anchorNode.nodeType === 3 ? anchorNode.parentElement : anchorNode;
+    if (!root) return null;
+    const textRoot = root.closest(".t849__text");
+    const aiTextRoot = root.closest(".ai-supplement-text");
+    if (!textRoot && !aiTextRoot) return null;
+    let itemId = "";
+    if (textRoot) {
+      itemId = textRoot.getAttribute("data-item-id") || "";
+    } else if (aiTextRoot) {
+      itemId = aiTextRoot.closest(".ai-supplement")?.getAttribute("data-id") || "";
+    }
+    if (!itemId) return null;
+    const state = aiItemState.get(itemId);
+    if (!state) return null;
+    const selectedText = selection.toString().trim();
+    if (!selectedText) return null;
+    const current = state.runtimeResponses[state.runtimeIndex] || null;
+    return {
+      itemId,
+      selectedText,
+      category: state.category,
+      questionTitle: state.questionTitle,
+      baseAnswer: state.baseAnswer,
+      currentAiAnswer: current ? current.answer : "",
+      state
+    };
+  }
+
+  document.addEventListener("selectionchange", () => {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) {
+      refineAction.style.display = "none";
+      return;
+    }
+    const context = getSelectionContext(selection);
+    if (!context) {
+      refineAction.style.display = "none";
+      return;
+    }
+    showRefineAction(selection, context);
+  });
+
+  document.addEventListener("click", (e) => {
+    const isRefineElement =
+      refineAction.contains(e.target) ||
+      refinePanel.contains(e.target);
+    if (isRefineElement) return;
+    const selection = window.getSelection();
+    const hasActiveSelection = !!(
+      selection &&
+      !selection.isCollapsed &&
+      String(selection.toString() || "").trim()
+    );
+    if (hasActiveSelection) return;
+    hideRefineUi();
+  });
+
+  refineAction.addEventListener("click", async () => {
+    if (!refineContext) return;
+    const canContinue = await ensureAuthForAiAction();
+    if (!canContinue) return;
+    refinePanel.style.display = "flex";
+    const left = parseInt(refineAction.style.left, 10) || 8;
+    refinePanel.style.left = `${left}px`;
+    refinePanel.style.top = `${parseInt(refineAction.style.top, 10) + 36}px`;
+    requestAnimationFrame(() => {
+      const rect = refinePanel.getBoundingClientRect();
+      if (rect.right > window.innerWidth - 8) {
+        const correctedLeft = Math.max(8, window.scrollX + window.innerWidth - rect.width - 8);
+        refinePanel.style.left = `${correctedLeft}px`;
+      }
+    });
+    if (refineInput) {
+      refineInput.value = "";
+      refineInput.focus();
+    }
+  });
+
+  async function runRefineRequest(context, userFollowup) {
+    const itemState = context.state;
+    if (!itemState || typeof itemState.pushRuntimeResponse !== "function") return false;
+    const preferredModel = getPreferredModel(currentModels);
+    const startedAt = Date.now();
+    const prompt = buildRefinePrompt(context, userFollowup);
+    const hasExistingResponses = Array.isArray(itemState.runtimeResponses) && itemState.runtimeResponses.length > 0;
+    if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
+      itemState.setInlineStatus("Уточняю у ИИ");
+    } else {
+      showSupplementLoader(itemState.aiSupplementEl);
+    }
+    const timer = hasExistingResponses ? null : startLoaderPhases(itemState.aiSupplementEl);
+    try {
+      const result = await requestWithFallback(
+        prompt,
+        preferredModel,
+        (modelName) => {
+          if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
+            itemState.setInlineStatus("Уточняю у ИИ");
+          } else {
+            itemState.aiSupplementEl.dataset.waitingModel = modelName;
+            const currentText = itemState.aiSupplementEl.querySelector(".ai-loader-text")?.textContent || "";
+            if (currentText.startsWith("Жду ответ от")) {
+              updateLoaderText(itemState.aiSupplementEl, `Жду ответ от ${modelName}`);
+            }
+          }
+        },
+        (extraResult) => {
+          const extraSeconds = Math.max(1, Math.round((extraResult.arrivedAt - startedAt) / 1000));
+          const response = {
+            answer: extraResult.answer,
+            model: extraResult.model,
+            seconds: extraSeconds,
+            arrivedAt: extraResult.arrivedAt,
+            answerType: "refine"
+          };
+          itemState.pushRuntimeResponse(response, { focus: false });
+          saveAiAnswerCloud(context.itemId, "refine", response).then((id) => {
+            if (id) {
+              response.cloudId = id;
+              if (response.__deleteRequested) deleteAiAnswerCloud(id);
+            }
+          });
+        },
+        { system: refineSystemPrompt }
+      );
+      stopLoaderPhases(timer);
+      if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
+        itemState.setInlineStatus("");
+      }
+      const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+      const response = {
+        answer: result.answer,
+        model: result.model,
+        seconds,
+        arrivedAt: result.arrivedAt || Date.now(),
+        answerType: "refine"
+      };
+      itemState.pushRuntimeResponse(response, { focus: false });
+      saveAiAnswerCloud(context.itemId, "refine", response).then((id) => {
+        if (id) {
+          response.cloudId = id;
+          if (response.__deleteRequested) deleteAiAnswerCloud(id);
+        }
+      });
+      return true;
+    } catch (e) {
+      stopLoaderPhases(timer);
+      if (e && String(e.message).includes("INVALID_API_KEY")) {
+        pendingRetry = () => runRefineRequest(context, userFollowup);
+        if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
+          itemState.setInlineStatus("Уточняю у ИИ");
+        } else {
+          updateLoaderText(itemState.aiSupplementEl, "Повторяю запрос после сохранения ключа");
+        }
+        return false;
+      }
+      if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
+        itemState.setInlineStatus("");
+      }
+      renderAiSupplement(itemState.aiSupplementEl, "Не удалось получить ответ от моделей. Попробуйте позже.");
+      return false;
+    }
+  }
+
+  if (refineSend) {
+    refineSend.addEventListener("click", async () => {
+      const followup = (refineInput?.value || "").trim();
+      if (!refineContext || !followup) return;
+      const canContinue = await ensureAuthForAiAction();
+      if (!canContinue) return;
+      const ctx = refineContext;
+      hideRefineUi();
+      await runRefineRequest(ctx, followup);
+    });
+  }
+
+  if (refineInput) {
+    refineInput.addEventListener("keydown", async (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const followup = (refineInput.value || "").trim();
+      if (!refineContext || !followup) return;
+      const canContinue = await ensureAuthForAiAction();
+      if (!canContinue) return;
+      const ctx = refineContext;
+      hideRefineUi();
+      await runRefineRequest(ctx, followup);
+    });
+  }
+
+  if (refineCancel) {
+    refineCancel.addEventListener("click", hideRefineUi);
   }
 
   // --- Render accordion sections & items ---
@@ -2202,10 +3799,22 @@ category: 'AQA JS',
     }).join("");
   }
 
-  data.forEach(cat => {
+  if (!Array.isArray(runtimeQuestionsData) || !runtimeQuestionsData.length) {
+    if (container) {
+      container.innerHTML = `
+        <section class="article">
+          <h3>Не удалось загрузить вопросы из БД</h3>
+          <p>Проверьте запросы к Supabase в Network и ошибки в Console.</p>
+        </section>
+      `;
+    }
+  }
+
+  runtimeQuestionsData.forEach(cat => {
     // 1. Создаем <section>
     const section = document.createElement("section");
     section.className = "article";
+    section.dataset.categoryKey = normalizeCategoryKey(cat.category);
 
     // 2. Картинка и заголовок
     let imgSrc = "img/answer/default-category.png";
@@ -2247,6 +3856,20 @@ category: 'AQA JS',
     const unclearArr = JSON.parse(
       localStorage.getItem(`unclear_${cat.category}`)
     ) || [];
+    cat.items.forEach(item => {
+      const cloudStatus = cloudProgressByQuestion.get(item.id);
+      if (cloudStatus === "studied") {
+        if (!studiedArr.includes(item.id)) studiedArr.push(item.id);
+        const idx = unclearArr.indexOf(item.id);
+        if (idx >= 0) unclearArr.splice(idx, 1);
+      } else if (cloudStatus === "unclear") {
+        if (!unclearArr.includes(item.id)) unclearArr.push(item.id);
+        const idx = studiedArr.indexOf(item.id);
+        if (idx >= 0) studiedArr.splice(idx, 1);
+      }
+    });
+    safeSetItemWithAiEviction(`studied_${cat.category}`, JSON.stringify(studiedArr));
+    safeSetItemWithAiEviction(`unclear_${cat.category}`, JSON.stringify(unclearArr));
     updateProgress(cat.category, studiedArr.length, unclearArr.length, total);
 
     // 4. Render вопросов
@@ -2294,7 +3917,11 @@ category: 'AQA JS',
 
       // вставляем в ответ
       textEl.innerHTML = item.answer + authorLinksBlock;
+      textEl.setAttribute("data-item-id", item.id);
       enhanceAnswerBlock(textEl);
+      const baseAnswerHolder = document.createElement("div");
+      baseAnswerHolder.innerHTML = item.answer;
+      const baseAnswerPlain = (baseAnswerHolder.textContent || "").trim();
 
       textEl.insertAdjacentHTML('beforeend', `
         <div class="answer-actions" style="margin-top:1rem;">
@@ -2340,6 +3967,7 @@ category: 'AQA JS',
           header.classList.remove('unclear');
           header.classList.add('studied');
           updateProgress(c, sArr.length, uArr.length, total);
+          saveProgressCloud(id, "studied");
         }
       });
 
@@ -2358,6 +3986,7 @@ category: 'AQA JS',
           header.classList.remove('studied');
           header.classList.add('unclear');
           updateProgress(c, sArr.length, uArr.length, total);
+          saveProgressCloud(id, "unclear");
         }
       });
 
@@ -2374,17 +4003,54 @@ category: 'AQA JS',
       const supplementKey = `ai_supplement_${item.id}`;
       const aiAppendBtn = clone.querySelector(`.ai-append-btn[data-id="${item.id}"]`);
       const aiSupplementEl = clone.querySelector(`.ai-supplement[data-id="${item.id}"]`);
-      const savedSupplement = localStorage.getItem(supplementKey);
-      if (savedSupplement && aiSupplementEl) {
-        try {
-          const parsed = JSON.parse(savedSupplement);
-          if (parsed && parsed.text) {
-            renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds, parsed.model);
-          } else {
-            renderAiSupplement(aiSupplementEl, savedSupplement);
+      const state = {
+        id: item.id,
+        category: cat.category,
+        questionTitle: item.title,
+        baseAnswer: baseAnswerPlain,
+        aiSupplementEl,
+        runtimeResponses: [],
+        runtimeIndex: 0,
+        inlineStatus: "",
+        renderCurrentRuntimeResponse: null,
+        pushRuntimeResponse: null,
+        setInlineStatus: null
+      };
+      aiItemState.set(item.id, state);
+      const cloudResponses = cloudAnswersByQuestion.get(item.id) || [];
+      if (cloudResponses.length && aiSupplementEl) {
+        cloudResponses.forEach(resp => state.runtimeResponses.push(resp));
+        writeLocalAiResponses(item.id, state.runtimeResponses);
+        const latest = cloudResponses[cloudResponses.length - 1];
+        renderAiSupplement(aiSupplementEl, latest.answer, latest.seconds, latest.model);
+      } else {
+        const localResponses = readLocalAiResponses(item.id);
+        if (localResponses.length && aiSupplementEl) {
+          localResponses.forEach(resp => state.runtimeResponses.push(resp));
+          const latest = localResponses[localResponses.length - 1];
+          renderAiSupplement(aiSupplementEl, latest.answer, latest.seconds, latest.model);
+        } else {
+          const savedSupplement = localStorage.getItem(supplementKey);
+          if (savedSupplement && aiSupplementEl) {
+            try {
+              const parsed = JSON.parse(savedSupplement);
+              if (parsed && parsed.text) {
+                state.runtimeResponses.push({
+                  answer: parsed.text,
+                  model: parsed.model,
+                  seconds: parsed.seconds,
+                  arrivedAt: 0,
+                  answerType: "append"
+                });
+                writeLocalAiResponses(item.id, state.runtimeResponses);
+                renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds, parsed.model);
+              } else {
+                renderAiSupplement(aiSupplementEl, savedSupplement);
+              }
+            } catch {
+              renderAiSupplement(aiSupplementEl, savedSupplement);
+            }
           }
-        } catch {
-          renderAiSupplement(aiSupplementEl, savedSupplement);
         }
       }
       if (openSet.has(item.id)) {
@@ -2393,42 +4059,126 @@ category: 'AQA JS',
         header.classList.add("t849__opened");
       }
       if (aiAppendBtn && aiSupplementEl) {
-        const runtimeResponses = [];
-        let runtimeIndex = 0;
+        const runtimeResponses = state.runtimeResponses;
+        let runtimeIndex = state.runtimeIndex;
+        let inlineStatus = state.inlineStatus || "";
+
+        const syncLocalSupplementCache = () => {
+          writeLocalAiResponses(item.id, runtimeResponses);
+          if (cloudAnswersByQuestion.get(item.id)?.length || (isCloudReady() && authUser)) return;
+          if (!runtimeResponses.length) {
+            try {
+              localStorage.removeItem(supplementKey);
+            } catch {}
+            return;
+          }
+          const current = runtimeResponses[runtimeIndex] || runtimeResponses[runtimeResponses.length - 1];
+          try {
+            saveAiSupplementWithLimit(
+              supplementKey,
+              { text: current.answer, seconds: current.seconds, model: current.model }
+            );
+          } catch (storageError) {
+            console.warn("Failed to sync AI supplement cache", storageError);
+          }
+        };
+
+        const removeRuntimeResponse = async () => {
+          try {
+            if (!runtimeResponses.length) return;
+            if (!Number.isInteger(runtimeIndex) || runtimeIndex < 0 || runtimeIndex >= runtimeResponses.length) {
+              runtimeIndex = runtimeResponses.length - 1;
+            }
+            const removing = runtimeResponses[runtimeIndex];
+            if (!removing || typeof removing !== "object") return;
+            removing.__deleteRequested = true;
+            prunePendingSaveForResponse(item.id, removing);
+            runtimeResponses.splice(runtimeIndex, 1);
+            if (runtimeIndex >= runtimeResponses.length) {
+              runtimeIndex = Math.max(0, runtimeResponses.length - 1);
+            }
+            if (runtimeResponses.length) {
+              renderCurrentRuntimeResponse();
+            } else {
+              aiSupplementEl.style.display = "none";
+              aiSupplementEl.innerHTML = "";
+              try { localStorage.removeItem(supplementKey); } catch {}
+              writeLocalAiResponses(item.id, []);
+            }
+            syncLocalSupplementCache();
+            let deleted = false;
+            if (removing?.cloudId) {
+              console.info("Try cloud delete by id", { questionId: item.id, cloudId: removing.cloudId });
+              deleted = await deleteAiAnswerCloud(removing.cloudId);
+            }
+            if (!deleted) {
+              console.info("Try cloud delete by payload", { questionId: item.id });
+              deleted = await deleteAiAnswerCloudByPayload(item.id, removing);
+            }
+            if (!deleted) {
+              console.warn("AI response delete was not confirmed in cloud", { questionId: item.id, cloudId: removing?.cloudId || null });
+              enqueueMutation("deleteAiByPayload", { questionId: item.id, response: removing });
+            }
+          } catch (e) {
+            console.warn("Failed to remove runtime response", e);
+          }
+        };
 
         const renderCurrentRuntimeResponse = () => {
           if (!runtimeResponses.length) return;
           const current = runtimeResponses[runtimeIndex];
+          state.runtimeIndex = runtimeIndex;
           renderAiSupplement(
             aiSupplementEl,
             current.answer,
             current.seconds,
             current.model,
             runtimeResponses.length > 1
-              ? {
-                  index: runtimeIndex,
-                  total: runtimeResponses.length,
-                  onPrev: () => {
-                    runtimeIndex = (runtimeIndex - 1 + runtimeResponses.length) % runtimeResponses.length;
-                    renderCurrentRuntimeResponse();
-                  },
-                  onNext: () => {
-                    runtimeIndex = (runtimeIndex + 1) % runtimeResponses.length;
-                    renderCurrentRuntimeResponse();
+                ? {
+                    index: runtimeIndex,
+                    total: runtimeResponses.length,
+                    onPrev: () => {
+                      runtimeIndex = (runtimeIndex - 1 + runtimeResponses.length) % runtimeResponses.length;
+                      renderCurrentRuntimeResponse();
+                    },
+                    onNext: () => {
+                      runtimeIndex = (runtimeIndex + 1) % runtimeResponses.length;
+                      renderCurrentRuntimeResponse();
+                    },
+                    onDelete: removeRuntimeResponse
                   }
-                }
-              : null
+              : { onDelete: removeRuntimeResponse },
+            inlineStatus
           );
         };
-
-        const pushRuntimeResponse = (resp) => {
-          runtimeResponses.push(resp);
-          runtimeResponses.sort((a, b) => a.arrivedAt - b.arrivedAt);
-          if (runtimeResponses.length === 1) runtimeIndex = 0;
-          renderCurrentRuntimeResponse();
+        state.renderCurrentRuntimeResponse = renderCurrentRuntimeResponse;
+        state.setInlineStatus = (text) => {
+          inlineStatus = text || "";
+          if (runtimeResponses.length) renderCurrentRuntimeResponse();
         };
 
+        const pushRuntimeResponse = (resp, options = {}) => {
+          const { focus = false } = options;
+          runtimeResponses.push(resp);
+          runtimeResponses.sort((a, b) => a.arrivedAt - b.arrivedAt);
+          if (runtimeResponses.length === 1) {
+            runtimeIndex = 0;
+          } else if (focus) {
+            runtimeIndex = Math.max(
+              0,
+              runtimeResponses.findIndex(
+                x => x.arrivedAt === resp.arrivedAt && x.answer === resp.answer && x.model === resp.model
+              )
+            );
+          }
+          renderCurrentRuntimeResponse();
+          syncLocalSupplementCache();
+        };
+        state.pushRuntimeResponse = pushRuntimeResponse;
+
         aiAppendBtn.addEventListener("click", async () => {
+          const canContinue = await ensureAuthForAiAction();
+          if (!canContinue) return;
           const preferredModel = getPreferredModel(currentModels);
           aiAppendBtn.disabled = true;
           showSupplementLoader(aiSupplementEl);
@@ -2448,21 +4198,37 @@ category: 'AQA JS',
               },
               (extraResult) => {
                 const extraSeconds = Math.max(1, Math.round((extraResult.arrivedAt - startedAt) / 1000));
-                pushRuntimeResponse({
+                const response = {
                   answer: extraResult.answer,
                   model: extraResult.model,
                   seconds: extraSeconds,
-                  arrivedAt: extraResult.arrivedAt
+                  arrivedAt: extraResult.arrivedAt,
+                  answerType: "append"
+                };
+                pushRuntimeResponse(response);
+                saveAiAnswerCloud(item.id, "append", response).then((id) => {
+                  if (id) {
+                    response.cloudId = id;
+                    if (response.__deleteRequested) deleteAiAnswerCloud(id);
+                  }
                 });
               }
             );
             stopLoaderPhases(supplementTimer);
             const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
-            pushRuntimeResponse({
+            const response = {
               answer: result.answer,
               model: result.model,
               seconds,
-              arrivedAt: result.arrivedAt || Date.now()
+              arrivedAt: result.arrivedAt || Date.now(),
+              answerType: "append"
+            };
+            pushRuntimeResponse(response);
+            saveAiAnswerCloud(item.id, "append", response).then((id) => {
+              if (id) {
+                response.cloudId = id;
+                if (response.__deleteRequested) deleteAiAnswerCloud(id);
+              }
             });
             try {
               saveAiSupplementWithLimit(
@@ -2486,11 +4252,20 @@ category: 'AQA JS',
             aiAppendBtn.disabled = false;
           }
         });
+        if (runtimeResponses.length) {
+          renderCurrentRuntimeResponse();
+        }
       }
 
       section.appendChild(clone);
     });
   });
+
+  if (authUser) {
+    syncLocalAndCloudState({ force: false, source: "post-render" }).catch((e) => {
+      console.warn("Post-render cloud sync failed", e);
+    });
+  }
 
   // --- Поиск/фильтрация ---
   searchInput.addEventListener("input", () => {
@@ -2512,6 +4287,17 @@ category: 'AQA JS',
     clearBtn.style.display     = has ? "inline-block" : "none";
     resultsTitle.style.display = has ? "block"       : "none";
     about.style.display        = has ? "none"        : "";
+
+    if (!has) {
+      const selectedFilter = localStorage.getItem("selectedFilter") || "Все";
+      if (selectedFilter !== "Все") {
+        const selectedKey = normalizeCategoryKey(selectedFilter);
+        document.querySelectorAll("#accordion-container .article").forEach(section => {
+          const sectionKey = section.dataset.categoryKey || normalizeCategoryKey(section.querySelector(".category-title")?.textContent || "");
+          section.style.display = sectionKey === selectedKey ? "" : "none";
+        });
+      }
+    }
   });
 
   clearBtn.addEventListener("click", () => {
@@ -2519,6 +4305,15 @@ category: 'AQA JS',
     searchInput.dispatchEvent(new Event("input"));
     searchInput.focus();
   });
+
+  const restoreScrollPosition = () => {
+    if (!savedScrollY || Number.isNaN(savedScrollY)) return;
+    window.scrollTo(0, savedScrollY);
+  };
+  restoreScrollPosition();
+  requestAnimationFrame(restoreScrollPosition);
+  setTimeout(restoreScrollPosition, 120);
+
     loadModels().then(() => {
       if (!shouldWarmup()) return;
       let hasClicked = false;
@@ -2550,6 +4345,7 @@ category: 'AQA JS',
       window.addEventListener("scroll", checkScroll, { passive: true });
       window.addEventListener("resize", checkScroll);
       checkScroll();
+      restoreScrollPosition();
     });
     });  // — конец DOMContentLoaded
 
@@ -2626,9 +4422,22 @@ function updateProgress(category, studiedCount, unclearCount, total) {
 // ======== Фильтрация по категориям ========
 document.addEventListener('DOMContentLoaded', () => {
   // Ждем полной загрузки DOM перед работой с фильтрами
+  function normalizeCategoryKeyLocal(category) {
+    const value = String(category || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toUpperCase();
+    if (!value || value === "ВСЕ") return "ALL";
+    if (value === "БД" || value === "БАЗЫ ДАННЫХ") return "БАЗЫ ДАННЫХ";
+    if (value === "GIT" || value === "GIT + IDE" || value === "GIT + IDE + SELENIUM") return "GIT";
+    if (value === "ТЕОРИЯ") return "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ";
+    return value;
+  }
 
   const categoryFilters = document.getElementById('category-filters');
   const categoryFiltersBottom = document.getElementById('category-filters-bottom');
+  const searchInputEl = document.getElementById('search-input');
+  if (!categoryFilters) return;
   const filterChips = categoryFilters.querySelectorAll('.filter-chip');
   const bottomChips = [];
 
@@ -2653,31 +4462,24 @@ document.addEventListener('DOMContentLoaded', () => {
   // Модифицированная функция фильтрации
   function applyCategoryFilter(category) {
     const sections = document.querySelectorAll('#accordion-container .article');
+    const wanted = normalizeCategoryKeyLocal(category);
 
-    // Сначала скрываем все разделы
     sections.forEach(section => {
-      section.style.display = 'none';
+      const sectionTitle = section.querySelector('.category-title')?.textContent || "";
+      const sectionKey = section.dataset.categoryKey || normalizeCategoryKeyLocal(sectionTitle);
+      section.style.display = (wanted === "ALL" || sectionKey === wanted) ? '' : 'none';
     });
-
-    // Затем показываем только нужные
-    if (category === 'Все') {
-      sections.forEach(section => {
-        section.style.display = '';
-      });
-    } else {
-      const targetSection = [...sections].find(section => {
-        return section.querySelector('.category-title')?.textContent === category;
-      });
-      if (targetSection) targetSection.style.display = '';
-    }
   }
 
   function scrollToCategory(category) {
     const sections = document.querySelectorAll('#accordion-container .article');
-    const targetSection = category === 'Все'
+    const wanted = normalizeCategoryKeyLocal(category);
+    const targetSection = wanted === "ALL"
       ? sections[0]
       : [...sections].find(section => {
-          return section.querySelector('.category-title')?.textContent === category;
+          const sectionTitle = section.querySelector('.category-title')?.textContent || "";
+          const sectionKey = section.dataset.categoryKey || normalizeCategoryKeyLocal(sectionTitle);
+          return sectionKey === wanted;
         });
     if (targetSection) {
       const headerOffset = 120;
@@ -2688,13 +4490,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setActive(category) {
+    const wanted = normalizeCategoryKeyLocal(category);
     allChips.forEach(c => {
-      c.classList.toggle('active', c.dataset.category === category);
+      c.classList.toggle('active', normalizeCategoryKeyLocal(c.dataset.category) === wanted);
     });
     if (categoryFiltersBottom) {
-      const activeBottom = categoryFiltersBottom.querySelector(
-        `.filter-chip[data-category="${category}"]`
-      );
+      const activeBottom = [...categoryFiltersBottom.querySelectorAll(".filter-chip")]
+        .find(chip => normalizeCategoryKeyLocal(chip.dataset.category) === wanted);
       if (activeBottom) {
         const container = categoryFiltersBottom;
         const chipRect = activeBottom.getBoundingClientRect();
@@ -2710,7 +4512,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function restoreFilterState() {
     const savedFilter = localStorage.getItem('selectedFilter');
     const activeChip = [...filterChips].find(
-      chip => chip.dataset.category === savedFilter
+      chip => normalizeCategoryKeyLocal(chip.dataset.category) === normalizeCategoryKeyLocal(savedFilter)
     );
 
     if (activeChip) {
@@ -2739,12 +4541,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const category = chip.dataset.category;
       localStorage.setItem('selectedFilter', category);
-      applyCategoryFilter(category);
-      scrollToCategory(category);
 
       // Очищаем поиск
-      searchInput.value = '';
-      searchInput.dispatchEvent(new Event('input'));
+      if (searchInputEl) {
+        searchInputEl.value = '';
+        searchInputEl.dispatchEvent(new Event('input'));
+      }
+      applyCategoryFilter(category);
+      scrollToCategory(category);
     });
   });
 
