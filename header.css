@@ -529,6 +529,19 @@ html[data-theme="dark"] .theme-switcher .auth-open-btn {
   color: #F1F1F1;
 }
 
+html[data-theme="dark"] .theme-switcher .auth-open-btn:hover {
+  background: transparent;
+  color: #FFA001;
+}
+
+html[data-theme="dark"] .theme-switcher #theme-toggle {
+  color: #F1F1F1;
+}
+
+html[data-theme="dark"] .theme-switcher #theme-toggle:hover {
+  color: #FFA001;
+}
+
 @media (max-width: 600px) {
   .theme-switcher .auth-open-btn {
     width: 1.9rem;

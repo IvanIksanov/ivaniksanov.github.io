@@ -1,6 +1,44 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  function markQuestionsPageReady() {
+    document.documentElement.classList.remove("questions-loading");
+  }
+  function finishQuestionsInitialPaint() {
+    document.documentElement.classList.remove("questions-initial-paint");
+  }
+  const questionsPageReadyFallbackTimer = setTimeout(() => {
+    const hasRenderedQuestions = !!document.querySelector("#accordion-container .article, #accordion-container .t-item");
+    if (hasRenderedQuestions) markQuestionsPageReady();
+  }, 12000);
+  const questionsInitialPaintFallbackTimer = setTimeout(finishQuestionsInitialPaint, 7000);
+
   const SCROLL_POS_KEY = "questions_scroll_y_v1";
+  const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
   const savedScrollY = Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
+  function saveAuthReturnScrollPosition() {
+    try {
+      localStorage.setItem(AUTH_RETURN_SCROLL_KEY, JSON.stringify({
+        y: Math.max(0, Math.round(window.scrollY || 0)),
+        path: window.location.pathname,
+        ts: Date.now()
+      }));
+    } catch {}
+  }
+  function consumeAuthReturnScrollPosition() {
+    try {
+      const raw = localStorage.getItem(AUTH_RETURN_SCROLL_KEY);
+      if (!raw) return null;
+      localStorage.removeItem(AUTH_RETURN_SCROLL_KEY);
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.y !== "number") return null;
+      if (parsed.path && parsed.path !== window.location.pathname) return null;
+      if (parsed.ts && (Date.now() - Number(parsed.ts)) > (30 * 60 * 1000)) return null;
+      return Math.max(0, Math.round(parsed.y));
+    } catch {
+      try { localStorage.removeItem(AUTH_RETURN_SCROLL_KEY); } catch {}
+      return null;
+    }
+  }
+  const authReturnScrollY = consumeAuthReturnScrollPosition();
   window.addEventListener("scroll", () => {
     sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
   }, { passive: true });
@@ -1400,6 +1438,9 @@ category: 'AQA JS',
   const apiKeySave     = document.getElementById("api-key-save");
   const apiKeyClose    = document.getElementById("api-key-close");
   const authOpenBtn    = document.getElementById("auth-open-btn");
+  const headerAiNotch  = document.getElementById("header-ai-notch");
+  const headerAiNotchIcon = document.getElementById("header-ai-notch-icon");
+  const headerAiNotchText = document.getElementById("header-ai-notch-text");
   const authModal      = document.getElementById("auth-modal");
   const authCard       = authModal?.querySelector(".auth-card");
   const authTitle      = document.getElementById("auth-title");
@@ -1419,16 +1460,172 @@ category: 'AQA JS',
   let authUser = null;
   let authProfile = null;
   let authEmailLoginExpanded = false;
+  let allowGuestAiRequests = false;
+  let authModalAiGateActive = false;
   const AUTH_PENDING_PROFILE_KEY = "auth_pending_profile_v1";
   const CLOUD_SYNC_TS_KEY = "cloud_sync_ts_v1";
   const PENDING_MUTATIONS_KEY = "cloud_pending_mutations_v1";
   const CLOUD_SYNC_TTL_MS = 60 * 1000;
+  const AUTH_SESSION_CHECK_TTL_MS = 5 * 60 * 1000;
   const CLOUD_OP_TIMEOUT_MS = 10000;
   const REST_TIMEOUT_MS = 7000;
   const cloudProgressByQuestion = new Map();
   const cloudAnswersByQuestion = new Map();
   const aiItemState = new Map();
   let cloudSyncPromise = null;
+  let authLastSessionCheckTs = 0;
+  let authRefreshInFlight = null;
+  let authCardMorphToken = 0;
+  let headerAiNotchHideTimer = null;
+  let headerAiNotchActiveQuestionId = "";
+  let headerAiNotchPendingCount = 0;
+
+  function setAuthSessionCheckedNow() {
+    authLastSessionCheckTs = Date.now();
+  }
+
+  function isAuthSessionCheckFresh() {
+    return (Date.now() - authLastSessionCheckTs) < AUTH_SESSION_CHECK_TTL_MS;
+  }
+
+  function setAuthSyncButtonBusy(isBusy) {
+    if (!authSyncBtn) return;
+    authSyncBtn.classList.toggle("is-busy", !!isBusy);
+    authSyncBtn.disabled = !!isBusy;
+  }
+
+  function flashAuthSyncButtonSuccess() {
+    if (!authSyncBtn) return;
+    authSyncBtn.classList.remove("is-success");
+    void authSyncBtn.offsetWidth;
+    authSyncBtn.classList.add("is-success");
+    setTimeout(() => authSyncBtn.classList.remove("is-success"), 700);
+  }
+
+  function finalizeAuthCardMorph(token) {
+    if (!authCard || token !== authCardMorphToken) return;
+    authCard.classList.remove("is-morphing");
+    authCard.style.width = "";
+    authCard.style.height = "";
+  }
+
+  function morphAuthCardLayout(mutator) {
+    if (!authCard) {
+      mutator();
+      return;
+    }
+    const canAnimate = !!(authModal?.classList.contains("show")) &&
+      !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (!canAnimate) {
+      mutator();
+      return;
+    }
+    const startRect = authCard.getBoundingClientRect();
+    mutator();
+    const endRect = authCard.getBoundingClientRect();
+    if (Math.abs(startRect.width - endRect.width) < 1 && Math.abs(startRect.height - endRect.height) < 1) return;
+    const token = authCardMorphToken + 1;
+    authCardMorphToken = token;
+    authCard.classList.add("is-morphing");
+    authCard.style.width = `${startRect.width}px`;
+    authCard.style.height = `${startRect.height}px`;
+    void authCard.offsetWidth;
+    authCard.style.width = `${endRect.width}px`;
+    authCard.style.height = `${endRect.height}px`;
+    setTimeout(() => finalizeAuthCardMorph(token), 260);
+  }
+
+  function clearHeaderAiNotchHideTimer() {
+    if (!headerAiNotchHideTimer) return;
+    clearTimeout(headerAiNotchHideTimer);
+    headerAiNotchHideTimer = null;
+  }
+
+  function syncHeaderAiNotchViewportMode() {}
+
+  function showHeaderAiNotchProcessing(questionId, options = {}) {
+    const { incrementPending = true } = options;
+    if (!headerAiNotch) return;
+    syncHeaderAiNotchViewportMode();
+    if (incrementPending) {
+      headerAiNotchPendingCount += 1;
+    }
+    headerAiNotchActiveQuestionId = questionId || headerAiNotchActiveQuestionId || "";
+    clearHeaderAiNotchHideTimer();
+    headerAiNotch.classList.remove("ready", "hiding");
+    headerAiNotch.classList.add("show", "processing");
+    headerAiNotch.dataset.state = "processing";
+    headerAiNotch.setAttribute("aria-hidden", "false");
+    if (headerAiNotchIcon) headerAiNotchIcon.textContent = "↻";
+    if (headerAiNotchText) headerAiNotchText.textContent = "В процессе";
+  }
+
+  function hideHeaderAiNotch() {
+    if (!headerAiNotch) return;
+    syncHeaderAiNotchViewportMode();
+    headerAiNotch.classList.add("hiding");
+    headerAiNotch.classList.remove("show", "processing", "ready");
+    delete headerAiNotch.dataset.state;
+    delete headerAiNotch.dataset.readyAt;
+    headerAiNotchPendingCount = 0;
+    headerAiNotchActiveQuestionId = "";
+    clearHeaderAiNotchHideTimer();
+    setTimeout(() => {
+      if (!headerAiNotch) return;
+      headerAiNotch.setAttribute("aria-hidden", "true");
+      headerAiNotch.classList.remove("hiding");
+    }, 240);
+  }
+
+  function openQuestionAndScrollToAi(questionId) {
+    if (!questionId) return;
+    const aiEl = document.querySelector(`.ai-supplement[data-id="${questionId}"]`);
+    if (!aiEl) return;
+    const itemRoot = aiEl.closest(".t-item");
+    const trigger = itemRoot?.querySelector(".t849__trigger-button");
+    if (trigger && trigger.getAttribute("aria-expanded") !== "true") {
+      trigger.click();
+    }
+    setTimeout(() => {
+      const headerEl = itemRoot?.querySelector(".t849__header");
+      const target = headerEl || aiEl;
+      if (!target) return;
+      const rect = target.getBoundingClientRect();
+      const headerOffset = (() => {
+        const siteHeader = document.querySelector(".site-header");
+        const h = siteHeader?.getBoundingClientRect()?.height || 0;
+        return Math.max(76, Math.round(h + 12));
+      })();
+      const top = window.scrollY + rect.top - headerOffset;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    }, 120);
+  }
+
+  function showHeaderAiNotchReady(questionId) {
+    if (!headerAiNotch) return;
+    syncHeaderAiNotchViewportMode();
+    headerAiNotchPendingCount = Math.max(0, headerAiNotchPendingCount - 1);
+    headerAiNotchActiveQuestionId = questionId || headerAiNotchActiveQuestionId || "";
+    clearHeaderAiNotchHideTimer();
+    headerAiNotch.classList.remove("processing", "hiding");
+    headerAiNotch.classList.add("show", "ready");
+    headerAiNotch.dataset.state = "ready";
+    headerAiNotch.dataset.readyAt = String(Date.now());
+    headerAiNotch.setAttribute("aria-hidden", "false");
+    if (headerAiNotchIcon) headerAiNotchIcon.textContent = "✓";
+    if (headerAiNotchText) headerAiNotchText.textContent = "Готово";
+    headerAiNotchHideTimer = setTimeout(() => {
+      // Не возвращаемся в "В процессе" после первого полученного ответа.
+      // Если в фоне еще идут дополнительные запросы/фолбэки, не показываем это пользователю.
+      headerAiNotchPendingCount = 0;
+      hideHeaderAiNotch();
+    }, 3000);
+  }
+
+  function failHeaderAiNotchRequest() {
+    headerAiNotchPendingCount = Math.max(0, headerAiNotchPendingCount - 1);
+    if (headerAiNotchPendingCount <= 0) hideHeaderAiNotch();
+  }
 
   function readModelListCache() {
     try {
@@ -1589,6 +1786,22 @@ category: 'AQA JS',
     if (authStatus) authStatus.textContent = message || "";
   }
 
+  function setAuthCheckingState(isChecking) {
+    if (!authModal) return;
+    authModal.classList.toggle("auth-checking", !!isChecking);
+    if (isChecking) {
+      if (authTitle) authTitle.textContent = "Проверяю синхронизацию";
+      setAuthStatus("Пожалуйста, подождите...");
+    }
+  }
+
+  function refreshVisibleAuthModalUi() {
+    if (!authModal?.classList.contains("show")) return;
+    if (authModal.classList.contains("auth-checking")) return;
+    applyAuthModalMode();
+    positionAuthModal();
+  }
+
   function readPendingProfile() {
     try {
       return JSON.parse(localStorage.getItem(AUTH_PENDING_PROFILE_KEY) || "null");
@@ -1624,7 +1837,8 @@ category: 'AQA JS',
     if (authTrackSelect && authProfile?.track) authTrackSelect.value = authProfile.track;
     if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
     if (!authTitle) return;
-    const label = profileLabel(authProfile);
+    const fallbackPending = !authProfile ? readPendingProfile() : null;
+    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
     authTitle.textContent = label || "Сохранение прогресса";
   }
 
@@ -1653,32 +1867,35 @@ category: 'AQA JS',
   function applyAuthModalMode() {
     if (!authModal || !authEmailInput || !authSendBtn || !authCloseBtn) return;
     if (authModal.classList.contains("auth-checking")) return;
-    const isAuthorized = !!authUser;
-    const compactAuthorized = isAuthorized;
-    authModal.classList.toggle("compact-auth", compactAuthorized);
-    if (compactAuthorized) {
-      if (authDescription) authDescription.style.display = "none";
-      if (authLevelWrap) authLevelWrap.style.display = "none";
-      if (authOAuthRow) authOAuthRow.style.display = "none";
-      if (authEmailToggle) authEmailToggle.style.display = "none";
-      authEmailInput.style.display = "none";
-      if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
-      authSendBtn.textContent = "Выйти";
-      authSendBtn.disabled = false;
-      authSendBtn.style.display = "";
-      syncProfileUiFromState();
-      return;
-    }
-    if (authTitle) authTitle.textContent = "Сохранение прогресса";
-    if (authDescription) authDescription.style.display = "";
-    if (authLevelWrap) authLevelWrap.style.display = "";
-    if (authOAuthRow) authOAuthRow.style.display = "";
-    if (authEmailToggle) authEmailToggle.style.display = "";
-    authEmailInput.style.display = authEmailLoginExpanded ? "" : "none";
-    if (authSyncBtn) authSyncBtn.style.display = "none";
-    authSendBtn.textContent = "Получить ссылку";
-    authSendBtn.style.display = authEmailLoginExpanded ? "" : "none";
-    authCloseBtn.textContent = "Закрыть";
+    morphAuthCardLayout(() => {
+      const isAuthorized = !!authUser;
+      const compactAuthorized = isAuthorized;
+      authModal.classList.toggle("compact-auth", compactAuthorized);
+      if (compactAuthorized) {
+        if (authDescription) authDescription.style.display = "";
+        if (authLevelWrap) authLevelWrap.style.display = "";
+        if (authOAuthRow) authOAuthRow.style.display = "";
+        if (authEmailToggle) authEmailToggle.style.display = "none";
+        authEmailInput.style.display = "none";
+        if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
+        authSendBtn.textContent = "Выйти";
+        authSendBtn.disabled = false;
+        authSendBtn.style.display = "";
+        syncProfileUiFromState();
+        return;
+      }
+      if (authTitle) authTitle.textContent = "Сохранение прогресса";
+      if (authDescription) authDescription.style.display = "";
+      if (authLevelWrap) authLevelWrap.style.display = "";
+      if (authOAuthRow) authOAuthRow.style.display = "";
+      if (authEmailToggle) authEmailToggle.style.display = "";
+      authEmailInput.style.display = authEmailLoginExpanded ? "" : "none";
+      if (authSyncBtn) authSyncBtn.style.display = "none";
+      authSendBtn.textContent = "Получить ссылку";
+      authSendBtn.style.display = authEmailLoginExpanded ? "" : "none";
+      authCloseBtn.textContent = "Закрыть";
+    });
+    positionAuthModal();
   }
 
   function updateAuthButtonLabel() {
@@ -1696,49 +1913,49 @@ category: 'AQA JS',
     if (!authModal || !authCard || !authOpenBtn) return;
     const trigger = authOpenBtn.getBoundingClientRect();
     const isMobile = window.innerWidth <= 600;
-    const approxW = isMobile
-      ? Math.min(268, Math.floor(window.innerWidth * 0.82))
-      : Math.min(330, Math.floor(window.innerWidth * 0.8));
-    const measuredW = authCard.offsetWidth || approxW;
-    let left = Math.min(
-      Math.max(8, trigger.right - measuredW),
-      window.innerWidth - measuredW - 8
-    );
-    let top = trigger.bottom + 8;
-    authCard.style.right = "auto";
-    authCard.style.left = `${Math.max(8, left)}px`;
-    authCard.style.top = `${Math.max(8, top)}px`;
-    requestAnimationFrame(() => {
-      const rect = authCard.getBoundingClientRect();
-      if (isMobile) {
-        left = Math.max(8, window.innerWidth - rect.width - 8);
-      }
-      if (rect.right > window.innerWidth - 8) {
-        left = Math.max(8, window.innerWidth - rect.width - 8);
-      }
-      if (rect.left < 8) left = 8;
-      if (rect.bottom > window.innerHeight - 8) {
-        top = Math.max(8, window.innerHeight - rect.height - 8);
-      }
-      authCard.style.left = `${left}px`;
-      authCard.style.top = `${top}px`;
-      authCard.style.right = "auto";
-    });
+    let top = Math.max(8, trigger.bottom + 8);
+    let right = isMobile ? 8 : Math.max(8, Math.round(window.innerWidth - trigger.right));
+    authCard.style.left = "auto";
+    authCard.style.right = `${right}px`;
+    authCard.style.top = `${top}px`;
+    const rect = authCard.getBoundingClientRect();
+    if (rect.right > window.innerWidth - 8) {
+      right = Math.max(8, right + (rect.right - (window.innerWidth - 8)));
+    }
+    if (rect.left < 8) {
+      right = Math.max(8, right - (8 - rect.left));
+    }
+    if (rect.bottom > window.innerHeight - 8) {
+      top = Math.max(8, window.innerHeight - rect.height - 8);
+    }
+    authCard.style.left = "auto";
+    authCard.style.right = `${Math.max(8, right)}px`;
+    authCard.style.top = `${top}px`;
   }
 
-  function showAuthModal(prefillMessage) {
+  function showAuthModal(prefillMessage, options = {}) {
     if (!authModal) return;
+    const startChecking = !!options.checking;
+    authModalAiGateActive = !!options.aiGate;
     setEmailLoginExpanded(false);
     if (!authUser) {
       const pending = readPendingProfile();
       if (authTrackSelect && pending?.track) authTrackSelect.value = pending.track;
       if (authGradeSelect && pending?.grade) authGradeSelect.value = pending.grade;
     }
-    applyAuthModalMode();
+    setAuthCheckingState(startChecking);
+    if (!startChecking) applyAuthModalMode();
     authModal.classList.add("show");
     authModal.setAttribute("aria-hidden", "false");
     positionAuthModal();
-    setAuthStatus(prefillMessage || "");
+    if (!startChecking) {
+      setAuthStatus(prefillMessage || "");
+    }
+    if (authUser && !authProfile) {
+      refreshAuthUserInBackground({ force: true }).catch((e) => {
+        console.warn("Auth profile refresh for modal failed", e);
+      });
+    }
     if (authEmailInput && authEmailLoginExpanded && authEmailInput.style.display !== "none") {
       authEmailInput.focus();
     }
@@ -1746,6 +1963,11 @@ category: 'AQA JS',
 
   function hideAuthModal() {
     if (!authModal) return;
+    if (authModalAiGateActive && !authUser) {
+      allowGuestAiRequests = true;
+    }
+    authModalAiGateActive = false;
+    setAuthCheckingState(false);
     authModal.classList.remove("show");
     authModal.setAttribute("aria-hidden", "true");
     setAuthStatus("");
@@ -1768,19 +1990,31 @@ category: 'AQA JS',
         "get session fallback"
       );
       return fallback?.data?.session || null;
-    } catch {
-      return null;
+    } catch (e) {
+      console.warn("getActiveSession failed", e);
+      return undefined;
     }
   }
 
   async function refreshAuthUser() {
+    if (authRefreshInFlight) return authRefreshInFlight;
     if (!isCloudReady()) return null;
-    try {
+    authRefreshInFlight = (async () => {
+      try {
       const session = await getActiveSession();
+      if (session === undefined) {
+        // Transient session check failure (timeout/network/SDK hiccup).
+        // Preserve last known auth state to avoid false "not authorized" UI flicker.
+        updateAuthButtonLabel();
+        refreshVisibleAuthModalUi();
+        return authUser || null;
+      }
       if (!session?.access_token) {
         authUser = null;
         authProfile = null;
+        setAuthSessionCheckedNow();
         updateAuthButtonLabel();
+        refreshVisibleAuthModalUi();
         return null;
       }
       authUser = await supabaseStore.getUser();
@@ -1793,14 +2027,30 @@ category: 'AQA JS',
         authProfile = null;
       }
       updateAuthButtonLabel();
+      setAuthSessionCheckedNow();
+      refreshVisibleAuthModalUi();
       return authUser;
-    } catch (e) {
+      } catch (e) {
       console.warn("Supabase auth init failed", e);
       authUser = null;
       authProfile = null;
+      setAuthSessionCheckedNow();
       updateAuthButtonLabel();
+      refreshVisibleAuthModalUi();
       return null;
-    }
+      } finally {
+        authRefreshInFlight = null;
+      }
+    })();
+    return authRefreshInFlight;
+  }
+
+  async function refreshAuthUserInBackground(options = {}) {
+    const { force = false } = options;
+    if (!isCloudReady()) return null;
+    if (!force && isAuthSessionCheckFresh()) return authUser;
+    if (document.visibilityState === "hidden" && !force) return authUser;
+    return refreshAuthUser();
   }
 
   async function loadCloudProgress() {
@@ -2211,7 +2461,8 @@ category: 'AQA JS',
     }
     cloudSyncPromise = (async () => {
       try {
-        if (source === "manual") setAuthStatus("Синхронизация...");
+        if (source === "manual") setAuthSyncButtonBusy(true);
+        const hadPendingMutationsAtStart = readPendingMutations().length > 0;
         await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "initial cloud load");
 
         const localProgressRows = getLocalProgressRows();
@@ -2259,31 +2510,22 @@ category: 'AQA JS',
           }
         }
 
-        if (localProgressRows.length || localAiRows.length || force) {
+        // Flush queued mutations (especially deletes) before final reload, so deleted AI answers
+        // are not briefly rehydrated from cloud right after manual sync.
+        await flushPendingMutations();
+
+        if (localProgressRows.length || localAiRows.length || force || hadPendingMutationsAtStart) {
           await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "final cloud reload");
         }
         applyCloudStateToUi();
         markCloudSyncTs();
-        if (source === "manual") {
-          setAuthStatus("Синхронизировано");
-          setTimeout(() => {
-            if ((authStatus?.textContent || "").includes("Синхронизировано")) setAuthStatus("");
-          }, 1800);
-        }
-        await flushPendingMutations();
+        if (source === "manual") flashAuthSyncButtonSuccess();
         return { ok: true };
       } catch (e) {
-        if (source === "manual") {
-          const msg = String(e?.message || "");
-          if (msg.includes("timeout")) {
-            setAuthStatus("Синхронизация: таймаут. Повторите.");
-          } else {
-            setAuthStatus("Синхронизация не удалась. Проверьте RLS.");
-          }
-        }
         console.warn("Cloud sync failed", e);
         return { ok: false, error: e };
       } finally {
+        if (source === "manual") setAuthSyncButtonBusy(false);
         cloudSyncPromise = null;
       }
     })();
@@ -2430,7 +2672,8 @@ category: 'AQA JS',
     const hasAuth = await ensureAuthContext();
     if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
       console.warn("Skip cloud AI save: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
-      if (enqueueOnFail && questionId && response?.answer) {
+      const shouldQueue = enqueueOnFail && questionId && response?.answer && !(allowGuestAiRequests && !hasAuth);
+      if (shouldQueue) {
         enqueueMutation("saveAiAnswer", { questionId, answerType, response });
       }
       return null;
@@ -2498,20 +2741,40 @@ category: 'AQA JS',
       if (enqueueOnFail && questionId && response?.answer) enqueueMutation("deleteAiByPayload", { questionId, response });
       return false;
     }
-    let query = `user_id=eq.${encodeURIComponent(authUser.id)}&question_id=eq.${encodeURIComponent(questionId)}&content=eq.${encodeURIComponent(response.answer)}&answer_type=eq.${encodeURIComponent(response.answerType || "append")}`;
-    if (response.model) query += `&model=eq.${encodeURIComponent(response.model)}`;
     try {
-      const data = await withTimeout(
+      // Avoid sending huge answer text in URL (PostgREST DELETE filters are query-string based).
+      // First find candidate rows by compact filters, then delete exact match by id.
+      let lookupQuery = [
+        "select=id,content,model,answer_type,created_at",
+        `user_id=eq.${encodeURIComponent(authUser.id)}`,
+        `question_id=eq.${encodeURIComponent(questionId)}`,
+        `answer_type=eq.${encodeURIComponent(response.answerType || "append")}`,
+        "order=created_at.desc",
+        "limit=50"
+      ].join("&");
+      if (response.model) {
+        lookupQuery += `&model=eq.${encodeURIComponent(response.model)}`;
+      }
+      const rows = await withTimeout(
         restRequest("ai_answers", {
-          method: "DELETE",
-          query,
-          prefer: "return=representation"
+          method: "GET",
+          query: lookupQuery,
+          prefer: null
         }),
         CLOUD_OP_TIMEOUT_MS,
-        "delete ai by payload"
+        "find ai by payload"
       );
-      console.info("Cloud AI answer deleted by payload", { questionId });
-      return Array.isArray(data) ? data.length > 0 : true;
+      const target = (Array.isArray(rows) ? rows : []).find((row) => (
+        row &&
+        String(row.content || "") === String(response.answer || "") &&
+        String(row.answer_type || "append") === String(response.answerType || "append") &&
+        String(row.model || "") === String(response.model || "")
+      ));
+      if (!target?.id) {
+        console.info("Cloud AI answer delete by payload skipped: row not found", { questionId });
+        return true;
+      }
+      return await deleteAiAnswerCloud(target.id, { enqueueOnFail });
     } catch (e) {
       console.warn("Failed to delete AI answer by payload from Supabase", e);
       if (enqueueOnFail) enqueueMutation("deleteAiByPayload", { questionId, response });
@@ -2562,13 +2825,17 @@ category: 'AQA JS',
   }
 
   async function ensureAuthForAiAction() {
+    if (allowGuestAiRequests) return true;
     if (!isCloudReady()) {
-      showAuthModal("Supabase не подключен. Перезагрузите страницу.");
+      showAuthModal("Авторизация недоступна. Закройте окно и продолжите без сохранения ответов ИИ.", { aiGate: true });
       return false;
     }
     const hasAuth = await ensureAuthContext();
-    if (hasAuth) return true;
-    showAuthModal("");
+    if (hasAuth) {
+      allowGuestAiRequests = false;
+      return true;
+    }
+    showAuthModal("Войдите, чтобы сохранить ответы ИИ. Или закройте окно и продолжите без сохранения.", { aiGate: true });
     return false;
   }
 
@@ -2596,16 +2863,11 @@ category: 'AQA JS',
 
   if (authOpenBtn) {
     authOpenBtn.addEventListener("click", async () => {
-      showAuthModal("");
-      authModal?.classList.add("auth-checking");
-      setAuthStatus("Проверяю сессию...");
-      try {
-        await refreshAuthUser();
-      } finally {
-        authModal?.classList.remove("auth-checking");
+      if (!isAuthSessionCheckFresh()) {
+        refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed", e));
       }
+      showAuthModal("");
       applyAuthModalMode();
-      setAuthStatus("");
     });
   }
 
@@ -2663,6 +2925,7 @@ category: 'AQA JS',
       }
       writePendingProfile({ email, track, grade, ts: Date.now() });
       setAuthStatus("Отправляю ссылку для входа...");
+      saveAuthReturnScrollPosition();
       const redirectTo = getCleanRedirectUrl();
       const { error } = await supabaseStore.signInWithOtp(email, redirectTo);
       if (error) {
@@ -2714,6 +2977,7 @@ category: 'AQA JS',
         ts: Date.now()
       });
       setAuthStatus("Перенаправляю в Google...");
+      saveAuthReturnScrollPosition();
       const redirectTo = getCleanRedirectUrl();
       const signInOAuthFn = supabaseStore.signInWithOAuth || (supabaseStore.client?.auth?.signInWithOAuth
         ? (provider, rt) => supabaseStore.client.auth.signInWithOAuth({ provider, options: { redirectTo: rt } })
@@ -2740,6 +3004,7 @@ category: 'AQA JS',
       if (!session?.access_token) {
         authUser = null;
         authProfile = null;
+        setAuthSessionCheckedNow();
         updateAuthButtonLabel();
         applyAuthModalMode();
         setAuthStatus("Сессия истекла. Войдите заново.");
@@ -2750,8 +3015,8 @@ category: 'AQA JS',
         setAuthStatus("Сначала войдите");
         return;
       }
-      authSyncBtn.disabled = true;
       try {
+        setAuthSyncButtonBusy(true);
         // явный REST ping, чтобы в Network всегда был виден запрос синхронизации
         await restRequest("question_progress", {
           method: "GET",
@@ -2759,7 +3024,7 @@ category: 'AQA JS',
         });
         await syncLocalAndCloudState({ force: true, source: "manual" });
       } finally {
-        authSyncBtn.disabled = false;
+        setAuthSyncButtonBusy(false);
       }
     });
   }
@@ -2771,6 +3036,7 @@ category: 'AQA JS',
   }
 
   window.addEventListener("resize", () => {
+    syncHeaderAiNotchViewportMode();
     if (authModal?.classList.contains("show")) {
       applyAuthModalMode();
       positionAuthModal();
@@ -2779,11 +3045,26 @@ category: 'AQA JS',
   window.addEventListener("scroll", () => {
     if (authModal?.classList.contains("show")) positionAuthModal();
   }, { passive: true });
+  if (headerAiNotch) {
+    syncHeaderAiNotchViewportMode();
+    headerAiNotch.addEventListener("click", (e) => {
+      if (!e.isTrusted) return;
+      if (headerAiNotch.dataset.state !== "ready") return;
+      const readyAt = Number(headerAiNotch.dataset.readyAt || 0);
+      if (readyAt && (Date.now() - readyAt) < 200) return; // защита от ghost-click
+      const qid = headerAiNotchActiveQuestionId;
+      if (qid) openQuestionAndScrollToAi(qid);
+      hideHeaderAiNotch();
+    });
+  }
 
   if (isCloudReady() && supabaseStore.client?.auth?.onAuthStateChange) {
     supabaseStore.client.auth.onAuthStateChange(async (_event, session) => {
       authUser = session?.user || null;
+      setAuthSessionCheckedNow();
       if (authUser) {
+        allowGuestAiRequests = false;
+        authModalAiGateActive = false;
         await refreshAuthUser();
         setAuthStatus("");
         await syncLocalAndCloudState({ force: true, source: "auth" });
@@ -2798,6 +3079,14 @@ category: 'AQA JS',
 
   initializeCloudState().catch((e) => {
     console.warn("Cloud state init skipped", e);
+  });
+  setInterval(() => {
+    refreshAuthUserInBackground().catch((e) => console.warn("Periodic auth refresh failed", e));
+  }, AUTH_SESSION_CHECK_TTL_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshAuthUserInBackground().catch((e) => console.warn("Visibility auth refresh failed", e));
+    }
   });
   setInterval(() => {
     if (!authUser) return;
@@ -2937,6 +3226,13 @@ category: 'AQA JS',
     if (!el) return;
     const label = el.querySelector(".ai-loader-text");
     if (label) label.textContent = text;
+  }
+
+  function getModelDisplayLabel(model) {
+    const raw = String(model || "").trim();
+    if (!raw) return "";
+    const vendor = raw.split("/")[0]?.trim();
+    return vendor || raw;
   }
 
   function startLoaderPhases(el) {
@@ -3341,6 +3637,15 @@ category: 'AQA JS',
     el.style.display = "block";
   }
 
+  function animateAiSupplementSwipe(el, direction = "next") {
+    if (!el) return;
+    const cls = direction === "prev" ? "ai-swipe-prev" : "ai-swipe-next";
+    el.classList.remove("ai-swipe-prev", "ai-swipe-next");
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(() => el.classList.remove(cls), 260);
+  }
+
   let refineContext = null;
 
   const refineAction = document.createElement("button");
@@ -3487,6 +3792,7 @@ category: 'AQA JS',
     } else {
       showSupplementLoader(itemState.aiSupplementEl);
     }
+    showHeaderAiNotchProcessing(context.itemId);
     const timer = hasExistingResponses ? null : startLoaderPhases(itemState.aiSupplementEl);
     try {
       const result = await requestWithFallback(
@@ -3496,10 +3802,10 @@ category: 'AQA JS',
           if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
             itemState.setInlineStatus("Уточняю у ИИ");
           } else {
-            itemState.aiSupplementEl.dataset.waitingModel = modelName;
+            itemState.aiSupplementEl.dataset.waitingModel = getModelDisplayLabel(modelName);
             const currentText = itemState.aiSupplementEl.querySelector(".ai-loader-text")?.textContent || "";
             if (currentText.startsWith("Жду ответ от")) {
-              updateLoaderText(itemState.aiSupplementEl, `Жду ответ от ${modelName}`);
+              updateLoaderText(itemState.aiSupplementEl, `Жду ответ от ${getModelDisplayLabel(modelName)}`);
             }
           }
         },
@@ -3534,7 +3840,8 @@ category: 'AQA JS',
         arrivedAt: result.arrivedAt || Date.now(),
         answerType: "refine"
       };
-      itemState.pushRuntimeResponse(response, { focus: false });
+      itemState.pushRuntimeResponse(response, { focus: false, delayedFocusMs: 1000 });
+      showHeaderAiNotchReady(context.itemId);
       saveAiAnswerCloud(context.itemId, "refine", response).then((id) => {
         if (id) {
           response.cloudId = id;
@@ -3553,6 +3860,7 @@ category: 'AQA JS',
         }
         return false;
       }
+      failHeaderAiNotchRequest();
       if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
         itemState.setInlineStatus("");
       }
@@ -4124,7 +4432,8 @@ category: 'AQA JS',
           }
         };
 
-        const renderCurrentRuntimeResponse = () => {
+        const renderCurrentRuntimeResponse = (options = {}) => {
+          const { swipe = null } = options;
           if (!runtimeResponses.length) return;
           const current = runtimeResponses[runtimeIndex];
           state.runtimeIndex = runtimeIndex;
@@ -4139,17 +4448,18 @@ category: 'AQA JS',
                     total: runtimeResponses.length,
                     onPrev: () => {
                       runtimeIndex = (runtimeIndex - 1 + runtimeResponses.length) % runtimeResponses.length;
-                      renderCurrentRuntimeResponse();
+                      renderCurrentRuntimeResponse({ swipe: "prev" });
                     },
                     onNext: () => {
                       runtimeIndex = (runtimeIndex + 1) % runtimeResponses.length;
-                      renderCurrentRuntimeResponse();
+                      renderCurrentRuntimeResponse({ swipe: "next" });
                     },
                     onDelete: removeRuntimeResponse
                   }
               : { onDelete: removeRuntimeResponse },
             inlineStatus
           );
+          if (swipe) animateAiSupplementSwipe(aiSupplementEl, swipe);
         };
         state.renderCurrentRuntimeResponse = renderCurrentRuntimeResponse;
         state.setInlineStatus = (text) => {
@@ -4158,20 +4468,32 @@ category: 'AQA JS',
         };
 
         const pushRuntimeResponse = (resp, options = {}) => {
-          const { focus = false } = options;
+          const { focus = false, swipe = null, delayedFocusMs = 0 } = options;
           runtimeResponses.push(resp);
           runtimeResponses.sort((a, b) => a.arrivedAt - b.arrivedAt);
+          const targetIndex = Math.max(
+            0,
+            runtimeResponses.findIndex(
+              x => x.arrivedAt === resp.arrivedAt && x.answer === resp.answer && x.model === resp.model
+            )
+          );
           if (runtimeResponses.length === 1) {
             runtimeIndex = 0;
           } else if (focus) {
-            runtimeIndex = Math.max(
-              0,
-              runtimeResponses.findIndex(
-                x => x.arrivedAt === resp.arrivedAt && x.answer === resp.answer && x.model === resp.model
-              )
-            );
+            runtimeIndex = targetIndex;
           }
-          renderCurrentRuntimeResponse();
+          renderCurrentRuntimeResponse(swipe ? { swipe } : {});
+          if (delayedFocusMs > 0 && !focus) {
+            setTimeout(() => {
+              if (!runtimeResponses.length) return;
+              const idx = runtimeResponses.findIndex(
+                x => x.arrivedAt === resp.arrivedAt && x.answer === resp.answer && x.model === resp.model
+              );
+              if (idx < 0 || runtimeIndex === idx) return;
+              runtimeIndex = idx;
+              renderCurrentRuntimeResponse({ swipe: "next" });
+            }, delayedFocusMs);
+          }
           syncLocalSupplementCache();
         };
         state.pushRuntimeResponse = pushRuntimeResponse;
@@ -4182,6 +4504,7 @@ category: 'AQA JS',
           const preferredModel = getPreferredModel(currentModels);
           aiAppendBtn.disabled = true;
           showSupplementLoader(aiSupplementEl);
+          showHeaderAiNotchProcessing(item.id);
           const supplementTimer = startLoaderPhases(aiSupplementEl);
           const executeRequest = async () => {
             const startedAt = Date.now();
@@ -4190,10 +4513,10 @@ category: 'AQA JS',
               promptWithCategory,
               preferredModel,
               (modelName) => {
-                aiSupplementEl.dataset.waitingModel = modelName;
+                aiSupplementEl.dataset.waitingModel = getModelDisplayLabel(modelName);
                 const currentText = aiSupplementEl.querySelector(".ai-loader-text")?.textContent || "";
                 if (currentText.startsWith("Жду ответ от")) {
-                  updateLoaderText(aiSupplementEl, `Жду ответ от ${modelName}`);
+                  updateLoaderText(aiSupplementEl, `Жду ответ от ${getModelDisplayLabel(modelName)}`);
                 }
               },
               (extraResult) => {
@@ -4224,6 +4547,7 @@ category: 'AQA JS',
               answerType: "append"
             };
             pushRuntimeResponse(response);
+            showHeaderAiNotchReady(item.id);
             saveAiAnswerCloud(item.id, "append", response).then((id) => {
               if (id) {
                 response.cloudId = id;
@@ -4247,6 +4571,7 @@ category: 'AQA JS',
               updateLoaderText(aiSupplementEl, "Повторяю запрос после сохранения ключа");
               return;
             }
+            failHeaderAiNotchRequest();
             renderAiSupplement(aiSupplementEl, "Не удалось получить ответ от моделей. Попробуйте позже.");
           } finally {
             aiAppendBtn.disabled = false;
@@ -4258,6 +4583,26 @@ category: 'AQA JS',
       }
 
       section.appendChild(clone);
+    });
+  });
+
+  const initialSelectedFilter = localStorage.getItem("selectedFilter") || "Все";
+  if (initialSelectedFilter !== "Все") {
+    const selectedKey = normalizeCategoryKey(initialSelectedFilter);
+    document.querySelectorAll("#accordion-container .article").forEach(section => {
+      const sectionKey = section.dataset.categoryKey || normalizeCategoryKey(section.querySelector(".category-title")?.textContent || "");
+      section.style.display = sectionKey === selectedKey ? "" : "none";
+    });
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      clearTimeout(questionsPageReadyFallbackTimer);
+      markQuestionsPageReady();
+      setTimeout(() => {
+        clearTimeout(questionsInitialPaintFallbackTimer);
+        finishQuestionsInitialPaint();
+      }, 180);
     });
   });
 
@@ -4307,8 +4652,11 @@ category: 'AQA JS',
   });
 
   const restoreScrollPosition = () => {
-    if (!savedScrollY || Number.isNaN(savedScrollY)) return;
-    window.scrollTo(0, savedScrollY);
+    const targetY = Number.isFinite(authReturnScrollY) && authReturnScrollY !== null
+      ? authReturnScrollY
+      : savedScrollY;
+    if (!targetY || Number.isNaN(targetY)) return;
+    window.scrollTo(0, targetY);
   };
   restoreScrollPosition();
   requestAnimationFrame(restoreScrollPosition);
@@ -4516,16 +4864,13 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     if (activeChip) {
+      applyCategoryFilter(savedFilter);
       setActive(savedFilter);
       if (categoryFiltersBottom) {
         setTimeout(() => setActive(savedFilter), 0);
         setTimeout(() => setActive(savedFilter), 50);
         setTimeout(() => setActive(savedFilter), 150);
       }
-      // Добавляем небольшую задержку для гарантированного рендера карточек
-      setTimeout(() => {
-        applyCategoryFilter(savedFilter);
-      }, 50);
     } else {
       // По умолчанию активируем "Все"
       setActive('Все');

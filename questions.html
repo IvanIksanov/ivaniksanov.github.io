@@ -10,8 +10,16 @@
             if (saved === 'dark' || saved === 'light') {
                 document.documentElement.setAttribute('data-theme', saved);
             }
+            document.documentElement.classList.add('questions-loading', 'questions-initial-paint');
         })();
     </script>
+    <style>
+        html.questions-loading #search-results-title,
+        html.questions-loading #accordion-container,
+        html.questions-loading #about { visibility: hidden; }
+        html.questions-loading #questions-boot-loader { display: flex; }
+        html:not(.questions-loading) #questions-boot-loader { display: none; }
+    </style>
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="questions.css">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
@@ -92,6 +100,10 @@
             </svg>
         </button>
     </div>
+    <button id="header-ai-notch" class="header-ai-notch" type="button" aria-live="polite" aria-hidden="true">
+        <span class="header-ai-notch-icon" id="header-ai-notch-icon" aria-hidden="true">◌</span>
+        <span class="header-ai-notch-text" id="header-ai-notch-text">В процессе</span>
+    </button>
 </div>
 
 <div class="main-content">
@@ -135,6 +147,14 @@
 
 <!-- Нижняя панель категорий (появляется при скролле) -->
 <div id="category-filters-bottom" class="category-filters bottom-filters" aria-label="Категории"></div>
+
+<section id="questions-boot-loader" class="questions-boot-loader" aria-live="polite" aria-label="Загрузка вопросов">
+    <div class="questions-boot-loader__card">
+        <div class="questions-boot-loader__spinner" aria-hidden="true"></div>
+        <p class="questions-boot-loader__title">Загружаю вопросы</p>
+        <p class="questions-boot-loader__text">Подтягиваю данные и восстанавливаю вкладку/состояние страницы...</p>
+    </div>
+</section>
 
 
 <!-- шаблон одного пункта аккордеона -->
@@ -234,7 +254,7 @@
         <input type="email" id="auth-email-input" class="auth-email-input" placeholder="Ваш email" autocomplete="email" />
         <p id="auth-status" class="auth-text auth-status"></p>
         <div class="auth-actions">
-            <button type="button" id="auth-sync-btn" class="auth-sync-btn" title="Синхронизировать данные" aria-label="Синхронизировать данные">↻</button>
+            <button type="button" id="auth-sync-btn" class="auth-sync-btn" title="Синхронизировать данные" aria-label="Синхронизировать данные"><span class="auth-sync-icon" aria-hidden="true">↻</span></button>
             <button type="button" id="auth-send-btn" class="auth-send-btn">Получить ссылку</button>
             <button type="button" id="auth-close-btn" class="auth-close-btn">Закрыть</button>
         </div>
