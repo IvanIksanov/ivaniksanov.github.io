@@ -46,6 +46,47 @@
     });
   }
 
+  function revealHeaderLogo() {
+    const logoImg = document.querySelector('.logo img');
+    if (!logoImg) return;
+    if (logoImg.classList.contains('logo-ready')) return;
+
+    const markReady = () => {
+      logoImg.classList.add('logo-ready');
+    };
+
+    if (logoImg.complete) {
+      markReady();
+      return;
+    }
+
+    logoImg.addEventListener('load', markReady, { once: true });
+    logoImg.addEventListener('error', markReady, { once: true });
+  }
+
+  function setupSiteTitleHomeLink() {
+    const title = document.querySelector('.site-title');
+    if (!title) return;
+
+    // If title is already wrapped into a link on some page, do not override it.
+    if (title.closest('a')) return;
+
+    const goHome = () => {
+      window.location.href = 'index.html';
+    };
+
+    title.setAttribute('role', 'link');
+    title.setAttribute('tabindex', '0');
+    title.setAttribute('aria-label', 'Перейти на главную');
+
+    title.addEventListener('click', goHome);
+    title.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      goHome();
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     updateHeaderState();
     if (!document.documentElement.hasAttribute('data-theme')) {
@@ -59,5 +100,7 @@
     document.querySelectorAll('.site-header nav a').forEach((link) => {
       link.addEventListener('click', handleNavClick);
     });
+    revealHeaderLogo();
+    setupSiteTitleHomeLink();
   });
 })();

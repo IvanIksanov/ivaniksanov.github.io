@@ -1418,13 +1418,20 @@ category: 'AQA JS',
   const MODEL_FAILURES_KEY = "model_failures_v1";
   const MODEL_WARMUP_KEY = "model_warmup_ts_v1";
   const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
+  const MODEL_CHAT_VALIDATED_CACHE_KEY = "model_chat_validated_cache_v1";
   const MODEL_LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
   const QUESTIONS_CACHE_KEY = "questions_db_cache_v1";
   const QUESTIONS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+  const QUESTIONS_REST_TIMEOUT_MS = 45 * 1000;
+  const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
+  const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
   const AI_SUPPLEMENT_META_KEY = "ai_supplement_meta_v1";
   const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
+  const AI_RESPONSE_CURSOR_PREFIX = "ai_response_cursor_";
+  const AI_GUEST_AUTH_BYPASS_KEY = "ai_guest_auth_bypass_v1";
   const AI_SUPPLEMENT_MAX = 4;
   let modelListFromCache = false;
+  let modelPreflightPromise = null;
   let pendingRetry = null;
 
   // --- UI elements: поиск, AI, переключатель модели ---
@@ -1460,7 +1467,7 @@ category: 'AQA JS',
   let authUser = null;
   let authProfile = null;
   let authEmailLoginExpanded = false;
-  let allowGuestAiRequests = false;
+  let allowGuestAiRequests = readGuestAiAuthBypassFlag();
   let authModalAiGateActive = false;
   const AUTH_PENDING_PROFILE_KEY = "auth_pending_profile_v1";
   const CLOUD_SYNC_TS_KEY = "cloud_sync_ts_v1";
@@ -1471,8 +1478,10 @@ category: 'AQA JS',
   const REST_TIMEOUT_MS = 7000;
   const cloudProgressByQuestion = new Map();
   const cloudAnswersByQuestion = new Map();
+  const publicAppendAnswersByQuestion = new Map();
   const aiItemState = new Map();
   let cloudSyncPromise = null;
+  let publicAppendRefreshInFlight = null;
   let authLastSessionCheckTs = 0;
   let authRefreshInFlight = null;
   let authCardMorphToken = 0;
@@ -1640,13 +1649,27 @@ category: 'AQA JS',
     }
   }
 
-  function readQuestionsCache() {
+  function readValidatedChatModelsCache() {
+    try {
+      const raw = localStorage.getItem(MODEL_CHAT_VALIDATED_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.models) || !parsed.ts) return null;
+      if ((Date.now() - parsed.ts) > MODEL_LIST_CACHE_TTL_MS) return null;
+      return parsed.models.filter(Boolean);
+    } catch {
+      return null;
+    }
+  }
+
+  function readQuestionsCache(options = {}) {
+    const { allowStale = false } = options;
     try {
       const raw = localStorage.getItem(QUESTIONS_CACHE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
       if (!parsed || !Array.isArray(parsed.data) || !parsed.ts) return null;
-      if ((Date.now() - parsed.ts) > QUESTIONS_CACHE_TTL_MS) return null;
+      if (!allowStale && (Date.now() - parsed.ts) > QUESTIONS_CACHE_TTL_MS) return null;
       return parsed.data;
     } catch {
       return null;
@@ -1662,11 +1685,38 @@ category: 'AQA JS',
     } catch {}
   }
 
+  function readGuestAiAuthBypassFlag() {
+    try {
+      return localStorage.getItem(AI_GUEST_AUTH_BYPASS_KEY) === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function writeGuestAiAuthBypassFlag(enabled) {
+    try {
+      if (enabled) {
+        localStorage.setItem(AI_GUEST_AUTH_BYPASS_KEY, "1");
+      } else {
+        localStorage.removeItem(AI_GUEST_AUTH_BYPASS_KEY);
+      }
+    } catch {}
+  }
+
   function writeModelListCache(models) {
     try {
       safeSetItemWithAiEviction(MODEL_LIST_CACHE_KEY, JSON.stringify({
         ts: Date.now(),
         models
+      }));
+    } catch {}
+  }
+
+  function writeValidatedChatModelsCache(models) {
+    try {
+      safeSetItemWithAiEviction(MODEL_CHAT_VALIDATED_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        models: (Array.isArray(models) ? models : []).filter(Boolean).slice(0, 5)
       }));
     } catch {}
   }
@@ -1971,6 +2021,7 @@ category: 'AQA JS',
     if (!authModal) return;
     if (authModalAiGateActive && !authUser) {
       allowGuestAiRequests = true;
+      writeGuestAiAuthBypassFlag(true);
     }
     authModalAiGateActive = false;
     setAuthCheckingState(false);
@@ -2101,6 +2152,88 @@ category: 'AQA JS',
       });
     } catch (e) {
       console.warn("Failed to load AI answers from Supabase", e);
+    }
+  }
+
+  function readPublicAppendAnswersCache() {
+    try {
+      const raw = localStorage.getItem(PUBLIC_AI_APPEND_CACHE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.rows) || !parsed.ts) return null;
+      if (!parsed.rows.length) return null;
+      if ((Date.now() - Number(parsed.ts)) > PUBLIC_AI_APPEND_CACHE_TTL_MS) return null;
+      return parsed.rows;
+    } catch {
+      return null;
+    }
+  }
+
+  function writePublicAppendAnswersCache(rows) {
+    try {
+      const normalizedRows = Array.isArray(rows) ? rows : [];
+      if (!normalizedRows.length) {
+        localStorage.removeItem(PUBLIC_AI_APPEND_CACHE_KEY);
+        return;
+      }
+      localStorage.setItem(PUBLIC_AI_APPEND_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        rows: normalizedRows
+      }));
+    } catch {}
+  }
+
+  function readPublicAppendAnswersCacheMetaTs() {
+    try {
+      const raw = localStorage.getItem(PUBLIC_AI_APPEND_CACHE_KEY);
+      if (!raw) return 0;
+      const parsed = JSON.parse(raw);
+      return Number(parsed?.ts) || 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function fillPublicAppendAnswersMap(rows) {
+    publicAppendAnswersByQuestion.clear();
+    const grouped = new Map();
+    (rows || []).forEach((row) => {
+      if (!row?.question_id || !row?.content) return;
+      const list = grouped.get(row.question_id) || [];
+      list.push({
+        cloudId: row.id || null,
+        answer: row.content,
+        model: row.model || "",
+        seconds: row.seconds || 0,
+        arrivedAt: row.created_at ? Date.parse(row.created_at) || Date.now() : Date.now(),
+        answerType: "append",
+        isPublicShared: true
+      });
+      grouped.set(row.question_id, list);
+    });
+    grouped.forEach((list, questionId) => {
+      list.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
+      publicAppendAnswersByQuestion.set(questionId, list.slice(-2)); // max 2 public answers per question
+    });
+  }
+
+  async function loadPublicAppendAnswers() {
+    const cached = readPublicAppendAnswersCache();
+    if (cached) {
+      fillPublicAppendAnswersMap(cached);
+      return;
+    }
+    try {
+      const data = await restRequestPublic("ai_answers", {
+        method: "GET",
+        query: "select=id,question_id,answer_type,model,seconds,content,created_at&answer_type=eq.append&order=created_at.asc",
+        prefer: ""
+      });
+      const rows = Array.isArray(data) ? data.filter((row) => row?.answer_type === "append" || !row?.answer_type) : [];
+      fillPublicAppendAnswersMap(rows);
+      writePublicAppendAnswersCache(rows);
+    } catch (e) {
+      console.warn("Failed to load public append AI answers", e);
     }
   }
 
@@ -2272,6 +2405,96 @@ category: 'AQA JS',
     return data;
   }
 
+  async function restRequestPublic(path, { method = "GET", query = "", body = null, prefer = "" } = {}) {
+    const key = supabaseStore?.anonKey || SUPABASE_ANON_KEY_DIRECT;
+    const headers = {
+      apikey: key,
+      Authorization: `Bearer ${key}`
+    };
+    if (prefer) headers.Prefer = prefer;
+    if (body !== null) headers["Content-Type"] = "application/json";
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
+    let res;
+    try {
+      res = await fetch(buildRestUrl(path, query), {
+        method,
+        headers,
+        body: body !== null ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+        signal: controller.signal
+      });
+    } catch (e) {
+      if (e?.name === "AbortError") throw new Error(`${method} ${path} timeout`);
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
+    const raw = await res.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+    if (!res.ok) {
+      throw new Error(`${method} ${path} failed: ${res.status} ${typeof data === "string" ? data : JSON.stringify(data)}`);
+    }
+    return data;
+  }
+
+  function mergePublicAppendIntoVisibleState(questionId) {
+    const state = aiItemState.get(questionId);
+    if (!state || !Array.isArray(state.runtimeResponses)) return;
+    const shared = publicAppendAnswersByQuestion.get(questionId) || [];
+    if (!shared.length) return;
+    let changed = false;
+    shared.forEach((resp) => {
+      const idx = state.runtimeResponses.findIndex((x) =>
+        String(x.answerType || "append") === "append" &&
+        String(x.answer || "") === String(resp.answer || "") &&
+        String(x.model || "") === String(resp.model || "")
+      );
+      if (idx >= 0) {
+        if (!state.runtimeResponses[idx].isPublicShared) {
+          state.runtimeResponses[idx] = { ...state.runtimeResponses[idx], isPublicShared: true };
+          changed = true;
+        }
+        return;
+      }
+      state.runtimeResponses.push({ ...resp });
+      changed = true;
+    });
+    if (!changed) return;
+    state.runtimeResponses.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
+    if (typeof state.renderCurrentRuntimeResponse === "function" && state.runtimeResponses.length) {
+      const currentIdx = Math.max(0, Math.min(state.runtimeIndex || 0, state.runtimeResponses.length - 1));
+      state.runtimeIndex = currentIdx;
+      state.renderCurrentRuntimeResponse();
+    }
+  }
+
+  function queuePublicAppendAnswersRefresh(options = {}) {
+    const { force = false } = options;
+    const lastTs = readPublicAppendAnswersCacheMetaTs();
+    if (!force && lastTs && (Date.now() - lastTs) < 30000) return publicAppendRefreshInFlight || Promise.resolve();
+    if (publicAppendRefreshInFlight) return publicAppendRefreshInFlight;
+    publicAppendRefreshInFlight = (async () => {
+      try {
+        const data = await restRequestPublic("ai_answers", {
+          method: "GET",
+          query: "select=id,question_id,answer_type,model,seconds,content,created_at&answer_type=eq.append&order=created_at.asc",
+          prefer: ""
+        });
+        const rows = Array.isArray(data) ? data.filter((row) => row?.answer_type === "append" || !row?.answer_type) : [];
+        fillPublicAppendAnswersMap(rows);
+        writePublicAppendAnswersCache(rows);
+        publicAppendAnswersByQuestion.forEach((_, questionId) => mergePublicAppendIntoVisibleState(questionId));
+      } catch (e) {
+        console.warn("Background refresh of public append AI answers failed", e);
+      } finally {
+        publicAppendRefreshInFlight = null;
+      }
+    })();
+    return publicAppendRefreshInFlight;
+  }
+
   function getLocalProgressRows() {
     const rows = [];
     const dedupe = new Map();
@@ -2317,7 +2540,7 @@ category: 'AQA JS',
     if (!questionId) return;
     try {
       const normalized = (Array.isArray(responses) ? responses : [])
-        .filter(x => x && x.answer)
+        .filter(x => x && x.answer && !x.isPublicShared)
         .slice(-10)
         .map(x => ({
           answer: x.answer,
@@ -2325,7 +2548,8 @@ category: 'AQA JS',
           seconds: x.seconds || 0,
           arrivedAt: x.arrivedAt || Date.now(),
           answerType: x.answerType || "append",
-          cloudId: x.cloudId || null
+          cloudId: x.cloudId || null,
+          isPublicShared: !!x.isPublicShared
         }));
       if (!normalized.length) {
         localStorage.removeItem(`${AI_RESPONSES_LOCAL_PREFIX}${questionId}`);
@@ -2340,8 +2564,48 @@ category: 'AQA JS',
     }
   }
 
+  function readAiResponseCursor(questionId) {
+    if (!questionId) return null;
+    try {
+      const raw = localStorage.getItem(`${AI_RESPONSE_CURSOR_PREFIX}${questionId}`);
+      const parsed = JSON.parse(raw || "null");
+      if (!parsed || typeof parsed !== "object") return null;
+      return {
+        index: Number.isInteger(parsed.index) ? parsed.index : null,
+        signature: parsed.signature ? String(parsed.signature) : ""
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function writeAiResponseCursor(questionId, responses, index) {
+    if (!questionId) return;
+    try {
+      if (!Array.isArray(responses) || !responses.length) {
+        localStorage.removeItem(`${AI_RESPONSE_CURSOR_PREFIX}${questionId}`);
+        return;
+      }
+      const safeIndex = Math.max(0, Math.min(Number(index) || 0, responses.length - 1));
+      const current = responses[safeIndex];
+      const signature = current
+        ? aiSignature(questionId, current.answerType, current.model, current.answer)
+        : "";
+      localStorage.setItem(`${AI_RESPONSE_CURSOR_PREFIX}${questionId}`, JSON.stringify({
+        index: safeIndex,
+        signature
+      }));
+    } catch {}
+  }
+
   function getLocalAiRows(existingSignatures) {
     const rows = [];
+    const publicAppendSignatures = new Set();
+    publicAppendAnswersByQuestion.forEach((list, questionId) => {
+      (list || []).forEach((resp) => {
+        publicAppendSignatures.add(aiSignature(questionId, "append", resp?.model, resp?.answer));
+      });
+    });
     for (let i = 0; i < localStorage.length; i += 1) {
       const key = localStorage.key(i) || "";
       if (!key.startsWith(AI_RESPONSES_LOCAL_PREFIX)) continue;
@@ -2351,12 +2615,15 @@ category: 'AQA JS',
       try { arr = JSON.parse(localStorage.getItem(key) || "[]"); } catch {}
       if (!Array.isArray(arr)) continue;
       arr.forEach((entry) => {
+        if (entry?.isPublicShared) return;
+        if (entry?.cloudId) return; // already persisted
         const content = String(entry?.answer || "").trim();
         if (!content) return;
         const answerType = entry?.answerType || "append";
         const model = entry?.model || null;
         const seconds = Number(entry?.seconds) || null;
         const signature = aiSignature(questionId, answerType, model, content);
+        if (answerType === "append" && publicAppendSignatures.has(signature)) return;
         if (existingSignatures.has(signature)) return;
         existingSignatures.add(signature);
         rows.push({
@@ -2395,6 +2662,7 @@ category: 'AQA JS',
       }
       if (!content) continue;
       const signature = aiSignature(questionId, "append", model, content);
+      if (publicAppendSignatures.has(signature)) continue;
       if (existingSignatures.has(signature)) continue;
       existingSignatures.add(signature);
       rows.push({
@@ -2495,6 +2763,17 @@ category: 'AQA JS',
             cloudSignatures.add(aiSignature(questionId, resp.answerType, resp.model, resp.answer));
           });
         });
+        // Avoid duplicate inserts when the same AI answer/refine is already queued in pending mutations
+        // and will be flushed in the same sync cycle.
+        readPendingMutations().forEach((m) => {
+          if (!m || m.type !== "saveAiAnswer") return;
+          const p = m.payload || {};
+          const r = p.response || {};
+          const qid = p.questionId;
+          const content = String(r.answer || "").trim();
+          if (!qid || !content) return;
+          cloudSignatures.add(aiSignature(qid, p.answerType || r.answerType || "append", r.model || null, content));
+        });
         const localAiRows = getLocalAiRows(cloudSignatures);
         if (localAiRows.length) {
           if (supabaseStore.saveAiAnswersBulk) {
@@ -2570,29 +2849,40 @@ category: 'AQA JS',
       apikey: key,
       Authorization: `Bearer ${key}`
     };
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    async function fetchRestWithTimeout(url, label) {
+      let lastError = null;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), QUESTIONS_REST_TIMEOUT_MS);
+        try {
+          const res = await fetch(url, {
+            headers,
+            mode: "cors",
+            cache: "no-store",
+            signal: controller.signal
+          });
+          return res;
+        } catch (e) {
+          lastError = e;
+          const isAbort = controller.signal.aborted || e?.name === "AbortError" || /aborted/i.test(String(e?.message || ""));
+          if (isAbort && attempt < 2) {
+            console.warn(`Questions REST ${label} timed out (attempt ${attempt}), retrying...`);
+            continue;
+          }
+          throw e;
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      }
+      throw lastError || new Error(`Questions REST ${label} failed`);
+    }
     console.info("Loading questions from Supabase REST...");
     let sectionsRes;
     let questionsRes;
-    try {
-      [sectionsRes, questionsRes] = await Promise.all([
-        fetch(`${base}/rest/v1/question_sections?select=id,title,sort_order&order=sort_order.asc`, {
-          headers,
-          mode: "cors",
-          cache: "no-store",
-          signal: controller.signal
-        }),
-        fetch(`${base}/rest/v1/questions?select=id,section_id,title,answer_html,more_link,author_check,avatar,sort_order&order=sort_order.asc`, {
-          headers,
-          mode: "cors",
-          cache: "no-store",
-          signal: controller.signal
-        })
-      ]);
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    [sectionsRes, questionsRes] = await Promise.all([
+      fetchRestWithTimeout(`${base}/rest/v1/question_sections?select=id,title,sort_order&order=sort_order.asc`, "question_sections"),
+      fetchRestWithTimeout(`${base}/rest/v1/questions?select=id,section_id,title,answer_html,more_link,author_check,avatar,sort_order&order=sort_order.asc`, "questions")
+    ]);
     if (!sectionsRes.ok || !questionsRes.ok) {
       throw new Error(`REST load failed: sections=${sectionsRes.status}, questions=${questionsRes.status}`);
     }
@@ -2840,6 +3130,7 @@ category: 'AQA JS',
     const hasAuth = await ensureAuthContext();
     if (hasAuth) {
       allowGuestAiRequests = false;
+      writeGuestAiAuthBypassFlag(false);
       return true;
     }
     showAuthModal("Войдите, чтобы сохранить ответы ИИ. Или закройте окно и продолжите без сохранения.", { aiGate: true });
@@ -3089,6 +3380,7 @@ category: 'AQA JS',
       }
       if (authUser) {
         allowGuestAiRequests = false;
+        writeGuestAiAuthBypassFlag(false);
         authModalAiGateActive = false;
         await refreshAuthUser();
         setAuthStatus("");
@@ -3133,6 +3425,7 @@ category: 'AQA JS',
     flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
   }, 15000);
   const cachedQuestionsData = readQuestionsCache();
+  const staleCachedQuestionsData = cachedQuestionsData || readQuestionsCache({ allowStale: true });
   if (Array.isArray(cachedQuestionsData) && cachedQuestionsData.length) {
     runtimeQuestionsData = cachedQuestionsData;
     window.questionsData = runtimeQuestionsData;
@@ -3144,12 +3437,27 @@ category: 'AQA JS',
       window.questionsData = runtimeQuestionsData;
       writeQuestionsCache(dbData);
       console.info(`Questions source: Supabase (${runtimeQuestionsData.length} sections)`);
+    } else if (Array.isArray(staleCachedQuestionsData) && staleCachedQuestionsData.length) {
+      runtimeQuestionsData = staleCachedQuestionsData;
+      window.questionsData = runtimeQuestionsData;
+      console.warn(`Questions source: stale local cache fallback (${runtimeQuestionsData.length} sections)`);
+    } else if (Array.isArray(localQuestionsData) && localQuestionsData.length) {
+      runtimeQuestionsData = localQuestionsData;
+      window.questionsData = runtimeQuestionsData;
+      console.warn(`Questions source: bundled fallback (${runtimeQuestionsData.length} sections)`);
     } else {
       runtimeQuestionsData = [];
       window.questionsData = runtimeQuestionsData;
-      console.error("Questions source: Supabase load failed or returned empty. Front fallback is disabled.");
+      console.error("Questions source: Supabase load failed or returned empty, no cache/bundled fallback available.");
     }
   }
+  await loadPublicAppendAnswers();
+  window.dispatchEvent(new CustomEvent("qatodev:questions-data-ready", {
+    detail: {
+      questions: runtimeQuestionsData,
+      publicAppendAiByQuestion: Object.fromEntries(publicAppendAnswersByQuestion)
+    }
+  }));
 
   function renderModelsList(models) {
     if (!modelsListEl) return;
@@ -3225,6 +3533,94 @@ category: 'AQA JS',
     };
     map[model] = next;
     writeModelFailures(map);
+  }
+
+  function parseAvailableModelsFromDetail(detail) {
+    const text = String(detail || "");
+    if (!/available models\s*:/i.test(text)) return [];
+    const bracketMatch = text.match(/available models\s*:\s*\[([\s\S]*?)\]/i);
+    const source = bracketMatch ? bracketMatch[1] : text;
+    const result = [];
+    const rx = /'([^']+)'|"([^"]+)"/g;
+    let m;
+    while ((m = rx.exec(source))) {
+      const model = String(m[1] || m[2] || "").trim();
+      if (model && !result.includes(model)) result.push(model);
+    }
+    return result;
+  }
+
+  function normalizeAvailableChatModels(apiModels, exclude = []) {
+    const list = Array.isArray(apiModels) ? apiModels.filter(Boolean) : [];
+    const excluded = new Set(Array.isArray(exclude) ? exclude : []);
+    const filtered = list.filter(m => !excluded.has(m));
+    const noReasoning = filtered.filter(name => {
+      const n = String(name).toLowerCase();
+      return !(
+        n.includes("thinking") ||
+        n.includes("reasoning") ||
+        n.includes("deepseek-r1") ||
+        n.includes("/r1") ||
+        n.endsWith("-r1") ||
+        n.includes("o1") ||
+        n.includes("o3") ||
+        n.includes("vl") ||
+        n.includes("vision")
+      );
+    });
+    const hinted = FAST_MODEL_HINTS.filter(m => noReasoning.includes(m) && !excluded.has(m));
+    const pool = hinted.length ? hinted : (noReasoning.length ? noReasoning : filtered);
+    return (pool.length ? pool : filtered).slice(0, 5);
+  }
+
+  function applyAvailableModelsHint(apiModels, options = {}) {
+    const { exclude = [] } = options;
+    const nextModels = normalizeAvailableChatModels(apiModels, exclude);
+    if (!nextModels.length) return [];
+    setCurrentModels(nextModels);
+    applyModelSelection(nextModels);
+    renderModelsList(nextModels);
+    writeModelListCache(nextModels);
+    writeValidatedChatModelsCache(nextModels);
+    modelListFromCache = false;
+    return nextModels;
+  }
+
+  function getRequestOrder(preferredModel) {
+    const validated = readValidatedChatModelsCache();
+    if (Array.isArray(validated) && validated.length) {
+      const nextModels = normalizeAvailableChatModels(validated);
+      if (nextModels.length) {
+        setCurrentModels(nextModels);
+        applyModelSelection(nextModels);
+        renderModelsList(nextModels);
+        return getModelOrder(preferredModel && nextModels.includes(preferredModel) ? preferredModel : getPreferredModel(nextModels));
+      }
+    }
+    const cached = readModelListCache();
+    if (Array.isArray(cached) && cached.length) {
+      const cachedSet = new Set(cached);
+      const currentHasUnknown = currentModels.some(m => !cachedSet.has(m));
+      if (currentHasUnknown) {
+        const nextModels = normalizeAvailableChatModels(cached);
+        if (nextModels.length) {
+          setCurrentModels(nextModels);
+          applyModelSelection(nextModels);
+          renderModelsList(nextModels);
+        }
+      }
+      const orderFromCurrent = getModelOrder(preferredModel);
+      const filteredOrder = orderFromCurrent.filter(m => cachedSet.has(m));
+      if (filteredOrder.length) return filteredOrder;
+      const nextModels = normalizeAvailableChatModels(cached);
+      if (nextModels.length) {
+        setCurrentModels(nextModels);
+        applyModelSelection(nextModels);
+        renderModelsList(nextModels);
+        return getModelOrder(getPreferredModel(nextModels));
+      }
+    }
+    return getModelOrder(preferredModel);
   }
 
   function isModelBlocked(model) {
@@ -3329,7 +3725,19 @@ category: 'AQA JS',
       if (detail && /invalid api key/i.test(detail)) {
         throw new Error("INVALID_API_KEY");
       }
-      throw new Error(`AI request failed: ${res.status}`);
+      const availableModels = parseAvailableModelsFromDetail(detail);
+      if (res.status === 400 && availableModels.length) {
+        const err = new Error(`MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS:${res.status}`);
+        err.code = "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS";
+        err.status = res.status;
+        err.detail = detail;
+        err.availableModels = availableModels;
+        throw err;
+      }
+      const err = new Error(`AI request failed: ${res.status}`);
+      err.status = res.status;
+      err.detail = detail;
+      throw err;
     }
     const json = await res.json();
     const msg = json.choices?.[0]?.message;
@@ -3372,6 +3780,15 @@ category: 'AQA JS',
       if (detail && /invalid api key/i.test(detail)) {
         throw new Error("INVALID_API_KEY");
       }
+      const availableModels = parseAvailableModelsFromDetail(detail);
+      if (res.status === 400 && availableModels.length) {
+        const err = new Error(`MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS:${res.status}`);
+        err.code = "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS";
+        err.status = res.status;
+        err.detail = detail;
+        err.availableModels = availableModels;
+        throw err;
+      }
       recordModelFailure(model, `warmup_${res.status}`);
       throw new Error(`Warmup failed: ${res.status}`);
     }
@@ -3399,28 +3816,107 @@ category: 'AQA JS',
 
   async function warmupModels(models) {
     const list = (models && models.length ? models : currentModels).slice(0, 5);
-    await Promise.allSettled(list.map(m => warmupModelOnce(m)));
+    const settled = await Promise.allSettled(list.map(async (m) => {
+      const started = Date.now();
+      await warmupModelOnce(m);
+      return { model: m, ms: Date.now() - started };
+    }));
+    const valid = [];
+    let availableHint = [];
+    settled.forEach((entry, idx) => {
+      const model = list[idx];
+      if (entry.status === "fulfilled") {
+        valid.push(entry.value);
+        return;
+      }
+      const err = entry.reason;
+      if (err?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(err.availableModels)) {
+        availableHint = err.availableModels;
+        recordModelFailure(model, "chat_completions_unavailable");
+        return;
+      }
+      recordModelFailure(model, "warmup_failed");
+    });
+    if (!valid.length && availableHint.length) {
+      const hinted = applyAvailableModelsHint(availableHint);
+      if (hinted.length) {
+        const retrySettled = await Promise.allSettled(hinted.slice(0, 5).map(async (m) => {
+          const started = Date.now();
+          await warmupModelOnce(m);
+          return { model: m, ms: Date.now() - started };
+        }));
+        retrySettled.forEach((entry, idx) => {
+          const model = hinted[idx];
+          if (entry.status === "fulfilled") valid.push(entry.value);
+          else recordModelFailure(model, "warmup_failed");
+        });
+      }
+    }
     markWarmup();
-    // Обновляем порядок по скорости и сохраняем самую быструю
-    const ordered = getModelOrder(getPreferredModel(list));
+    if (valid.length) {
+      valid.sort((a, b) => a.ms - b.ms);
+      const validatedModels = valid.map(x => x.model).slice(0, 5);
+      setCurrentModels(validatedModels);
+      applyModelSelection(validatedModels);
+      renderModelsList(validatedModels);
+      writeModelListCache(validatedModels);
+      writeValidatedChatModelsCache(validatedModels);
+      modelListFromCache = false;
+      return validatedModels;
+    }
+    const ordered = getRequestOrder(getPreferredModel(list));
     setCurrentModels(ordered);
     applyModelSelection(ordered);
     renderModelsList(ordered);
+    return ordered;
+  }
+
+  function ensureModelPreflightInBackground() {
+    if (modelPreflightPromise) return modelPreflightPromise;
+    const needsPreflight = shouldWarmup() || !readValidatedChatModelsCache();
+    if (!needsPreflight) return Promise.resolve(currentModels);
+    modelPreflightPromise = warmupModels(currentModels)
+      .catch((e) => {
+        console.warn("Model preflight warmup failed", e);
+        return currentModels;
+      })
+      .finally(() => {
+        modelPreflightPromise = null;
+      });
+    return modelPreflightPromise;
   }
 
   function requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options = {}) {
-    const ATTEMPT_DELAY_MS = 10000;
+    const timings = readModelTimings();
+    const firstAvg = timings[order[0]]?.avg || 0;
+    const ATTEMPT_DELAY_MS = firstAvg
+      ? Math.max(3000, Math.min(9000, Math.round(firstAvg * 1.25)))
+      : 6000;
     return new Promise((resolve, reject) => {
       let completed = 0;
       let invalidCount = 0;
       let lastErr = null;
       let firstResolved = false;
+      let availableSet = null;
 
       order.forEach((model, idx) => {
         setTimeout(async () => {
           // Если первый ответ уже получен, новые запросы к моделям не запускаем.
           if (firstResolved) {
             completed += 1;
+            return;
+          }
+          if (availableSet && !availableSet.has(model)) {
+            completed += 1;
+            if (completed === order.length && !firstResolved) {
+              reject({
+                error: lastErr || new Error("No AI answer"),
+                invalidCount,
+                total: order.length,
+                tried: order.slice(),
+                availableModelsHint: availableSet ? Array.from(availableSet) : null
+              });
+            }
             return;
           }
           try {
@@ -3436,6 +3932,11 @@ category: 'AQA JS',
           } catch (e) {
             lastErr = e;
             if (e && String(e.message).includes("INVALID_API_KEY")) invalidCount += 1;
+            if (e?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(e.availableModels) && e.availableModels.length) {
+              availableSet = new Set(e.availableModels);
+              applyAvailableModelsHint(e.availableModels);
+              recordModelFailure(model, "chat_completions_unavailable");
+            }
             console.warn(`Model failed: ${model}`, e);
           } finally {
             completed += 1;
@@ -3444,7 +3945,8 @@ category: 'AQA JS',
                 error: lastErr || new Error("No AI answer"),
                 invalidCount,
                 total: order.length,
-                tried: order.slice()
+                tried: order.slice(),
+                availableModelsHint: availableSet ? Array.from(availableSet) : null
               });
             }
           }
@@ -3454,13 +3956,39 @@ category: 'AQA JS',
   }
 
   async function requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, options = {}) {
-    const order = getModelOrder(preferredModel);
+    if (!readValidatedChatModelsCache()) {
+      ensureModelPreflightInBackground();
+    }
+    if (modelPreflightPromise) {
+      await Promise.race([
+        modelPreflightPromise.catch(() => null),
+        new Promise(resolve => setTimeout(resolve, readValidatedChatModelsCache() ? 1800 : 4000))
+      ]);
+    }
+    const order = getRequestOrder(preferredModel);
     try {
       return await requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options);
     } catch (batchErr) {
       if (batchErr?.invalidCount === batchErr?.total) {
         showApiKeyModal();
         throw batchErr.error || new Error("INVALID_API_KEY");
+      }
+      if (Array.isArray(batchErr?.availableModelsHint) && batchErr.availableModelsHint.length) {
+        const hintedModels = applyAvailableModelsHint(batchErr.availableModelsHint, { exclude: batchErr?.tried || [] });
+        if (hintedModels.length) {
+          const retryOrderFromHint = getRequestOrder(getPreferredModel(hintedModels)).filter(m => !(batchErr?.tried || []).includes(m));
+          if (retryOrderFromHint.length) {
+            try {
+              return await requestBatchWithTimeout(userQ, retryOrderFromHint, onAttempt, onAdditional, options);
+            } catch (retryErrFromHint) {
+              if (retryErrFromHint?.invalidCount === retryErrFromHint?.total) {
+                showApiKeyModal();
+                throw retryErrFromHint.error || new Error("INVALID_API_KEY");
+              }
+              throw retryErrFromHint.error || new Error("No AI answer");
+            }
+          }
+        }
       }
       if (modelListFromCache) {
         const refreshed = await loadModels({ force: true, exclude: batchErr?.tried || order });
@@ -3576,6 +4104,10 @@ category: 'AQA JS',
     return `${n} секунд`;
   }
 
+  function getAppendInlineStatusText() {
+    return window.innerWidth <= 600 ? "Дополняю..." : "Дополняю ответ у ИИ";
+  }
+
   function normalizeCategoryKey(category) {
     const value = String(category || "")
       .replace(/\s+/g, " ")
@@ -3588,14 +4120,17 @@ category: 'AQA JS',
     return value;
   }
 
-  function renderAiSupplement(el, text, seconds, modelName, nav, statusText) {
+  function renderAiSupplement(el, text, seconds, modelName, nav, statusText, appearanceVariant = "") {
     if (!el) return;
     el.innerHTML = "";
+    el.classList.toggle("ai-supplement-public", appearanceVariant === "public");
     const head = document.createElement("div");
     head.className = "ai-supplement-head";
     const title = document.createElement("div");
     title.className = "ai-supplement-title";
-    if (seconds) {
+    if (appearanceVariant === "public") {
+      title.innerHTML = `Ответ ИИ <span class="ai-time">из хранилища</span>`;
+    } else if (seconds) {
       title.innerHTML = `Ответ ИИ <span class="ai-time">за ${formatSecondsRu(seconds)}</span>`;
     } else {
       title.textContent = "Ответ ИИ";
@@ -3607,7 +4142,7 @@ category: 'AQA JS',
       inlineStatus.innerHTML = `<span class="ai-inline-spinner"></span><span class="ai-time">${escapeHtml(statusText)}</span>`;
       head.appendChild(inlineStatus);
     }
-    if (nav && nav.total > 1) {
+      if (nav && nav.total > 1) {
       const controls = document.createElement("div");
       controls.className = "ai-supplement-nav";
       const prev = document.createElement("button");
@@ -3640,6 +4175,11 @@ category: 'AQA JS',
           nav.onDelete();
         });
         controls.appendChild(del);
+      } else {
+        const placeholder = document.createElement("span");
+        placeholder.className = "ai-nav-delete-placeholder";
+        placeholder.setAttribute("aria-hidden", "true");
+        controls.appendChild(placeholder);
       }
       head.appendChild(controls);
     } else if (nav && typeof nav.onDelete === "function") {
@@ -3826,29 +4366,13 @@ category: 'AQA JS',
     const preferredModel = getPreferredModel(currentModels);
     const startedAt = Date.now();
     const prompt = buildRefinePrompt(context, userFollowup);
-    const hasExistingResponses = Array.isArray(itemState.runtimeResponses) && itemState.runtimeResponses.length > 0;
-    if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
-      itemState.setInlineStatus("Уточняю у ИИ");
-    } else {
-      showSupplementLoader(itemState.aiSupplementEl);
-    }
     showHeaderAiNotchProcessing(context.itemId);
-    const timer = hasExistingResponses ? null : startLoaderPhases(itemState.aiSupplementEl);
+    const timer = null;
     try {
       const result = await requestWithFallback(
         prompt,
         preferredModel,
-        (modelName) => {
-          if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
-            itemState.setInlineStatus("Уточняю у ИИ");
-          } else {
-            itemState.aiSupplementEl.dataset.waitingModel = getModelDisplayLabel(modelName);
-            const currentText = itemState.aiSupplementEl.querySelector(".ai-loader-text")?.textContent || "";
-            if (currentText.startsWith("Жду ответ от")) {
-              updateLoaderText(itemState.aiSupplementEl, `Жду ответ от ${getModelDisplayLabel(modelName)}`);
-            }
-          }
-        },
+        () => {},
         (extraResult) => {
           const extraSeconds = Math.max(1, Math.round((extraResult.arrivedAt - startedAt) / 1000));
           const response = {
@@ -3869,9 +4393,6 @@ category: 'AQA JS',
         { system: refineSystemPrompt }
       );
       stopLoaderPhases(timer);
-      if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
-        itemState.setInlineStatus("");
-      }
       const seconds = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
       const response = {
         answer: result.answer,
@@ -3893,17 +4414,9 @@ category: 'AQA JS',
       stopLoaderPhases(timer);
       if (e && String(e.message).includes("INVALID_API_KEY")) {
         pendingRetry = () => runRefineRequest(context, userFollowup);
-        if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
-          itemState.setInlineStatus("Уточняю у ИИ");
-        } else {
-          updateLoaderText(itemState.aiSupplementEl, "Повторяю запрос после сохранения ключа");
-        }
         return false;
       }
       failHeaderAiNotchRequest();
-      if (hasExistingResponses && typeof itemState.setInlineStatus === "function") {
-        itemState.setInlineStatus("");
-      }
       renderAiSupplement(itemState.aiSupplementEl, "Не удалось получить ответ от моделей. Попробуйте позже.");
       return false;
     }
@@ -3942,6 +4455,10 @@ category: 'AQA JS',
   // --- Render accordion sections & items ---
   const container = document.getElementById("accordion-container");
   const tpl       = document.getElementById("accordion-item-template");
+  if (!container || !tpl) {
+    console.info("Accordion UI not found on this page, questions list render skipped.");
+    return;
+  }
 
   function escapeHtml(str) {
     return str
@@ -4365,39 +4882,76 @@ category: 'AQA JS',
         setInlineStatus: null
       };
       aiItemState.set(item.id, state);
+      const sharedAppendResponses = publicAppendAnswersByQuestion.get(item.id) || [];
       const cloudResponses = cloudAnswersByQuestion.get(item.id) || [];
-      if (cloudResponses.length && aiSupplementEl) {
-        cloudResponses.forEach(resp => state.runtimeResponses.push(resp));
+      const mergedCloudResponses = [...sharedAppendResponses];
+      const pushIfUniqueResponse = (target, resp) => {
+        if (!resp || !resp.answer) return;
+        const duplicateIdx = target.findIndex(existing =>
+          String(existing.answerType || "append") === String(resp.answerType || "append") &&
+          String(existing.answer || "") === String(resp.answer || "") &&
+          String(existing.model || "") === String(resp.model || "")
+        );
+        if (duplicateIdx >= 0) {
+          if (target[duplicateIdx]?.isPublicShared && !resp?.isPublicShared) {
+            target[duplicateIdx] = { ...target[duplicateIdx], ...resp, isPublicShared: false };
+          }
+          return;
+        }
+        target.push({ ...resp });
+      };
+      cloudResponses.forEach(resp => {
+        pushIfUniqueResponse(mergedCloudResponses, { ...resp });
+      });
+      const localResponses = readLocalAiResponses(item.id);
+      localResponses.forEach(resp => pushIfUniqueResponse(mergedCloudResponses, { ...resp }));
+      mergedCloudResponses.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
+      if (mergedCloudResponses.length && aiSupplementEl) {
+        mergedCloudResponses.forEach(resp => state.runtimeResponses.push(resp));
+        const savedCursor = readAiResponseCursor(item.id);
+        if (savedCursor) {
+          const bySignatureIdx = savedCursor.signature
+            ? state.runtimeResponses.findIndex((x) =>
+                aiSignature(item.id, x.answerType, x.model, x.answer) === savedCursor.signature
+              )
+            : -1;
+          if (bySignatureIdx >= 0) {
+            state.runtimeIndex = bySignatureIdx;
+          } else if (Number.isInteger(savedCursor.index)) {
+            state.runtimeIndex = Math.max(0, Math.min(savedCursor.index, state.runtimeResponses.length - 1));
+          }
+        }
         writeLocalAiResponses(item.id, state.runtimeResponses);
-        const latest = cloudResponses[cloudResponses.length - 1];
-        renderAiSupplement(aiSupplementEl, latest.answer, latest.seconds, latest.model);
+        const latest = state.runtimeResponses[state.runtimeIndex] || mergedCloudResponses[mergedCloudResponses.length - 1];
+        renderAiSupplement(
+          aiSupplementEl,
+          latest.answer,
+          latest.seconds,
+          latest.model,
+          undefined,
+          undefined,
+          latest?.isPublicShared ? "public" : ""
+        );
       } else {
-        const localResponses = readLocalAiResponses(item.id);
-        if (localResponses.length && aiSupplementEl) {
-          localResponses.forEach(resp => state.runtimeResponses.push(resp));
-          const latest = localResponses[localResponses.length - 1];
-          renderAiSupplement(aiSupplementEl, latest.answer, latest.seconds, latest.model);
-        } else {
-          const savedSupplement = localStorage.getItem(supplementKey);
-          if (savedSupplement && aiSupplementEl) {
-            try {
-              const parsed = JSON.parse(savedSupplement);
-              if (parsed && parsed.text) {
-                state.runtimeResponses.push({
-                  answer: parsed.text,
-                  model: parsed.model,
-                  seconds: parsed.seconds,
-                  arrivedAt: 0,
-                  answerType: "append"
-                });
-                writeLocalAiResponses(item.id, state.runtimeResponses);
-                renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds, parsed.model);
-              } else {
-                renderAiSupplement(aiSupplementEl, savedSupplement);
-              }
-            } catch {
+        const savedSupplement = localStorage.getItem(supplementKey);
+        if (savedSupplement && aiSupplementEl) {
+          try {
+            const parsed = JSON.parse(savedSupplement);
+            if (parsed && parsed.text) {
+              state.runtimeResponses.push({
+                answer: parsed.text,
+                model: parsed.model,
+                seconds: parsed.seconds,
+                arrivedAt: 0,
+                answerType: "append"
+              });
+              writeLocalAiResponses(item.id, state.runtimeResponses);
+              renderAiSupplement(aiSupplementEl, parsed.text, parsed.seconds, parsed.model);
+            } else {
               renderAiSupplement(aiSupplementEl, savedSupplement);
             }
+          } catch {
+            renderAiSupplement(aiSupplementEl, savedSupplement);
           }
         }
       }
@@ -4477,6 +5031,7 @@ category: 'AQA JS',
           if (!runtimeResponses.length) return;
           const current = runtimeResponses[runtimeIndex];
           state.runtimeIndex = runtimeIndex;
+          const canDeleteCurrent = !current?.isPublicShared;
           renderAiSupplement(
             aiSupplementEl,
             current.answer,
@@ -4494,11 +5049,13 @@ category: 'AQA JS',
                       runtimeIndex = (runtimeIndex + 1) % runtimeResponses.length;
                       renderCurrentRuntimeResponse({ swipe: "next" });
                     },
-                    onDelete: removeRuntimeResponse
+                    onDelete: canDeleteCurrent ? removeRuntimeResponse : null
                   }
-              : { onDelete: removeRuntimeResponse },
-            inlineStatus
+              : (canDeleteCurrent ? { onDelete: removeRuntimeResponse } : null),
+            inlineStatus,
+            current?.isPublicShared ? "public" : ""
           );
+          writeAiResponseCursor(item.id, runtimeResponses, runtimeIndex);
           if (swipe) animateAiSupplementSwipe(aiSupplementEl, swipe);
         };
         state.renderCurrentRuntimeResponse = renderCurrentRuntimeResponse;
@@ -4543,22 +5100,22 @@ category: 'AQA JS',
           if (!canContinue) return;
           const preferredModel = getPreferredModel(currentModels);
           aiAppendBtn.disabled = true;
-          showSupplementLoader(aiSupplementEl);
           showHeaderAiNotchProcessing(item.id);
-          const supplementTimer = startLoaderPhases(aiSupplementEl);
+          const hasExistingResponses = Array.isArray(runtimeResponses) && runtimeResponses.length > 0;
+          const supplementTimer = null;
           const executeRequest = async () => {
             const startedAt = Date.now();
+            let hasFocusedGeneratedResponse = false;
+            const nextAppendPushOptions = () => {
+              if (hasFocusedGeneratedResponse) return {};
+              hasFocusedGeneratedResponse = true;
+              return hasExistingResponses ? { focus: true, swipe: "next" } : {};
+            };
             const promptWithCategory = `Тема: ${cat.category}. Вопрос: ${item.title}`;
             const result = await requestWithFallback(
               promptWithCategory,
               preferredModel,
-              (modelName) => {
-                aiSupplementEl.dataset.waitingModel = getModelDisplayLabel(modelName);
-                const currentText = aiSupplementEl.querySelector(".ai-loader-text")?.textContent || "";
-                if (currentText.startsWith("Жду ответ от")) {
-                  updateLoaderText(aiSupplementEl, `Жду ответ от ${getModelDisplayLabel(modelName)}`);
-                }
-              },
+              () => {},
               (extraResult) => {
                 const extraSeconds = Math.max(1, Math.round((extraResult.arrivedAt - startedAt) / 1000));
                 const response = {
@@ -4568,7 +5125,7 @@ category: 'AQA JS',
                   arrivedAt: extraResult.arrivedAt,
                   answerType: "append"
                 };
-                pushRuntimeResponse(response);
+                pushRuntimeResponse(response, nextAppendPushOptions());
                 saveAiAnswerCloud(item.id, "append", response).then((id) => {
                   if (id) {
                     response.cloudId = id;
@@ -4586,7 +5143,7 @@ category: 'AQA JS',
               arrivedAt: result.arrivedAt || Date.now(),
               answerType: "append"
             };
-            pushRuntimeResponse(response);
+            pushRuntimeResponse(response, nextAppendPushOptions());
             showHeaderAiNotchReady(item.id);
             saveAiAnswerCloud(item.id, "append", response).then((id) => {
               if (id) {
@@ -4608,7 +5165,6 @@ category: 'AQA JS',
           } catch (e) {
             if (e && String(e.message).includes("INVALID_API_KEY")) {
               pendingRetry = executeRequest;
-              updateLoaderText(aiSupplementEl, "Повторяю запрос после сохранения ключа");
               return;
             }
             failHeaderAiNotchRequest();
@@ -4703,6 +5259,7 @@ category: 'AQA JS',
   setTimeout(restoreScrollPosition, 120);
 
     loadModels().then(() => {
+      ensureModelPreflightInBackground();
       if (!shouldWarmup()) return;
       let hasClicked = false;
       let hasScrolledToFirst = false;
@@ -4719,7 +5276,7 @@ category: 'AQA JS',
 
       const tryStartWarmup = () => {
         if (hasClicked && hasScrolledToFirst && shouldWarmup()) {
-          warmupModels(currentModels);
+          ensureModelPreflightInBackground();
           window.removeEventListener("scroll", checkScroll);
           window.removeEventListener("resize", checkScroll);
         }

@@ -459,6 +459,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const burgerMenu = document.querySelector('.burger-menu');
     const navLinks = document.querySelector('nav ul');
 
+    if (!burgerMenu || !navLinks) return;
+
     burgerMenu.addEventListener('click', () => {
         navLinks.classList.toggle('active');
     });
