@@ -1423,6 +1423,7 @@ category: 'AQA JS',
   const QUESTIONS_CACHE_KEY = "questions_db_cache_v1";
   const QUESTIONS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
   const QUESTIONS_REST_TIMEOUT_MS = 45 * 1000;
+  const QUESTIONS_LOAD_USE_SDK = false;
   const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
   const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
   const AI_SUPPLEMENT_META_KEY = "ai_supplement_meta_v1";
@@ -1433,6 +1434,8 @@ category: 'AQA JS',
   let modelListFromCache = false;
   let modelPreflightPromise = null;
   let pendingRetry = null;
+  let lastAuthDrivenSyncTs = 0;
+  let lastAuthDrivenSyncUserId = "";
 
   // --- UI elements: поиск, AI, переключатель модели ---
   const searchInput    = document.getElementById("search-input");
@@ -2910,7 +2913,7 @@ category: 'AQA JS',
 
   async function loadQuestionsFromDb() {
     try {
-      if (isCloudReady()) {
+      if (QUESTIONS_LOAD_USE_SDK && isCloudReady()) {
         try {
           const sdkData = await Promise.race([
             loadQuestionsFromDbViaSdk(),
@@ -2930,6 +2933,26 @@ category: 'AQA JS',
 
   async function loadQuestionsFromDbWithTimeout() {
     return loadQuestionsFromDb();
+  }
+
+  function shouldRunAuthDrivenSync(options = {}) {
+    const { userId = "", force = false } = options;
+    if (force) return true;
+    const pendingCount = readPendingMutations().length;
+    if (pendingCount > 0) return true;
+    const now = Date.now();
+    if (userId && userId === lastAuthDrivenSyncUserId && (now - lastAuthDrivenSyncTs) < 12000) {
+      return false;
+    }
+    if ((now - getCloudSyncLastTs()) < 8000) {
+      return false;
+    }
+    return true;
+  }
+
+  function markAuthDrivenSync(userId) {
+    lastAuthDrivenSyncTs = Date.now();
+    lastAuthDrivenSyncUserId = String(userId || "");
   }
 
   async function saveProgressCloud(questionId, status, options = {}) {
@@ -3384,7 +3407,10 @@ category: 'AQA JS',
         authModalAiGateActive = false;
         await refreshAuthUser();
         setAuthStatus("");
-        await syncLocalAndCloudState({ force: true, source: "auth" });
+        if (shouldRunAuthDrivenSync({ userId: authUser.id })) {
+          markAuthDrivenSync(authUser.id);
+          await syncLocalAndCloudState({ force: false, source: "auth" });
+        }
         await flushPendingMutations();
       } else {
         authProfile = null;
@@ -3404,7 +3430,10 @@ category: 'AQA JS',
       try {
         const user = await refreshAuthUserInBackground({ force: true });
         if (user) {
-          await syncLocalAndCloudState({ force: true, source: "auth" });
+          if (shouldRunAuthDrivenSync({ userId: user.id })) {
+            markAuthDrivenSync(user.id);
+            await syncLocalAndCloudState({ force: false, source: "auth" });
+          }
           await flushPendingMutations();
         }
       } catch (e) {
