@@ -1019,6 +1019,9 @@ html[data-theme="dark"] .answer-links .answer-link.read-link:hover {
 .ai-supplement-meta {
   margin-top: 0.35rem;
 }
+.ai-supplement-meta .ai-time {
+  color: rgba(47, 92, 138, 0.55);
+}
 
 .ai-supplement-inline-status {
   display: inline-flex;
@@ -1639,10 +1642,38 @@ html[data-theme="dark"] .auth-sync-btn.is-success {
   animation: authSyncSpin 0.95s linear infinite;
 }
 
+.header-ai-notch.attention-flash {
+  animation: headerAiNotchAttentionFlash 1.25s ease;
+}
+
 .header-ai-notch-text {
   font-size: 0.68rem;
   opacity: 0.72;
   white-space: nowrap;
+}
+
+@keyframes headerAiNotchAttentionFlash {
+  0%, 100% {
+    background: var(--header-glass-bg, rgba(255,255,255,0.22));
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: var(--header-glass-shadow, 0 10px 24px rgba(0,0,0,0.08));
+  }
+  18%, 58% {
+    background: rgba(255, 179, 71, 0.35);
+    border-color: rgba(255, 165, 0, 0.42);
+    box-shadow: 0 10px 24px rgba(255, 165, 0, 0.18);
+  }
+  34%, 74% {
+    background: var(--header-glass-bg, rgba(255,255,255,0.22));
+    border-color: rgba(0, 0, 0, 0.05);
+    box-shadow: var(--header-glass-shadow, 0 10px 24px rgba(0,0,0,0.08));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-ai-notch.attention-flash {
+    animation: none;
+  }
 }
 
 @media (max-width: 600px) {

@@ -159,6 +159,17 @@
     document.body.appendChild(script);
   }
 
+  function ensureModelPreflightScript() {
+    const hasQuestionsScript = Array.from(document.scripts).some((s) => String(s.src || "").includes("questions.js"));
+    if (hasQuestionsScript) return;
+    if (document.querySelector('script[data-model-preflight="true"]')) return;
+    const script = document.createElement('script');
+    script.src = 'model-preflight.shared.js';
+    script.defer = true;
+    script.dataset.modelPreflight = 'true';
+    document.body.appendChild(script);
+  }
+
   function ensureProfileButton() {
     const switcher = document.querySelector('.theme-switcher');
     if (!switcher) return;
@@ -208,5 +219,6 @@
     ensureAuthModalMarkup();
     ensureProfileButton();
     ensureSharedAuthScript();
+    ensureModelPreflightScript();
   });
 })();
