@@ -696,7 +696,28 @@ html[data-theme="dark"] .answer-links .answer-link.read-link:hover {
   color: var(--search-text);
 }
 
-/* 7) Hover-эффект для кнопки */
+.questions-load-status {
+  display: none;
+  max-width: 800px;
+  margin: -0.35rem auto 0.9rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  color: #2d4f72;
+  background: rgba(68, 187, 193, 0.14);
+  border: 1px solid rgba(68, 187, 193, 0.25);
+}
+
+.questions-load-status.show {
+  display: block;
+}
+
+html[data-theme="dark"] .questions-load-status {
+  color: #bfd7ea;
+  background: rgba(68, 187, 193, 0.16);
+  border: 1px solid rgba(68, 187, 193, 0.34);
+}
 
 /* ===== Стили для выпадающего списка (как поле поиска) ===== */
 

@@ -112,6 +112,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const clearBtn       = document.getElementById("search-clear-btn");
   const resultsTitle   = document.getElementById("search-results-title");
   const about          = document.getElementById("about");
+  const questionsLoadStatusEl = document.getElementById("questions-load-status");
   const apiKeyModal    = document.getElementById("api-key-modal");
   const apiKeyInput    = document.getElementById("api-key-input");
   const apiKeySave     = document.getElementById("api-key-save");
@@ -152,6 +153,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const cloudAnswersByQuestion = new Map();
   const publicAppendAnswersByQuestion = new Map();
   const aiItemState = new Map();
+  let questionsUiRendered = false;
+  let questionsLoadFallbackTimer = null;
   let cloudSyncPromise = null;
   let authLastSessionCheckTs = 0;
   let authRefreshInFlight = null;
@@ -180,6 +183,31 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     void authSyncBtn.offsetWidth;
     authSyncBtn.classList.add("is-success");
     setTimeout(() => authSyncBtn.classList.remove("is-success"), 700);
+  }
+
+  function showQuestionsLoadFallback() {
+    if (!questionsLoadStatusEl) return;
+    questionsLoadStatusEl.textContent = "Загружаю вопросы...";
+    questionsLoadStatusEl.classList.add("show");
+  }
+
+  function hideQuestionsLoadFallback() {
+    if (!questionsLoadStatusEl) return;
+    questionsLoadStatusEl.classList.remove("show");
+  }
+
+  function scheduleQuestionsLoadFallback() {
+    if (questionsLoadFallbackTimer) clearTimeout(questionsLoadFallbackTimer);
+    questionsLoadFallbackTimer = setTimeout(() => {
+      questionsLoadFallbackTimer = null;
+      showQuestionsLoadFallback();
+    }, 1500);
+  }
+
+  function clearQuestionsLoadFallbackTimer() {
+    if (!questionsLoadFallbackTimer) return;
+    clearTimeout(questionsLoadFallbackTimer);
+    questionsLoadFallbackTimer = null;
   }
 
   function finalizeAuthCardMorph(token) {
@@ -916,20 +944,36 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     }
   }
 
-  async function loadPublicAppendAnswers() {
+  async function loadPublicAppendAnswers(options = {}) {
+    const { onUpdate = null } = options;
+    const notify = (source) => {
+      if (typeof onUpdate === "function") {
+        try { onUpdate(source); } catch {}
+      }
+    };
+
+    const cachedRows = readPublicAppendAnswersCache();
+    if (cachedRows) {
+      fillPublicAppendAnswersMap(cachedRows);
+      notify("cache");
+    }
+
     const repoRows = await loadPublicAppendAnswersFromRepoJson();
     if (Array.isArray(repoRows)) {
       fillPublicAppendAnswersMap(repoRows);
       writePublicAppendAnswersCache(repoRows);
-      return;
+      notify("repo");
+      return { source: "repo", count: repoRows.length };
     }
-    const cachedRows = readPublicAppendAnswersCache();
+
     if (cachedRows) {
-      fillPublicAppendAnswersMap(cachedRows);
-      return;
+      return { source: "cache", count: cachedRows.length };
     }
+
     fillPublicAppendAnswersMap([]);
     console.warn("Public append answers source is empty: no repo JSON and no local cache");
+    notify("empty");
+    return { source: "empty", count: 0 };
   }
 
   async function initializeCloudState() {
@@ -1163,6 +1207,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       state.runtimeIndex = currentIdx;
       state.renderCurrentRuntimeResponse();
     }
+  }
+
+  function applyPublicAppendAnswersToVisibleUi() {
+    if (!questionsUiRendered) return;
+    publicAppendAnswersByQuestion.forEach((_, questionId) => {
+      mergePublicAppendIntoVisibleState(questionId);
+    });
   }
 
   function getLocalProgressRows() {
@@ -2145,6 +2196,20 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (!authUser) return;
     flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
   }, 15000);
+  scheduleQuestionsLoadFallback();
+  const publicAiLoadPromise = loadPublicAppendAnswers({
+    onUpdate: () => {
+      applyPublicAppendAnswersToVisibleUi();
+      window.dispatchEvent(new CustomEvent("qatodev:questions-public-ai-ready", {
+        detail: {
+          publicAppendAiByQuestion: Object.fromEntries(publicAppendAnswersByQuestion)
+        }
+      }));
+    }
+  }).catch((e) => {
+    console.warn("Public append answers async load failed", e);
+    return { source: "error", count: 0 };
+  });
   let questionsSource = "none";
   const repoQuestionsData = await loadQuestionsFromRepoJson();
   const cachedQuestionsData = readQuestionsCache();
@@ -2181,13 +2246,24 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
   // Questions are loaded from repo JSON / cache on page boot.
   // DB refresh is done by snapshot sync scripts (manual or scheduled), not from client runtime.
-  await loadPublicAppendAnswers();
+  clearQuestionsLoadFallbackTimer();
+  if (Array.isArray(runtimeQuestionsData) && runtimeQuestionsData.length) {
+    hideQuestionsLoadFallback();
+  } else {
+    showQuestionsLoadFallback();
+    if (questionsLoadStatusEl) {
+      questionsLoadStatusEl.textContent = "Не удалось загрузить вопросы";
+    }
+  }
   window.dispatchEvent(new CustomEvent("qatodev:questions-data-ready", {
     detail: {
       questions: runtimeQuestionsData,
       publicAppendAiByQuestion: Object.fromEntries(publicAppendAnswersByQuestion)
     }
   }));
+  publicAiLoadPromise.then(() => {
+    applyPublicAppendAnswersToVisibleUi();
+  });
 
   function renderModelsList(models) {
     if (!modelsListEl) return;
@@ -4050,6 +4126,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       section.appendChild(clone);
     });
   });
+  questionsUiRendered = true;
+  applyPublicAppendAnswersToVisibleUi();
 
   const initialSelectedFilter = localStorage.getItem("selectedFilter") || "Все";
   if (initialSelectedFilter !== "Все") {
