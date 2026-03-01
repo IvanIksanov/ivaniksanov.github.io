@@ -1,16 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  function markQuestionsPageReady() {
-    document.documentElement.classList.remove("questions-loading");
-  }
-  function finishQuestionsInitialPaint() {
-    document.documentElement.classList.remove("questions-initial-paint");
-  }
-  const questionsPageReadyFallbackTimer = setTimeout(() => {
-    const hasRenderedQuestions = !!document.querySelector("#accordion-container .article, #accordion-container .t-item");
-    if (hasRenderedQuestions) markQuestionsPageReady();
-  }, 12000);
-  const questionsInitialPaintFallbackTimer = setTimeout(finishQuestionsInitialPaint, 7000);
-
   const SCROLL_POS_KEY = "questions_scroll_y_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
   const savedScrollY = Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
@@ -3523,6 +3511,22 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     }
   }
 
+  const openKey = "open_items";
+  let initialOpenIds = [];
+  try {
+    const parsedOpen = JSON.parse(localStorage.getItem(openKey) || "[]");
+    initialOpenIds = Array.isArray(parsedOpen) ? parsedOpen.filter(Boolean) : [];
+  } catch {
+    initialOpenIds = [];
+  }
+  const openSet = new Set(initialOpenIds);
+  while (openSet.size > 3) {
+    const oldestId = openSet.values().next().value;
+    if (!oldestId) break;
+    openSet.delete(oldestId);
+  }
+  safeSetItemWithAiEviction(openKey, JSON.stringify(Array.from(openSet)));
+
   runtimeQuestionsData.forEach(cat => {
     // 1. Создаем <section>
     const section = document.createElement("section");
@@ -3587,8 +3591,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
     // 4. Render вопросов
     cat.items.forEach(item => {
-      const openKey = "open_items";
-      const openSet = new Set(JSON.parse(localStorage.getItem(openKey) || "[]"));
       const clone  = tpl.content.cloneNode(true);
       const header = clone.querySelector('.t849__header');
       const btn    = clone.querySelector('.t849__trigger-button');
@@ -3706,11 +3708,30 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       // Toggle accordion
       btn.addEventListener("click", () => {
         const expanded = btn.getAttribute("aria-expanded") === "true";
-        btn.setAttribute("aria-expanded", !expanded);
-        content.style.display = expanded ? "none" : "block";
-        header.classList.toggle("t849__opened", !expanded);
-        if (!expanded) openSet.add(item.id);
-        else openSet.delete(item.id);
+        if (expanded) {
+          btn.setAttribute("aria-expanded", "false");
+          content.style.display = "none";
+          header.classList.remove("t849__opened");
+          openSet.delete(item.id);
+        } else {
+          if (!openSet.has(item.id) && openSet.size >= 3) {
+            const oldestId = openSet.values().next().value;
+            if (oldestId) {
+              const oldestBtn = container.querySelector(`.t849__trigger-button[aria-controls="${oldestId}"]`);
+              const oldestHeader = oldestBtn?.closest(".t849__header");
+              const oldestContent = document.getElementById(oldestId);
+              if (oldestBtn) oldestBtn.setAttribute("aria-expanded", "false");
+              if (oldestHeader) oldestHeader.classList.remove("t849__opened");
+              if (oldestContent) oldestContent.style.display = "none";
+              openSet.delete(oldestId);
+            }
+          }
+          btn.setAttribute("aria-expanded", "true");
+          content.style.display = "block";
+          header.classList.add("t849__opened");
+          openSet.delete(item.id);
+          openSet.add(item.id);
+        }
         safeSetItemWithAiEviction(openKey, JSON.stringify(Array.from(openSet)));
       });
       const supplementKey = `ai_supplement_${item.id}`;
@@ -4038,17 +4059,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       section.style.display = sectionKey === selectedKey ? "" : "none";
     });
   }
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      clearTimeout(questionsPageReadyFallbackTimer);
-      markQuestionsPageReady();
-      setTimeout(() => {
-        clearTimeout(questionsInitialPaintFallbackTimer);
-        finishQuestionsInitialPaint();
-      }, 180);
-    });
-  });
 
   if (authUser) {
     syncLocalAndCloudState({ force: false, source: "post-render" }).catch((e) => {

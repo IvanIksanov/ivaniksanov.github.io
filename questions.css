@@ -12,104 +12,6 @@ body {
   background-color: #F1F1F1;
 }
 
-html.questions-loading #search-results-title,
-html.questions-loading #accordion-container,
-html.questions-loading #about {
-  opacity: 0;
-  pointer-events: none;
-}
-
-#search-results-title,
-#accordion-container,
-#about {
-  opacity: 1;
-  transition: opacity 180ms ease;
-}
-
-.questions-boot-loader {
-  width: 100%;
-  max-width: 800px;
-  min-height: 46vh;
-  margin: 0 auto 1rem;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  padding: 0.6rem 0;
-}
-
-.questions-boot-loader__card {
-  width: min(100%, 800px);
-  min-height: 180px;
-  border-radius: 14px;
-  background: #FAFAFA;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 1rem 1.2rem;
-  box-sizing: border-box;
-}
-
-.questions-boot-loader__spinner {
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  border: 2px solid rgba(68, 187, 193, 0.2);
-  border-top-color: #44BBC1;
-  animation: questionsBootSpin 0.8s linear infinite;
-  margin-bottom: 0.65rem;
-}
-
-.questions-boot-loader__title {
-  margin: 0 0 0.25rem;
-  font-family: "Fira Code", monospace;
-  font-size: 0.95rem;
-  color: #1A1A1A;
-}
-
-.questions-boot-loader__text {
-  margin: 0;
-  font-size: 0.82rem;
-  color: rgba(26, 26, 26, 0.7);
-  max-width: 42ch;
-}
-
-html[data-theme="dark"] .questions-boot-loader__card {
-  background: #242424;
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
-}
-
-html[data-theme="dark"] .questions-boot-loader__spinner {
-  border-color: rgba(68, 187, 193, 0.16);
-  border-top-color: #44BBC1;
-}
-
-html[data-theme="dark"] .questions-boot-loader__title {
-  color: #f1f1f1;
-}
-
-html[data-theme="dark"] .questions-boot-loader__text {
-  color: rgba(241, 241, 241, 0.72);
-}
-
-html.questions-initial-paint #accordion-container,
-html.questions-initial-paint #accordion-container *,
-html.questions-initial-paint #accordion-container *::before,
-html.questions-initial-paint #accordion-container *::after {
-  transition: none !important;
-  animation: none !important;
-}
-
-@keyframes questionsBootSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
 h1, h2, h3, h4, h5, h6 {
   font-family: "Fira Code", monospace;
 }
@@ -121,30 +23,6 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
   }
 
-  .questions-boot-loader {
-    min-height: 34vh;
-    margin-bottom: 0.6rem;
-  }
-
-  .questions-boot-loader__card {
-    min-height: 132px;
-    border-radius: 12px;
-    padding: 0.8rem 0.85rem;
-  }
-
-  .questions-boot-loader__spinner {
-    width: 24px;
-    height: 24px;
-    margin-bottom: 0.5rem;
-  }
-
-  .questions-boot-loader__title {
-    font-size: 0.82rem;
-  }
-
-  .questions-boot-loader__text {
-    font-size: 0.72rem;
-  }
 }
 
 .frame {
@@ -2254,7 +2132,8 @@ button.unclear-btn:hover {
   left: 50%;
   right: auto;
   transform: translateX(-50%);
-  width: min(680px, 92vw);
+  width: auto;
+  max-width: min(620px, 92vw);
   bottom: 10px;
   z-index: 1100;
   padding: 8px 12px;
@@ -2291,10 +2170,10 @@ button.unclear-btn:hover {
 }
 
 .bottom-filters .filter-chip {
-  font-size: 0.75rem;
-  padding: 6px 10px;
+  font-size: 0.72rem;
+  padding: 5px 8px;
   flex: 0 0 auto;
-  width: calc((100% - 32px - 24px) / 5);
+  width: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
