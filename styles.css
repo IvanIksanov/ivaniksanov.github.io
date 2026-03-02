@@ -1754,17 +1754,17 @@ html[data-theme="light"] #practice-covers .carousel .skills-cover-cta:hover {
   }
 
   #practice-covers .carousel {
-    --cover-main-width: 78%;
-    --cover-gap: 7px;
-    --cover-side-scale: 0.95;
-    --cover-side-scale-left: 0.97;
-    --cover-side-scale-right: 0.95;
+    --cover-main-width: 76%;
+    --cover-gap: 6px;
+    --cover-side-scale: 0.8;
+    --cover-side-scale-left: 0.83;
+    --cover-side-scale-right: 0.8;
     --cover-side-opacity: 0.7;
     --cover-nav-hit: 58px;
     --cover-nav-offset: calc(var(--cover-gap) / 2 + 2px);
     --cover-nav-edge-push: 10px;
     --cover-nav-edge-push-right: 16px;
-    --cover-center-x: 46.8%;
+    --cover-center-x: 47.3%;
     --cover-cta-space: 58px;
   }
 
@@ -1842,6 +1842,25 @@ html[data-theme="light"] #practice-covers .carousel .skills-cover-cta:hover {
   }
 }
 
+@media (min-width: 441px) and (max-width: 600px) {
+  #practice-covers .carousel {
+    --cover-nav-edge-push: clamp(14px, 3.8vw, 28px);
+    --cover-nav-edge-push-right: clamp(18px, 4.5vw, 34px);
+  }
+}
+
+@media (min-width: 510px) and (max-width: 600px) {
+  #practice-covers .carousel {
+    --cover-nav-edge-push: clamp(20px, 4.4vw, 32px);
+  }
+}
+
+@media (min-width: 600px) and (max-width: 850px) {
+  #practice-covers #prev.carousel-button {
+    left: calc(50% - var(--cover-main-half) - var(--cover-nav-offset) - var(--cover-nav-hit) / 2 + 10px);
+  }
+}
+
 @keyframes skills-cover-pan-y {
   from {
     object-position: center 38%;
@@ -1857,16 +1876,6 @@ html[data-theme="light"] #practice-covers .carousel .skills-cover-cta:hover {
   }
   to {
     object-position: 62% center;
-  }
-}
-
-@media (max-width: 400px) {
-  #practice-covers .carousel {
-    --cover-center-x: 47.3%;
-    --cover-main-width: 76%;
-    --cover-gap: 6px;
-    --cover-side-scale-left: 0.83;
-    --cover-side-scale-right: 0.8;
   }
 }
 
