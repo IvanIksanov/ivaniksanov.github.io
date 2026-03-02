@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Техники тест-дизайна</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="test-design.css">
+</head>
+<body>
+<div class="page">
+    <div class="page-card">
+        <aside class="sidebar">
+            <h1 class="sidebar-title">Техники тест-дизайна</h1>
+            <p class="sidebar-subtitle">
+                Нажимай на технику слева, изучай описание и играйся с мини-демо внутри фрейма.
+            </p>
+            <nav class="tab-list" aria-label="Список техник тест-дизайна">
+                <button class="tab-button tab-button--active"
+                        type="button"
+                        data-tech="boundaries">
+                    Граничные значения
+                </button>
+                <button class="tab-button"
+                        type="button"
+                        data-tech="equivalence">
+                    Классы эквивалентности
+                </button>
+                <button class="tab-button"
+                        type="button"
+                        data-tech="pairwise">
+                    Попарное тестирование
+                </button>
+                <button class="tab-button"
+                        type="button"
+                        data-tech="decision-table">
+                    Таблица принятия решений
+                </button>
+                <button class="tab-button"
+                        type="button"
+                        data-tech="error-guessing">
+                    Предугадывание ошибок
+                </button>
+                <button class="tab-button"
+                        type="button"
+                        data-tech="state-transition">
+                    Тестирование состояний и переходов
+                </button>
+            </nav>
+
+            <div class="sidebar-note">
+                <p>
+                    Элементы в интерактивном фрейме можно нажимать —
+                    под ним появится объяснение выбранного объекта.
+                </p>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <!-- Граничные значения -->
+            <section class="tech-content tech-content--active"
+                     data-tech="boundaries"
+                     aria-labelledby="title-boundaries">
+                <header class="tech-header">
+                    <h2 id="title-boundaries">Граничные значения</h2>
+                    <p class="tech-tagline">Проверяем поведение системы на краях допустимого диапазона.</p>
+                </header>
+
+                <article class="tech-text">
+                    <h3>Определение</h3>
+                    <p>
+                        Техника <strong>анализа граничных значений</strong> фокусируется на проверке
+                        значений, которые находятся прямо на границах допустимого диапазона,
+                        чуть ниже и чуть выше этих границ.
+                    </p>
+
+                    <h3>Как применяется тестировщиком</h3>
+                    <ul>
+                        <li>Определяются минимальные и максимальные допустимые значения полей ввода.</li>
+                        <li>Составляются проверки для значений: <em>min−1</em>, <em>min</em>, <em>min+1</em>,
+                            <em>max−1</em>, <em>max</em>, <em>max+1</em>.</li>
+                        <li>Особое внимание уделяется реакциям системы на выход за пределы диапазона:
+                            сообщения об ошибке, блокировка действий, подсветка полей и т.п.</li>
+                        <li>Техника отлично работает для числовых полей, дат, длин строк, лимитов
+                            количества и т.д.</li>
+                    </ul>
+                </article>
+
+                <div class="tech-iframe-block">
+                    <div class="tech-iframe-header">Мини-демо: граничные значения возраста</div>
+                    <iframe class="tech-iframe"
+                            title="Демо техники граничных значений"
+                            data-target-desc-id="desc-boundaries"></iframe>
+                    <div class="element-description" id="desc-boundaries">
+                        Нажми на любой элемент в фрейме, чтобы увидеть объяснение.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Классы эквивалентности -->
+            <section class="tech-content"
+                     data-tech="equivalence"
+                     aria-labelledby="title-equivalence">
+                <header class="tech-header">
+                    <h2 id="title-equivalence">Классы эквивалентности</h2>
+                    <p class="tech-tagline">Разбиваем ввод на группы, которые ведут себя одинаково.</p>
+                </header>
+
+                <article class="tech-text">
+                    <h3>Определение</h3>
+                    <p>
+                        <strong>Классы эквивалентности</strong> — это техника, при которой всё множество
+                        возможных значений делится на группы (классы), для каждого из которых система
+                        ведёт себя одинаково. Достаточно протестировать по одному представителю
+                        из каждого класса, чтобы сократить количество тестов.
+                    </p>
+
+                    <h3>Как применяется тестировщиком</h3>
+                    <ul>
+                        <li>На основе требований выделяются допустимые и недопустимые диапазоны значений.</li>
+                        <li>Каждому диапазону соответствует класс эквивалентности
+                            (валидный / невалидный).</li>
+                        <li>Из каждого класса выбирается по одному значению для тестов —
+                            покрытие уменьшается количественно, но остаётся логически полным.</li>
+                        <li>Техника часто используется совместно с граничными значениями.</li>
+                    </ul>
+                </article>
+
+                <div class="tech-iframe-block">
+                    <div class="tech-iframe-header">Мини-демо: классы эквивалентности для скидки</div>
+                    <iframe class="tech-iframe"
+                            title="Демо техники классов эквивалентности"
+                            data-target-desc-id="desc-equivalence"></iframe>
+                    <div class="element-description" id="desc-equivalence">
+                        Нажми на цветные полоски в фрейме, чтобы увидеть описание классов.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Попарное тестирование -->
+            <section class="tech-content"
+                     data-tech="pairwise"
+                     aria-labelledby="title-pairwise">
+                <header class="tech-header">
+                    <h2 id="title-pairwise">Попарное тестирование (Pairwise)</h2>
+                    <p class="tech-tagline">
+                        Ищем дефекты во взаимодействии параметров, не перебирая все комбинации.
+                    </p>
+                </header>
+
+                <article class="tech-text">
+                    <h3>Определение</h3>
+                    <p>
+                        <strong>Попарное тестирование</strong> — техника комбинированного тестирования,
+                        при которой тест-набор формируется так, чтобы каждая возможная пара значений
+                        параметров встретилась хотя бы один раз.
+                    </p>
+
+                    <h3>Как применяется тестировщиком</h3>
+                    <ul>
+                        <li>Выделяются параметры (браузер, тип клиента, способ оплаты и т.д.).</li>
+                        <li>С помощью инструментов (например, pairwise-генераторов) строятся
+                            минимальные наборы комбинаций, покрывающие все пары.</li>
+                        <li>Тестировщик выполняет сценарии по сгенерированным комбинациям,
+                            а не по полному декартову произведению.</li>
+                        <li>Техника хорошо подходит для конфигурационного тестирования
+                            и проверки бизнес-правил с несколькими измерениями.</li>
+                    </ul>
+                </article>
+
+                <div class="tech-iframe-block">
+                    <div class="tech-iframe-header">Мини-демо: комбинации устройства и способа оплаты</div>
+                    <iframe class="tech-iframe"
+                            title="Демо техники попарного тестирования"
+                            data-target-desc-id="desc-pairwise"></iframe>
+                    <div class="element-description" id="desc-pairwise">
+                        Нажми на любую «таблетку» в сетке внутри фрейма.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Таблица принятия решений -->
+            <section class="tech-content"
+                     data-tech="decision-table"
+                     aria-labelledby="title-decision-table">
+                <header class="tech-header">
+                    <h2 id="title-decision-table">Таблица принятия решений</h2>
+                    <p class="tech-tagline">
+                        Формализуем сложную логику условий и действий.
+                    </p>
+                </header>
+
+                <article class="tech-text">
+                    <h3>Определение</h3>
+                    <p>
+                        <strong>Таблица принятия решений</strong> — табличное представление связки
+                        «условия → действия», где каждая колонка — отдельное правило.
+                        Техника помогает увидеть пропущенные комбинации условий и противоречия
+                        в логике.
+                    </p>
+
+                    <h3>Как применяется тестировщиком</h3>
+                    <ul>
+                        <li>Из требований выделяются условия и возможные действия системы.</li>
+                        <li>Строится таблица, в которой перечислены все комбинации условий.</li>
+                        <li>Каждой комбинации сопоставляется ожидаемое действие.</li>
+                        <li>По таблице формируются тест-кейсы, проверяющие каждое правило.</li>
+                        <li>Техника особенно полезна для тарифов, скидок, сложных форм,
+                            бизнес-правил скоринга и т.п.</li>
+                    </ul>
+                </article>
+
+                <div class="tech-iframe-block">
+                    <div class="tech-iframe-header">Мини-демо: таблица решений по типу клиента</div>
+                    <iframe class="tech-iframe"
+                            title="Демо техники таблицы принятия решений"
+                            data-target-desc-id="desc-decision-table"></iframe>
+                    <div class="element-description" id="desc-decision-table">
+                        Выбери условие или действие в фрейме, чтобы увидеть правило.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Предугадывание ошибок -->
+            <section class="tech-content"
+                     data-tech="error-guessing"
+                     aria-labelledby="title-error-guessing">
+                <header class="tech-header">
+                    <h2 id="title-error-guessing">Предугадывание ошибок</h2>
+                    <p class="tech-tagline">
+                        Используем опыт и интуицию, чтобы поймать нестандартные баги.
+                    </p>
+                </header>
+
+                <article class="tech-text">
+                    <h3>Определение</h3>
+                    <p>
+                        <strong>Предугадывание ошибок</strong> — техника, основанная на опыте
+                        тестировщика. На основе типичных ошибок прошлого, знания домена и
+                        «чутья» предположительно выбираются места, где система может сломаться,
+                        и под них придумываются дополнительные тесты.
+                    </p>
+
+                    <h3>Как применяется тестировщиком</h3>
+                    <ul>
+                        <li>Тестировщик вспоминает типичные дефекты: неверные округления, проблемы
+                            с локалями, переполнения полей, обнуление настроек и др.</li>
+                        <li>Для рискованных мест специально придумываются «грязные» данные
+                            и нетипичные сценарии.</li>
+                        <li>Результаты обсуждаются с аналитиками и разработчиками,
+                            пополняя базу знаний команды.</li>
+                        <li>Часто используется как дополнение к формальным техникам
+                            (классы, границы, попарное и др.).</li>
+                    </ul>
+                </article>
+
+                <div class="tech-iframe-block">
+                    <div class="tech-iframe-header">Мини-демо: карта идей для предугадывания ошибок</div>
+                    <iframe class="tech-iframe"
+                            title="Демо техники предугадывания ошибок"
+                            data-target-desc-id="desc-error-guessing"></iframe>
+                    <div class="element-description" id="desc-error-guessing">
+                        Кликни по любому «блоку идей» в фрейме.
+                    </div>
+                </div>
+            </section>
+
+            <!-- Тестирование состояний и переходов -->
+            <section class="tech-content"
+                     data-tech="state-transition"
+                     aria-labelledby="title-state-transition">
+                <header class="tech-header">
+                    <h2 id="title-state-transition">Тестирование состояний и переходов</h2>
+                    <p class="tech-tagline">
+                        Проверяем, что система корректно реагирует на события в разных состояниях.
+                    </p>
+                </header>
+
+                <article class="tech-text">
+                    <h3>Определение</h3>
+                    <p>
+                        <strong>Тестирование состояний и переходов</strong> использует модель,
+                        в которой система представлена набором состояний и переходов между ними.
+                        Тестировщик проверяет, что для каждого события в определённом состоянии
+                        происходит корректный переход и результат.
+                    </p>
+
+                    <h3>Как применяется тестировщиком</h3>
+                    <ul>
+                        <li>Строится диаграмма состояний (например, для заявки, заказа, документа).</li>
+                        <li>Выделяются допустимые и недопустимые переходы между состояниями.</li>
+                        <li>По диаграмме составляются позитивные и негативные тест-кейсы.</li>
+                        <li>Особое внимание уделяется «застреванию» в состоянии и циклическим переходам.</li>
+                    </ul>
+                </article>
+
+                <div class="tech-iframe-block">
+                    <div class="tech-iframe-header">Мини-демо: состояния заявки</div>
+                    <iframe class="tech-iframe"
+                            title="Демо техники тестирования состояний и переходов"
+                            data-target-desc-id="desc-state-transition"></iframe>
+                    <div class="element-description" id="desc-state-transition">
+                        Нажми на любую кнопку перехода в фрейме.
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<script src="test-design.js"></script>
+</body>
+</html>

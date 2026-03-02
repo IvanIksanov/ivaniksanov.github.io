@@ -1,0 +1,37 @@
+name: Sync Questions Snapshot
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Sync snapshot from Supabase
+        run: |
+          node scripts/sync-questions-db-snapshot.mjs
+          node scripts/sync-public-ai-append-snapshot.mjs
+
+      - name: Commit snapshot
+        run: |
+          if git diff --quiet over/questions_db_snapshot.json over/public_ai_append_snapshot.json; then
+            echo "No snapshot changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add over/questions_db_snapshot.json over/public_ai_append_snapshot.json
+          git commit -m "chore: update questions and public AI snapshots"
+          git push

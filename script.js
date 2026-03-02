@@ -404,26 +404,65 @@ document.addEventListener("DOMContentLoaded", function() {
 
 // --- КАРУСЕЛЬ ИЗОБРАЖЕНИЙ ---
 document.addEventListener('DOMContentLoaded', function () {
-    let currentIndex = 0;
-    const items = document.querySelectorAll('.carousel-images .carousel-item');
+    const carousel = document.querySelector('#practice-covers .carousel');
+    if (!carousel) return;
+    const items = Array.from(carousel.querySelectorAll('.carousel-images .carousel-item'));
     if (!items.length) return;
-    let autoRotateId = null;
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let touchEndX = 0;
-    let touchEndY = 0;
+    const prevBtn = carousel.querySelector('#prev');
+    const nextBtn = carousel.querySelector('#next');
+    if (!prevBtn || !nextBtn) return;
 
-    function showImage(index) {
+    let currentIndex = 0;
+    let autoRotateId = null;
+    let isSliding = false;
+    const slideDurationMs = 560;
+
+    function wrapIndex(index) {
+        const len = items.length;
+        return (index + len) % len;
+    }
+
+    function relativeOffset(index, activeIndex) {
+        const len = items.length;
+        let offset = index - activeIndex;
+        if (offset > len / 2) offset -= len;
+        if (offset < -len / 2) offset += len;
+        return offset;
+    }
+
+    function renderSlides() {
         items.forEach((item, i) => {
-            item.classList.toggle('active', i === index);
+            const offset = relativeOffset(i, currentIndex);
+            item.classList.remove('active', 'prev', 'next', 'off-left', 'off-right');
+
+            if (offset === 0) {
+                item.classList.add('active');
+            } else if (offset === -1) {
+                item.classList.add('prev');
+            } else if (offset === 1) {
+                item.classList.add('next');
+            } else if (offset < -1) {
+                item.classList.add('off-left');
+            } else {
+                item.classList.add('off-right');
+            }
         });
+    }
+
+    function goTo(index) {
+        if (isSliding) return;
+        isSliding = true;
+        currentIndex = wrapIndex(index);
+        renderSlides();
+        setTimeout(function () {
+            isSliding = false;
+        }, slideDurationMs);
     }
 
     function startAutoRotate() {
         stopAutoRotate();
         autoRotateId = setInterval(function() {
-            currentIndex = (currentIndex + 1) % items.length;
-            showImage(currentIndex);
+            goTo(currentIndex + 1);
         }, 8000);
     }
 
@@ -434,22 +473,44 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    document.getElementById('prev').addEventListener('click', function() {
-        console.log("Кнопка Назад нажата"); // Лог для отладки
-        currentIndex = (currentIndex > 0) ? currentIndex - 1 : items.length - 1;
-        showImage(currentIndex);
+    prevBtn.addEventListener('click', function() {
+        goTo(currentIndex - 1);
         startAutoRotate();
     });
 
-    document.getElementById('next').addEventListener('click', function() {
-        console.log("Кнопка Вперед нажата"); // Лог для отладки
-        currentIndex = (currentIndex < items.length - 1) ? currentIndex + 1 : 0;
-        showImage(currentIndex);
+    nextBtn.addEventListener('click', function() {
+        goTo(currentIndex + 1);
         startAutoRotate();
     });
 
-    // Изначально показываем первое изображение
-    showImage(currentIndex);
+    carousel.addEventListener('click', function (event) {
+        const clickedLink = event.target.closest('.skills-cover-link, .skills-cover-cta');
+        if (!clickedLink || !carousel.contains(clickedLink)) return;
+
+        const item = clickedLink.closest('.carousel-item');
+        if (!item) return;
+
+        if (item.classList.contains('prev')) {
+            event.preventDefault();
+            event.stopPropagation();
+            goTo(currentIndex - 1);
+            startAutoRotate();
+            return;
+        }
+
+        if (item.classList.contains('next')) {
+            event.preventDefault();
+            event.stopPropagation();
+            goTo(currentIndex + 1);
+            startAutoRotate();
+        }
+    }, true);
+
+    // Изначально показываем первое изображение без анимации
+    renderSlides();
+    requestAnimationFrame(function () {
+        carousel.classList.add('is-ready');
+    });
     startAutoRotate();
 
 });

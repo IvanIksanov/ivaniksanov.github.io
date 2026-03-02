@@ -5,11 +5,12 @@ html, body {
 /* Глобальные улучшения текста и ссылок */
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  line-height: 1.55;
+  line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-size: 17px;
   background-color: #F1F1F1;
+  margin: 0;
 }
 
 
@@ -20,9 +21,14 @@ h1, h2, h4, h5, h6 {
 
 @media (max-width: 600px) {
   body {
-    margin: 10px;
+    margin: 0;
     padding: 0;
   }
+}
+
+main {
+  margin: 0;
+  padding: 0;
 }
 
 .frame {
@@ -66,6 +72,7 @@ h1, h2, h4, h5, h6 {
   .article {
     padding: 0.2rem 0.5rem;
     border: none;
+    border-radius: 0;
   }
 }
 
@@ -1452,16 +1459,414 @@ html[data-theme="dark"] .skill-links a.selected {
 }
 
 #practice-covers .carousel {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  width: 100%;
+  margin-left: 0;
+  margin-right: 0;
+  margin-bottom: 1.4rem;
+  padding-bottom: 0.4rem;
+  --cover-arrow-color: #ffffff;
+  --cover-arrow-hover: #f2f2f2;
+  --cover-cta-shift-x: 8px;
+  --cover-main-width: 70%;
+  --cover-main-half: calc(var(--cover-main-width) / 2);
+  --cover-gap: clamp(8px, 1.1vw, 18px);
+  --cover-side-scale: 0.9;
+  --cover-side-scale-left: var(--cover-side-scale);
+  --cover-side-scale-right: var(--cover-side-scale);
+  --cover-side-opacity: 0.58;
+  --cover-nav-hit: 64px;
+  --cover-nav-offset: calc(var(--cover-gap) / 2 + (var(--cover-main-width) * (1 - var(--cover-side-scale)) / 4));
+  --cover-center-x: 49%;
+  --cover-cta-space: 68px;
+  --cover-transition: 560ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  --cover-pan-duration: 18s;
+  --cover-caption-color: #1a1a1a;
+  --cover-caption-shadow: rgba(255, 255, 255, 0.42);
+  --cover-caption-corner-strong: rgba(255, 255, 255, 0.54);
+  --cover-caption-corner-soft: rgba(255, 255, 255, 0.22);
+}
+
+html[data-theme="light"] #practice-covers .carousel {
+  --cover-arrow-color: #111111;
+  --cover-arrow-hover: #000000;
+  --cover-caption-color: #1a1a1a;
+  --cover-caption-shadow: rgba(255, 255, 255, 0.5);
+  --cover-caption-corner-strong: rgba(0, 0, 0, 0.88);
+  --cover-caption-corner-soft: rgba(0, 0, 0, 0.56);
+}
+
+html[data-theme="dark"] #practice-covers .carousel {
+  --cover-arrow-color: #ffffff;
+  --cover-arrow-hover: #f2f2f2;
+  --cover-caption-color: #f1f1f1;
+  --cover-caption-shadow: rgba(0, 0, 0, 0.68);
+  --cover-caption-corner-strong: rgba(0, 0, 0, 0.84);
+  --cover-caption-corner-soft: rgba(0, 0, 0, 0.52);
 }
 
 @media (max-width: 900px) {
   #practice-covers .carousel {
-    width: 100%;
-    margin-left: 0;
+    --cover-main-width: 82%;
+    --cover-center-x: 48.8%;
+  }
+}
+
+#practice-covers .carousel-images {
+  position: relative;
+  height: 420px;
+  overflow-x: hidden;
+  overflow-y: visible;
+}
+
+@media (min-width: 1680px) {
+  #practice-covers .carousel-images {
+    height: clamp(470px, 27vw, 660px);
+  }
+}
+
+#practice-covers .carousel .carousel-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: var(--cover-main-width);
+  margin: 0;
+  left: var(--cover-center-x);
+  transform: translateX(150%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+#practice-covers .carousel.is-ready .carousel-item {
+  transition: transform var(--cover-transition), opacity var(--cover-transition), filter var(--cover-transition);
+}
+
+#practice-covers .carousel .carousel-item .skills-cover-link {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: calc(100% - var(--cover-cta-space));
+  border-radius: 16px;
+  overflow: hidden;
+  border: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+#practice-covers .carousel .skills-cover-img {
+  display: block;
+  height: 100%;
+  border-radius: 16px;
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  animation: none !important;
+  transition: transform 180ms ease, -webkit-mask-image 260ms ease, mask-image 260ms ease;
+}
+
+#practice-covers .carousel .carousel-item.active .skills-cover-img {
+  animation: none !important;
+}
+
+#practice-covers .carousel .skills-cover-caption {
+  position: absolute;
+  left: clamp(10px, 2.2vw, 18px);
+  bottom: clamp(14px, 5.5%, 26px);
+  right: auto;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  width: auto;
+  max-width: min(calc(50% - 18px), 560px);
+  box-sizing: border-box;
+  color: var(--cover-caption-color);
+  text-align: left;
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+@media (min-width: 601px) {
+  #practice-covers .carousel .skills-cover-caption {
+    left: clamp(18px, 3vw, 30px);
+  }
+}
+
+#practice-covers .carousel .skills-cover-caption::before {
+  content: none;
+}
+
+#practice-covers .carousel .skills-cover-title {
+  font-weight: 700;
+  font-size: clamp(22px, 2.8vw, 34px);
+  line-height: 1.15;
+  text-wrap: pretty;
+  text-shadow: 0 1px 6px var(--cover-caption-shadow);
+}
+
+#practice-covers .carousel .skills-cover-subtitle {
+  font-size: clamp(12px, 1.2vw, 15px);
+  line-height: 1.35;
+  text-wrap: pretty;
+  text-shadow: 0 1px 6px var(--cover-caption-shadow);
+}
+
+#practice-covers .carousel .skills-cover-cta {
+  position: static;
+  margin-top: 8px;
+  margin-left: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.2;
+  width: auto;
+  max-width: 92%;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.14);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(var(--cover-cta-shift-x, 0px), 6px);
+  transition: opacity 220ms ease, transform 220ms ease, background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+#practice-covers .carousel .carousel-item.active .skills-cover-cta {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(var(--cover-cta-shift-x, 0px), 0);
+}
+
+#practice-covers .carousel .carousel-item.active .skills-cover-caption {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+#practice-covers .carousel .carousel-item.active .skills-cover-img {
+  -webkit-mask-image: radial-gradient(120% 92% at 0% 100%, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.28) 28%, rgba(0, 0, 0, 0.62) 56%, rgba(0, 0, 0, 1) 82%);
+  mask-image: radial-gradient(120% 92% at 0% 100%, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.28) 28%, rgba(0, 0, 0, 0.62) 56%, rgba(0, 0, 0, 1) 82%);
+}
+
+#practice-covers .carousel .skills-cover-cta:hover {
+  transform: translate(var(--cover-cta-shift-x, 0px), -1px);
+}
+
+html[data-theme="light"] #practice-covers .carousel .skills-cover-cta:hover {
+  background: #f9fcff;
+  color: #111111;
+  border-color: rgba(48, 145, 255, 0.42);
+  box-shadow: 0 6px 16px rgba(48, 145, 255, 0.18);
+}
+
+#practice-covers .carousel .carousel-item.active {
+  transform: translateX(-50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 2;
+  filter: none;
+}
+
+#practice-covers .carousel .carousel-item.prev {
+  transform: translateX(calc(-150% - var(--cover-gap))) scale(var(--cover-side-scale-left));
+  opacity: var(--cover-side-opacity);
+  z-index: 3;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: saturate(0.8);
+}
+
+#practice-covers .carousel .carousel-item.next {
+  transform: translateX(calc(50% + var(--cover-gap))) scale(var(--cover-side-scale-right));
+  opacity: var(--cover-side-opacity);
+  z-index: 3;
+  pointer-events: auto;
+  cursor: pointer;
+  filter: saturate(0.8);
+}
+
+#practice-covers .carousel .carousel-item.off-left {
+  transform: translateX(calc(-250% - var(--cover-gap) - var(--cover-gap))) scale(var(--cover-side-scale));
+}
+
+#practice-covers .carousel .carousel-item.off-right {
+  transform: translateX(calc(150% + var(--cover-gap) + var(--cover-gap))) scale(var(--cover-side-scale));
+}
+
+#practice-covers .carousel .carousel-item.prev .skills-cover-link {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 38%, #000 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 38%, #000 100%);
+}
+
+#practice-covers .carousel .carousel-item.next .skills-cover-link {
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 0%, #000 62%, transparent 100%);
+}
+
+#practice-covers .carousel-controls {
+  top: 0;
+  bottom: 0;
+  transform: none;
+  display: block;
+  z-index: 5;
+}
+
+#practice-covers .carousel-button {
+  position: absolute;
+  top: 42%;
+  transform: translateY(-50%);
+  width: var(--cover-nav-hit);
+  height: var(--cover-nav-hit);
+  color: var(--cover-arrow-color);
+  font-size: 42px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  opacity: 1;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+#practice-covers .carousel-button:hover {
+  color: var(--cover-arrow-hover);
+}
+
+#practice-covers #prev.carousel-button {
+  left: calc(50% - var(--cover-main-half) - var(--cover-nav-offset) - var(--cover-nav-hit) / 2);
+  right: auto;
+}
+
+#practice-covers #next.carousel-button {
+  left: auto;
+  right: calc(50% - var(--cover-main-half) - var(--cover-nav-offset) - var(--cover-nav-hit) / 2);
+}
+
+@media (max-width: 600px) {
+  #practice-covers .carousel-images {
+    height: 340px;
+  }
+
+  #practice-covers .carousel {
+    --cover-main-width: 78%;
+    --cover-gap: 7px;
+    --cover-side-scale: 0.95;
+    --cover-side-scale-left: 0.97;
+    --cover-side-scale-right: 0.95;
+    --cover-side-opacity: 0.7;
+    --cover-nav-hit: 58px;
+    --cover-nav-offset: calc(var(--cover-gap) / 2 + 2px);
+    --cover-nav-edge-push: 10px;
+    --cover-nav-edge-push-right: 16px;
+    --cover-center-x: 46.8%;
+    --cover-cta-space: 58px;
+  }
+
+  #practice-covers .carousel-button {
+    top: -6%;
+    transform: translateY(0);
+    height: 100%;
+    width: calc((100% - var(--cover-main-width)) / 2 + 14px);
+    font-size: 46px !important;
+    opacity: 1;
+  }
+
+  #practice-covers .carousel .carousel-item.active .skills-cover-img {
+    animation: none !important;
+    -webkit-mask-image: radial-gradient(178% 72% at 0% 100%, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.28) 28%, rgba(0, 0, 0, 0.62) 56%, rgba(0, 0, 0, 1) 82%);
+    mask-image: radial-gradient(178% 72% at 0% 100%, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.28) 28%, rgba(0, 0, 0, 0.62) 56%, rgba(0, 0, 0, 1) 82%);
+  }
+
+  #practice-covers .skills-cover-cta {
+    margin-top: 6px;
     margin-right: 0;
+    align-self: center;
+    --cover-cta-shift-x: 10px;
+    padding: 4px 8px;
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1.15;
+    border-radius: 999px;
+    width: auto;
+    max-width: 90%;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  html[data-theme="light"] #practice-covers .carousel .skills-cover-cta:hover {
+    box-shadow: 0 1px 3px rgba(48, 145, 255, 0.1);
+  }
+
+  html[data-theme="dark"] #practice-covers .carousel .skills-cover-cta:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14);
+  }
+
+  #practice-covers .carousel .skills-cover-caption {
+    left: 23px;
+    bottom: 30px;
+    max-width: min(74%, calc(100% - 32px));
+    gap: 5px;
+  }
+
+  #practice-covers .carousel .skills-cover-title {
+    font-size: clamp(16px, 5vw, 22px);
+    line-height: 1.18;
+  }
+
+  #practice-covers .carousel .skills-cover-subtitle {
+    font-size: clamp(9px, 2.4vw, 11px);
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  #practice-covers #prev.carousel-button {
+    left: calc(50% - var(--cover-main-half) - var(--cover-nav-offset) - var(--cover-nav-hit) / 2 - var(--cover-nav-edge-push));
+    right: auto;
+  }
+
+  #practice-covers #next.carousel-button {
+    left: auto;
+    right: calc(50% - var(--cover-main-half) - var(--cover-nav-offset) - var(--cover-nav-hit) / 2 - var(--cover-nav-edge-push-right));
+  }
+}
+
+@keyframes skills-cover-pan-y {
+  from {
+    object-position: center 38%;
+  }
+  to {
+    object-position: center 62%;
+  }
+}
+
+@keyframes skills-cover-pan-x {
+  from {
+    object-position: 38% center;
+  }
+  to {
+    object-position: 62% center;
+  }
+}
+
+@media (max-width: 400px) {
+  #practice-covers .carousel {
+    --cover-center-x: 47.3%;
+    --cover-main-width: 76%;
+    --cover-gap: 6px;
+    --cover-side-scale-left: 0.83;
+    --cover-side-scale-right: 0.8;
   }
 }
 
