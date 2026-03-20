@@ -7,6 +7,7 @@
   const AUTH_PENDING_PROFILE_KEY = "auth_pending_profile_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
   const SHARED_AUTH_PENDING_ACTION_KEY = "shared_auth_pending_action_v1";
+  const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
   const CLOUD_SYNC_TS_KEY = "cloud_sync_ts_v1";
   const PENDING_MUTATIONS_KEY = "cloud_pending_mutations_v1";
   const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
@@ -256,6 +257,18 @@
     } catch {}
   }
 
+  function persistAuthVisualState(state) {
+    try {
+      if (state) {
+        localStorage.setItem(AUTH_VISUAL_STATE_KEY, state);
+        document.documentElement.setAttribute("data-auth-visual-state", state);
+        return;
+      }
+      localStorage.removeItem(AUTH_VISUAL_STATE_KEY);
+      document.documentElement.removeAttribute("data-auth-visual-state");
+    } catch {}
+  }
+
   function dispatchPendingAction(action, meta) {
     if (!action?.id) return;
     document.dispatchEvent(new CustomEvent("shared-auth:execute-action", {
@@ -284,10 +297,11 @@
     const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
     const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
     authOpenBtn.classList.toggle("is-auth", !!authUser);
+    authOpenBtn.classList.toggle("is-guest", !authUser);
     authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
+    persistAuthVisualState(authUser ? "auth" : "guest");
     if (labelEl) {
       labelEl.textContent = uiConfig.buttonLabel;
-      labelEl.hidden = !uiConfig.buttonLabel;
     }
     if (authUser?.email) {
       authOpenBtn.title = `Синхронизация: ${authUser.email}`;

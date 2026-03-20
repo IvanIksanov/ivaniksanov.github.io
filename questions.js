@@ -66,6 +66,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
+  const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
   const FAST_MODEL_HINTS = [
     "openai/gpt-oss-20b",
@@ -685,13 +686,17 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
     const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
     authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
+    authOpenBtn.classList.toggle("is-guest", !authUser);
+    try {
+      localStorage.setItem(AUTH_VISUAL_STATE_KEY, authUser ? "auth" : "guest");
+      document.documentElement.setAttribute("data-auth-visual-state", authUser ? "auth" : "guest");
+    } catch {}
     if (authUser?.email) {
       authOpenBtn.title = `Синхронизация: ${authUser.email}`;
       authOpenBtn.classList.add("is-auth");
       authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
       if (labelEl) {
         labelEl.textContent = "";
-        labelEl.hidden = true;
       }
       return;
     }
@@ -700,7 +705,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
     if (labelEl) {
       labelEl.textContent = uiConfig.buttonLabel;
-      labelEl.hidden = !uiConfig.buttonLabel;
     }
   }
 

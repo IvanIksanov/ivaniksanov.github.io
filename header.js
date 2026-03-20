@@ -1,6 +1,7 @@
 (function () {
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
+  const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
   const AUTH_BUTTON_INNER_HTML = `
     <span class="auth-open-btn__icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -10,6 +11,14 @@
     <span class="auth-open-btn__label">Войти</span>
   `;
   let headerScrolled = false;
+
+  function readStoredAuthVisualState() {
+    try {
+      return localStorage.getItem(AUTH_VISUAL_STATE_KEY) || '';
+    } catch {
+      return '';
+    }
+  }
 
   function updateHeaderState() {
     const header = document.querySelector('.site-header');
@@ -213,6 +222,7 @@
     authOpenBtn.title = 'Войти и сохранить прогресс';
     authOpenBtn.setAttribute('aria-label', 'Войти и сохранить прогресс');
     authOpenBtn.innerHTML = AUTH_BUTTON_INNER_HTML;
+    authOpenBtn.classList.toggle('is-guest', readStoredAuthVisualState() === 'guest');
 
     const hasAuthModal = !!document.getElementById('auth-modal');
     if (hasAuthModal || authOpenBtn.dataset.fallbackBound === 'true') return;
