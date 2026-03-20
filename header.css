@@ -661,8 +661,11 @@ header.welcome { justify-self: start; }
 }
 
 .theme-switcher .auth-open-btn.is-auth {
-  padding-left: calc(8px * var(--header-desktop-scale));
-  padding-right: calc(8px * var(--header-desktop-scale));
+  width: calc(2rem * var(--header-desktop-scale));
+  min-width: calc(2rem * var(--header-desktop-scale));
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 50%;
 }
 
 .theme-switcher #theme-toggle {
@@ -1082,7 +1085,8 @@ html[data-theme="dark"] .theme-switcher #theme-toggle:hover {
 
 .auth-modal.compact-auth .auth-level-wrap,
 .auth-modal.compact-auth .auth-oauth-row,
-.auth-modal.compact-auth #auth-description {
+.auth-modal.compact-auth #auth-description,
+.auth-modal.compact-auth .auth-legal-note {
   opacity: 0;
   max-height: 0;
   margin-top: 0;
@@ -1251,6 +1255,14 @@ html[data-theme="dark"] .auth-sync-btn.is-success {
   }
   .theme-switcher .auth-open-btn__label {
     font-size: 11px;
+  }
+
+  .theme-switcher .auth-open-btn.is-auth {
+    width: 1.9rem;
+    min-width: 1.9rem;
+    padding-left: 0;
+    padding-right: 0;
+    border-radius: 50%;
   }
 
   .auth-card {

@@ -195,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function(){
     if (event?.detail?.action?.id !== 'show-study-plan') return;
     if (selectedSkills.length === 0) return;
     showStudyPlan({ shouldScroll: false });
+    window.SharedAuth?.restorePendingScroll?.();
   });
 
   getPlanButton.addEventListener('click', async function(){

@@ -1963,7 +1963,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           if (!authModal.matches(":hover") && !authOpenBtn.matches(":hover")) {
             hideAuthModal();
           }
-        }, 120);
+        }, 1000);
       };
       authOpenBtn.addEventListener("mouseenter", () => {
         if (!authUser) return;

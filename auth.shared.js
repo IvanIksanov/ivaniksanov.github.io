@@ -25,6 +25,7 @@
   let initialized = false;
   let activeGuestGate = null;
   let hoverCloseTimer = null;
+  let pendingAuthReturnScrollY = null;
 
   const authStateShared = window.AuthStateShared || {
     getAuthUiConfig(options) {
@@ -206,12 +207,17 @@
   }
 
   function restoreAuthReturnScrollPosition() {
-    const targetY = consumeAuthReturnScrollPosition();
+    const targetY = Number.isFinite(pendingAuthReturnScrollY) ? pendingAuthReturnScrollY : consumeAuthReturnScrollPosition();
     if (!Number.isFinite(targetY) || targetY === null) return;
+    pendingAuthReturnScrollY = targetY;
     const restore = () => window.scrollTo(0, targetY);
     restore();
     requestAnimationFrame(restore);
     setTimeout(restore, 120);
+    setTimeout(() => {
+      restore();
+      pendingAuthReturnScrollY = null;
+    }, 520);
   }
 
   function readPendingAction() {
@@ -268,6 +274,7 @@
     if (!resolved.shouldRun || !resolved.pendingAction) return false;
     clearPendingAction();
     dispatchPendingAction(resolved.pendingAction, { source: "auth" });
+    restoreAuthReturnScrollPosition();
     return true;
   }
 
@@ -1076,7 +1083,7 @@
           if (!authModal.matches(":hover") && !authOpenBtn.matches(":hover")) {
             hideAuthModal();
           }
-        }, 120);
+        }, 1000);
       };
       authOpenBtn.addEventListener("mouseenter", () => {
         if (!authUser) return;
@@ -1290,6 +1297,9 @@
       },
       hasGuestBypass(storageKey) {
         return readGuestBypass(storageKey);
+      },
+      restorePendingScroll() {
+        restoreAuthReturnScrollPosition();
       }
     };
     document.dispatchEvent(new CustomEvent("shared-auth:ready"));
@@ -1309,6 +1319,7 @@
     }
 
     publishSharedAuthApi();
+    pendingAuthReturnScrollY = consumeAuthReturnScrollPosition();
     restoreAuthReturnScrollPosition();
     await bindAuthHandlers();
     if (!isCloudReady()) return;
