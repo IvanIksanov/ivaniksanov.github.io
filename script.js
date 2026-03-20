@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function(){
   // Массив для хранения выбранных навыков
   let selectedSkills = [];
+  const STUDY_PLAN_AUTH_BYPASS_KEY = 'study_plan_guest_auth_bypass_v1';
   const skillLinks = document.querySelectorAll('#qa-skills .skill-links a');
   const defaultSkillIds = [
     'test-design',
@@ -173,13 +174,37 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Обработка кнопки "Получить план изучения"
   const getPlanButton = document.getElementById('get-plan');
-  getPlanButton.addEventListener('click', function(){
+  function showStudyPlan(options) {
+    localStorage.setItem('showStudyPlan', 'true');
+    renderStudyPlan(!!options?.shouldScroll);
+  }
+
+  async function ensureAuthBeforeStudyPlan() {
+    const sharedAuth = window.SharedAuth;
+    if (!sharedAuth || typeof sharedAuth.requireAuthForAction !== 'function') {
+      return true;
+    }
+    return sharedAuth.requireAuthForAction({
+      action: { id: 'show-study-plan' },
+      bypassStorageKey: STUDY_PLAN_AUTH_BYPASS_KEY,
+      unavailableMessage: 'Авторизация недоступна. Закройте окно и продолжите без сохранения плана.'
+    });
+  }
+
+  document.addEventListener('shared-auth:execute-action', function(event) {
+    if (event?.detail?.action?.id !== 'show-study-plan') return;
+    if (selectedSkills.length === 0) return;
+    showStudyPlan({ shouldScroll: false });
+  });
+
+  getPlanButton.addEventListener('click', async function(){
     if(selectedSkills.length === 0){
       alert('Выбери навык для изучения :)');
       return;
     }
-    localStorage.setItem('showStudyPlan', 'true');
-    renderStudyPlan(true);
+    const allowed = await ensureAuthBeforeStudyPlan();
+    if (!allowed) return;
+    showStudyPlan({ shouldScroll: true });
   });
 
   function renderStudyPlan(shouldScroll) {

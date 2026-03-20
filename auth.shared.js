@@ -6,6 +6,7 @@
 
   const AUTH_PENDING_PROFILE_KEY = "auth_pending_profile_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
+  const SHARED_AUTH_PENDING_ACTION_KEY = "shared_auth_pending_action_v1";
   const CLOUD_SYNC_TS_KEY = "cloud_sync_ts_v1";
   const PENDING_MUTATIONS_KEY = "cloud_pending_mutations_v1";
   const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
@@ -22,6 +23,57 @@
   let authRefreshInFlight = null;
   let cloudSyncPromise = null;
   let initialized = false;
+  let activeGuestGate = null;
+  let hoverCloseTimer = null;
+
+  const authStateShared = window.AuthStateShared || {
+    getAuthUiConfig(options) {
+      const isAuthenticated = !!options?.isAuthenticated;
+      return {
+        buttonLabel: isAuthenticated ? "" : "Войти",
+        modalPlacement: isAuthenticated ? "anchored" : "centered"
+      };
+    },
+    resolveProtectedAction(options) {
+      const isAuthenticated = !!options?.isAuthenticated;
+      const hasGuestBypass = !!options?.hasGuestBypass;
+      const isAuthAvailable = options?.isAuthAvailable !== false;
+      if (isAuthenticated || hasGuestBypass) {
+        return {
+          allowed: true,
+          shouldOpenAuthModal: false,
+          shouldPersistGuestBypassOnClose: false
+        };
+      }
+      return {
+        allowed: false,
+        shouldOpenAuthModal: true,
+        shouldPersistGuestBypassOnClose: isAuthAvailable
+      };
+    },
+    resolveGuestModalClose(options) {
+      return {
+        enableGuestBypass: !!options?.allowsGuestAfterClose && !options?.isAuthenticated
+      };
+    },
+    resolveDeferredActionAfterAuth(options) {
+      const pendingAction = options?.pendingAction || null;
+      return {
+        shouldRun: !!options?.isAuthenticated && !!pendingAction,
+        pendingAction
+      };
+    },
+    consumeSavedScrollPosition(options) {
+      const saved = options?.saved;
+      const currentPath = options?.currentPath || "";
+      const now = Number(options?.now || Date.now());
+      const ttlMs = Number(options?.ttlMs || 0);
+      if (!saved || typeof saved.y !== "number") return null;
+      if (saved.path && saved.path !== currentPath) return null;
+      if (saved.ts && ttlMs > 0 && (now - Number(saved.ts)) > ttlMs) return null;
+      return Math.max(0, Math.round(saved.y));
+    }
+  };
 
   const cloudAnswersByQuestion = new Map();
 
@@ -131,6 +183,114 @@
     } catch {}
   }
 
+  function readAuthReturnScrollPosition() {
+    try {
+      return JSON.parse(localStorage.getItem(AUTH_RETURN_SCROLL_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function consumeAuthReturnScrollPosition() {
+    const saved = readAuthReturnScrollPosition();
+    const y = authStateShared.consumeSavedScrollPosition({
+      saved,
+      currentPath: window.location.pathname,
+      now: Date.now(),
+      ttlMs: 30 * 60 * 1000
+    });
+    try {
+      localStorage.removeItem(AUTH_RETURN_SCROLL_KEY);
+    } catch {}
+    return y;
+  }
+
+  function restoreAuthReturnScrollPosition() {
+    const targetY = consumeAuthReturnScrollPosition();
+    if (!Number.isFinite(targetY) || targetY === null) return;
+    const restore = () => window.scrollTo(0, targetY);
+    restore();
+    requestAnimationFrame(restore);
+    setTimeout(restore, 120);
+  }
+
+  function readPendingAction() {
+    try {
+      return JSON.parse(localStorage.getItem(SHARED_AUTH_PENDING_ACTION_KEY) || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writePendingAction(action) {
+    try {
+      localStorage.setItem(SHARED_AUTH_PENDING_ACTION_KEY, JSON.stringify(action));
+    } catch {}
+  }
+
+  function clearPendingAction() {
+    try {
+      localStorage.removeItem(SHARED_AUTH_PENDING_ACTION_KEY);
+    } catch {}
+  }
+
+  function readGuestBypass(storageKey) {
+    if (!storageKey) return false;
+    try {
+      return localStorage.getItem(storageKey) === "true";
+    } catch {
+      return false;
+    }
+  }
+
+  function writeGuestBypass(storageKey, value) {
+    if (!storageKey) return;
+    try {
+      localStorage.setItem(storageKey, value ? "true" : "false");
+    } catch {}
+  }
+
+  function dispatchPendingAction(action, meta) {
+    if (!action?.id) return;
+    document.dispatchEvent(new CustomEvent("shared-auth:execute-action", {
+      detail: {
+        action,
+        meta: meta || {}
+      }
+    }));
+  }
+
+  function flushPendingActionAfterAuth() {
+    const resolved = authStateShared.resolveDeferredActionAfterAuth({
+      isAuthenticated: !!authUser,
+      pendingAction: readPendingAction()
+    });
+    if (!resolved.shouldRun || !resolved.pendingAction) return false;
+    clearPendingAction();
+    dispatchPendingAction(resolved.pendingAction, { source: "auth" });
+    return true;
+  }
+
+  function updateAuthButtonUi() {
+    const authOpenBtn = getEl("auth-open-btn");
+    if (!authOpenBtn) return;
+    const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
+    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
+    authOpenBtn.classList.toggle("is-auth", !!authUser);
+    authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
+    if (labelEl) {
+      labelEl.textContent = uiConfig.buttonLabel;
+      labelEl.hidden = !uiConfig.buttonLabel;
+    }
+    if (authUser?.email) {
+      authOpenBtn.title = `Синхронизация: ${authUser.email}`;
+      authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
+      return;
+    }
+    authOpenBtn.title = "Войти и сохранить прогресс";
+    authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
+  }
+
   function setEmailLoginExpanded(next) {
     authEmailLoginExpanded = !!next;
     const authModal = getEl("auth-modal");
@@ -174,42 +334,28 @@
   }
 
   function updateAuthButtonLabel() {
-    const authOpenBtn = getEl("auth-open-btn");
-    if (!authOpenBtn) return;
-    if (authUser?.email) {
-      authOpenBtn.title = `Синхронизация: ${authUser.email}`;
-      authOpenBtn.classList.add("is-auth");
-      return;
-    }
-    authOpenBtn.title = "Войти и сохранить прогресс";
-    authOpenBtn.classList.remove("is-auth");
+    updateAuthButtonUi();
   }
 
   function positionAuthModal() {
     const authModal = getEl("auth-modal");
     const authCard = authModal?.querySelector(".auth-card");
-    const authOpenBtn = getEl("auth-open-btn");
-    if (!authModal || !authCard || !authOpenBtn) return;
-    const trigger = authOpenBtn.getBoundingClientRect();
-    const isMobile = window.innerWidth <= 600;
-    let top = Math.max(8, trigger.bottom + 8);
-    let right = isMobile ? 8 : Math.max(8, Math.round(window.innerWidth - trigger.right));
-    authCard.style.left = "auto";
-    authCard.style.right = `${right}px`;
-    authCard.style.top = `${top}px`;
-    const rect = authCard.getBoundingClientRect();
-    if (rect.right > window.innerWidth - 8) {
-      right = Math.max(8, right + (rect.right - (window.innerWidth - 8)));
+    if (!authModal || !authCard) return;
+    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
+    authModal.dataset.placement = uiConfig.modalPlacement;
+    if (uiConfig.modalPlacement === "anchored") {
+      const authOpenBtn = getEl("auth-open-btn");
+      const trigger = authOpenBtn?.getBoundingClientRect();
+      const top = trigger ? Math.max(8, Math.round(trigger.bottom + 8)) : 68;
+      const right = trigger ? Math.max(8, Math.round(window.innerWidth - trigger.right)) : 12;
+      authCard.style.left = "auto";
+      authCard.style.top = `${top}px`;
+      authCard.style.right = `${right}px`;
+      return;
     }
-    if (rect.left < 8) {
-      right = Math.max(8, right - (8 - rect.left));
-    }
-    if (rect.bottom > window.innerHeight - 8) {
-      top = Math.max(8, window.innerHeight - rect.height - 8);
-    }
-    authCard.style.left = "auto";
-    authCard.style.right = `${Math.max(8, right)}px`;
-    authCard.style.top = `${top}px`;
+    authCard.style.left = "50%";
+    authCard.style.top = "50%";
+    authCard.style.right = "auto";
   }
 
   function applyAuthModalMode() {
@@ -263,12 +409,13 @@
     positionAuthModal();
   }
 
-  function showAuthModal(prefillMessage) {
+  function showAuthModal(prefillMessage, options) {
     const authModal = getEl("auth-modal");
     const authTrackSelect = getEl("auth-track-select");
     const authGradeSelect = getEl("auth-grade-select");
     const authEmailInput = getEl("auth-email-input");
     if (!authModal) return;
+    activeGuestGate = options?.guestGate || null;
 
     setEmailLoginExpanded(false);
     if (!authUser) {
@@ -290,6 +437,19 @@
   function hideAuthModal() {
     const authModal = getEl("auth-modal");
     if (!authModal) return;
+    const gate = activeGuestGate;
+    const closeDecision = authStateShared.resolveGuestModalClose({
+      isAuthenticated: !!authUser,
+      allowsGuestAfterClose: !!gate?.allowsGuestAfterClose
+    });
+    if (closeDecision.enableGuestBypass) {
+      writeGuestBypass(gate?.bypassStorageKey, true);
+      if (gate?.action) {
+        clearPendingAction();
+        dispatchPendingAction(gate.action, { source: "guest-bypass" });
+      }
+    }
+    activeGuestGate = null;
     authModal.classList.remove("auth-profile-pending");
     authModal.classList.remove("show");
     authModal.setAttribute("aria-hidden", "true");
@@ -843,6 +1003,46 @@
     return cloudSyncPromise;
   }
 
+  async function requireAuthForAction(options) {
+    const action = options?.action || null;
+    const bypassStorageKey = options?.bypassStorageKey || "";
+    if (isCloudReady() && !authUser) {
+      await refreshAuthUserInBackground({ force: true });
+    }
+    const decision = authStateShared.resolveProtectedAction({
+      isAuthenticated: !!authUser,
+      hasGuestBypass: readGuestBypass(bypassStorageKey),
+      isAuthAvailable: isCloudReady()
+    });
+
+    if (decision.allowed) {
+      if (authUser) {
+        writeGuestBypass(bypassStorageKey, false);
+      }
+      return true;
+    }
+
+    if (!decision.shouldOpenAuthModal) return false;
+
+    if (action) {
+      writePendingAction(action);
+    }
+
+    showAuthModal(
+      isCloudReady()
+        ? (options?.authMessage || "Войдите, чтобы продолжить.")
+        : (options?.unavailableMessage || "Авторизация недоступна. Закройте окно и продолжите без сохранения."),
+      {
+        guestGate: {
+          allowsGuestAfterClose: !!decision.shouldPersistGuestBypassOnClose,
+          bypassStorageKey,
+          action
+        }
+      }
+    );
+    return false;
+  }
+
   async function bindAuthHandlers() {
     const authModal = getEl("auth-modal");
     const authOpenBtn = getEl("auth-open-btn");
@@ -861,6 +1061,32 @@
       showAuthModal("");
       applyAuthModalMode();
     });
+
+    const supportsHover = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches;
+    if (supportsHover) {
+      const clearHoverClose = () => {
+        if (!hoverCloseTimer) return;
+        clearTimeout(hoverCloseTimer);
+        hoverCloseTimer = null;
+      };
+      const scheduleHoverClose = () => {
+        clearHoverClose();
+        hoverCloseTimer = setTimeout(() => {
+          if (!authUser) return;
+          if (!authModal.matches(":hover") && !authOpenBtn.matches(":hover")) {
+            hideAuthModal();
+          }
+        }, 120);
+      };
+      authOpenBtn.addEventListener("mouseenter", () => {
+        if (!authUser) return;
+        clearHoverClose();
+        showAuthModal("");
+      });
+      authOpenBtn.addEventListener("mouseleave", scheduleHoverClose);
+      authModal.addEventListener("mouseenter", clearHoverClose);
+      authModal.addEventListener("mouseleave", scheduleHoverClose);
+    }
 
     if (authSendBtn) {
       authSendBtn.addEventListener("click", async () => {
@@ -907,6 +1133,10 @@
         const email = (authEmailInput?.value || "").trim();
         if (!email) {
           setAuthStatus("Введите email.");
+          return;
+        }
+        if (!email.includes("@")) {
+          setAuthStatus("Введите корректный email: нужен символ @.");
           return;
         }
 
@@ -1034,6 +1264,12 @@
       if (e.target === authModal) hideAuthModal();
     });
 
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      if (!authModal.classList.contains("show")) return;
+      hideAuthModal();
+    });
+
     window.addEventListener("resize", () => {
       if (authModal.classList.contains("show")) {
         applyAuthModalMode();
@@ -1044,6 +1280,19 @@
     window.addEventListener("scroll", () => {
       if (authModal.classList.contains("show")) positionAuthModal();
     }, { passive: true });
+  }
+
+  function publishSharedAuthApi() {
+    window.SharedAuth = {
+      requireAuthForAction,
+      isAuthenticated() {
+        return !!authUser;
+      },
+      hasGuestBypass(storageKey) {
+        return readGuestBypass(storageKey);
+      }
+    };
+    document.dispatchEvent(new CustomEvent("shared-auth:ready"));
   }
 
   async function init() {
@@ -1059,10 +1308,13 @@
       return;
     }
 
+    publishSharedAuthApi();
+    restoreAuthReturnScrollPosition();
+    await bindAuthHandlers();
     if (!isCloudReady()) return;
 
     await refreshAuthUser();
-    await bindAuthHandlers();
+    flushPendingActionAfterAuth();
 
     if (supabaseStore.client?.auth?.onAuthStateChange) {
       supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
@@ -1080,6 +1332,7 @@
           setAuthStatus("");
           await syncLocalAndCloudState({ force: false, source: "auth" });
           await flushPendingMutations();
+          flushPendingActionAfterAuth();
         } else {
           authProfile = null;
           updateAuthButtonLabel();
