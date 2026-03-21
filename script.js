@@ -1,33 +1,4 @@
 
-// карусель статей хабра
-document.addEventListener('DOMContentLoaded', function() {
-  const track = document.querySelector('.habr-carousel-track');
-  const prevBtn = document.getElementById('habr-prev');
-  const nextBtn = document.getElementById('habr-next');
-
-  // Количество пикселей, на которые будет пролистываться при клике
-  const scrollAmount = 200;
-
-  prevBtn.addEventListener('click', function() {
-    track.scrollBy({
-      top: 0,
-      left: -scrollAmount,
-      behavior: 'smooth'
-    });
-  });
-
-  nextBtn.addEventListener('click', function() {
-    track.scrollBy({
-      top: 0,
-      left: scrollAmount,
-      behavior: 'smooth'
-    });
-  });
-});
-
-
-
-
 /***********************
  * --- QA Skills ---
  ***********************/
@@ -539,6 +510,306 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     startAutoRotate();
 
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const showcase = document.getElementById('tg-links');
+    if (!showcase) return;
+
+    const triggers = Array.from(showcase.querySelectorAll('.tg-preview-trigger'));
+    const embedHost = document.getElementById('tg-preview-embed');
+    const titleNode = document.getElementById('tg-preview-title');
+    const linkNode = document.getElementById('tg-preview-link');
+    const previewPanel = showcase.querySelector('.tg-preview-panel');
+    const pickerPanel = showcase.querySelector('.tg-picker-panel');
+    const pickerHead = showcase.querySelector('.tg-picker-head');
+    const pickerGrid = showcase.querySelector('.tg-picker-grid');
+    const EMBED_LOAD_TIMEOUT_MS = 6500;
+
+    if (!triggers.length || !embedHost || !titleNode || !linkNode || !previewPanel || !pickerPanel || !pickerHead || !pickerGrid) return;
+
+    let activeTrigger = triggers.find(function (trigger) {
+        return trigger.classList.contains('is-active');
+    }) || triggers[0];
+    let embedLoadTimer = null;
+    let embedMutationObserver = null;
+    let embedReadyPollTimer = null;
+    let embedRenderFrameId = null;
+    let renderRequestId = 0;
+    let embedSurface = null;
+    let embedOverlay = null;
+
+    function isDarkTheme() {
+        return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+
+    function isMobilePreviewLayout() {
+        return window.innerWidth < 600;
+    }
+
+    function ensureEmbedLayers() {
+        embedHost.classList.add('is-managed');
+
+        if (!embedSurface) {
+            embedSurface = document.createElement('div');
+            embedSurface.className = 'tg-preview-surface';
+            embedHost.appendChild(embedSurface);
+        }
+
+        if (!embedOverlay) {
+            embedOverlay = document.createElement('div');
+            embedOverlay.className = 'tg-preview-overlay';
+            embedHost.appendChild(embedOverlay);
+        }
+    }
+
+    function clearEmbedAsyncState() {
+        if (embedLoadTimer) {
+            clearTimeout(embedLoadTimer);
+            embedLoadTimer = null;
+        }
+
+        if (embedMutationObserver) {
+            embedMutationObserver.disconnect();
+            embedMutationObserver = null;
+        }
+
+        if (embedReadyPollTimer) {
+            clearInterval(embedReadyPollTimer);
+            embedReadyPollTimer = null;
+        }
+
+        if (embedRenderFrameId) {
+            cancelAnimationFrame(embedRenderFrameId);
+            embedRenderFrameId = null;
+        }
+    }
+
+    function createSkeleton() {
+        const skeleton = document.createElement('div');
+        skeleton.className = 'tg-preview-skeleton';
+        skeleton.setAttribute('aria-hidden', 'true');
+        skeleton.innerHTML = [
+            '<div class="tg-preview-skeleton-top">',
+            '<div class="tg-preview-skeleton-avatar"></div>',
+            '<div class="tg-preview-skeleton-lines">',
+            '<div class="tg-preview-skeleton-line is-short"></div>',
+            '<div class="tg-preview-skeleton-line is-medium"></div>',
+            '</div>',
+            '</div>',
+            '<div class="tg-preview-skeleton-media"></div>',
+            '<div class="tg-preview-skeleton-body">',
+            '<div class="tg-preview-skeleton-line"></div>',
+            '<div class="tg-preview-skeleton-line"></div>',
+            '<div class="tg-preview-skeleton-line is-medium"></div>',
+            '<div class="tg-preview-skeleton-line"></div>',
+            '<div class="tg-preview-skeleton-line is-short"></div>',
+            '</div>'
+        ].join('');
+        return skeleton;
+    }
+
+    function lockPreviewHeight() {
+        if (isMobilePreviewLayout()) return;
+        const currentHeight = Math.round(embedHost.getBoundingClientRect().height);
+        if (currentHeight > 120) {
+            embedHost.style.minHeight = currentHeight + 'px';
+        }
+    }
+
+    function releasePreviewHeight() {
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                embedHost.style.removeProperty('min-height');
+                syncPickerHeight();
+            });
+        });
+    }
+
+    function markEmbedAsReady(expectedRequestId, options) {
+        if (expectedRequestId !== renderRequestId) return;
+        clearEmbedAsyncState();
+        if (embedOverlay) {
+            embedOverlay.innerHTML = '';
+        }
+        embedHost.classList.remove('is-loading', 'is-error');
+        if (options && options.preserveFrameHeight && !isMobilePreviewLayout()) {
+            syncPickerHeight();
+        } else {
+            releasePreviewHeight();
+        }
+        syncPickerHeight();
+    }
+
+    function showEmbedFallback(expectedRequestId, telegramUrl, options) {
+        if (expectedRequestId !== renderRequestId) return;
+        clearEmbedAsyncState();
+        embedHost.classList.remove('is-loading');
+        embedHost.classList.add('is-error');
+        if (embedOverlay) {
+            embedOverlay.innerHTML = '';
+        }
+        if (embedSurface) {
+            embedSurface.innerHTML = [
+            '<div class="tg-preview-fallback">',
+            '<h4 class="tg-preview-fallback-title">Не удалось быстро загрузить предпросмотр</h4>',
+            '<p class="tg-preview-fallback-text">Не удалось загрузить пост в предпросмотре. Попробуйте открыть его напрямую.</p>',
+            '<a class="tg-preview-fallback-link" href="' + telegramUrl + '" target="_blank" rel="noopener noreferrer">Открыть пост</a>',
+            '</div>'
+            ].join('');
+        }
+        if (options && options.preserveFrameHeight && !isMobilePreviewLayout()) {
+            syncPickerHeight();
+        } else {
+            releasePreviewHeight();
+        }
+        syncPickerHeight();
+    }
+
+    function watchEmbedRendering(expectedRequestId, telegramUrl, widgetScript, options) {
+        clearEmbedAsyncState();
+        let observedIframe = null;
+
+        function bindIframeLoad() {
+            if (!embedSurface) return;
+            const iframe = embedSurface.querySelector('iframe');
+            if (!iframe || iframe === observedIframe) return;
+
+            observedIframe = iframe;
+            iframe.addEventListener('load', function () {
+                markEmbedAsReady(expectedRequestId, options);
+            }, { once: true });
+        }
+
+        embedMutationObserver = new MutationObserver(function () {
+            bindIframeLoad();
+        });
+
+        if (embedSurface) {
+            embedMutationObserver.observe(embedSurface, { childList: true, subtree: true });
+        }
+
+        widgetScript.addEventListener('load', function () {
+            window.setTimeout(bindIframeLoad, 100);
+        });
+
+        widgetScript.addEventListener('error', function () {
+            showEmbedFallback(expectedRequestId, telegramUrl, options);
+        });
+
+        embedLoadTimer = window.setTimeout(function () {
+            if (!embedSurface || !embedSurface.querySelector('iframe')) {
+                showEmbedFallback(expectedRequestId, telegramUrl, options);
+            }
+        }, EMBED_LOAD_TIMEOUT_MS);
+    }
+
+    function renderTelegramPost(trigger, options) {
+        if (!trigger) return;
+        const renderOptions = options || {};
+
+        activeTrigger = trigger;
+        renderRequestId += 1;
+        triggers.forEach(function (item) {
+            item.classList.toggle('is-active', item === trigger);
+            item.setAttribute('aria-pressed', item === trigger ? 'true' : 'false');
+        });
+
+        const telegramPost = trigger.dataset.telegramPost;
+        const telegramUrl = trigger.dataset.telegramUrl;
+        const postTitle = trigger.dataset.title || trigger.textContent.trim();
+
+        titleNode.textContent = postTitle;
+        linkNode.href = telegramUrl;
+        linkNode.setAttribute('aria-label', 'Открыть пост «' + postTitle + '» в Telegram');
+
+        ensureEmbedLayers();
+        clearEmbedAsyncState();
+        lockPreviewHeight();
+        embedHost.classList.remove('is-error');
+        embedHost.classList.add('is-loading');
+        if (embedOverlay) {
+            embedOverlay.innerHTML = '';
+            embedOverlay.appendChild(createSkeleton());
+        }
+        if (embedSurface) {
+            embedSurface.innerHTML = '';
+        }
+
+        const currentRequestId = renderRequestId;
+        embedRenderFrameId = requestAnimationFrame(function () {
+            embedRenderFrameId = requestAnimationFrame(function () {
+                embedRenderFrameId = null;
+                if (currentRequestId !== renderRequestId) return;
+
+                const widgetScript = document.createElement('script');
+                widgetScript.async = true;
+                widgetScript.src = 'https://telegram.org/js/telegram-widget.js?22';
+                widgetScript.setAttribute('data-telegram-post', telegramPost);
+                widgetScript.setAttribute('data-width', '100%');
+
+                if (isDarkTheme()) {
+                    widgetScript.setAttribute('data-dark', '1');
+                }
+
+                if (embedSurface) {
+                    embedSurface.appendChild(widgetScript);
+                }
+                watchEmbedRendering(currentRequestId, telegramUrl, widgetScript, renderOptions);
+            });
+        });
+    }
+
+    function syncPickerHeight() {
+        if (window.innerWidth < 600) {
+            pickerPanel.style.removeProperty('height');
+            pickerGrid.style.removeProperty('--tg-picker-max-height');
+            pickerGrid.style.removeProperty('max-height');
+            return;
+        }
+
+        const panelStyles = window.getComputedStyle(pickerPanel);
+        const panelPaddingTop = parseFloat(panelStyles.paddingTop) || 0;
+        const panelPaddingBottom = parseFloat(panelStyles.paddingBottom) || 0;
+        const headHeight = pickerHead.offsetHeight;
+        const previewHeight = previewPanel.offsetHeight;
+        const available = Math.max(220, previewHeight - headHeight - panelPaddingTop - panelPaddingBottom);
+
+        pickerPanel.style.height = previewHeight + 'px';
+        pickerGrid.style.maxHeight = available + 'px';
+    }
+
+    triggers.forEach(function (trigger) {
+        trigger.addEventListener('click', function () {
+            renderTelegramPost(trigger);
+        });
+    });
+
+    const themeObserver = new MutationObserver(function (mutations) {
+        const shouldRerender = mutations.some(function (mutation) {
+            return mutation.type === 'attributes' && mutation.attributeName === 'data-theme';
+        });
+
+        if (shouldRerender && activeTrigger) {
+            renderTelegramPost(activeTrigger, { preserveFrameHeight: true });
+        }
+    });
+
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+    });
+
+    const previewObserver = new ResizeObserver(function () {
+        syncPickerHeight();
+    });
+
+    previewObserver.observe(previewPanel);
+    previewObserver.observe(embedHost);
+    window.addEventListener('resize', syncPickerHeight);
+
+    renderTelegramPost(activeTrigger);
+    syncPickerHeight();
 });
 
 // --- БУРГЕР-МЕНЮ ---
