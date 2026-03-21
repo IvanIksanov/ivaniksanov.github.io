@@ -538,6 +538,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let renderRequestId = 0;
     let embedSurface = null;
     let embedOverlay = null;
+    let previewTouchState = null;
 
     function isDarkTheme() {
         return document.documentElement.getAttribute('data-theme') === 'dark';
@@ -545,6 +546,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function isMobilePreviewLayout() {
         return window.innerWidth < 600;
+    }
+
+    function openActiveTelegramPost() {
+        const url = activeTrigger?.dataset?.telegramUrl || linkNode?.href;
+        if (!url) return;
+        window.open(url, '_blank', 'noopener,noreferrer');
     }
 
     function ensureEmbedLayers() {
@@ -764,6 +771,44 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    function bindMobilePreviewTap() {
+        if (!embedHost) return;
+
+        embedHost.addEventListener('touchstart', function (event) {
+            if (!isMobilePreviewLayout() || embedHost.classList.contains('is-loading')) return;
+            const touch = event.touches && event.touches[0];
+            if (!touch) return;
+            previewTouchState = {
+                x: touch.clientX,
+                y: touch.clientY,
+                moved: false
+            };
+        }, { passive: true });
+
+        embedHost.addEventListener('touchmove', function (event) {
+            if (!isMobilePreviewLayout() || !previewTouchState) return;
+            const touch = event.touches && event.touches[0];
+            if (!touch) return;
+            const dx = Math.abs(touch.clientX - previewTouchState.x);
+            const dy = Math.abs(touch.clientY - previewTouchState.y);
+            if (dx > 10 || dy > 10) {
+                previewTouchState.moved = true;
+            }
+        }, { passive: true });
+
+        embedHost.addEventListener('touchend', function () {
+            if (!isMobilePreviewLayout() || !previewTouchState) {
+                previewTouchState = null;
+                return;
+            }
+
+            if (!previewTouchState.moved && !embedHost.classList.contains('is-loading')) {
+                openActiveTelegramPost();
+            }
+            previewTouchState = null;
+        }, { passive: true });
+    }
+
     function syncPickerHeight() {
         if (window.innerWidth < 600) {
             pickerPanel.style.removeProperty('height');
@@ -811,6 +856,7 @@ document.addEventListener('DOMContentLoaded', function () {
     previewObserver.observe(previewPanel);
     previewObserver.observe(embedHost);
     window.addEventListener('resize', syncPickerHeight);
+    bindMobilePreviewTap();
 
     renderTelegramPost(activeTrigger);
     syncPickerHeight();

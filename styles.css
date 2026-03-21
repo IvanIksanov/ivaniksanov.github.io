@@ -1403,6 +1403,13 @@ html[data-theme="dark"] .skills-cover-cta:hover {
   text-align: left;
 }
 
+#tg-links > h2,
+#tg-links > .study-plan-note {
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+  box-sizing: border-box;
+}
+
 .carousel {
   width: 100%;
 }
