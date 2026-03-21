@@ -609,11 +609,12 @@ document.addEventListener('DOMContentLoaded', function () {
         return skeleton;
     }
 
-    function lockPreviewHeight() {
-        if (isMobilePreviewLayout()) return;
+    function lockPreviewHeight(minHeight) {
         const currentHeight = Math.round(embedHost.getBoundingClientRect().height);
-        if (currentHeight > 120) {
-            embedHost.style.minHeight = currentHeight + 'px';
+        const requestedMinHeight = Number(minHeight) || 0;
+        const targetHeight = Math.max(currentHeight, requestedMinHeight);
+        if (targetHeight > 120) {
+            embedHost.style.minHeight = targetHeight + 'px';
         }
     }
 
@@ -725,12 +726,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
         ensureEmbedLayers();
         clearEmbedAsyncState();
-        lockPreviewHeight();
         embedHost.classList.remove('is-error');
         embedHost.classList.add('is-loading');
         if (embedOverlay) {
             embedOverlay.innerHTML = '';
-            embedOverlay.appendChild(createSkeleton());
+            const skeleton = createSkeleton();
+            embedOverlay.appendChild(skeleton);
+            lockPreviewHeight(Math.ceil(skeleton.getBoundingClientRect().height));
+        } else {
+            lockPreviewHeight();
         }
         if (embedSurface) {
             embedSurface.innerHTML = '';
