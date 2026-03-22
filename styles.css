@@ -2110,6 +2110,8 @@ html[data-theme="dark"] .skills-cover-cta:hover {
 
   .plan-track-modal {
     padding: 12px;
+    align-items: start;
+    padding-top: max(72px, env(safe-area-inset-top, 0px) + 126px);
   }
 
   .plan-track-dialog {
