@@ -289,30 +289,88 @@
         </div>
 
         <div class="skill-category">
-            <h3 id="toggle-superpower" style="cursor: pointer;">Добавить суперсилу</h3>
+            <h3><button id="toggle-superpower" class="toggle-superpower-button" type="button">Добавить суперсилу</button></h3>
             <div class="skill-links" id="superpower-skills" style="display: none;">
                 <a data-skill-id="typing" data-plan="https://www.edclub.com/sportal/ | https://klava.org/delta/#rus_basic | https://www.keybr.com/#google_vignette">Скоропечатание<span class="skill-counter"></span></a>
                 <a data-skill-id="sec-test" data-plan="https://stepik.org/course/123935/promo? | https://github.com/curiv/russian-offensive-security-questions | https://habr.com/ru/companies/redmadrobot/articles/544198/ | https://habr.com/ru/company/pentestit/blog/526878/ | https://tproger.ru/translations/webapp-security/ | https://youtube.com/playlist?list=PLp2kHCN7pLe1azEbJa5ucnLpD0nGex0tg | https://selectel.ru/blog/ddos-attacks/ | https://doka.guide/tools/web-security | https://github.com/BEPb/tryhackme?tab=readme-ov-file | https://hacksplaining.com/lessons">Тестирование безопасности<span class="skill-counter"></span></a>
                 <a data-skill-id="eng" data-plan="https://puzzle-movies.com | https://www.duolingo.com/learn | https://puzzle-english.com">Английский<span class="skill-counter"></span></a>
             </div>
         </div>
-        <p class="study-plan-note">Навыки можно указать в своём резюме. Всё подряд указывать не советую, выбери самое релевантное для твоего направления ) И не забудь для начала овладеть ими!</p>
-        <!-- Кнопка для получения плана изучения и фильтры -->
         <div class="plan-controls">
-            <button id="get-plan" type="button">Получить план</button>
-            <div class="plan-filters" id="plan-filters" aria-label="Фильтры материалов">
-                <button class="plan-filter-chip" type="button" data-type="Курс">Курс</button>
-                <button class="plan-filter-chip" type="button" data-type="Статья">Статья</button>
-                <button class="plan-filter-chip" type="button" data-type="Пост">Пост</button>
-                <button class="plan-filter-chip" type="button" data-type="Видео">Видео</button>
-                <button class="plan-filter-chip" type="button" data-type="Тренажер">Тренажер</button>
+            <div class="plan-actions-row">
+                <button id="get-plan" type="button">Получить план</button>
+                <div class="plan-actions-tools">
+                    <div class="info-chip plan-side-action clear-info-chip">
+                        <button id="clear-plan-filters" class="plan-clear-button plan-side-action" type="button" aria-label="Очистить выбранные навыки">×</button>
+                        <div class="info-popover" role="tooltip">
+                            Крестик очищает только выбранные навыки.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <!-- Контейнер для отображения плана изучения (ссылки выбранных навыков) -->
         <div id="study-plan" style="display: none;">
-            <h2>Твой план развития, на основе выбранных навыков</h2>
-            <p class="study-plan-note">Все ссылки ведут на сторонние источники. <br>При нажатии вы переходите на статью, тренажер или видео в новой вкладке.</p>
+            <div class="study-plan-head">
+                <h2>Твой план развития, на основе выбранных навыков</h2>
+                <div class="info-chip">
+                    <button
+                        type="button"
+                        class="info-toggle"
+                        data-info-target="study-plan-note-popover"
+                        aria-expanded="false"
+                        aria-controls="study-plan-note-popover"
+                        aria-label="Показать подсказку по карточкам материалов"
+                    >!</button>
+                    <div id="study-plan-note-popover" class="info-popover" role="tooltip">
+                        Карточки открывают материалы в новой вкладке и ведут на сторонние источники. Статус помогает отмечать прогресс. Выбирай в конструкторе только те навыки, которые реально подходят под твоё направление и которыми ты планируешь владеть.
+                    </div>
+                </div>
+            </div>
+            <div class="plan-filters-row">
+                <div class="plan-filters-cluster">
+                    <div class="plan-filters" id="plan-filters" aria-label="Фильтры материалов">
+                        <button class="plan-filter-chip" type="button" data-type="Курс">Курс</button>
+                        <button class="plan-filter-chip" type="button" data-type="Статья">Статья</button>
+                        <button class="plan-filter-chip" type="button" data-type="Пост">Пост</button>
+                        <button class="plan-filter-chip" type="button" data-type="Видео">Видео</button>
+                        <button class="plan-filter-chip" type="button" data-type="Тренажер">Тренажер</button>
+                    </div>
+                    <button id="reset-plan-filters" class="plan-filter-reset" type="button" aria-label="Сбросить фильтры" aria-hidden="true">↻</button>
+                </div>
+            </div>
             <div id="plan-list"></div>
+        </div>
+        <div id="plan-track-modal" class="plan-track-modal" hidden aria-hidden="true">
+            <div class="plan-track-backdrop" data-close-track-modal="true"></div>
+            <div class="plan-track-dialog" role="dialog" aria-modal="true" aria-labelledby="plan-track-title">
+                <div class="plan-track-head">
+                    <h3 id="plan-track-title">Выбери готовый трек</h3>
+                    <p>Подберём стартовый набор навыков и сразу покажем план.</p>
+                </div>
+                <div class="plan-track-grid">
+                    <button type="button" class="plan-track-card" data-track-id="manual-qa">
+                        <span class="plan-track-kicker">Быстрый старт</span>
+                        <strong>Ручное QA</strong>
+                        <span>Тест-дизайн, QA-база, API, Postman, Charles, DevTools, SQL и Jira.</span>
+                    </button>
+                    <div class="plan-track-card plan-track-card-automation">
+                        <span class="plan-track-kicker">Автоматизация</span>
+                        <strong>Авто QA</strong>
+                        <span>Выбери стек внутри карточки, и мы сразу соберём нужный набор навыков.</span>
+                        <div class="plan-track-options" role="group" aria-label="Выбор стека автоматизации">
+                            <button type="button" class="plan-track-option" data-track-id="auto-java">Java</button>
+                            <button type="button" class="plan-track-option" data-track-id="auto-js">JS</button>
+                            <button type="button" class="plan-track-option" data-track-id="auto-python">Python</button>
+                        </div>
+                    </div>
+                    <button type="button" class="plan-track-card" data-track-id="load-qa">
+                        <span class="plan-track-kicker">Нагрузка</span>
+                        <strong>Нагрузочное QA</strong>
+                        <span>JMeter, Cypress, Allure, CI/CD, API, SQL и рабочая инженерная база.</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </section>
 
