@@ -959,11 +959,11 @@ html[data-theme="dark"] .plan-filter-reset:focus-visible {
 }
 
 .study-plan-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 6px;
 }
 
 .info-chip {
@@ -974,7 +974,7 @@ html[data-theme="dark"] .plan-filter-reset:focus-visible {
 }
 
 .study-plan-head .info-chip {
-  margin-top: 2px;
+  margin-top: 0;
 }
 
 .info-toggle {
@@ -1269,10 +1269,14 @@ html[data-theme="dark"] .plan-track-option:focus-visible {
 .study-plan-head h2 {
   margin: 0;
   text-align: left;
-  flex: 1 1 auto;
   min-width: 0;
   font-size: clamp(1.12rem, 1.01rem + 0.48vw, 1.38rem);
-  white-space: nowrap;
+  white-space: normal;
+  line-height: 1.12;
+}
+
+#study-plan .plan-filters-row {
+  margin-bottom: 14px;
 }
 
 .skill-category {
