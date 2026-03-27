@@ -4551,11 +4551,15 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         state.pushRuntimeResponse = pushRuntimeResponse;
 
         aiAppendBtn.addEventListener("click", async () => {
-          const canContinue = await ensureAuthForAiAction();
-          if (!canContinue) return;
-          const preferredModel = getPreferredModel(currentModels);
           aiAppendBtn.disabled = true;
           showHeaderAiNotchProcessing(item.id, { fromPrimaryAiAppend: true });
+          const canContinue = await ensureAuthForAiAction();
+          if (!canContinue) {
+            hideHeaderAiNotch();
+            aiAppendBtn.disabled = false;
+            return;
+          }
+          const preferredModel = getPreferredModel(currentModels);
           const hasExistingResponses = Array.isArray(runtimeResponses) && runtimeResponses.length > 0;
           const supplementTimer = null;
           const executeRequest = async () => {
