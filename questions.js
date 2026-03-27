@@ -717,6 +717,22 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     } catch {}
   }
 
+  function persistPendingProfileSelection() {
+    const track = (authTrackSelect?.value || "").trim();
+    const grade = (authGradeSelect?.value || "").trim();
+    const current = readPendingProfile() || {};
+    if (!track && !grade && !current?.email) {
+      clearPendingProfile();
+      return;
+    }
+    writePendingProfile({
+      ...current,
+      track: track || current?.track || "",
+      grade: grade || current?.grade || "",
+      ts: Date.now()
+    });
+  }
+
   function profileLabel(profile) {
     if (!profile?.track || !profile?.grade) return "";
     return `${profile.track} (${profile.grade})`;
@@ -1300,6 +1316,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   async function ensureAuthContext() {
     if (!isCloudReady()) return false;
     const session = await getActiveSession();
+    if (session === undefined) {
+      // Temporary Supabase auth timeout/network hiccup.
+      // Keep the last known user state instead of downgrading the page into a blocked auth gate.
+      return authUser?.id ? true : undefined;
+    }
     if (session?.access_token && authUser?.id) return true;
     try {
       authUser = session?.user || null;
@@ -2170,6 +2191,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       return false;
     }
     const hasAuth = await ensureAuthContext();
+    if (hasAuth === undefined) {
+      // If session check temporarily timed out, do not block AI completely.
+      // Continue in guest mode and skip cloud save until auth becomes reachable again.
+      allowGuestAiRequests = true;
+      writeGuestAiAuthBypassFlag(true);
+      return true;
+    }
     if (hasAuth) {
       allowGuestAiRequests = false;
       writeGuestAiAuthBypassFlag(false);
@@ -2361,6 +2389,20 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       if (authEmailLoginExpanded && authEmailInput) {
         requestAnimationFrame(() => authEmailInput.focus());
       }
+    });
+  }
+
+  if (authTrackSelect) {
+    authTrackSelect.addEventListener("change", () => {
+      persistPendingProfileSelection();
+      syncProfileUiFromState();
+    });
+  }
+
+  if (authGradeSelect) {
+    authGradeSelect.addEventListener("change", () => {
+      persistPendingProfileSelection();
+      syncProfileUiFromState();
     });
   }
 
