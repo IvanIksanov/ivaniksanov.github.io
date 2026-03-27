@@ -974,12 +974,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       return authUser;
       } catch (e) {
       console.warn("Supabase auth init failed", e);
-      authUser = null;
-      authProfile = null;
-      setAuthSessionCheckedNow();
       updateAuthButtonLabel();
       refreshVisibleAuthModalUi();
-      return null;
+      return authUser || null;
       } finally {
         authRefreshInFlight = null;
       }
@@ -2332,6 +2329,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       if (isAuthorizedView) {
         try {
           const session = await getActiveSession();
+          if (session === undefined) {
+            setAuthStatus("Связь с аккаунтом временно недоступна. Попробуйте еще раз через пару секунд.");
+            refreshAuthUserInBackground({ force: true }).catch((e) => console.warn("Background auth refresh failed", e));
+            return;
+          }
           if (!session?.access_token) {
             authUser = null;
             authProfile = null;
@@ -2474,6 +2476,16 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         return;
       }
       const session = await getActiveSession();
+      if (session === undefined) {
+        setAuthStatus("Связь с аккаунтом временно недоступна. Синхронизация продолжится автоматически.");
+        refreshAuthUserInBackground({ force: true }).catch((e) => {
+          console.warn("Auth refresh for manual sync failed", e);
+        });
+        syncUserApiKeyWithCloud({ force: true, source: "manual-recovery" }).catch((e) => console.warn("Manual recovery API key sync failed", e));
+        syncLocalAndCloudState({ force: true, source: "manual-recovery" }).catch((e) => console.warn("Manual recovery cloud sync failed", e));
+        flushPendingMutations().catch((e) => console.warn("Manual recovery pending flush failed", e));
+        return;
+      }
       if (!session?.access_token) {
         authUser = null;
         authProfile = null;
