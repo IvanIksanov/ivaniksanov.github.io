@@ -1,5 +1,6 @@
 (function () {
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
+  const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
   const MODEL_CHAT_VALIDATED_CACHE_KEY = "model_chat_validated_cache_v1";
@@ -24,14 +25,27 @@
   const WARMUP_USER_PROMPT = "Тема: API. Вопрос: Что такое REST API и как тестировать его на собеседовании QA?";
 
   async function callAiProxy(payload) {
-    return fetch(`${SUPABASE_URL_DIRECT}/functions/v1/ai-chat`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_ANON_KEY_DIRECT,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
+    const urls = Array.from(new Set([
+      `${SUPABASE_FUNCTIONS_BASE_DIRECT}/ai-chat`,
+      `${SUPABASE_URL_DIRECT}/functions/v1/ai-chat`
+    ]));
+    let lastError = null;
+    for (let i = 0; i < urls.length; i += 1) {
+      try {
+        return await fetch(urls[i], {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_ANON_KEY_DIRECT,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) {
+        lastError = e;
+        if (i === urls.length - 1) throw e;
+      }
+    }
+    throw lastError || new Error("AI proxy request failed");
   }
 
   function parseAvailableModelsFromDetail(detail) {

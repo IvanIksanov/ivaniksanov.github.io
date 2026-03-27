@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const INTERVIEW_SESSION_STATE_KEY = "interview_session_state_v1";
   const INTERVIEW_SCROLL_STATE_KEY = "interview_scroll_state_v1";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
+  const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
 
@@ -577,12 +578,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function callInterviewAiProxy(body) {
     const api = window.AppSupabase || null;
-    const url = `${api?.url || SUPABASE_URL_DIRECT}/functions/v1/ai-chat`;
-    return fetch(url, {
-      method: "POST",
-      headers: await getAiProxyHeaders(),
-      body: JSON.stringify(body)
-    });
+    const urls = Array.from(new Set([
+      `${SUPABASE_FUNCTIONS_BASE_DIRECT}/ai-chat`,
+      `${api?.url || SUPABASE_URL_DIRECT}/functions/v1/ai-chat`
+    ]));
+    let lastError = null;
+    for (let i = 0; i < urls.length; i += 1) {
+      try {
+        return await fetch(urls[i], {
+          method: "POST",
+          headers: await getAiProxyHeaders(),
+          body: JSON.stringify(body)
+        });
+      } catch (e) {
+        lastError = e;
+        if (i === urls.length - 1) throw e;
+      }
+    }
+    throw lastError || new Error("AI proxy request failed");
   }
 
   async function requestAiAppend(item) {

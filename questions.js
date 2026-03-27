@@ -59,6 +59,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const USER_API_KEY_SERVICE = "io_net";
   const USER_API_KEY_SYNC_TS_KEY = "user_api_key_sync_ts_v1";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
+  const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
@@ -1321,10 +1322,18 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return `${base}/rest/v1/${path}${q}`;
   }
 
-  function buildFunctionUrl(functionName, query = "") {
-    const base = supabaseStore?.url || SUPABASE_URL_DIRECT;
+  function buildFunctionUrlCandidates(functionName, query = "") {
     const q = query ? (query.startsWith("?") ? query : `?${query}`) : "";
-    return `${base}/functions/v1/${functionName}${q}`;
+    const candidates = [];
+    const directFunctionsBase = SUPABASE_FUNCTIONS_BASE_DIRECT;
+    const restBase = supabaseStore?.url || SUPABASE_URL_DIRECT;
+    if (directFunctionsBase) {
+      candidates.push(`${directFunctionsBase}/${functionName}${q}`);
+    }
+    if (restBase) {
+      candidates.push(`${restBase}/functions/v1/${functionName}${q}`);
+    }
+    return Array.from(new Set(candidates.filter(Boolean)));
   }
 
   async function callAiProxy({ method = "POST", query = "", body = null } = {}) {
@@ -1340,26 +1349,34 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (body !== null) {
       headers["Content-Type"] = "application/json";
     }
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS + 23000);
-    try {
-      return await fetch(buildFunctionUrl("ai-chat", query), {
-        method,
-        headers,
-        body: body !== null ? JSON.stringify(body) : undefined,
-        cache: "no-store",
-        signal: controller.signal
-      });
-    } catch (e) {
-      if (e?.name === "AbortError") {
-        const err = new Error("AI_PROXY_TIMEOUT");
-        err.code = "AI_PROXY_TIMEOUT";
-        throw err;
+    const urls = buildFunctionUrlCandidates("ai-chat", query);
+    let lastError = null;
+    for (let i = 0; i < urls.length; i += 1) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS + 23000);
+      try {
+        return await fetch(urls[i], {
+          method,
+          headers,
+          body: body !== null ? JSON.stringify(body) : undefined,
+          cache: "no-store",
+          signal: controller.signal
+        });
+      } catch (e) {
+        lastError = e;
+        if (e?.name === "AbortError") {
+          const err = new Error("AI_PROXY_TIMEOUT");
+          err.code = "AI_PROXY_TIMEOUT";
+          lastError = err;
+        }
+        if (i === urls.length - 1) {
+          throw lastError;
+        }
+      } finally {
+        clearTimeout(timer);
       }
-      throw e;
-    } finally {
-      clearTimeout(timer);
     }
+    throw lastError || new Error("AI proxy request failed");
   }
 
   async function restRequest(path, { method = "GET", query = "", body = null, prefer = "return=representation" } = {}) {
