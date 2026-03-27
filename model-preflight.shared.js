@@ -1,5 +1,6 @@
 (function () {
-  const IO_API_BASE = "https://api.intelligence.io.solutions/api/v1";
+  const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
+  const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
   const MODEL_CHAT_VALIDATED_CACHE_KEY = "model_chat_validated_cache_v1";
   const MODEL_WARMUP_KEY = "model_warmup_ts_v1";
@@ -22,11 +23,15 @@
     "Do not use markdown tables, charts, or extra formatting.";
   const WARMUP_USER_PROMPT = "Тема: API. Вопрос: Что такое REST API и как тестировать его на собеседовании QA?";
 
-  function getAuthKey() {
-    const p1 = "io-v2-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.";
-    const p2 = "eyJvd25lciI6IjVhNzhhY2I4LTJkZmUtNGRiNi04N2QxLTkxODZmNTFmZDllZSIsImV4cCI6NDkyNDc3MTU3OH0.";
-    const p3 = "EMXKUEfcMvAbtMt_WodTcNcENyqOXwfuF16wtC4-8i2sJgak6KJODACg3c3tyzwjbacXC1XHUu3jS9E4C14VLw";
-    return p1 + p2 + p3;
+  async function callAiProxy(payload) {
+    return fetch(`${SUPABASE_URL_DIRECT}/functions/v1/ai-chat`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY_DIRECT,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
   }
 
   function parseAvailableModelsFromDetail(detail) {
@@ -92,23 +97,16 @@
 
   async function warmupModelOnce(model) {
     const startedAt = Date.now();
-    const res = await fetch(`${IO_API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${getAuthKey()}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: WARMUP_SYSTEM_PROMPT },
-          { role: "user", content: WARMUP_USER_PROMPT }
-        ],
-        temperature: 0.7,
-        reasoning_content: false,
-        max_completion_tokens: 1000,
-        stream: false
-      })
+    const res = await callAiProxy({
+      model,
+      messages: [
+        { role: "system", content: WARMUP_SYSTEM_PROMPT },
+        { role: "user", content: WARMUP_USER_PROMPT }
+      ],
+      temperature: 0.7,
+      reasoning_content: false,
+      max_completion_tokens: 1000,
+      stream: false
     });
     if (!res.ok) {
       let detail = "";
@@ -133,10 +131,8 @@
   }
 
   async function loadModelsFromApi() {
-    const res = await fetch(`${IO_API_BASE}/models?page_size=100`, {
-      headers: {
-        Authorization: `Bearer ${getAuthKey()}`
-      }
+    const res = await callAiProxy({
+      action: "models"
     });
     if (!res.ok) throw new Error(`Models list failed: ${res.status}`);
     const json = await res.json();
