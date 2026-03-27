@@ -1226,7 +1226,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     await refreshAuthUser();
     if (!authUser) return;
     await syncUserApiKeyWithCloud({ force: true, source: "init" });
-    await syncLocalAndCloudState({ force: false, source: "init" });
+    await syncLocalAndCloudState({ force: true, source: "init" });
   }
 
   function getCloudSyncLastTs() {
@@ -2578,10 +2578,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         await refreshAuthUser();
         await syncUserApiKeyWithCloud({ force: true, source: "auth" });
         setAuthStatus("");
-        if (shouldRunAuthDrivenSync({ userId: authUser.id })) {
-          markAuthDrivenSync(authUser.id);
-          await syncLocalAndCloudState({ force: false, source: "auth" });
-        }
+        markAuthDrivenSync(authUser.id);
+        await syncLocalAndCloudState({ force: true, source: "auth" });
         await flushPendingMutations();
       } else {
         lastKnownAccessToken = "";
@@ -2603,10 +2601,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         const user = await refreshAuthUserInBackground({ force: true });
         if (user) {
           await syncUserApiKeyWithCloud({ force: true, source: "startup-retry" });
-          if (shouldRunAuthDrivenSync({ userId: user.id })) {
-            markAuthDrivenSync(user.id);
-            await syncLocalAndCloudState({ force: false, source: "auth" });
-          }
+          markAuthDrivenSync(user.id);
+          await syncLocalAndCloudState({ force: true, source: "auth" });
           await flushPendingMutations();
         }
       } catch (e) {
