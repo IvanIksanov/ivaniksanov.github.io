@@ -24,6 +24,7 @@
   let authRefreshInFlight = null;
   let cloudSyncPromise = null;
   let initialized = false;
+  let authResolved = false;
   let activeGuestGate = null;
   let hoverCloseTimer = null;
   let pendingAuthReturnScrollY = null;
@@ -156,6 +157,18 @@
     } catch {
       return null;
     }
+  }
+
+  function readStoredAuthVisualState() {
+    try {
+      return localStorage.getItem(AUTH_VISUAL_STATE_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function isOptimisticAuthUiActive() {
+    return !authUser && !authResolved && readStoredAuthVisualState() === "auth";
   }
 
   function writePendingProfile(profile) {
@@ -295,17 +308,27 @@
     const authOpenBtn = getEl("auth-open-btn");
     if (!authOpenBtn) return;
     const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
-    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
-    authOpenBtn.classList.toggle("is-auth", !!authUser);
-    authOpenBtn.classList.toggle("is-guest", !authUser);
+    const isAuthenticatedUi = !!authUser || isOptimisticAuthUiActive();
+    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: isAuthenticatedUi });
+    authOpenBtn.classList.toggle("is-auth", isAuthenticatedUi);
+    authOpenBtn.classList.toggle("is-guest", !isAuthenticatedUi);
     authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
-    persistAuthVisualState(authUser ? "auth" : "guest");
+    if (authUser) {
+      persistAuthVisualState("auth");
+    } else if (authResolved) {
+      persistAuthVisualState("guest");
+    }
     if (labelEl) {
       labelEl.textContent = uiConfig.buttonLabel;
     }
     if (authUser?.email) {
       authOpenBtn.title = `Синхронизация: ${authUser.email}`;
       authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
+      return;
+    }
+    if (isAuthenticatedUi) {
+      authOpenBtn.title = "Аккаунт подключается";
+      authOpenBtn.setAttribute("aria-label", "Аккаунт подключается");
       return;
     }
     authOpenBtn.title = "Войти и сохранить прогресс";
@@ -328,8 +351,8 @@
     if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
     if (!authTitle) return;
     const fallbackPending = !authProfile ? readPendingProfile() : null;
-    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
-    authTitle.textContent = label || "Сохранение прогресса";
+    const label = profileLabel(authProfile) || profileLabel(fallbackPending) || authUser?.email || "";
+    authTitle.textContent = label || "Аккаунт подключен";
   }
 
   async function applyPendingProfileToCloud() {
@@ -393,16 +416,28 @@
 
     if (!authModal || !authEmailInput || !authSendBtn || !authCloseBtn) return;
 
-    const isAuthorized = !!authUser;
+    const isOptimisticAuth = isOptimisticAuthUiActive();
+    const isAuthorized = !!authUser || isOptimisticAuth;
     authModal.classList.toggle("compact-auth", isAuthorized);
 
     if (isAuthorized) {
       if (authDescription) authDescription.style.display = "";
       if (authLevelWrap) authLevelWrap.style.display = "";
-      if (authOAuthRow) authOAuthRow.style.display = "";
+      if (authOAuthRow) authOAuthRow.style.display = isOptimisticAuth ? "none" : "";
       if (authEmailToggle) authEmailToggle.style.display = "none";
       authEmailInput.style.display = "none";
       syncProfileUiFromState();
+      if (isOptimisticAuth) {
+        authModal.classList.add("auth-profile-pending");
+        if (authTitle) authTitle.textContent = "Аккаунт подключается";
+        if (authDescription) authDescription.textContent = "Восстанавливаю сессию и данные профиля.";
+        if (authSyncBtn) authSyncBtn.style.display = "none";
+        authSendBtn.textContent = "Закрыть";
+        authSendBtn.disabled = false;
+        authSendBtn.style.display = "";
+        authCloseBtn.textContent = "Закрыть";
+        return;
+      }
       const hasResolvedProfileLabel = !!profileLabel(authProfile);
       const titleShowsProgressPlaceholder = !!authTitle && authTitle.textContent === "Сохранение прогресса";
       const canShowAuthorizedActions = hasResolvedProfileLabel && !titleShowsProgressPlaceholder;
@@ -512,6 +547,7 @@
           return authUser || null;
         }
         if (!session?.access_token) {
+          authResolved = true;
           authUser = null;
           authProfile = null;
           setAuthSessionCheckedNow();
@@ -519,6 +555,7 @@
           applyAuthModalMode();
           return null;
         }
+        authResolved = true;
         authUser = await supabaseStore.getUser();
         if (authUser) {
           const { data } = await supabaseStore.getUserProfile(authUser.id);
@@ -534,12 +571,9 @@
         return authUser;
       } catch (e) {
         console.warn("Supabase auth init failed", e);
-        authUser = null;
-        authProfile = null;
-        setAuthSessionCheckedNow();
         updateAuthButtonLabel();
         applyAuthModalMode();
-        return null;
+        return authUser || null;
       } finally {
         authRefreshInFlight = null;
       }
@@ -1076,8 +1110,8 @@
     if (!authModal || !authOpenBtn) return;
 
     authOpenBtn.addEventListener("click", async () => {
-      if (!authUser || !isAuthSessionCheckFresh()) {
-        refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed", e));
+      if (!authUser || !isAuthSessionCheckFresh() || isOptimisticAuthUiActive()) {
+        refreshAuthUserInBackground({ force: isOptimisticAuthUiActive() }).catch((e) => console.warn("Background auth refresh failed", e));
       }
       showAuthModal("");
       applyAuthModalMode();
@@ -1138,6 +1172,12 @@
             console.warn("Sign out failed", e);
             setAuthStatus("Не удалось выйти. Попробуйте снова.");
           }
+          return;
+        }
+
+        if (isOptimisticAuthUiActive()) {
+          setAuthStatus("Восстанавливаю сессию...");
+          refreshAuthUserInBackground({ force: true }).catch((e) => console.warn("Forced auth refresh failed", e));
           return;
         }
 
@@ -1248,6 +1288,13 @@
 
     if (authSyncBtn) {
       authSyncBtn.addEventListener("click", async () => {
+        if (!authUser && isOptimisticAuthUiActive()) {
+          setAuthStatus("Восстанавливаю сессию...");
+          refreshAuthUserInBackground({ force: true }).catch((e) => {
+            console.warn("Auth profile refresh for sync failed", e);
+          });
+          return;
+        }
         if (!authUser) {
           setAuthStatus("Сначала войдите");
           return;
@@ -1262,12 +1309,10 @@
 
         const session = await getActiveSession();
         if (!session?.access_token) {
-          authUser = null;
-          authProfile = null;
-          setAuthSessionCheckedNow();
-          updateAuthButtonLabel();
-          applyAuthModalMode();
-          setAuthStatus("Сессия истекла. Войдите заново.");
+          setAuthStatus("Связь с аккаунтом временно недоступна. Попробуйте снова.");
+          refreshAuthUserInBackground({ force: true }).catch((e) => {
+            console.warn("Auth refresh for sync failed", e);
+          });
           return;
         }
 
@@ -1336,6 +1381,8 @@
     pendingAuthReturnScrollY = consumeAuthReturnScrollPosition();
     restoreAuthReturnScrollPosition();
     await bindAuthHandlers();
+    updateAuthButtonLabel();
+    applyAuthModalMode();
     if (!isCloudReady()) return;
 
     await refreshAuthUser();
@@ -1343,6 +1390,7 @@
 
     if (supabaseStore.client?.auth?.onAuthStateChange) {
       supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
+        authResolved = true;
         authUser = session?.user || null;
         if (authUser) {
           setAuthSessionCheckedNow();

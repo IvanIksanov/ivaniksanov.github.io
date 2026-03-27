@@ -168,6 +168,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   let userApiKeySyncPromise = null;
   let authLastSessionCheckTs = 0;
   let authRefreshInFlight = null;
+  let authResolved = false;
   let authCardMorphToken = 0;
   let headerAiNotchHideTimer = null;
   let headerAiNotchActiveQuestionId = "";
@@ -739,6 +740,18 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return `${profile.track} (${profile.grade})`;
   }
 
+  function readStoredAuthVisualState() {
+    try {
+      return localStorage.getItem(AUTH_VISUAL_STATE_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function isOptimisticAuthUiActive() {
+    return !authUser && !authResolved && readStoredAuthVisualState() === "auth";
+  }
+
   function setEmailLoginExpanded(next) {
     authEmailLoginExpanded = !!next;
     if (authModal) authModal.classList.toggle("auth-email-expanded", authEmailLoginExpanded);
@@ -780,16 +793,28 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (!authModal || !authEmailInput || !authSendBtn || !authCloseBtn) return;
     if (authModal.classList.contains("auth-checking")) return;
     morphAuthCardLayout(() => {
-      const isAuthorized = !!authUser;
+      const isOptimisticAuth = isOptimisticAuthUiActive();
+      const isAuthorized = !!authUser || isOptimisticAuth;
       const compactAuthorized = isAuthorized;
       authModal.classList.toggle("compact-auth", compactAuthorized);
       if (compactAuthorized) {
         if (authDescription) authDescription.style.display = "";
         if (authLevelWrap) authLevelWrap.style.display = "";
-        if (authOAuthRow) authOAuthRow.style.display = "";
+        if (authOAuthRow) authOAuthRow.style.display = isOptimisticAuth ? "none" : "";
         if (authEmailToggle) authEmailToggle.style.display = "none";
         authEmailInput.style.display = "none";
         syncProfileUiFromState();
+        if (isOptimisticAuth) {
+          authModal.classList.add("auth-profile-pending");
+          if (authTitle) authTitle.textContent = "Аккаунт подключается";
+          if (authDescription) authDescription.textContent = "Восстанавливаю сессию и данные профиля.";
+          if (authSyncBtn) authSyncBtn.style.display = "none";
+          authSendBtn.textContent = "Закрыть";
+          authSendBtn.disabled = false;
+          authSendBtn.style.display = "";
+          authCloseBtn.textContent = "Закрыть";
+          return;
+        }
         authModal.classList.remove("auth-profile-pending");
         if (!profileLabel(authProfile)) {
           setAuthStatus("Профиль и синхронизация обновляются в фоне.");
@@ -819,24 +844,37 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   function updateAuthButtonLabel() {
     if (!authOpenBtn) return;
     const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
-    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
+    const isAuthenticatedUi = !!authUser || isOptimisticAuthUiActive();
+    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: isAuthenticatedUi });
     authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
-    authOpenBtn.classList.toggle("is-guest", !authUser);
+    authOpenBtn.classList.toggle("is-guest", !isAuthenticatedUi);
+    authOpenBtn.classList.toggle("is-auth", isAuthenticatedUi);
     try {
-      localStorage.setItem(AUTH_VISUAL_STATE_KEY, authUser ? "auth" : "guest");
-      document.documentElement.setAttribute("data-auth-visual-state", authUser ? "auth" : "guest");
+      if (authUser) {
+        localStorage.setItem(AUTH_VISUAL_STATE_KEY, "auth");
+        document.documentElement.setAttribute("data-auth-visual-state", "auth");
+      } else if (authResolved) {
+        localStorage.setItem(AUTH_VISUAL_STATE_KEY, "guest");
+        document.documentElement.setAttribute("data-auth-visual-state", "guest");
+      }
     } catch {}
     if (authUser?.email) {
       authOpenBtn.title = `Синхронизация: ${authUser.email}`;
-      authOpenBtn.classList.add("is-auth");
       authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
       if (labelEl) {
         labelEl.textContent = "";
       }
       return;
     }
+    if (isAuthenticatedUi) {
+      authOpenBtn.title = "Аккаунт подключается";
+      authOpenBtn.setAttribute("aria-label", "Аккаунт подключается");
+      if (labelEl) {
+        labelEl.textContent = "";
+      }
+      return;
+    }
     authOpenBtn.title = "Войти и сохранить прогресс";
-    authOpenBtn.classList.remove("is-auth");
     authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
     if (labelEl) {
       labelEl.textContent = uiConfig.buttonLabel;
@@ -943,6 +981,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         return authUser || null;
       }
       if (!session?.access_token) {
+        authResolved = true;
         lastKnownAccessToken = "";
         authUser = null;
         authProfile = null;
@@ -951,6 +990,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         refreshVisibleAuthModalUi();
         return null;
       }
+      authResolved = true;
       authUser = await supabaseStore.getUser();
       if (authUser) {
         try {
@@ -2285,8 +2325,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   if (authOpenBtn) {
     authOpenBtn.addEventListener("click", async () => {
-      if (!authUser || !isAuthSessionCheckFresh()) {
-        refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed", e));
+      if (!authUser || !isAuthSessionCheckFresh() || isOptimisticAuthUiActive()) {
+        refreshAuthUserInBackground({ force: isOptimisticAuthUiActive() }).catch((e) => console.warn("Background auth refresh failed", e));
       }
       showAuthModal("");
       applyAuthModalMode();
@@ -2362,6 +2402,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           console.warn("Sign out failed", e);
           setAuthStatus("Не удалось выйти. Попробуйте снова.");
         }
+        return;
+      }
+
+      if (isOptimisticAuthUiActive()) {
+        setAuthStatus("Восстанавливаю сессию...");
+        refreshAuthUserInBackground({ force: true }).catch((e) => console.warn("Background auth refresh failed", e));
         return;
       }
       await refreshAuthUser();
@@ -2471,6 +2517,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   if (authSyncBtn) {
     authSyncBtn.addEventListener("click", async () => {
+      if (!authUser && isOptimisticAuthUiActive()) {
+        setAuthStatus("Восстанавливаю сессию...");
+        refreshAuthUserInBackground({ force: true }).catch((e) => {
+          console.warn("Auth refresh for manual sync failed", e);
+        });
+        return;
+      }
       if (!authUser) {
         setAuthStatus("Сначала войдите");
         return;
@@ -2561,6 +2614,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   if (isCloudReady() && supabaseStore.client?.auth?.onAuthStateChange) {
     supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
+      authResolved = true;
       authUser = session?.user || null;
       lastKnownAccessToken = session?.access_token || "";
       if (authUser) {
