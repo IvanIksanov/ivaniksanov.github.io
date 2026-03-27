@@ -1,7 +1,24 @@
 (function () {
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
+  const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
+  const AUTH_BUTTON_INNER_HTML = `
+    <span class="auth-open-btn__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+        <path fill="currentColor" d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5z"/>
+      </svg>
+    </span>
+    <span class="auth-open-btn__label">Войти</span>
+  `;
   let headerScrolled = false;
+
+  function readStoredAuthVisualState() {
+    try {
+      return localStorage.getItem(AUTH_VISUAL_STATE_KEY) || '';
+    } catch {
+      return '';
+    }
+  }
 
   function updateHeaderState() {
     const header = document.querySelector('.site-header');
@@ -138,6 +155,7 @@
         </div>
         <button type="button" id="auth-email-toggle" class="auth-email-toggle" aria-expanded="false">Войти по email</button>
         <input type="email" id="auth-email-input" class="auth-email-input" placeholder="Ваш email" autocomplete="email">
+        <p class="auth-legal-note">Продолжая вход, вы подтверждаете согласие на обработку персональных данных на условиях <a href="personal-data-consent.html" target="_blank" rel="noopener noreferrer">Согласия</a> и ознакомление с <a href="privacy-policy.html" target="_blank" rel="noopener noreferrer">Политикой</a>.</p>
         <p id="auth-status" class="auth-text auth-status"></p>
         <div class="auth-actions">
           <button type="button" id="auth-sync-btn" class="auth-sync-btn" title="Синхронизировать данные" aria-label="Синхронизировать данные"><span class="auth-sync-icon" aria-hidden="true">↻</span></button>
@@ -151,12 +169,24 @@
 
   function ensureSharedAuthScript() {
     if (window.location.pathname.endsWith('/questions.html') || window.location.pathname.endsWith('questions.html')) return;
-    if (document.querySelector('script[data-shared-auth="true"]')) return;
-    const script = document.createElement('script');
-    script.src = 'auth.shared.js';
-    script.defer = true;
-    script.dataset.sharedAuth = 'true';
-    document.body.appendChild(script);
+    const appendSharedAuthScript = () => {
+      if (document.querySelector('script[data-shared-auth="true"]')) return;
+      const script = document.createElement('script');
+      script.src = 'auth.shared.js';
+      script.async = false;
+      script.dataset.sharedAuth = 'true';
+      document.body.appendChild(script);
+    };
+    if (document.querySelector('script[data-auth-state-shared="true"]')) {
+      appendSharedAuthScript();
+      return;
+    }
+    const stateScript = document.createElement('script');
+    stateScript.src = 'auth.state.shared.js';
+    stateScript.async = false;
+    stateScript.dataset.authStateShared = 'true';
+    stateScript.addEventListener('load', appendSharedAuthScript, { once: true });
+    document.body.appendChild(stateScript);
   }
 
   function ensureModelPreflightScript() {
@@ -178,11 +208,6 @@
     if (!authOpenBtn) {
       authOpenBtn = document.createElement('button');
       authOpenBtn.id = 'auth-open-btn';
-      authOpenBtn.className = 'clean-btn toggleButton_gllP auth-open-btn';
-      authOpenBtn.type = 'button';
-      authOpenBtn.title = 'Синхронизация прогресса';
-      authOpenBtn.setAttribute('aria-label', 'Синхронизация прогресса');
-      authOpenBtn.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5z"/></svg>';
 
       const themeToggle = switcher.querySelector('#theme-toggle');
       if (themeToggle) {
@@ -191,6 +216,13 @@
         switcher.prepend(authOpenBtn);
       }
     }
+
+    authOpenBtn.className = 'clean-btn toggleButton_gllP auth-open-btn';
+    authOpenBtn.type = 'button';
+    authOpenBtn.title = 'Войти и сохранить прогресс';
+    authOpenBtn.setAttribute('aria-label', 'Войти и сохранить прогресс');
+    authOpenBtn.innerHTML = AUTH_BUTTON_INNER_HTML;
+    authOpenBtn.classList.toggle('is-guest', readStoredAuthVisualState() === 'guest');
 
     const hasAuthModal = !!document.getElementById('auth-modal');
     if (hasAuthModal || authOpenBtn.dataset.fallbackBound === 'true') return;

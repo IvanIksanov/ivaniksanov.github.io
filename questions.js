@@ -66,6 +66,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
+  const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
   const FAST_MODEL_HINTS = [
     "openai/gpt-oss-20b",
@@ -136,6 +137,15 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const authSendBtn    = document.getElementById("auth-send-btn");
   const authCloseBtn   = document.getElementById("auth-close-btn");
   const authStatus     = document.getElementById("auth-status");
+  const authStateShared = window.AuthStateShared || {
+    getAuthUiConfig(options) {
+      const isAuthenticated = !!options?.isAuthenticated;
+      return {
+        buttonLabel: isAuthenticated ? "" : "Войти",
+        modalPlacement: isAuthenticated ? "anchored" : "centered"
+      };
+    }
+  };
   const supabaseStore  = window.AppSupabase || null;
   let authUser = null;
   let authProfile = null;
@@ -162,6 +172,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   let headerAiNotchHideTimer = null;
   let headerAiNotchActiveQuestionId = "";
   let headerAiNotchPendingCount = 0;
+  let authHoverCloseTimer = null;
 
   function setAuthSessionCheckedNow() {
     authLastSessionCheckTs = Date.now();
@@ -672,37 +683,45 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   function updateAuthButtonLabel() {
     if (!authOpenBtn) return;
+    const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
+    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
+    authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
+    authOpenBtn.classList.toggle("is-guest", !authUser);
+    try {
+      localStorage.setItem(AUTH_VISUAL_STATE_KEY, authUser ? "auth" : "guest");
+      document.documentElement.setAttribute("data-auth-visual-state", authUser ? "auth" : "guest");
+    } catch {}
     if (authUser?.email) {
       authOpenBtn.title = `Синхронизация: ${authUser.email}`;
       authOpenBtn.classList.add("is-auth");
+      authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
+      if (labelEl) {
+        labelEl.textContent = "";
+      }
       return;
     }
     authOpenBtn.title = "Войти и сохранить прогресс";
     authOpenBtn.classList.remove("is-auth");
+    authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
+    if (labelEl) {
+      labelEl.textContent = uiConfig.buttonLabel;
+    }
   }
 
   function positionAuthModal() {
     if (!authModal || !authCard || !authOpenBtn) return;
-    const trigger = authOpenBtn.getBoundingClientRect();
-    const isMobile = window.innerWidth <= 600;
-    let top = Math.max(8, trigger.bottom + 8);
-    let right = isMobile ? 8 : Math.max(8, Math.round(window.innerWidth - trigger.right));
-    authCard.style.left = "auto";
-    authCard.style.right = `${right}px`;
-    authCard.style.top = `${top}px`;
-    const rect = authCard.getBoundingClientRect();
-    if (rect.right > window.innerWidth - 8) {
-      right = Math.max(8, right + (rect.right - (window.innerWidth - 8)));
+    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
+    authModal.dataset.placement = uiConfig.modalPlacement;
+    if (uiConfig.modalPlacement === "anchored") {
+      const trigger = authOpenBtn.getBoundingClientRect();
+      authCard.style.left = "auto";
+      authCard.style.top = `${Math.max(8, Math.round(trigger.bottom + 8))}px`;
+      authCard.style.right = `${Math.max(8, Math.round(window.innerWidth - trigger.right))}px`;
+      return;
     }
-    if (rect.left < 8) {
-      right = Math.max(8, right - (8 - rect.left));
-    }
-    if (rect.bottom > window.innerHeight - 8) {
-      top = Math.max(8, window.innerHeight - rect.height - 8);
-    }
-    authCard.style.left = "auto";
-    authCard.style.right = `${Math.max(8, right)}px`;
-    authCard.style.top = `${top}px`;
+    authCard.style.left = "50%";
+    authCard.style.top = "50%";
+    authCard.style.right = "auto";
   }
 
   function showAuthModal(prefillMessage, options = {}) {
@@ -1933,6 +1952,32 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       showAuthModal("");
       applyAuthModalMode();
     });
+
+    const supportsHover = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches;
+    if (supportsHover && authModal) {
+      const clearHoverClose = () => {
+        if (!authHoverCloseTimer) return;
+        clearTimeout(authHoverCloseTimer);
+        authHoverCloseTimer = null;
+      };
+      const scheduleHoverClose = () => {
+        clearHoverClose();
+        authHoverCloseTimer = setTimeout(() => {
+          if (!authUser) return;
+          if (!authModal.matches(":hover") && !authOpenBtn.matches(":hover")) {
+            hideAuthModal();
+          }
+        }, 1000);
+      };
+      authOpenBtn.addEventListener("mouseenter", () => {
+        if (!authUser) return;
+        clearHoverClose();
+        showAuthModal("");
+      });
+      authOpenBtn.addEventListener("mouseleave", scheduleHoverClose);
+      authModal.addEventListener("mouseenter", clearHoverClose);
+      authModal.addEventListener("mouseleave", scheduleHoverClose);
+    }
   }
 
   if (authSendBtn) {
@@ -1985,6 +2030,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       const email = (authEmailInput?.value || "").trim();
       if (!email) {
         setAuthStatus("Введите email.");
+        return;
+      }
+      if (!email.includes("@")) {
+        setAuthStatus("Введите корректный email: нужен символ @.");
         return;
       }
       writePendingProfile({ email, track, grade, ts: Date.now() });
@@ -2109,6 +2158,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       if (e.target === authModal) hideAuthModal();
     });
   }
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    if (!authModal?.classList.contains("show")) return;
+    hideAuthModal();
+  });
 
   window.addEventListener("resize", () => {
     syncHeaderAiNotchViewportMode();

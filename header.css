@@ -625,10 +625,12 @@ header.welcome { justify-self: start; }
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
+  gap: 0;
+  border-radius: 999px;
   background: none;
   border: none;
-  width: calc(2rem * var(--header-desktop-scale));
+  width: auto;
+  min-width: calc(2rem * var(--header-desktop-scale));
   height: calc(2rem * var(--header-desktop-scale));
   cursor: pointer;
   transition: background 0.2s;
@@ -644,15 +646,39 @@ header.welcome { justify-self: start; }
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  border-radius: 999px;
+  border-radius: 50%;
   width: calc(2rem * var(--header-desktop-scale));
+  min-width: calc(2rem * var(--header-desktop-scale));
   height: calc(2rem * var(--header-desktop-scale));
   padding: 0;
-  font-size: 0;
+  font-size: calc(12px * var(--header-desktop-scale));
+  font-weight: 600;
+  line-height: 1;
   margin-right: calc(4px * var(--header-desktop-scale));
   color: #1A1A1A;
   transition:
-    color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    color 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    min-width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    padding 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    gap 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-switcher .auth-open-btn.is-guest {
+  gap: calc(6px * var(--header-desktop-scale));
+  width: auto;
+  min-width: calc(2rem * var(--header-desktop-scale));
+  padding: 0 calc(10px * var(--header-desktop-scale));
+  border-radius: 999px;
+}
+
+html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth) {
+  gap: calc(6px * var(--header-desktop-scale));
+  width: auto;
+  min-width: calc(2rem * var(--header-desktop-scale));
+  padding: 0 calc(10px * var(--header-desktop-scale));
+  border-radius: 999px;
 }
 
 .theme-switcher #theme-toggle {
@@ -684,6 +710,46 @@ header.welcome { justify-self: start; }
 .theme-switcher .auth-open-btn svg {
   width: calc(20px * var(--header-desktop-scale));
   height: calc(20px * var(--header-desktop-scale));
+}
+
+.theme-switcher .auth-open-btn__icon,
+.theme-switcher .auth-open-btn__label {
+  position: relative;
+  z-index: 1;
+}
+
+.theme-switcher .auth-open-btn__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.theme-switcher .auth-open-btn__label {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: inherit;
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    max-width 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.22s ease,
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.theme-switcher .auth-open-btn.is-guest .auth-open-btn__label {
+  max-width: 64px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth) .auth-open-btn__label {
+  max-width: 64px;
+  opacity: 1;
+  transform: translateX(0);
 }
 
 .theme-switcher .toggleButton_gllP:not(.auth-open-btn) svg {
@@ -761,19 +827,39 @@ html[data-theme="dark"] .theme-switcher #theme-toggle:hover {
 
 .auth-card {
   position: absolute;
-  top: 68px;
-  right: 12px;
+  top: 50%;
+  left: 50%;
+  right: auto;
   width: min(300px, 76vw);
   border: var(--header-glass-border, 1px solid rgba(0, 0, 0, 0.05));
-  background: var(--header-glass-bg, rgba(255, 255, 255, 0.22));
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
   -webkit-backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
   box-shadow: var(--header-glass-shadow, 0 10px 24px rgba(0, 0, 0, 0.12));
   border-radius: 14px;
   padding: 0.88rem 0.92rem;
   box-sizing: border-box;
-  transform-origin: top right;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
   transition: width 220ms ease, height 220ms ease, padding 220ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.auth-modal[data-placement="centered"] {
+  background: rgba(15, 23, 42, 0.16);
+}
+
+.auth-modal[data-placement="anchored"] {
+  background: transparent;
+}
+
+.auth-modal[data-placement="anchored"] .auth-card {
+  transform: none;
+  transform-origin: top right;
+}
+
+.auth-modal[data-placement="centered"] .auth-card {
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
 }
 
 .auth-card.is-morphing {
@@ -890,11 +976,18 @@ html[data-theme="dark"] .theme-switcher #theme-toggle:hover {
   width: 100%;
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.12);
-  background: rgba(255, 255, 255, 0.78);
+  background-color: rgba(255, 255, 255, 0.78);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' fill='none' stroke='%236b7280' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 14px center;
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
   color: inherit;
-  padding: 0.46rem 0.52rem;
+  padding: 0.46rem 2.25rem 0.46rem 0.52rem;
   font-size: 0.76rem;
   box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
 }
 
 .auth-email-input {
@@ -908,6 +1001,28 @@ html[data-theme="dark"] .theme-switcher #theme-toggle:hover {
   box-sizing: border-box;
   max-height: 60px;
   overflow: hidden;
+}
+
+.auth-legal-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: rgba(20, 20, 20, 0.62);
+}
+
+.auth-legal-note a {
+  display: inline;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.auth-legal-note a:hover {
+  background: transparent;
+  color: rgba(20, 20, 20, 0.9);
 }
 
 .auth-actions {
@@ -998,7 +1113,8 @@ html[data-theme="dark"] .theme-switcher #theme-toggle:hover {
 
 .auth-modal.compact-auth .auth-level-wrap,
 .auth-modal.compact-auth .auth-oauth-row,
-.auth-modal.compact-auth #auth-description {
+.auth-modal.compact-auth #auth-description,
+.auth-modal.compact-auth .auth-legal-note {
   opacity: 0;
   max-height: 0;
   margin-top: 0;
@@ -1063,10 +1179,19 @@ html[data-theme="dark"] .auth-email-input {
   color: #f3f6ff;
 }
 
+html[data-theme="dark"] .auth-card {
+  background: rgba(22, 27, 35, 0.94);
+}
+
+html[data-theme="dark"] .auth-modal[data-placement="centered"] {
+  background: rgba(0, 0, 0, 0.28);
+}
+
 html[data-theme="dark"] .auth-select {
-  background: rgba(22, 27, 35, 0.62);
+  background-color: rgba(22, 27, 35, 0.62);
   border-color: rgba(255, 255, 255, 0.14);
   color: #f3f6ff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' fill='none' stroke='%23dce7ff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 html[data-theme="dark"] .auth-oauth-btn {
@@ -1091,6 +1216,14 @@ html[data-theme="dark"] .auth-email-toggle {
 html[data-theme="dark"] .auth-email-toggle:hover {
   color: rgba(220, 231, 255, 0.82);
   text-decoration-color: rgba(220, 231, 255, 0.35);
+}
+
+html[data-theme="dark"] .auth-legal-note {
+  color: rgba(220, 231, 255, 0.66);
+}
+
+html[data-theme="dark"] .auth-legal-note a:hover {
+  color: rgba(220, 231, 255, 0.95);
 }
 
 html[data-theme="dark"] .auth-close-btn {
@@ -1139,12 +1272,31 @@ html[data-theme="dark"] .auth-sync-btn.is-success {
 
   .theme-switcher .auth-open-btn {
     width: 1.9rem;
+    min-width: 1.9rem;
     height: 1.9rem;
+    padding: 0;
     margin-right: 2px;
   }
   .theme-switcher .auth-open-btn svg {
     width: 18px;
     height: 18px;
+  }
+  .theme-switcher .auth-open-btn__label {
+    font-size: 11px;
+  }
+
+  .theme-switcher .auth-open-btn.is-guest {
+    width: auto;
+    min-width: 1.9rem;
+    padding: 0 10px;
+    border-radius: 999px;
+  }
+
+  html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth) {
+    width: auto;
+    min-width: 1.9rem;
+    padding: 0 10px;
+    border-radius: 999px;
   }
 
   .auth-card {
@@ -1191,13 +1343,19 @@ html[data-theme="dark"] .auth-sync-btn.is-success {
 
   .auth-select {
     font-size: 0.72rem;
-    padding: 0.42rem 0.46rem;
+    padding: 0.42rem 2.1rem 0.42rem 0.46rem;
+    background-position: right 12px center;
   }
 
   .auth-email-input {
     margin-top: 0.42rem;
     padding: 0.46rem 0.5rem;
     font-size: 0.78rem;
+  }
+
+  .auth-legal-note {
+    margin-top: 0.44rem;
+    font-size: 0.62rem;
   }
 
   .auth-actions {
