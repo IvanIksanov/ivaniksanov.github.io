@@ -147,6 +147,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const supabaseStore  = window.AppSupabase || null;
   let authUser = null;
   let authProfile = null;
+  let lastKnownAccessToken = "";
   let authEmailLoginExpanded = false;
   let allowGuestAiRequests = readGuestAiAuthBypassFlag();
   let authModalAiGateActive = false;
@@ -749,8 +750,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
     if (!authTitle) return;
     const fallbackPending = !authProfile ? readPendingProfile() : null;
-    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
-    authTitle.textContent = label || "Сохранение прогресса";
+    const label = profileLabel(authProfile) || profileLabel(fallbackPending) || authUser?.email || "";
+    authTitle.textContent = label || "Аккаунт подключен";
   }
 
   async function applyPendingProfileToCloud() {
@@ -789,10 +790,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         if (authEmailToggle) authEmailToggle.style.display = "none";
         authEmailInput.style.display = "none";
         syncProfileUiFromState();
-        const hasResolvedProfileLabel = !!profileLabel(authProfile);
-        const titleShowsProgressPlaceholder = !!authTitle && authTitle.textContent === "Сохранение прогресса";
-        const canShowAuthorizedActions = hasResolvedProfileLabel && !titleShowsProgressPlaceholder;
-        authModal.classList.toggle("auth-profile-pending", !canShowAuthorizedActions);
+        authModal.classList.remove("auth-profile-pending");
+        if (!profileLabel(authProfile)) {
+          setAuthStatus("Профиль и синхронизация обновляются в фоне.");
+        }
         if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
         authSendBtn.textContent = "Выйти";
         authSendBtn.disabled = false;
@@ -909,14 +910,19 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     try {
       if (supabaseStore?.getSession) {
         const session = await withTimeout(supabaseStore.getSession(), 3000, "get session");
-        if (session?.access_token) return session;
+      if (session?.access_token) {
+          lastKnownAccessToken = session.access_token;
+          return session;
+        }
       }
       const fallback = await withTimeout(
         supabaseStore.client?.auth?.getSession?.() || Promise.resolve({ data: { session: null } }),
         3000,
         "get session fallback"
       );
-      return fallback?.data?.session || null;
+      const session = fallback?.data?.session || null;
+      lastKnownAccessToken = session?.access_token || "";
+      return session;
     } catch (e) {
       console.warn("getActiveSession failed", e);
       return undefined;
@@ -937,6 +943,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         return authUser || null;
       }
       if (!session?.access_token) {
+        lastKnownAccessToken = "";
         authUser = null;
         authProfile = null;
         setAuthSessionCheckedNow();
@@ -946,9 +953,17 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       }
       authUser = await supabaseStore.getUser();
       if (authUser) {
-        const { data } = await supabaseStore.getUserProfile(authUser.id);
-        authProfile = data || null;
-        await applyPendingProfileToCloud();
+        try {
+          const { data } = await withTimeout(supabaseStore.getUserProfile(authUser.id), 4000, "get user profile");
+          authProfile = data || null;
+        } catch (profileError) {
+          console.warn("Supabase profile load failed", profileError);
+        }
+        try {
+          await withTimeout(applyPendingProfileToCloud(), 4000, "apply pending profile");
+        } catch (pendingProfileError) {
+          console.warn("Pending profile sync failed", pendingProfileError);
+        }
         syncProfileUiFromState();
       } else {
         authProfile = null;
@@ -1315,6 +1330,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   async function ensureAuthContext() {
     if (!isCloudReady()) return false;
+    if (authUser?.id) {
+      refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed", e));
+      return true;
+    }
     const session = await getActiveSession();
     if (session === undefined) {
       // Temporary Supabase auth timeout/network hiccup.
@@ -1359,8 +1378,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   async function callAiProxy({ method = "POST", query = "", body = null } = {}) {
     const key = supabaseStore?.anonKey || SUPABASE_ANON_KEY_DIRECT;
-    const session = await getActiveSession();
-    const accessToken = session?.access_token || null;
+    const accessToken = lastKnownAccessToken || null;
+    if (!accessToken && authUser?.id) {
+      refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed for AI proxy", e));
+    }
     const headers = {
       apikey: key
     };
@@ -2452,13 +2473,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         setAuthStatus("Сначала войдите");
         return;
       }
-      if (!profileLabel(authProfile)) {
-        setAuthStatus("Загружаю профиль...");
-        refreshAuthUserInBackground({ force: true }).catch((e) => {
-          console.warn("Auth profile refresh for sync failed", e);
-        });
-        return;
-      }
       const session = await getActiveSession();
       if (!session?.access_token) {
         authUser = null;
@@ -2476,6 +2490,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       }
       try {
         setAuthSyncButtonBusy(true);
+        setAuthStatus("Синхронизирую данные...");
+        refreshAuthUserInBackground({ force: true }).catch((e) => {
+          console.warn("Auth profile refresh for sync failed", e);
+        });
         // явный REST ping, чтобы в Network всегда был виден запрос синхронизации
         await restRequest("question_progress", {
           method: "GET",
@@ -2532,6 +2550,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   if (isCloudReady() && supabaseStore.client?.auth?.onAuthStateChange) {
     supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
       authUser = session?.user || null;
+      lastKnownAccessToken = session?.access_token || "";
       if (authUser) {
         setAuthSessionCheckedNow();
       } else if (event === "INITIAL_SESSION") {
@@ -2553,6 +2572,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         }
         await flushPendingMutations();
       } else {
+        lastKnownAccessToken = "";
         authProfile = null;
         updateAuthButtonLabel();
       }
@@ -2587,6 +2607,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }, AUTH_SESSION_CHECK_TTL_MS);
   setInterval(() => {
     if (!authUser) return;
+    syncUserApiKeyWithCloud({ force: true, source: "interval-forced" }).catch((e) => console.warn("Periodic forced API key sync failed", e));
+    syncLocalAndCloudState({ force: true, source: "interval-forced" }).catch((e) => console.warn("Periodic forced cloud sync failed", e));
+    flushPendingMutations().catch((e) => console.warn("Periodic forced pending flush failed", e));
+  }, 5 * 60 * 1000);
+  setInterval(() => {
+    if (!authUser) return;
     syncUserApiKeyWithCloud({ force: false, source: "interval" }).catch((e) => console.warn("Periodic API key sync failed", e));
   }, USER_API_KEY_SYNC_INTERVAL_MS);
   document.addEventListener("visibilitychange", () => {
@@ -2598,6 +2624,15 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         })
         .catch((e) => console.warn("Visibility auth refresh failed", e));
     }
+  });
+  window.addEventListener("online", () => {
+    refreshAuthUserInBackground({ force: true })
+      .then(() => Promise.allSettled([
+        authUser ? syncUserApiKeyWithCloud({ force: true, source: "online" }) : Promise.resolve(),
+        authUser ? syncLocalAndCloudState({ force: true, source: "online" }) : Promise.resolve(),
+        authUser ? flushPendingMutations() : Promise.resolve()
+      ]))
+      .catch((e) => console.warn("Online recovery sync failed", e));
   });
   setInterval(() => {
     if (!authUser) return;
