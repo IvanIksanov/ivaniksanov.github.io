@@ -19,13 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const INTERVIEW_SELECTED_CATEGORIES_KEY = "interview_selected_categories";
   const INTERVIEW_SESSION_STATE_KEY = "interview_session_state_v1";
   const INTERVIEW_SCROLL_STATE_KEY = "interview_scroll_state_v1";
-  const IO_API_BASE = "https://api.intelligence.io.solutions/api/v1";
-  const IO_API_KEY = (() => {
-    const p1 = "io-v2-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.";
-    const p2 = "eyJvd25lciI6IjVhNzhhY2I4LTJkZmUtNGRiNi04N2QxLTkxODZmNTFmZDllZSIsImV4cCI6NDkyNDc3MTU3OH0.";
-    const p3 = "EMXKUEfcMvAbtMt_WodTcNcENyqOXwfuF16wtC4-8i2sJgak6KJODACg3c3tyzwjbacXC1XHUu3jS9E4C14VLw";
-    return p1 + p2 + p3;
-  })();
+  const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
+  const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
 
   let allCategories = [];
@@ -565,6 +560,31 @@ document.addEventListener("DOMContentLoaded", () => {
     ].join("\n");
   }
 
+  async function getAiProxyHeaders() {
+    const api = window.AppSupabase || null;
+    const headers = {
+      apikey: api?.anonKey || SUPABASE_ANON_KEY_DIRECT,
+      "Content-Type": "application/json"
+    };
+    try {
+      const session = api?.getSession ? await api.getSession() : null;
+      if (session?.access_token) {
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+    } catch {}
+    return headers;
+  }
+
+  async function callInterviewAiProxy(body) {
+    const api = window.AppSupabase || null;
+    const url = `${api?.url || SUPABASE_URL_DIRECT}/functions/v1/ai-chat`;
+    return fetch(url, {
+      method: "POST",
+      headers: await getAiProxyHeaders(),
+      body: JSON.stringify(body)
+    });
+  }
+
   async function requestAiAppend(item) {
     const startedAt = Date.now();
     const body = {
@@ -576,14 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
       temperature: 0.4,
       stream: false
     };
-    const res = await fetch(`${IO_API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${IO_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(body)
-    });
+    const res = await callInterviewAiProxy(body);
     if (!res.ok) throw new Error(`AI request failed: ${res.status}`);
     const json = await res.json();
     const answer = json?.choices?.[0]?.message?.content?.trim();

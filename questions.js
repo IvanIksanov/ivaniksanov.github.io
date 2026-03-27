@@ -54,15 +54,6 @@ const refineSystemPrompt =
 const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST API и как тестировать его на собеседовании QA?";
   let runtimeQuestionsData = [];
   window.questionsData = runtimeQuestionsData; // активный источник для рендера
-
-
-  const IO_API_BASE = "https://api.intelligence.io.solutions/api/v1";
-  const IO_API_KEY = (() => {
-    const p1 = "io-v2-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.";
-    const p2 = "eyJvd25lciI6ImRjNmU4OTZhLWNlNGEtNDg4NS05MjUzLTUwMGVmMjI2YjViZSIsImV4cCI6NDkyODI0MDI5NH0.";
-    const p3 = "IZbbCLfCuKOFERjBMJeKmscDh8a8qJskEi2TnV8ZAfgdjnKe6yj4dgb4InCTqNAvrQLq965dolrbqKIkZprlUA";
-    return p1 + p2 + p3;
-  })();
   const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
   const OVERRIDE_API_KEY_META_STORAGE = "io_api_key_override_meta_v1";
   const USER_API_KEY_SERVICE = "io_net";
@@ -542,8 +533,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   function getAuthKey() {
-    const override = readStoredOverrideApiKey();
-    return (override && override.trim()) ? override.trim() : IO_API_KEY;
+    return readStoredOverrideApiKey();
   }
 
   function readStoredOverrideApiKey() {
@@ -618,6 +608,20 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       err.code === "INVALID_API_KEY" ||
       err.code === "API_KEY_QUOTA_EXCEEDED"
     );
+  }
+
+  function isAiRegionAvailabilityError(err) {
+    const message = String(err?.message || "");
+    const detail = String(err?.detail || "");
+    return !!err && (
+      err.code === "AI_REGION_UNAVAILABLE" ||
+      /ERR_TIMED_OUT|Failed to fetch|Load failed|NetworkError/i.test(message) ||
+      /ERR_TIMED_OUT|Failed to fetch|Load failed|NetworkError/i.test(detail)
+    );
+  }
+
+  function getAiRegionUnavailableMessage() {
+    return "Модель не смогла ответить в вашем регионе. Попробуйте другой регион сети.";
   }
 
   function setApiKeyStatus(message, type = "") {
@@ -1315,6 +1319,47 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const base = supabaseStore?.url || SUPABASE_URL_DIRECT;
     const q = query ? (query.startsWith("?") ? query : `?${query}`) : "";
     return `${base}/rest/v1/${path}${q}`;
+  }
+
+  function buildFunctionUrl(functionName, query = "") {
+    const base = supabaseStore?.url || SUPABASE_URL_DIRECT;
+    const q = query ? (query.startsWith("?") ? query : `?${query}`) : "";
+    return `${base}/functions/v1/${functionName}${q}`;
+  }
+
+  async function callAiProxy({ method = "POST", query = "", body = null } = {}) {
+    const key = supabaseStore?.anonKey || SUPABASE_ANON_KEY_DIRECT;
+    const session = await getActiveSession();
+    const accessToken = session?.access_token || null;
+    const headers = {
+      apikey: key
+    };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+    if (body !== null) {
+      headers["Content-Type"] = "application/json";
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS + 23000);
+    try {
+      return await fetch(buildFunctionUrl("ai-chat", query), {
+        method,
+        headers,
+        body: body !== null ? JSON.stringify(body) : undefined,
+        cache: "no-store",
+        signal: controller.signal
+      });
+    } catch (e) {
+      if (e?.name === "AbortError") {
+        const err = new Error("AI_PROXY_TIMEOUT");
+        err.code = "AI_PROXY_TIMEOUT";
+        throw err;
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async function restRequest(path, { method = "GET", query = "", body = null, prefer = "return=representation" } = {}) {
@@ -2879,26 +2924,32 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   async function fetchAnswerOnce(userQ, model, options = {}) {
     const { system = systemPrompt } = options;
     const startedAt = Date.now();
-    const authKey = getAuthKey();
     const authMode = getCurrentApiKeyMode();
-    const res = await fetch(`${IO_API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${authKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: system },
-          { role: "user",   content: userQ }
-        ],
-        temperature: 0.7,
-        reasoning_content: false,
-        max_completion_tokens: 1000,
-        stream: false
-      })
-    });
+    let res;
+    try {
+      res = await callAiProxy({
+        method: "POST",
+        body: {
+          model,
+          messages: [
+            { role: "system", content: system },
+            { role: "user",   content: userQ }
+          ],
+          temperature: 0.7,
+          reasoning_content: false,
+          max_completion_tokens: 1000,
+          stream: false,
+          userApiKey: getAuthKey() || null
+        }
+      });
+    } catch (e) {
+      const err = new Error("AI_REGION_UNAVAILABLE");
+      err.code = "AI_REGION_UNAVAILABLE";
+      err.detail = String(e?.message || e || "");
+      err.authMode = authMode;
+      err.model = model;
+      throw err;
+    }
     if (!res.ok) {
       let detail = "";
       try {
@@ -2954,26 +3005,32 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   async function warmupModelOnce(model) {
     const startedAt = Date.now();
-    const authKey = getAuthKey();
     const authMode = getCurrentApiKeyMode();
-    const res = await fetch(`${IO_API_BASE}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${authKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: warmupUserPrompt }
-        ],
-        temperature: 0.7,
-        reasoning_content: false,
-        max_completion_tokens: 1000,
-        stream: false
-      })
-    });
+    let res;
+    try {
+      res = await callAiProxy({
+        method: "POST",
+        body: {
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: warmupUserPrompt }
+          ],
+          temperature: 0.7,
+          reasoning_content: false,
+          max_completion_tokens: 1000,
+          stream: false,
+          userApiKey: getAuthKey() || null
+        }
+      });
+    } catch (e) {
+      const err = new Error("AI_REGION_UNAVAILABLE");
+      err.code = "AI_REGION_UNAVAILABLE";
+      err.detail = String(e?.message || e || "");
+      err.authMode = authMode;
+      err.model = model;
+      throw err;
+    }
     if (!res.ok) {
       let detail = "";
       try {
@@ -3136,6 +3193,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       let completed = 0;
       let apiKeyFailureCount = 0;
       let lastApiKeyError = null;
+      let regionFailureCount = 0;
+      let lastRegionError = null;
       let lastErr = null;
       let firstResolved = false;
       let availableSet = null;
@@ -3154,6 +3213,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
                 error: lastErr || new Error("No AI answer"),
                 apiKeyFailureCount,
                 apiKeyError: lastApiKeyError,
+                regionFailureCount,
+                regionError: lastRegionError,
                 total: order.length,
                 tried: order.slice(),
                 availableModelsHint: availableSet ? Array.from(availableSet) : null
@@ -3182,6 +3243,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
               apiKeyFailureCount += 1;
               lastApiKeyError = e;
             }
+            if (isAiRegionAvailabilityError(e)) {
+              regionFailureCount += 1;
+              lastRegionError = e;
+            }
             if (e?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(e.availableModels) && e.availableModels.length) {
               availableSet = new Set(e.availableModels);
               applyAvailableModelsHint(e.availableModels);
@@ -3195,6 +3260,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
                 error: lastErr || new Error("No AI answer"),
                 apiKeyFailureCount,
                 apiKeyError: lastApiKeyError,
+                regionFailureCount,
+                regionError: lastRegionError,
                 total: order.length,
                 tried: order.slice(),
                 availableModelsHint: availableSet ? Array.from(availableSet) : null
@@ -3235,6 +3302,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         });
         throw batchErr.error || new Error(batchErr?.apiKeyError?.code || "INVALID_API_KEY");
       }
+      if (batchErr?.regionFailureCount === batchErr?.total) {
+        throw batchErr.regionError || new Error("AI_REGION_UNAVAILABLE");
+      }
       if (Array.isArray(batchErr?.availableModelsHint) && batchErr.availableModelsHint.length) {
         const hintedModels = applyAvailableModelsHint(batchErr.availableModelsHint, { exclude: batchErr?.tried || [] });
         if (hintedModels.length) {
@@ -3256,6 +3326,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
                   authMode: retryErrFromHint?.apiKeyError?.authMode || getCurrentApiKeyMode()
                 });
                 throw retryErrFromHint.error || new Error(retryErrFromHint?.apiKeyError?.code || "INVALID_API_KEY");
+              }
+              if (retryErrFromHint?.regionFailureCount === retryErrFromHint?.total) {
+                throw retryErrFromHint.regionError || new Error("AI_REGION_UNAVAILABLE");
               }
               throw retryErrFromHint.error || new Error("No AI answer");
             }
@@ -3282,6 +3355,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             });
             throw retryErr.error || new Error(retryErr?.apiKeyError?.code || "INVALID_API_KEY");
           }
+          if (retryErr?.regionFailureCount === retryErr?.total) {
+            throw retryErr.regionError || new Error("AI_REGION_UNAVAILABLE");
+          }
           throw retryErr.error || new Error("No AI answer");
         }
       }
@@ -3305,9 +3381,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       }
     }
     try {
-      const res = await fetch(`${IO_API_BASE}/models?page_size=100`, {
-        headers: {
-          "Authorization": `Bearer ${getAuthKey()}`
+      const res = await callAiProxy({
+        method: "POST",
+        body: {
+          action: "models",
+          userApiKey: getAuthKey() || null
         }
       });
       if (!res.ok) throw new Error(`Models list failed: ${res.status}`);
@@ -3699,7 +3777,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         return false;
       }
       failHeaderAiNotchRequest();
-      renderAiSupplement(itemState.aiSupplementEl, "Не удалось получить ответ от моделей. Попробуйте позже.");
+      renderAiSupplement(
+        itemState.aiSupplementEl,
+        isAiRegionAvailabilityError(e) ? getAiRegionUnavailableMessage() : "Не удалось получить ответ от моделей. Попробуйте позже."
+      );
       return false;
     }
   }
@@ -4483,7 +4564,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
               return;
             }
             failHeaderAiNotchRequest();
-            renderAiSupplement(aiSupplementEl, "Не удалось получить ответ от моделей. Попробуйте позже.");
+            renderAiSupplement(
+              aiSupplementEl,
+              isAiRegionAvailabilityError(e) ? getAiRegionUnavailableMessage() : "Не удалось получить ответ от моделей. Попробуйте позже."
+            );
           } finally {
             aiAppendBtn.disabled = false;
           }
