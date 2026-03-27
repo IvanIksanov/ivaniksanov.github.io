@@ -993,7 +993,7 @@ html[data-theme="dark"] .questions-load-status {
   display: none;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   z-index: 1200;
 }
 
@@ -1002,59 +1002,144 @@ html[data-theme="dark"] .questions-load-status {
 }
 
 .api-key-card {
-  width: min(520px, 92vw);
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 14px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+  width: min(620px, 94vw);
+  max-height: calc(100dvh - 24px);
+  background: linear-gradient(180deg, rgba(255, 251, 245, 0.97) 0%, rgba(255, 255, 255, 0.94) 100%);
+  border: 1px solid rgba(255, 170, 72, 0.22);
+  border-radius: 22px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(6px) saturate(90%);
   -webkit-backdrop-filter: blur(6px) saturate(90%);
-  padding: 1rem 1.1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .api-key-card h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+  margin: 0 0 0.45rem;
+  font-size: 1.28rem;
+}
+
+.api-key-body {
+  padding: 1.2rem 1.2rem 0.7rem;
+  overflow-y: auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.api-key-head {
+  margin-bottom: 0.9rem;
 }
 
 .api-key-text {
-  margin: 0.4rem 0;
-  font-size: 0.95rem;
+  margin: 0;
+  font-size: 0.97rem;
+  line-height: 1.55;
+  color: #4f4b45;
 }
 
-.api-key-text a {
-  color: #1a73e8;
+.api-key-guide {
+  border: 1px solid rgba(255, 176, 77, 0.2);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 184, 77, 0.12), transparent 38%),
+    rgba(255, 255, 255, 0.78);
+  padding: 0.95rem 1rem;
+}
+
+.api-key-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #d26a00;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0;
+  border-radius: 0;
+  text-decoration: none;
+  font-weight: 700;
+  transition: color 160ms ease;
+}
+
+.api-key-link:hover,
+.api-key-link:focus-visible {
+  color: #a95600;
+  background: transparent !important;
   text-decoration: none;
 }
 
-.api-key-text a:hover {
-  text-decoration: underline;
+.api-key-link::after {
+  content: "->";
+  font-size: 0.9em;
+}
+
+.api-key-steps {
+  margin: 0.8rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.6rem;
+  color: #2f2a25;
+}
+
+.api-key-steps li {
+  padding-left: 0.15rem;
+  line-height: 1.5;
+}
+
+.api-key-steps span {
+  color: #62584c;
+}
+
+.api-key-steps strong {
+  color: #16120d;
 }
 
 .api-key-input {
   width: 100%;
-  margin-top: 0.6rem;
-  padding: 0.6rem 0.7rem;
-  border-radius: 10px;
+  margin-top: 0.9rem;
+  padding: 0.78rem 0.88rem;
+  border-radius: 14px;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background: #fff;
   color: #111;
   box-sizing: border-box;
+  font-size: 0.98rem;
+}
+
+.api-key-status {
+  min-height: 1.25rem;
+  margin: 0.55rem 0 0;
+  font-size: 0.9rem;
+  color: #5f6368;
+}
+
+.api-key-status.is-error {
+  color: #c62828;
+}
+
+.api-key-status.is-success {
+  color: #1b7f3b;
 }
 
 .api-key-actions {
   display: flex;
   gap: 0.6rem;
   justify-content: flex-end;
-  margin-top: 0.8rem;
+  margin-top: auto;
+  padding: 0.9rem 1.2rem 1rem;
+  border-top: 1px solid rgba(255, 170, 72, 0.16);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.82) 0%, rgba(255, 248, 239, 0.98) 100%);
+  flex-shrink: 0;
 }
 
 .api-key-save,
 .api-key-close {
   border: none;
-  border-radius: 10px;
-  padding: 0.5rem 0.9rem;
+  border-radius: 12px;
+  padding: 0.68rem 1rem;
   cursor: pointer;
+  font-weight: 700;
 }
 
 .api-key-save {
@@ -1412,23 +1497,64 @@ html[data-theme="dark"] .questions-load-status {
 }
 
 html[data-theme="dark"] .api-key-card {
-  background: rgba(26, 26, 26, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, rgba(23, 19, 16, 0.96) 0%, rgba(20, 20, 20, 0.94) 100%);
+  border: 1px solid rgba(255, 179, 71, 0.18);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.42);
+}
+
+html[data-theme="dark"] .api-key-actions {
+  border-top-color: rgba(255, 179, 71, 0.12);
+  background: linear-gradient(180deg, rgba(30, 25, 22, 0.78) 0%, rgba(18, 18, 18, 0.96) 100%);
 }
 
 html[data-theme="dark"] .api-key-text {
   color: #e6e6e6;
 }
 
-html[data-theme="dark"] .api-key-text a {
-  color: #8ab4f8;
+html[data-theme="dark"] .api-key-guide {
+  background:
+    radial-gradient(circle at top left, rgba(255, 179, 71, 0.14), transparent 42%),
+    rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 179, 71, 0.14);
+}
+
+html[data-theme="dark"] .api-key-link {
+  color: #ffbe6a;
+}
+
+html[data-theme="dark"] .api-key-link:hover,
+html[data-theme="dark"] .api-key-link:focus-visible {
+  color: #ffd092;
 }
 
 html[data-theme="dark"] .api-key-input {
   background: #1f1f1f;
   color: #f1f1f1;
   border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .api-key-status {
+  color: #c7c7c7;
+}
+
+html[data-theme="dark"] .api-key-status.is-error {
+  color: #ff8a80;
+}
+
+html[data-theme="dark"] .api-key-status.is-success {
+  color: #8ee39a;
+}
+
+html[data-theme="dark"] .api-key-steps {
+  color: #f2ede8;
+}
+
+html[data-theme="dark"] .api-key-steps span {
+  color: #cabdae;
+}
+
+html[data-theme="dark"] .api-key-steps strong {
+  color: #ffffff;
 }
 
 html[data-theme="dark"] .api-key-close {
@@ -1696,11 +1822,46 @@ html[data-theme="dark"] .auth-sync-btn.is-success {
     height: 22px;
     font-size: 10px;
   }
+  .api-key-card {
+    width: min(100%, 94vw);
+    border-radius: 18px;
+    max-height: calc(100dvh - 24px);
+  }
+  .api-key-body {
+    padding: 0.95rem 0.9rem 0.65rem;
+  }
   .api-key-card h3 {
     font-size: 1rem;
   }
   .api-key-text {
     font-size: 0.85rem;
+  }
+  .api-key-guide {
+    padding: 0.82rem 0.84rem;
+    border-radius: 14px;
+  }
+  .api-key-link {
+    font-size: 0.95rem;
+  }
+  .api-key-steps {
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+    padding-left: 1rem;
+    font-size: 0.88rem;
+  }
+  .api-key-input {
+    padding: 0.74rem 0.8rem;
+    font-size: 0.95rem;
+  }
+  .api-key-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 0.72rem 0.9rem 0.9rem;
+  }
+  .api-key-save,
+  .api-key-close {
+    width: 100%;
+    justify-content: center;
   }
 }
 
