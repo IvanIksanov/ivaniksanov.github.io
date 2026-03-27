@@ -1491,9 +1491,9 @@ html[data-theme="dark"] .questions-load-status {
 }
 .auth-modal.compact-auth.auth-profile-pending .auth-sync-btn,
 .auth-modal.compact-auth.auth-profile-pending .auth-send-btn {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 html[data-theme="dark"] .api-key-card {
