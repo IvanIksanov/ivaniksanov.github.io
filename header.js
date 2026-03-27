@@ -206,6 +206,7 @@
   function ensureProfileButton() {
     const switcher = document.querySelector('.theme-switcher');
     if (!switcher) return;
+    const storedAuthVisualState = readStoredAuthVisualState();
 
     let authOpenBtn = document.getElementById('auth-open-btn');
     if (!authOpenBtn) {
@@ -225,7 +226,12 @@
     authOpenBtn.title = 'Войти и сохранить прогресс';
     authOpenBtn.setAttribute('aria-label', 'Войти и сохранить прогресс');
     authOpenBtn.innerHTML = AUTH_BUTTON_INNER_HTML;
-    authOpenBtn.classList.toggle('is-guest', readStoredAuthVisualState() === 'guest');
+    authOpenBtn.classList.toggle('is-guest', storedAuthVisualState !== 'auth');
+    authOpenBtn.classList.toggle('is-auth', storedAuthVisualState === 'auth');
+    const labelEl = authOpenBtn.querySelector('.auth-open-btn__label');
+    if (labelEl) {
+      labelEl.textContent = storedAuthVisualState === 'auth' ? '' : 'Войти';
+    }
 
     const hasAuthModal = !!document.getElementById('auth-modal');
     if (hasAuthModal || authOpenBtn.dataset.fallbackBound === 'true') return;
