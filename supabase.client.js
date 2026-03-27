@@ -125,6 +125,25 @@
       .maybeSingle();
   }
 
+  async function upsertUserApiKey(row) {
+    if (!client) return { error: new Error("Supabase client is not initialized") };
+    return client
+      .from("user_api_keys")
+      .upsert(row, { onConflict: "user_id,service" })
+      .select("*")
+      .single();
+  }
+
+  async function getUserApiKey(userId, service = "io_net") {
+    if (!client) return { data: null, error: new Error("Supabase client is not initialized") };
+    return client
+      .from("user_api_keys")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("service", service)
+      .maybeSingle();
+  }
+
   async function upsertQuestionProgress(row) {
     if (!client) return { error: new Error("Supabase client is not initialized") };
     return client
@@ -161,6 +180,8 @@
     deleteAiAnswerById,
     upsertUserProfile,
     getUserProfile,
+    upsertUserApiKey,
+    getUserApiKey,
     upsertQuestionProgress,
     upsertQuestionProgressBulk,
     loadQuestionProgress,

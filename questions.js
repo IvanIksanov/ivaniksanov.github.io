@@ -59,11 +59,14 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const IO_API_BASE = "https://api.intelligence.io.solutions/api/v1";
   const IO_API_KEY = (() => {
     const p1 = "io-v2-eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.";
-    const p2 = "eyJvd25lciI6IjVhNzhhY2I4LTJkZmUtNGRiNi04N2QxLTkxODZmNTFmZDllZSIsImV4cCI6NDkyNDc3MTU3OH0.";
-    const p3 = "EMXKUEfcMvAbtMt_WodTcNcENyqOXwfuF16wtC4-8i2sJgak6KJODACg3c3tyzwjbacXC1XHUu3jS9E4C14VLw";
+    const p2 = "eyJvd25lciI6ImRjNmU4OTZhLWNlNGEtNDg4NS05MjUzLTUwMGVmMjI2YjViZSIsImV4cCI6NDkyODI0MDI5NH0.";
+    const p3 = "IZbbCLfCuKOFERjBMJeKmscDh8a8qJskEi2TnV8ZAfgdjnKe6yj4dgb4InCTqNAvrQLq965dolrbqKIkZprlUA";
     return p1 + p2 + p3;
   })();
   const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
+  const OVERRIDE_API_KEY_META_STORAGE = "io_api_key_override_meta_v1";
+  const USER_API_KEY_SERVICE = "io_net";
+  const USER_API_KEY_SYNC_TS_KEY = "user_api_key_sync_ts_v1";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
@@ -93,6 +96,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const QUESTIONS_LOAD_USE_SDK = false;
   const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
   const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
+  const USER_API_KEY_SYNC_INTERVAL_MS = 10 * 60 * 1000;
   const AI_SUPPLEMENT_META_KEY = "ai_supplement_meta_v1";
   const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
   const AI_RESPONSE_CURSOR_PREFIX = "ai_response_cursor_";
@@ -115,7 +119,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const about          = document.getElementById("about");
   const questionsLoadStatusEl = document.getElementById("questions-load-status");
   const apiKeyModal    = document.getElementById("api-key-modal");
+  const apiKeyDescription = document.getElementById("api-key-description");
   const apiKeyInput    = document.getElementById("api-key-input");
+  const apiKeyStatus   = document.getElementById("api-key-status");
   const apiKeySave     = document.getElementById("api-key-save");
   const apiKeyClose    = document.getElementById("api-key-close");
   const authOpenBtn    = document.getElementById("auth-open-btn");
@@ -166,6 +172,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   let questionsUiRendered = false;
   let questionsLoadFallbackTimer = null;
   let cloudSyncPromise = null;
+  let userApiKeySyncPromise = null;
   let authLastSessionCheckTs = 0;
   let authRefreshInFlight = null;
   let authCardMorphToken = 0;
@@ -535,17 +542,122 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   function getAuthKey() {
-    const override = localStorage.getItem(OVERRIDE_API_KEY_STORAGE);
+    const override = readStoredOverrideApiKey();
     return (override && override.trim()) ? override.trim() : IO_API_KEY;
   }
 
-  function showApiKeyModal() {
+  function readStoredOverrideApiKey() {
+    try {
+      const raw = localStorage.getItem(OVERRIDE_API_KEY_STORAGE);
+      return raw ? String(raw).trim() : "";
+    } catch {
+      return "";
+    }
+  }
+
+  function readStoredOverrideApiKeyMeta() {
+    try {
+      const raw = localStorage.getItem(OVERRIDE_API_KEY_META_STORAGE);
+      const parsed = JSON.parse(raw || "null");
+      return parsed && typeof parsed === "object" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function writeStoredOverrideApiKey(key, options = {}) {
+    const normalizedKey = String(key || "").trim();
+    if (!normalizedKey) return false;
+    const meta = {
+      updatedAt: options.updatedAt || new Date().toISOString(),
+      userId: options.userId || authUser?.id || null,
+      source: options.source || "local"
+    };
+    safeSetItemWithAiEviction(OVERRIDE_API_KEY_STORAGE, normalizedKey);
+    try {
+      localStorage.setItem(OVERRIDE_API_KEY_META_STORAGE, JSON.stringify(meta));
+    } catch (e) {
+      console.warn("Failed to persist API key meta", e);
+    }
+    return true;
+  }
+
+  function getCurrentApiKeyMode() {
+    return readStoredOverrideApiKey() ? "user" : "primary";
+  }
+
+  function getUserApiKeySyncLastTs() {
+    try {
+      return Number(localStorage.getItem(USER_API_KEY_SYNC_TS_KEY) || 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  function markUserApiKeySyncTs() {
+    try {
+      localStorage.setItem(USER_API_KEY_SYNC_TS_KEY, String(Date.now()));
+    } catch {}
+  }
+
+  function getIsoTimeMs(value) {
+    const ts = Date.parse(String(value || ""));
+    return Number.isFinite(ts) ? ts : 0;
+  }
+
+  function isApiKeyQuotaDetail(detail) {
+    return /quota exceeded|insufficient credits|rate limit exceeded/i.test(String(detail || ""));
+  }
+
+  function isApiKeyCredentialDetail(detail) {
+    return /invalid api key|api key.*invalid|api key.*expired|unauthorized/i.test(String(detail || ""));
+  }
+
+  function isRecoverableApiKeyError(err) {
+    return !!err && (
+      err.code === "INVALID_API_KEY" ||
+      err.code === "API_KEY_QUOTA_EXCEEDED"
+    );
+  }
+
+  function setApiKeyStatus(message, type = "") {
+    if (!apiKeyStatus) return;
+    apiKeyStatus.textContent = message || "";
+    apiKeyStatus.classList.remove("is-error", "is-success");
+    if (type === "error") apiKeyStatus.classList.add("is-error");
+    if (type === "success") apiKeyStatus.classList.add("is-success");
+  }
+
+  function getApiKeyModalDescription(options = {}) {
+    const authMode = options.authMode || getCurrentApiKeyMode();
+    const quotaExceeded = options.reason === "quota_exceeded";
+    if (quotaExceeded && authMode === "primary") {
+      return authUser
+        ? "Суточная квота основного ключа исчерпана. Вставьте ваш API-ключ IO: мы начнем использовать его сразу и сохраним в аккаунт для других устройств."
+        : "Суточная квота основного ключа исчерпана. Вставьте ваш API-ключ IO, и новые ответы пойдут уже через него.";
+    }
+    if (quotaExceeded && authMode === "user") {
+      return authUser
+        ? "Сохраненный пользовательский ключ тоже уперся в лимит или больше не подходит. Вставьте новый ключ: он заменит текущий локально и в аккаунте."
+        : "Сохраненный пользовательский ключ тоже уперся в лимит или больше не подходит. Вставьте новый ключ, чтобы продолжить.";
+    }
+    return authUser
+      ? "Похоже, текущий ключ не работает. Получите новый ключ в кабинете IO, вставьте его ниже, и мы сохраним его локально и в аккаунт."
+      : "Похоже, текущий ключ не работает. Получите новый ключ в кабинете IO и вставьте его ниже.";
+  }
+
+  function showApiKeyModal(options = {}) {
     if (!apiKeyModal) return;
+    if (apiKeyDescription) {
+      apiKeyDescription.textContent = getApiKeyModalDescription(options);
+    }
+    setApiKeyStatus("");
     apiKeyModal.classList.add("show");
     apiKeyModal.setAttribute("aria-hidden", "false");
     if (apiKeyInput) {
-      apiKeyInput.value = localStorage.getItem(OVERRIDE_API_KEY_STORAGE) || "";
+      apiKeyInput.value = readStoredOverrideApiKey();
       apiKeyInput.focus();
+      apiKeyInput.select();
     }
   }
 
@@ -553,6 +665,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (!apiKeyModal) return;
     apiKeyModal.classList.remove("show");
     apiKeyModal.setAttribute("aria-hidden", "true");
+    setApiKeyStatus("");
   }
 
   function isCloudReady() {
@@ -846,6 +959,87 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return refreshAuthUser();
   }
 
+  async function syncUserApiKeyWithCloud(options = {}) {
+    const { force = false, source = "auto" } = options;
+    if (!isCloudReady() || !authUser || !supabaseStore?.getUserApiKey || !supabaseStore?.upsertUserApiKey) {
+      return { ok: false, skipped: true };
+    }
+    const now = Date.now();
+    if (!force && userApiKeySyncPromise) return userApiKeySyncPromise;
+    if (!force && (now - getUserApiKeySyncLastTs()) < USER_API_KEY_SYNC_INTERVAL_MS) {
+      return { ok: true, skipped: true };
+    }
+    userApiKeySyncPromise = (async () => {
+      try {
+        const localKey = readStoredOverrideApiKey();
+        const localMeta = readStoredOverrideApiKeyMeta();
+        const localUpdatedMs = getIsoTimeMs(localMeta?.updatedAt);
+
+        const { data: cloudRow, error } = await supabaseStore.getUserApiKey(authUser.id, USER_API_KEY_SERVICE);
+        if (error) throw error;
+
+        const cloudKey = String(cloudRow?.api_key || "").trim();
+        const cloudUpdatedMs = getIsoTimeMs(cloudRow?.updated_at);
+
+        let syncedLocalFromCloud = false;
+        let syncedCloudFromLocal = false;
+
+        if (localKey && (!cloudKey || localUpdatedMs > (cloudUpdatedMs + 1000))) {
+          const payload = {
+            user_id: authUser.id,
+            service: USER_API_KEY_SERVICE,
+            api_key: localKey,
+            updated_at: localMeta?.updatedAt || new Date().toISOString()
+          };
+          const { data: saved, error: saveError } = await supabaseStore.upsertUserApiKey(payload);
+          if (saveError) throw saveError;
+          writeStoredOverrideApiKey(localKey, {
+            updatedAt: saved?.updated_at || payload.updated_at,
+            userId: authUser.id,
+            source: "cloud"
+          });
+          syncedCloudFromLocal = true;
+        } else if (cloudKey && (!localKey || cloudUpdatedMs > (localUpdatedMs + 1000) || localKey !== cloudKey)) {
+          writeStoredOverrideApiKey(cloudKey, {
+            updatedAt: cloudRow?.updated_at || new Date().toISOString(),
+            userId: authUser.id,
+            source: "cloud"
+          });
+          syncedLocalFromCloud = true;
+        } else if (localKey && localMeta?.userId !== authUser.id) {
+          writeStoredOverrideApiKey(localKey, {
+            updatedAt: localMeta?.updatedAt || new Date().toISOString(),
+            userId: authUser.id,
+            source: localMeta?.source || "local"
+          });
+        }
+
+        markUserApiKeySyncTs();
+        return {
+          ok: true,
+          source,
+          syncedLocalFromCloud,
+          syncedCloudFromLocal,
+          hasKey: !!(readStoredOverrideApiKey() || cloudKey)
+        };
+      } catch (e) {
+        console.warn("User API key sync failed", e);
+        return { ok: false, error: e };
+      } finally {
+        userApiKeySyncPromise = null;
+      }
+    })();
+    return userApiKeySyncPromise;
+  }
+
+  async function tryHydrateUserApiKeyFromCloud() {
+    if (readStoredOverrideApiKey()) return false;
+    const hasAuth = await ensureAuthContext();
+    if (!hasAuth) return false;
+    const result = await syncUserApiKeyWithCloud({ force: true, source: "quota-recovery" });
+    return !!result?.syncedLocalFromCloud && !!readStoredOverrideApiKey();
+  }
+
   async function loadCloudProgress() {
     cloudProgressByQuestion.clear();
     if (!isCloudReady() || !authUser) return;
@@ -998,6 +1192,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   async function initializeCloudState() {
     await refreshAuthUser();
     if (!authUser) return;
+    await syncUserApiKeyWithCloud({ force: true, source: "init" });
     await syncLocalAndCloudState({ force: false, source: "init" });
   }
 
@@ -1923,16 +2118,35 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   if (apiKeySave) {
-    apiKeySave.addEventListener("click", () => {
+    apiKeySave.addEventListener("click", async () => {
       const v = apiKeyInput?.value?.trim();
-      if (v) {
-        safeSetItemWithAiEviction(OVERRIDE_API_KEY_STORAGE, v);
-        hideApiKeyModal();
-        if (pendingRetry) {
-          const retry = pendingRetry;
-          pendingRetry = null;
-          retry();
+      if (!v) {
+        setApiKeyStatus("Вставьте API-ключ, чтобы продолжить.", "error");
+        return;
+      }
+      setApiKeyStatus(authUser ? "Сохраняю ключ локально и в аккаунт..." : "Сохраняю ключ локально...", "");
+      writeStoredOverrideApiKey(v, {
+        updatedAt: new Date().toISOString(),
+        userId: authUser?.id || null,
+        source: "local"
+      });
+      if (authUser) {
+        const syncResult = await syncUserApiKeyWithCloud({ force: true, source: "manual-save" });
+        if (!syncResult?.ok) {
+          setApiKeyStatus("Ключ сохранен локально. Облачная синхронизация повторится позже.", "success");
+          setTimeout(() => hideApiKeyModal(), 900);
+        } else {
+          setApiKeyStatus("Ключ сохранен и синхронизирован.", "success");
+          setTimeout(() => hideApiKeyModal(), 500);
         }
+      } else {
+        setApiKeyStatus("Ключ сохранен локально.", "success");
+        setTimeout(() => hideApiKeyModal(), 350);
+      }
+      if (pendingRetry) {
+        const retry = pendingRetry;
+        pendingRetry = null;
+        setTimeout(() => retry(), 100);
       }
     });
   }
@@ -1941,6 +2155,23 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     apiKeyClose.addEventListener("click", () => {
       pendingRetry = null;
       hideApiKeyModal();
+    });
+  }
+
+  if (apiKeyInput) {
+    apiKeyInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      apiKeySave?.click();
+    });
+  }
+
+  if (apiKeyModal) {
+    apiKeyModal.addEventListener("click", (event) => {
+      if (event.target === apiKeyModal) {
+        pendingRetry = null;
+        hideApiKeyModal();
+      }
     });
   }
 
@@ -2146,6 +2377,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           method: "GET",
           query: `select=question_id&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`
         });
+        await syncUserApiKeyWithCloud({ force: true, source: "manual" });
         await syncLocalAndCloudState({ force: true, source: "manual" });
       } finally {
         setAuthSyncButtonBusy(false);
@@ -2161,6 +2393,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
+    if (apiKeyModal?.classList.contains("show")) {
+      pendingRetry = null;
+      hideApiKeyModal();
+      return;
+    }
     if (!authModal?.classList.contains("show")) return;
     hideAuthModal();
   });
@@ -2204,6 +2441,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         writeGuestAiAuthBypassFlag(false);
         authModalAiGateActive = false;
         await refreshAuthUser();
+        await syncUserApiKeyWithCloud({ force: true, source: "auth" });
         setAuthStatus("");
         if (shouldRunAuthDrivenSync({ userId: authUser.id })) {
           markAuthDrivenSync(authUser.id);
@@ -2228,6 +2466,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       try {
         const user = await refreshAuthUserInBackground({ force: true });
         if (user) {
+          await syncUserApiKeyWithCloud({ force: true, source: "startup-retry" });
           if (shouldRunAuthDrivenSync({ userId: user.id })) {
             markAuthDrivenSync(user.id);
             await syncLocalAndCloudState({ force: false, source: "auth" });
@@ -2242,9 +2481,18 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   setInterval(() => {
     refreshAuthUserInBackground().catch((e) => console.warn("Periodic auth refresh failed", e));
   }, AUTH_SESSION_CHECK_TTL_MS);
+  setInterval(() => {
+    if (!authUser) return;
+    syncUserApiKeyWithCloud({ force: false, source: "interval" }).catch((e) => console.warn("Periodic API key sync failed", e));
+  }, USER_API_KEY_SYNC_INTERVAL_MS);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") {
-      refreshAuthUserInBackground().catch((e) => console.warn("Visibility auth refresh failed", e));
+      refreshAuthUserInBackground()
+        .then(() => {
+          if (!authUser) return;
+          return syncUserApiKeyWithCloud({ force: false, source: "visibility" });
+        })
+        .catch((e) => console.warn("Visibility auth refresh failed", e));
     }
   });
   setInterval(() => {
@@ -2631,10 +2879,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   async function fetchAnswerOnce(userQ, model, options = {}) {
     const { system = systemPrompt } = options;
     const startedAt = Date.now();
+    const authKey = getAuthKey();
+    const authMode = getCurrentApiKeyMode();
     const res = await fetch(`${IO_API_BASE}/chat/completions`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${getAuthKey()}`,
+        "Authorization": `Bearer ${authKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -2655,8 +2905,21 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         const errJson = await res.json();
         detail = errJson?.detail || "";
       } catch {}
-      if (detail && /invalid api key/i.test(detail)) {
-        throw new Error("INVALID_API_KEY");
+      if (detail && isApiKeyCredentialDetail(detail)) {
+        const err = new Error("INVALID_API_KEY");
+        err.code = "INVALID_API_KEY";
+        err.status = res.status;
+        err.detail = detail;
+        err.authMode = authMode;
+        throw err;
+      }
+      if (detail && isApiKeyQuotaDetail(detail)) {
+        const err = new Error("API_KEY_QUOTA_EXCEEDED");
+        err.code = "API_KEY_QUOTA_EXCEEDED";
+        err.status = res.status;
+        err.detail = detail;
+        err.authMode = authMode;
+        throw err;
       }
       const availableModels = parseAvailableModelsFromDetail(detail);
       if (res.status === 400 && availableModels.length) {
@@ -2691,10 +2954,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   async function warmupModelOnce(model) {
     const startedAt = Date.now();
+    const authKey = getAuthKey();
+    const authMode = getCurrentApiKeyMode();
     const res = await fetch(`${IO_API_BASE}/chat/completions`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${getAuthKey()}`,
+        "Authorization": `Bearer ${authKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -2715,8 +2980,21 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         const errJson = await res.json();
         detail = errJson?.detail || "";
       } catch {}
-      if (detail && /invalid api key/i.test(detail)) {
-        throw new Error("INVALID_API_KEY");
+      if (detail && isApiKeyCredentialDetail(detail)) {
+        const err = new Error("INVALID_API_KEY");
+        err.code = "INVALID_API_KEY";
+        err.status = res.status;
+        err.detail = detail;
+        err.authMode = authMode;
+        throw err;
+      }
+      if (detail && isApiKeyQuotaDetail(detail)) {
+        const err = new Error("API_KEY_QUOTA_EXCEEDED");
+        err.code = "API_KEY_QUOTA_EXCEEDED";
+        err.status = res.status;
+        err.detail = detail;
+        err.authMode = authMode;
+        throw err;
       }
       const availableModels = parseAvailableModelsFromDetail(detail);
       if (res.status === 400 && availableModels.length) {
@@ -2856,7 +3134,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const ATTEMPT_DELAY_MS = 5000;
     return new Promise((resolve, reject) => {
       let completed = 0;
-      let invalidCount = 0;
+      let apiKeyFailureCount = 0;
+      let lastApiKeyError = null;
       let lastErr = null;
       let firstResolved = false;
       let availableSet = null;
@@ -2873,7 +3152,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             if (completed === order.length && !firstResolved) {
               reject({
                 error: lastErr || new Error("No AI answer"),
-                invalidCount,
+                apiKeyFailureCount,
+                apiKeyError: lastApiKeyError,
                 total: order.length,
                 tried: order.slice(),
                 availableModelsHint: availableSet ? Array.from(availableSet) : null
@@ -2898,7 +3178,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             }
           } catch (e) {
             lastErr = e;
-            if (e && String(e.message).includes("INVALID_API_KEY")) invalidCount += 1;
+            if (isRecoverableApiKeyError(e)) {
+              apiKeyFailureCount += 1;
+              lastApiKeyError = e;
+            }
             if (e?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(e.availableModels) && e.availableModels.length) {
               availableSet = new Set(e.availableModels);
               applyAvailableModelsHint(e.availableModels);
@@ -2910,7 +3193,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             if (completed === order.length && !firstResolved) {
               reject({
                 error: lastErr || new Error("No AI answer"),
-                invalidCount,
+                apiKeyFailureCount,
+                apiKeyError: lastApiKeyError,
                 total: order.length,
                 tried: order.slice(),
                 availableModelsHint: availableSet ? Array.from(availableSet) : null
@@ -2923,6 +3207,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   async function requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, options = {}) {
+    const { skipCloudUserKeyRecovery = false } = options;
     if (!readValidatedChatModelsCache()) {
       ensureModelPreflightInBackground();
     }
@@ -2936,9 +3221,19 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     try {
       return await requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options);
     } catch (batchErr) {
-      if (batchErr?.invalidCount === batchErr?.total) {
-        showApiKeyModal();
-        throw batchErr.error || new Error("INVALID_API_KEY");
+      if (batchErr?.apiKeyFailureCount === batchErr?.total) {
+        if (!skipCloudUserKeyRecovery && await tryHydrateUserApiKeyFromCloud()) {
+          return requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, {
+            ...options,
+            skipCloudUserKeyRecovery: true
+          });
+        }
+        showApiKeyModal({
+          reason: batchErr?.apiKeyError?.code === "API_KEY_QUOTA_EXCEEDED" ? "quota_exceeded" : "invalid_key",
+          detail: batchErr?.apiKeyError?.detail || "",
+          authMode: batchErr?.apiKeyError?.authMode || getCurrentApiKeyMode()
+        });
+        throw batchErr.error || new Error(batchErr?.apiKeyError?.code || "INVALID_API_KEY");
       }
       if (Array.isArray(batchErr?.availableModelsHint) && batchErr.availableModelsHint.length) {
         const hintedModels = applyAvailableModelsHint(batchErr.availableModelsHint, { exclude: batchErr?.tried || [] });
@@ -2948,9 +3243,19 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             try {
               return await requestBatchWithTimeout(userQ, retryOrderFromHint, onAttempt, onAdditional, options);
             } catch (retryErrFromHint) {
-              if (retryErrFromHint?.invalidCount === retryErrFromHint?.total) {
-                showApiKeyModal();
-                throw retryErrFromHint.error || new Error("INVALID_API_KEY");
+              if (retryErrFromHint?.apiKeyFailureCount === retryErrFromHint?.total) {
+                if (!skipCloudUserKeyRecovery && await tryHydrateUserApiKeyFromCloud()) {
+                  return requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, {
+                    ...options,
+                    skipCloudUserKeyRecovery: true
+                  });
+                }
+                showApiKeyModal({
+                  reason: retryErrFromHint?.apiKeyError?.code === "API_KEY_QUOTA_EXCEEDED" ? "quota_exceeded" : "invalid_key",
+                  detail: retryErrFromHint?.apiKeyError?.detail || "",
+                  authMode: retryErrFromHint?.apiKeyError?.authMode || getCurrentApiKeyMode()
+                });
+                throw retryErrFromHint.error || new Error(retryErrFromHint?.apiKeyError?.code || "INVALID_API_KEY");
               }
               throw retryErrFromHint.error || new Error("No AI answer");
             }
@@ -2963,9 +3268,19 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         try {
           return await requestBatchWithTimeout(userQ, retryOrder, onAttempt, onAdditional, options);
         } catch (retryErr) {
-          if (retryErr?.invalidCount === retryErr?.total) {
-            showApiKeyModal();
-            throw retryErr.error || new Error("INVALID_API_KEY");
+          if (retryErr?.apiKeyFailureCount === retryErr?.total) {
+            if (!skipCloudUserKeyRecovery && await tryHydrateUserApiKeyFromCloud()) {
+              return requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, {
+                ...options,
+                skipCloudUserKeyRecovery: true
+              });
+            }
+            showApiKeyModal({
+              reason: retryErr?.apiKeyError?.code === "API_KEY_QUOTA_EXCEEDED" ? "quota_exceeded" : "invalid_key",
+              detail: retryErr?.apiKeyError?.detail || "",
+              authMode: retryErr?.apiKeyError?.authMode || getCurrentApiKeyMode()
+            });
+            throw retryErr.error || new Error(retryErr?.apiKeyError?.code || "INVALID_API_KEY");
           }
           throw retryErr.error || new Error("No AI answer");
         }
@@ -3379,7 +3694,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       return true;
     } catch (e) {
       stopLoaderPhases(timer);
-      if (e && String(e.message).includes("INVALID_API_KEY")) {
+      if (isRecoverableApiKeyError(e) || String(e?.message || "").includes("INVALID_API_KEY")) {
         pendingRetry = () => runRefineRequest(context, userFollowup);
         return false;
       }
@@ -4163,7 +4478,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           try {
             await executeRequest();
           } catch (e) {
-            if (e && String(e.message).includes("INVALID_API_KEY")) {
+            if (isRecoverableApiKeyError(e) || String(e?.message || "").includes("INVALID_API_KEY")) {
               pendingRetry = executeRequest;
               return;
             }

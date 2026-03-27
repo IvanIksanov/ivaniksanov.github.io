@@ -197,12 +197,23 @@
 
 <div id="api-key-modal" class="api-key-modal" role="dialog" aria-modal="true" aria-labelledby="api-key-title" aria-hidden="true">
     <div class="api-key-card">
-        <h3 id="api-key-title">Нужен новый API‑ключ</h3>
-        <p class="api-key-text">Похоже, текущий ключ не работает. Получите бесплатный ключ в кабинете IO и вставьте его ниже.</p>
-        <p class="api-key-text">
-            <a href="https://ai.io.net/ai/api-keys" target="_blank" rel="noopener noreferrer">Открыть страницу создания ключа</a>
-        </p>
-        <input type="text" id="api-key-input" class="api-key-input" placeholder="Вставьте ваш API‑ключ" autocomplete="off" />
+        <div class="api-key-body">
+            <div class="api-key-head">
+                <h3 id="api-key-title">Нужен новый API‑ключ</h3>
+                <p id="api-key-description" class="api-key-text">Похоже, текущий ключ не работает. Получите бесплатный ключ в кабинете IO и вставьте его ниже.</p>
+            </div>
+            <div class="api-key-guide">
+                <a class="api-key-link" href="https://ai.io.net/ai/api-keys" target="_blank" rel="noopener noreferrer">Открыть страницу создания ключа</a>
+                <ol class="api-key-steps">
+                    <li><span>Нажмите</span> <strong>Create New API Key</strong> в правом верхнем углу.</li>
+                    <li><span>В форме укажите</span> любое имя ключа, например <strong>QAtoDev</strong>.</li>
+                    <li><span>Оставьте значения как на скрине</span>: <strong>Project</strong> — <strong>io.intelligence</strong>, <strong>Permissions</strong> — <strong>All</strong>, <strong>Expiration date</strong> — любой удобный срок.</li>
+                    <li><span>Нажмите</span> <strong>Create API Key</strong>, затем скопируйте созданный ключ и вставьте его сюда.</li>
+                </ol>
+            </div>
+            <input type="password" id="api-key-input" class="api-key-input" placeholder="Вставьте ваш API‑ключ" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            <p id="api-key-status" class="api-key-status" aria-live="polite"></p>
+        </div>
         <div class="api-key-actions">
             <button type="button" id="api-key-save" class="api-key-save">Сохранить</button>
             <button type="button" id="api-key-close" class="api-key-close">Закрыть</button>
