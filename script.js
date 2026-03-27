@@ -353,12 +353,14 @@ document.addEventListener('DOMContentLoaded', function(){
   bindInfoPopovers();
   bindStudyPlanCloudSync();
   document.addEventListener('shared-auth:ready', function() {
-    queueStudyPlanStatusSync({ force: true });
+    if (localStorage.getItem('showStudyPlan') === 'true') {
+      queueStudyPlanStatusSync({ force: true });
+    }
   });
-  queueStudyPlanStatusSync({ force: false });
   const shouldShowPlan = localStorage.getItem('showStudyPlan') === 'true';
   if (shouldShowPlan && selectedSkills.length > 0) {
     renderStudyPlan(false);
+    queueStudyPlanStatusSync({ force: false });
   }
 
   // Обработка кнопки "Получить план изучения"
@@ -366,6 +368,7 @@ document.addEventListener('DOMContentLoaded', function(){
   function showStudyPlan(options) {
     localStorage.setItem('showStudyPlan', 'true');
     renderStudyPlan(!!options?.shouldScroll);
+    queueStudyPlanStatusSync({ force: true });
   }
 
   async function ensureAuthBeforeStudyPlan() {
@@ -734,9 +737,6 @@ document.addEventListener('DOMContentLoaded', function(){
         ? await supabaseStore.getSession()
         : null;
       if (session?.user) return session.user;
-      if (typeof supabaseStore.getUser === 'function') {
-        return await supabaseStore.getUser();
-      }
     } catch (e) {
       console.warn('Study plan auth context failed', e);
     }
@@ -940,18 +940,18 @@ document.addEventListener('DOMContentLoaded', function(){
     [600, 1800, 4000].forEach(function(delay) {
       setTimeout(function() {
         bindSubscription();
-        queueStudyPlanStatusSync({ force: false });
       }, delay);
     });
 
     document.addEventListener('visibilitychange', function() {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && localStorage.getItem('showStudyPlan') === 'true') {
         queueStudyPlanStatusSync({ force: true });
       }
     });
 
     setInterval(function() {
       if (document.visibilityState !== 'visible') return;
+      if (localStorage.getItem('showStudyPlan') !== 'true') return;
       queueStudyPlanStatusSync({ force: false });
     }, 60000);
   }
@@ -1358,6 +1358,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let previewTouchState = null;
     let loadedTelegramPostId = '';
     let skeletonProblemTimer = null;
+    let telegramPreviewInitialized = false;
+    let telegramPreviewObserver = null;
 
     function isDarkTheme() {
         return document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1554,6 +1556,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function renderTelegramPost(trigger, options) {
         if (!trigger) return;
+        telegramPreviewInitialized = true;
+        if (telegramPreviewObserver) {
+            telegramPreviewObserver.disconnect();
+            telegramPreviewObserver = null;
+        }
         const renderOptions = options || {};
         const telegramPost = trigger.dataset.telegramPost;
 
@@ -1619,6 +1626,26 @@ document.addEventListener('DOMContentLoaded', function () {
                 watchEmbedRendering(currentRequestId, telegramUrl, widgetScript, renderOptions);
             });
         });
+    }
+
+    function scheduleTelegramPreviewStart() {
+        if (telegramPreviewInitialized) return;
+        if (!('IntersectionObserver' in window)) {
+            renderTelegramPost(activeTrigger);
+            return;
+        }
+
+        telegramPreviewObserver = new IntersectionObserver(function (entries) {
+            const visible = entries.some(function (entry) {
+                return entry.isIntersecting || entry.intersectionRatio > 0;
+            });
+            if (!visible) return;
+            renderTelegramPost(activeTrigger);
+        }, {
+            rootMargin: '320px 0px'
+        });
+
+        telegramPreviewObserver.observe(showcase);
     }
 
     function bindMobilePreviewTap() {
@@ -1689,7 +1716,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return mutation.type === 'attributes' && mutation.attributeName === 'data-theme';
         });
 
-        if (shouldRerender && activeTrigger) {
+        if (shouldRerender && activeTrigger && telegramPreviewInitialized && loadedTelegramPostId) {
             renderTelegramPost(activeTrigger, { preserveFrameHeight: true, forceReload: true });
         }
     });
@@ -1708,7 +1735,7 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('resize', syncPickerHeight);
     bindMobilePreviewTap();
 
-    renderTelegramPost(activeTrigger);
+    scheduleTelegramPreviewStart();
     syncPickerHeight();
 });
 
