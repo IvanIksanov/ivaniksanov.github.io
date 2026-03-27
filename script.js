@@ -1690,7 +1690,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
 
         if (shouldRerender && activeTrigger) {
-            renderTelegramPost(activeTrigger, { preserveFrameHeight: true });
+            renderTelegramPost(activeTrigger, { preserveFrameHeight: true, forceReload: true });
         }
     });
 
