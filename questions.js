@@ -763,7 +763,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
     if (!authTitle) return;
     const fallbackPending = !authProfile ? readPendingProfile() : null;
-    const label = profileLabel(authProfile) || profileLabel(fallbackPending) || authUser?.email || "";
+    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
     authTitle.textContent = label || "Аккаунт подключен";
   }
 
@@ -806,8 +806,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         syncProfileUiFromState();
         if (isOptimisticAuth) {
           authModal.classList.add("auth-profile-pending");
-          if (authTitle) authTitle.textContent = "Аккаунт подключается";
-          if (authDescription) authDescription.textContent = "Восстанавливаю сессию и данные профиля.";
           if (authSyncBtn) authSyncBtn.style.display = "none";
           authSendBtn.textContent = "Закрыть";
           authSendBtn.disabled = false;
@@ -816,9 +814,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           return;
         }
         authModal.classList.remove("auth-profile-pending");
-        if (!profileLabel(authProfile)) {
-          setAuthStatus("Профиль и синхронизация обновляются в фоне.");
-        }
         if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
         authSendBtn.textContent = "Выйти";
         authSendBtn.disabled = false;
@@ -859,16 +854,16 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       }
     } catch {}
     if (authUser?.email) {
-      authOpenBtn.title = `Синхронизация: ${authUser.email}`;
-      authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
+      authOpenBtn.title = "Профиль";
+      authOpenBtn.setAttribute("aria-label", "Профиль");
       if (labelEl) {
         labelEl.textContent = "";
       }
       return;
     }
     if (isAuthenticatedUi) {
-      authOpenBtn.title = "Аккаунт подключается";
-      authOpenBtn.setAttribute("aria-label", "Аккаунт подключается");
+      authOpenBtn.title = "Профиль";
+      authOpenBtn.setAttribute("aria-label", "Профиль");
       if (labelEl) {
         labelEl.textContent = "";
       }
@@ -1265,8 +1260,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   async function initializeCloudState() {
     await refreshAuthUser();
     if (!authUser) return;
-    await syncUserApiKeyWithCloud({ force: true, source: "init" });
-    await syncLocalAndCloudState({ force: true, source: "init" });
+    await syncUserApiKeyWithCloud({ force: false, source: "init" });
+    await syncLocalAndCloudState({ force: false, source: "init" });
   }
 
   function getCloudSyncLastTs() {
@@ -2053,6 +2048,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     lastAuthDrivenSyncUserId = String(userId || "");
   }
 
+  function hasPendingCloudWork() {
+    return readPendingMutations().length > 0;
+  }
+
   async function saveProgressCloud(questionId, status, options = {}) {
     const { enqueueOnFail = true } = options;
     const hasAuth = await ensureAuthContext();
@@ -2368,20 +2367,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       const isAuthorizedView = !!authUser;
       if (isAuthorizedView) {
         try {
-          const session = await getActiveSession();
-          if (session === undefined) {
-            setAuthStatus("Связь с аккаунтом временно недоступна. Попробуйте еще раз через пару секунд.");
-            refreshAuthUserInBackground({ force: true }).catch((e) => console.warn("Background auth refresh failed", e));
-            return;
-          }
-          if (!session?.access_token) {
-            authUser = null;
-            authProfile = null;
-            updateAuthButtonLabel();
-            applyAuthModalMode();
-            setAuthStatus("Сессия истекла. Войдите заново.");
-            return;
-          }
           const signOutFn = supabaseStore.signOut || (supabaseStore.client?.auth?.signOut
             ? () => supabaseStore.client.auth.signOut()
             : null);
@@ -2389,18 +2374,20 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             setAuthStatus("Выход недоступен. Обновите страницу.");
             return;
           }
-          const { error } = await signOutFn();
-          if (error) {
-            setAuthStatus("Не удалось выйти. Попробуйте снова.");
-            return;
-          }
+          setAuthSyncButtonBusy(false);
+          setAuthStatus("");
           authUser = null;
           authProfile = null;
+          authResolved = true;
+          lastKnownAccessToken = "";
           updateAuthButtonLabel();
           hideAuthModal();
+          const { error } = await signOutFn();
+          if (error) {
+            console.warn("Sign out returned error", error);
+          }
         } catch (e) {
           console.warn("Sign out failed", e);
-          setAuthStatus("Не удалось выйти. Попробуйте снова.");
         }
         return;
       }
@@ -2518,7 +2505,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   if (authSyncBtn) {
     authSyncBtn.addEventListener("click", async () => {
       if (!authUser && isOptimisticAuthUiActive()) {
-        setAuthStatus("Восстанавливаю сессию...");
         refreshAuthUserInBackground({ force: true }).catch((e) => {
           console.warn("Auth refresh for manual sync failed", e);
         });
@@ -2530,13 +2516,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       }
       const session = await getActiveSession();
       if (session === undefined) {
-        setAuthStatus("Связь с аккаунтом временно недоступна. Синхронизация продолжится автоматически.");
         refreshAuthUserInBackground({ force: true }).catch((e) => {
           console.warn("Auth refresh for manual sync failed", e);
         });
-        syncUserApiKeyWithCloud({ force: true, source: "manual-recovery" }).catch((e) => console.warn("Manual recovery API key sync failed", e));
-        syncLocalAndCloudState({ force: true, source: "manual-recovery" }).catch((e) => console.warn("Manual recovery cloud sync failed", e));
-        flushPendingMutations().catch((e) => console.warn("Manual recovery pending flush failed", e));
         return;
       }
       if (!session?.access_token) {
@@ -2555,7 +2537,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       }
       try {
         setAuthSyncButtonBusy(true);
-        setAuthStatus("Синхронизирую данные...");
         refreshAuthUserInBackground({ force: true }).catch((e) => {
           console.warn("Auth profile refresh for sync failed", e);
         });
@@ -2630,11 +2611,14 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         writeGuestAiAuthBypassFlag(false);
         authModalAiGateActive = false;
         await refreshAuthUser();
-        await syncUserApiKeyWithCloud({ force: true, source: "auth" });
-        setAuthStatus("");
-        markAuthDrivenSync(authUser.id);
-        await syncLocalAndCloudState({ force: true, source: "auth" });
-        await flushPendingMutations();
+        await syncUserApiKeyWithCloud({ force: false, source: "auth" });
+        if (shouldRunAuthDrivenSync({ userId: authUser.id })) {
+          markAuthDrivenSync(authUser.id);
+          await syncLocalAndCloudState({ force: false, source: "auth" });
+        }
+        if (hasPendingCloudWork()) {
+          await flushPendingMutations();
+        }
       } else {
         lastKnownAccessToken = "";
         authProfile = null;
@@ -2653,10 +2637,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       if (authUser) return;
       try {
         const user = await refreshAuthUserInBackground({ force: true });
-        if (user) {
-          await syncUserApiKeyWithCloud({ force: true, source: "startup-retry" });
+        if (user && shouldRunAuthDrivenSync({ userId: user.id })) {
+          await syncUserApiKeyWithCloud({ force: false, source: "startup-retry" });
           markAuthDrivenSync(user.id);
-          await syncLocalAndCloudState({ force: true, source: "auth" });
+          await syncLocalAndCloudState({ force: false, source: "auth" });
+        }
+        if (user && hasPendingCloudWork()) {
           await flushPendingMutations();
         }
       } catch (e) {
@@ -2669,9 +2655,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }, AUTH_SESSION_CHECK_TTL_MS);
   setInterval(() => {
     if (!authUser) return;
-    syncUserApiKeyWithCloud({ force: true, source: "interval-forced" }).catch((e) => console.warn("Periodic forced API key sync failed", e));
-    syncLocalAndCloudState({ force: true, source: "interval-forced" }).catch((e) => console.warn("Periodic forced cloud sync failed", e));
-    flushPendingMutations().catch((e) => console.warn("Periodic forced pending flush failed", e));
+    if (!hasPendingCloudWork()) return;
+    syncLocalAndCloudState({ force: false, source: "interval-pending" }).catch((e) => console.warn("Pending cloud sync failed", e));
+    flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
   }, 5 * 60 * 1000);
   setInterval(() => {
     if (!authUser) return;
@@ -2681,7 +2667,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (document.visibilityState === "visible") {
       refreshAuthUserInBackground()
         .then(() => {
-          if (!authUser) return;
+          if (!authUser || !hasPendingCloudWork()) return;
           return syncUserApiKeyWithCloud({ force: false, source: "visibility" });
         })
         .catch((e) => console.warn("Visibility auth refresh failed", e));
@@ -2690,14 +2676,15 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   window.addEventListener("online", () => {
     refreshAuthUserInBackground({ force: true })
       .then(() => Promise.allSettled([
-        authUser ? syncUserApiKeyWithCloud({ force: true, source: "online" }) : Promise.resolve(),
-        authUser ? syncLocalAndCloudState({ force: true, source: "online" }) : Promise.resolve(),
-        authUser ? flushPendingMutations() : Promise.resolve()
+        authUser ? syncUserApiKeyWithCloud({ force: false, source: "online" }) : Promise.resolve(),
+        authUser && hasPendingCloudWork() ? syncLocalAndCloudState({ force: false, source: "online" }) : Promise.resolve(),
+        authUser && hasPendingCloudWork() ? flushPendingMutations() : Promise.resolve()
       ]))
       .catch((e) => console.warn("Online recovery sync failed", e));
   });
   setInterval(() => {
     if (!authUser) return;
+    if (!hasPendingCloudWork()) return;
     flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
   }, 15000);
   scheduleQuestionsLoadFallback();

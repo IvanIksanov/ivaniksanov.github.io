@@ -322,13 +322,13 @@
       labelEl.textContent = uiConfig.buttonLabel;
     }
     if (authUser?.email) {
-      authOpenBtn.title = `Синхронизация: ${authUser.email}`;
-      authOpenBtn.setAttribute("aria-label", `Синхронизация: ${authUser.email}`);
+      authOpenBtn.title = "Профиль";
+      authOpenBtn.setAttribute("aria-label", "Профиль");
       return;
     }
     if (isAuthenticatedUi) {
-      authOpenBtn.title = "Аккаунт подключается";
-      authOpenBtn.setAttribute("aria-label", "Аккаунт подключается");
+      authOpenBtn.title = "Профиль";
+      authOpenBtn.setAttribute("aria-label", "Профиль");
       return;
     }
     authOpenBtn.title = "Войти и сохранить прогресс";
@@ -351,7 +351,7 @@
     if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
     if (!authTitle) return;
     const fallbackPending = !authProfile ? readPendingProfile() : null;
-    const label = profileLabel(authProfile) || profileLabel(fallbackPending) || authUser?.email || "";
+    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
     authTitle.textContent = label || "Аккаунт подключен";
   }
 
@@ -429,8 +429,6 @@
       syncProfileUiFromState();
       if (isOptimisticAuth) {
         authModal.classList.add("auth-profile-pending");
-        if (authTitle) authTitle.textContent = "Аккаунт подключается";
-        if (authDescription) authDescription.textContent = "Восстанавливаю сессию и данные профиля.";
         if (authSyncBtn) authSyncBtn.style.display = "none";
         authSendBtn.textContent = "Закрыть";
         authSendBtn.disabled = false;
@@ -439,7 +437,7 @@
         return;
       }
       const hasResolvedProfileLabel = !!profileLabel(authProfile);
-      const titleShowsProgressPlaceholder = !!authTitle && authTitle.textContent === "Сохранение прогресса";
+      const titleShowsProgressPlaceholder = !!authTitle && authTitle.textContent === "Аккаунт подключен";
       const canShowAuthorizedActions = hasResolvedProfileLabel && !titleShowsProgressPlaceholder;
       authModal.classList.toggle("auth-profile-pending", !canShowAuthorizedActions);
       if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
@@ -1040,14 +1038,10 @@
         }
 
         markCloudSyncTs();
-        if (source === "manual") {
-          flashAuthSyncButtonSuccess();
-          setAuthStatus("Синхронизация завершена");
-        }
+        if (source === "manual") flashAuthSyncButtonSuccess();
         return { ok: true };
       } catch (e) {
         console.warn("Cloud sync failed", e);
-        if (source === "manual") setAuthStatus("Ошибка синхронизации. Попробуйте снова.");
         return { ok: false, error: e };
       } finally {
         if (source === "manual") setAuthSyncButtonBusy(false);
@@ -1159,18 +1153,19 @@
               setAuthStatus("Выход недоступен. Обновите страницу.");
               return;
             }
-            const { error } = await signOutFn();
-            if (error) {
-              setAuthStatus("Не удалось выйти. Попробуйте снова.");
-              return;
-            }
+            setAuthSyncButtonBusy(false);
+            setAuthStatus("");
             authUser = null;
             authProfile = null;
+            authResolved = true;
             updateAuthButtonLabel();
             hideAuthModal();
+            const { error } = await signOutFn();
+            if (error) {
+              console.warn("Sign out returned error", error);
+            }
           } catch (e) {
             console.warn("Sign out failed", e);
-            setAuthStatus("Не удалось выйти. Попробуйте снова.");
           }
           return;
         }
@@ -1300,11 +1295,9 @@
           return;
         }
         if (!profileLabel(authProfile)) {
-          setAuthStatus("Загружаю профиль...");
           refreshAuthUserInBackground({ force: true }).catch((e) => {
             console.warn("Auth profile refresh for sync failed", e);
           });
-          return;
         }
 
         const session = await getActiveSession();
@@ -1402,7 +1395,6 @@
 
         if (authUser) {
           await refreshAuthUser();
-          setAuthStatus("");
           await syncLocalAndCloudState({ force: false, source: "auth" });
           await flushPendingMutations();
           flushPendingActionAfterAuth();
