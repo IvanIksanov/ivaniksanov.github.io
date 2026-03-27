@@ -190,6 +190,9 @@
   }
 
   function ensureModelPreflightScript() {
+    const explicitOptIn = document.documentElement.dataset.modelPreflight === 'true'
+      || document.body?.dataset?.modelPreflight === 'true';
+    if (!explicitOptIn) return;
     const hasQuestionsScript = Array.from(document.scripts).some((s) => String(s.src || "").includes("questions.js"));
     if (hasQuestionsScript) return;
     if (document.querySelector('script[data-model-preflight="true"]')) return;
