@@ -1356,6 +1356,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let embedSurface = null;
     let embedOverlay = null;
     let previewTouchState = null;
+    let loadedTelegramPostId = '';
+    let skeletonProblemTimer = null;
 
     function isDarkTheme() {
         return document.documentElement.getAttribute('data-theme') === 'dark';
@@ -1391,6 +1393,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if (embedLoadTimer) {
             clearTimeout(embedLoadTimer);
             embedLoadTimer = null;
+        }
+        if (skeletonProblemTimer) {
+            clearTimeout(skeletonProblemTimer);
+            skeletonProblemTimer = null;
         }
 
         if (embedMutationObserver) {
@@ -1428,9 +1434,25 @@ document.addEventListener('DOMContentLoaded', function () {
             '<div class="tg-preview-skeleton-line is-medium"></div>',
             '<div class="tg-preview-skeleton-line"></div>',
             '<div class="tg-preview-skeleton-line is-short"></div>',
-            '</div>'
+            '</div>',
+            '<p class="tg-preview-skeleton-problem" style="display:none;">Проблема загрузки Telegram</p>'
         ].join('');
         return skeleton;
+    }
+
+    function armSkeletonProblemHint(expectedRequestId) {
+        if (!embedOverlay) return;
+        if (skeletonProblemTimer) {
+            clearTimeout(skeletonProblemTimer);
+        }
+        skeletonProblemTimer = window.setTimeout(function () {
+            if (expectedRequestId !== renderRequestId) return;
+            if (!embedHost.classList.contains('is-loading')) return;
+            const hint = embedOverlay.querySelector('.tg-preview-skeleton-problem');
+            if (hint) {
+                hint.style.display = 'block';
+            }
+        }, 3000);
     }
 
     function lockPreviewHeight(minHeight) {
@@ -1458,6 +1480,7 @@ document.addEventListener('DOMContentLoaded', function () {
             embedOverlay.innerHTML = '';
         }
         embedHost.classList.remove('is-loading', 'is-error');
+        loadedTelegramPostId = activeTrigger?.dataset?.telegramPost || loadedTelegramPostId;
         if (options && options.preserveFrameHeight && !isMobilePreviewLayout()) {
             syncPickerHeight();
         } else {
@@ -1532,6 +1555,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function renderTelegramPost(trigger, options) {
         if (!trigger) return;
         const renderOptions = options || {};
+        const telegramPost = trigger.dataset.telegramPost;
+
+        if (!renderOptions.forceReload && telegramPost && telegramPost === loadedTelegramPostId && activeTrigger === trigger && embedSurface && embedSurface.childNodes.length && !embedHost.classList.contains('is-loading')) {
+            triggers.forEach(function (item) {
+                item.classList.toggle('is-active', item === trigger);
+                item.setAttribute('aria-pressed', item === trigger ? 'true' : 'false');
+            });
+            activeTrigger = trigger;
+            return;
+        }
 
         activeTrigger = trigger;
         renderRequestId += 1;
@@ -1540,7 +1573,6 @@ document.addEventListener('DOMContentLoaded', function () {
             item.setAttribute('aria-pressed', item === trigger ? 'true' : 'false');
         });
 
-        const telegramPost = trigger.dataset.telegramPost;
         const telegramUrl = trigger.dataset.telegramUrl;
         const postTitle = trigger.dataset.title || trigger.textContent.trim();
 
@@ -1565,6 +1597,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         const currentRequestId = renderRequestId;
+        armSkeletonProblemHint(currentRequestId);
         embedRenderFrameId = requestAnimationFrame(function () {
             embedRenderFrameId = requestAnimationFrame(function () {
                 embedRenderFrameId = null;
@@ -1645,11 +1678,11 @@ document.addEventListener('DOMContentLoaded', function () {
         pickerGrid.style.maxHeight = available + 'px';
     }
 
-    triggers.forEach(function (trigger) {
-        trigger.addEventListener('click', function () {
+        triggers.forEach(function (trigger) {
+            trigger.addEventListener('click', function () {
             renderTelegramPost(trigger);
+            });
         });
-    });
 
     const themeObserver = new MutationObserver(function (mutations) {
         const shouldRerender = mutations.some(function (mutation) {
