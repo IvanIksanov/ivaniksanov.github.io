@@ -10,12 +10,9 @@
             if (saved === 'dark' || saved === 'light') {
                 document.documentElement.setAttribute('data-theme', saved);
             }
-            const authVisualState = localStorage.getItem('auth_visual_state_v1');
-            if (authVisualState === 'guest' || authVisualState === 'auth') {
-                document.documentElement.setAttribute('data-auth-visual-state', authVisualState);
-            }
         })();
     </script>
+    <script src="auth.bootstrap.shared.js"></script>
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="questions.css">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
@@ -266,7 +263,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.client.js"></script>
+<script src="debug.shared.js"></script>
 <script src="auth.state.shared.js"></script>
+<script src="auth.core.shared.js"></script>
 <script src="questions.js"></script>
   <script src="header.js"></script>
 </body>

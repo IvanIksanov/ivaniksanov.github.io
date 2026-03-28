@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const debugLog = window.DebugLog || null;
   const SCROLL_POS_KEY = "questions_scroll_y_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
   const savedScrollY = Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
@@ -148,7 +149,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   let authUser = null;
   let authProfile = null;
   let lastKnownAccessToken = "";
-  let authEmailLoginExpanded = false;
   let allowGuestAiRequests = readGuestAiAuthBypassFlag();
   let authModalAiGateActive = false;
   const AUTH_PENDING_PROFILE_KEY = "auth_pending_profile_v1";
@@ -156,6 +156,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const PENDING_MUTATIONS_KEY = "cloud_pending_mutations_v1";
   const CLOUD_SYNC_TTL_MS = 60 * 1000;
   const AUTH_SESSION_CHECK_TTL_MS = 5 * 60 * 1000;
+  const AUTH_STARTUP_GRACE_MS = 5000;
   const CLOUD_OP_TIMEOUT_MS = 10000;
   const REST_TIMEOUT_MS = 7000;
   const cloudProgressByQuestion = new Map();
@@ -167,13 +168,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   let cloudSyncPromise = null;
   let userApiKeySyncPromise = null;
   let authLastSessionCheckTs = 0;
-  let authRefreshInFlight = null;
   let authResolved = false;
   let authCardMorphToken = 0;
   let headerAiNotchHideTimer = null;
   let headerAiNotchActiveQuestionId = "";
   let headerAiNotchPendingCount = 0;
-  let authHoverCloseTimer = null;
+  let authController = null;
+  let authControllerInitPromise = null;
 
   function setAuthSessionCheckedNow() {
     authLastSessionCheckTs = Date.now();
@@ -184,12 +185,21 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   function setAuthSyncButtonBusy(isBusy) {
+    if (authController) {
+      authController.setSyncBusy(isBusy);
+      return;
+    }
     if (!authSyncBtn) return;
     authSyncBtn.classList.toggle("is-busy", !!isBusy);
     authSyncBtn.disabled = !!isBusy;
+    refreshVisibleAuthModalUi();
   }
 
   function flashAuthSyncButtonSuccess() {
+    if (authController) {
+      authController.flashSyncSuccess();
+      return;
+    }
     if (!authSyncBtn) return;
     authSyncBtn.classList.remove("is-success");
     void authSyncBtn.offsetWidth;
@@ -719,22 +729,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     } catch {}
   }
 
-  function persistPendingProfileSelection() {
-    const track = (authTrackSelect?.value || "").trim();
-    const grade = (authGradeSelect?.value || "").trim();
-    const current = readPendingProfile() || {};
-    if (!track && !grade && !current?.email) {
-      clearPendingProfile();
-      return;
-    }
-    writePendingProfile({
-      ...current,
-      track: track || current?.track || "",
-      grade: grade || current?.grade || "",
-      ts: Date.now()
-    });
-  }
-
   function profileLabel(profile) {
     if (!profile?.track || !profile?.grade) return "";
     return `${profile.track} (${profile.grade})`;
@@ -752,186 +746,32 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return !authUser && !authResolved && readStoredAuthVisualState() === "auth";
   }
 
-  function setEmailLoginExpanded(next) {
-    authEmailLoginExpanded = !!next;
-    if (authModal) authModal.classList.toggle("auth-email-expanded", authEmailLoginExpanded);
-    if (authEmailToggle) authEmailToggle.setAttribute("aria-expanded", authEmailLoginExpanded ? "true" : "false");
+  function persistPendingProfileSelection() {
+    authController?.persistPendingProfileSelection();
   }
 
   function syncProfileUiFromState() {
-    if (authTrackSelect && authProfile?.track) authTrackSelect.value = authProfile.track;
-    if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
-    if (!authTitle) return;
-    const fallbackPending = !authProfile ? readPendingProfile() : null;
-    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
-    authTitle.textContent = label || "Аккаунт подключен";
-  }
-
-  async function applyPendingProfileToCloud() {
-    if (!authUser || !supabaseStore?.upsertUserProfile) return false;
-    const pending = readPendingProfile();
-    if (!pending?.track || !pending?.grade) return false;
-    const payload = {
-      user_id: authUser.id,
-      email: authUser.email || pending.email || null,
-      track: pending.track,
-      grade: pending.grade,
-      updated_at: new Date().toISOString()
-    };
-    const { data: saved, error } = await supabaseStore.upsertUserProfile(payload);
-    if (error) {
-      console.warn("Failed to upsert pending user profile", error);
-      return false;
-    }
-    authProfile = saved || payload;
-    clearPendingProfile();
-    syncProfileUiFromState();
-    return true;
+    authController?.applyAuthModalMode();
   }
 
   function applyAuthModalMode() {
-    if (!authModal || !authEmailInput || !authSendBtn || !authCloseBtn) return;
-    if (authModal.classList.contains("auth-checking")) return;
-    morphAuthCardLayout(() => {
-      const isOptimisticAuth = isOptimisticAuthUiActive();
-      const isAuthorized = !!authUser || isOptimisticAuth;
-      const compactAuthorized = isAuthorized;
-      authModal.classList.toggle("compact-auth", compactAuthorized);
-      if (compactAuthorized) {
-        if (authDescription) authDescription.style.display = "";
-        if (authLevelWrap) authLevelWrap.style.display = "";
-        if (authOAuthRow) authOAuthRow.style.display = isOptimisticAuth ? "none" : "";
-        if (authEmailToggle) authEmailToggle.style.display = "none";
-        authEmailInput.style.display = "none";
-        syncProfileUiFromState();
-        if (isOptimisticAuth) {
-          authModal.classList.add("auth-profile-pending");
-          if (authSyncBtn) authSyncBtn.style.display = "none";
-          authSendBtn.textContent = "Закрыть";
-          authSendBtn.disabled = false;
-          authSendBtn.style.display = "";
-          authCloseBtn.textContent = "Закрыть";
-          return;
-        }
-        authModal.classList.remove("auth-profile-pending");
-        if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
-        authSendBtn.textContent = "Выйти";
-        authSendBtn.disabled = false;
-        authSendBtn.style.display = "";
-        authCloseBtn.textContent = "Закрыть";
-        return;
-      }
-      authModal.classList.remove("auth-profile-pending");
-      if (authTitle) authTitle.textContent = "Сохранение прогресса";
-      if (authDescription) authDescription.style.display = "";
-      if (authLevelWrap) authLevelWrap.style.display = "";
-      if (authOAuthRow) authOAuthRow.style.display = "";
-      if (authEmailToggle) authEmailToggle.style.display = "";
-      authEmailInput.style.display = authEmailLoginExpanded ? "" : "none";
-      if (authSyncBtn) authSyncBtn.style.display = "none";
-      authSendBtn.textContent = "Получить ссылку";
-      authSendBtn.style.display = authEmailLoginExpanded ? "" : "none";
-      authCloseBtn.textContent = "Закрыть";
-    });
-    positionAuthModal();
+    authController?.applyAuthModalMode();
   }
 
   function updateAuthButtonLabel() {
-    if (!authOpenBtn) return;
-    const labelEl = authOpenBtn.querySelector(".auth-open-btn__label");
-    const isAuthenticatedUi = !!authUser || isOptimisticAuthUiActive();
-    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: isAuthenticatedUi });
-    authOpenBtn.dataset.authPlacement = uiConfig.modalPlacement;
-    authOpenBtn.classList.toggle("is-guest", !isAuthenticatedUi);
-    authOpenBtn.classList.toggle("is-auth", isAuthenticatedUi);
-    try {
-      if (authUser) {
-        localStorage.setItem(AUTH_VISUAL_STATE_KEY, "auth");
-        document.documentElement.setAttribute("data-auth-visual-state", "auth");
-      } else if (authResolved) {
-        localStorage.setItem(AUTH_VISUAL_STATE_KEY, "guest");
-        document.documentElement.setAttribute("data-auth-visual-state", "guest");
-      }
-    } catch {}
-    if (authUser?.email) {
-      authOpenBtn.title = "Профиль";
-      authOpenBtn.setAttribute("aria-label", "Профиль");
-      if (labelEl) {
-        labelEl.textContent = "";
-      }
-      return;
-    }
-    if (isAuthenticatedUi) {
-      authOpenBtn.title = "Профиль";
-      authOpenBtn.setAttribute("aria-label", "Профиль");
-      if (labelEl) {
-        labelEl.textContent = "";
-      }
-      return;
-    }
-    authOpenBtn.title = "Войти и сохранить прогресс";
-    authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
-    if (labelEl) {
-      labelEl.textContent = uiConfig.buttonLabel;
-    }
+    authController?.updateAuthButtonUi();
   }
 
   function positionAuthModal() {
-    if (!authModal || !authCard || !authOpenBtn) return;
-    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
-    authModal.dataset.placement = uiConfig.modalPlacement;
-    if (uiConfig.modalPlacement === "anchored") {
-      const trigger = authOpenBtn.getBoundingClientRect();
-      authCard.style.left = "auto";
-      authCard.style.top = `${Math.max(8, Math.round(trigger.bottom + 8))}px`;
-      authCard.style.right = `${Math.max(8, Math.round(window.innerWidth - trigger.right))}px`;
-      return;
-    }
-    authCard.style.left = "50%";
-    authCard.style.top = "50%";
-    authCard.style.right = "auto";
+    authController?.positionModal();
   }
 
   function showAuthModal(prefillMessage, options = {}) {
-    if (!authModal) return;
-    const startChecking = !!options.checking;
-    authModalAiGateActive = !!options.aiGate;
-    setEmailLoginExpanded(false);
-    if (!authUser) {
-      const pending = readPendingProfile();
-      if (authTrackSelect && pending?.track) authTrackSelect.value = pending.track;
-      if (authGradeSelect && pending?.grade) authGradeSelect.value = pending.grade;
-    }
-    setAuthCheckingState(startChecking);
-    if (!startChecking) applyAuthModalMode();
-    authModal.classList.add("show");
-    authModal.setAttribute("aria-hidden", "false");
-    positionAuthModal();
-    if (!startChecking) {
-      setAuthStatus(prefillMessage || "");
-    }
-    if (authUser && !authProfile) {
-      refreshAuthUserInBackground({ force: true }).catch((e) => {
-        console.warn("Auth profile refresh for modal failed", e);
-      });
-    }
-    if (authEmailInput && authEmailLoginExpanded && authEmailInput.style.display !== "none") {
-      authEmailInput.focus();
-    }
+    authController?.showModal(prefillMessage, options);
   }
 
   function hideAuthModal() {
-    if (!authModal) return;
-    if (authModalAiGateActive && !authUser) {
-      allowGuestAiRequests = true;
-      writeGuestAiAuthBypassFlag(true);
-    }
-    authModalAiGateActive = false;
-    setAuthCheckingState(false);
-    authModal.classList.remove("auth-profile-pending");
-    authModal.classList.remove("show");
-    authModal.setAttribute("aria-hidden", "true");
-    setAuthStatus("");
+    authController?.hideModal();
   }
 
   function getCleanRedirectUrl() {
@@ -939,92 +779,25 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   async function getActiveSession() {
-    if (!isCloudReady()) return null;
-    try {
-      if (supabaseStore?.getSession) {
-        const session = await withTimeout(supabaseStore.getSession(), 3000, "get session");
-      if (session?.access_token) {
-          lastKnownAccessToken = session.access_token;
-          return session;
-        }
-      }
-      const fallback = await withTimeout(
-        supabaseStore.client?.auth?.getSession?.() || Promise.resolve({ data: { session: null } }),
-        3000,
-        "get session fallback"
-      );
-      const session = fallback?.data?.session || null;
-      lastKnownAccessToken = session?.access_token || "";
-      return session;
-    } catch (e) {
-      console.warn("getActiveSession failed", e);
-      return undefined;
-    }
+    return authController?.getActiveSession();
   }
 
   async function refreshAuthUser() {
-    if (authRefreshInFlight) return authRefreshInFlight;
-    if (!isCloudReady()) return null;
-    authRefreshInFlight = (async () => {
-      try {
-      const session = await getActiveSession();
-      if (session === undefined) {
-        // Transient session check failure (timeout/network/SDK hiccup).
-        // Preserve last known auth state to avoid false "not authorized" UI flicker.
-        updateAuthButtonLabel();
-        refreshVisibleAuthModalUi();
-        return authUser || null;
-      }
-      if (!session?.access_token) {
-        authResolved = true;
-        lastKnownAccessToken = "";
-        authUser = null;
-        authProfile = null;
-        setAuthSessionCheckedNow();
-        updateAuthButtonLabel();
-        refreshVisibleAuthModalUi();
-        return null;
-      }
-      authResolved = true;
-      authUser = await supabaseStore.getUser();
-      if (authUser) {
-        try {
-          const { data } = await withTimeout(supabaseStore.getUserProfile(authUser.id), 4000, "get user profile");
-          authProfile = data || null;
-        } catch (profileError) {
-          console.warn("Supabase profile load failed", profileError);
-        }
-        try {
-          await withTimeout(applyPendingProfileToCloud(), 4000, "apply pending profile");
-        } catch (pendingProfileError) {
-          console.warn("Pending profile sync failed", pendingProfileError);
-        }
-        syncProfileUiFromState();
-      } else {
-        authProfile = null;
-      }
-      updateAuthButtonLabel();
-      setAuthSessionCheckedNow();
-      refreshVisibleAuthModalUi();
-      return authUser;
-      } catch (e) {
-      console.warn("Supabase auth init failed", e);
-      updateAuthButtonLabel();
-      refreshVisibleAuthModalUi();
-      return authUser || null;
-      } finally {
-        authRefreshInFlight = null;
-      }
-    })();
-    return authRefreshInFlight;
+    const user = await authController?.refreshAuthUser({ source: "questions-wrapper" });
+    const state = authController?.getState?.();
+    authUser = state?.authUser || null;
+    authProfile = state?.authProfile || null;
+    authResolved = !!state?.authResolved;
+    return user || null;
   }
 
   async function refreshAuthUserInBackground(options = {}) {
-    const { force = false } = options;
-    if (!isCloudReady()) return null;
-    if (!force && isAuthSessionCheckFresh() && authUser) return authUser;
-    if (document.visibilityState === "hidden" && !force) return authUser;
-    return refreshAuthUser();
+    const user = await authController?.refreshAuthUserInBackground(options || {});
+    const state = authController?.getState?.();
+    authUser = state?.authUser || null;
+    authProfile = state?.authProfile || null;
+    authResolved = !!state?.authResolved;
+    return user || null;
   }
 
   async function syncUserApiKeyWithCloud(options = {}) {
@@ -1258,7 +1031,22 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   async function initializeCloudState() {
-    await refreshAuthUser();
+    if (authControllerInitPromise) {
+      try {
+        await authControllerInitPromise;
+      } catch (e) {
+        console.warn("Auth controller init failed before cloud state init", e);
+      }
+    }
+    if (authController?.getState) {
+      const state = authController.getState();
+      authUser = state?.authUser || null;
+      authProfile = state?.authProfile || null;
+      authResolved = !!state?.authResolved;
+    }
+    if (!authResolved && isCloudReady()) {
+      await refreshAuthUser();
+    }
     if (!authUser) return;
     await syncUserApiKeyWithCloud({ force: false, source: "init" });
     await syncLocalAndCloudState({ force: false, source: "init" });
@@ -1469,6 +1257,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
     let res;
+    const startedAt = Date.now();
     try {
       res = await fetch(buildRestUrl(path, query), {
         method,
@@ -1489,8 +1278,20 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     let data = null;
     try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
     if (!res.ok) {
+      debugLog?.warn("network", "questions-rest-fail", {
+        path,
+        method,
+        status: res.status,
+        durationMs: Date.now() - startedAt
+      });
       throw new Error(`${method} ${path} failed: ${res.status} ${typeof data === "string" ? data : JSON.stringify(data)}`);
     }
+    debugLog?.debug("network", "questions-rest-ok", {
+      path,
+      method,
+      status: res.status,
+      durationMs: Date.now() - startedAt
+    });
     return data;
   }
 
@@ -1803,28 +1604,35 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const now = Date.now();
     if (!force && cloudSyncPromise) return cloudSyncPromise;
     if (!force && (now - getCloudSyncLastTs()) < CLOUD_SYNC_TTL_MS) {
+      debugLog?.debug("sync", "questions-cloud-skip", { reason: "ttl", source });
       return { ok: true, skipped: true };
     }
     cloudSyncPromise = (async () => {
       try {
+        debugLog?.info("sync", "questions-cloud-start", { source, force });
         if (source === "manual") setAuthSyncButtonBusy(true);
-        const hadPendingMutationsAtStart = readPendingMutations().length > 0;
+        const pendingMutationsAtStart = readPendingMutations();
+        const hadPendingMutationsAtStart = pendingMutationsAtStart.length > 0;
         await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "initial cloud load");
 
         const localProgressRows = getLocalProgressRows();
-        if (localProgressRows.length) {
+        const progressRowsToUpload = localProgressRows.filter((row) => {
+          if (!row?.question_id || !row?.status) return false;
+          return cloudProgressByQuestion.get(row.question_id) !== row.status;
+        });
+        if (progressRowsToUpload.length) {
           if (supabaseStore.upsertQuestionProgressBulk) {
             const { error } = await withTimeout(
-              supabaseStore.upsertQuestionProgressBulk(localProgressRows),
+              supabaseStore.upsertQuestionProgressBulk(progressRowsToUpload),
               CLOUD_OP_TIMEOUT_MS,
               "progress bulk upsert"
             );
             if (error) {
               console.warn("Bulk progress sync failed, fallback to row upsert", error);
-              await Promise.all(localProgressRows.map((r) => saveProgressCloud(r.question_id, r.status)));
+              await Promise.all(progressRowsToUpload.map((r) => saveProgressCloud(r.question_id, r.status)));
             }
           } else {
-            await Promise.all(localProgressRows.map((r) => saveProgressCloud(r.question_id, r.status)));
+            await Promise.all(progressRowsToUpload.map((r) => saveProgressCloud(r.question_id, r.status)));
           }
         }
 
@@ -1871,15 +1679,44 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         // are not briefly rehydrated from cloud right after manual sync.
         await flushPendingMutations();
 
-        if (localProgressRows.length || localAiRows.length || force || hadPendingMutationsAtStart) {
-          await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "final cloud reload");
+        const hasPendingProgressMutations = pendingMutationsAtStart.some((m) => m?.type === "saveProgress");
+        const hasPendingAiMutations = pendingMutationsAtStart.some((m) => (
+          m?.type === "saveAiAnswer" ||
+          m?.type === "deleteAiById" ||
+          m?.type === "deleteAiByPayload"
+        ));
+        const shouldReloadProgress = !!(progressRowsToUpload.length || force || hasPendingProgressMutations);
+        const shouldReloadAiAnswers = !!(localAiRows.length || force || hasPendingAiMutations);
+
+        if (shouldReloadProgress || shouldReloadAiAnswers) {
+          const reloadTasks = [];
+          if (shouldReloadProgress) {
+            reloadTasks.push(loadCloudProgress());
+          }
+          if (shouldReloadAiAnswers) {
+            reloadTasks.push(loadCloudAnswers());
+          }
+          await withTimeout(Promise.all(reloadTasks), CLOUD_OP_TIMEOUT_MS, "final cloud reload");
         }
         applyCloudStateToUi();
         markCloudSyncTs();
+        debugLog?.info("sync", "questions-cloud-success", {
+          source,
+          force,
+          progressRowsToUpload: progressRowsToUpload.length,
+          localAiRows: localAiRows.length,
+          shouldReloadProgress,
+          shouldReloadAiAnswers
+        });
         if (source === "manual") flashAuthSyncButtonSuccess();
         return { ok: true };
       } catch (e) {
         console.warn("Cloud sync failed", e);
+        debugLog?.warn("sync", "questions-cloud-failed", {
+          source,
+          force,
+          message: String(e?.message || e || "")
+        });
         return { ok: false, error: e };
       } finally {
         if (source === "manual") setAuthSyncButtonBusy(false);
@@ -2244,7 +2081,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   async function ensureAuthForAiAction() {
     if (allowGuestAiRequests) return true;
     if (!isCloudReady()) {
-      showAuthModal("Авторизация недоступна. Закройте окно и продолжите без сохранения ответов ИИ.", { aiGate: true });
+      if (authController) {
+        authController.showModal("Авторизация недоступна. Закройте окно и продолжите без сохранения ответов ИИ.", { aiGate: true });
+      } else {
+        showAuthModal("Авторизация недоступна. Закройте окно и продолжите без сохранения ответов ИИ.", { aiGate: true });
+      }
       return false;
     }
     const hasAuth = await ensureAuthContext();
@@ -2260,9 +2101,141 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       writeGuestAiAuthBypassFlag(false);
       return true;
     }
-    showAuthModal("Войдите, чтобы сохранить ответы ИИ. Или закройте окно и продолжите без сохранения.", { aiGate: true });
+    if (authController) {
+      authController.showModal("Войдите, чтобы сохранить ответы ИИ. Или закройте окно и продолжите без сохранения.", { aiGate: true });
+    } else {
+      showAuthModal("Войдите, чтобы сохранить ответы ИИ. Или закройте окно и продолжите без сохранения.", { aiGate: true });
+    }
     return false;
   }
+
+  async function ensureUnifiedAuthController() {
+    if (authController || !window.AuthCoreShared || !authModal || !authOpenBtn) return authController;
+    authController = window.AuthCoreShared.create({
+      supabaseStore,
+      authStateShared,
+      startupGraceMs: AUTH_STARTUP_GRACE_MS,
+      sessionCheckTtlMs: AUTH_SESSION_CHECK_TTL_MS,
+      storageKeys: {
+        pendingProfile: AUTH_PENDING_PROFILE_KEY,
+        visualState: AUTH_VISUAL_STATE_KEY,
+        returnScroll: AUTH_RETURN_SCROLL_KEY
+      },
+      dom: {
+        authOpenBtn,
+        authModal,
+        authCard,
+        authTitle,
+        authDescription,
+        authLevelWrap,
+        authTrackSelect,
+        authGradeSelect,
+        authOAuthRow,
+        authGoogleBtn,
+        authEmailToggle,
+        authEmailInput,
+        authSyncBtn,
+        authSendBtn,
+        authCloseBtn,
+        authStatus
+      },
+      mutateModalLayout: morphAuthCardLayout,
+      isChecking: () => authModal?.classList.contains("auth-checking"),
+      setChecking: setAuthCheckingState,
+      loadUserProfile: async (user) => {
+        if (!user || !supabaseStore?.getUserProfile) return null;
+        try {
+          const { data } = await withTimeout(supabaseStore.getUserProfile(user.id), 4000, "get user profile");
+          return data || null;
+        } catch (profileError) {
+          console.warn("Supabase profile load failed", profileError);
+          return null;
+        }
+      },
+      savePendingProfile: async (user, pending) => {
+        if (!user || !pending?.track || !pending?.grade || !supabaseStore?.upsertUserProfile) return null;
+        const payload = {
+          user_id: user.id,
+          email: user.email || pending.email || null,
+          track: pending.track,
+          grade: pending.grade,
+          updated_at: new Date().toISOString()
+        };
+        try {
+          const { data: saved, error } = await withTimeout(supabaseStore.upsertUserProfile(payload), 4000, "apply pending profile");
+          if (error) throw error;
+          return saved || payload;
+        } catch (pendingProfileError) {
+          console.warn("Pending profile sync failed", pendingProfileError);
+          return null;
+        }
+      },
+      onModalShow: (options) => {
+        authModalAiGateActive = !!options?.aiGate;
+      },
+      onModalHide: (_, meta) => {
+        if (authModalAiGateActive && !meta?.isAuthenticated) {
+          allowGuestAiRequests = true;
+          writeGuestAiAuthBypassFlag(true);
+        }
+        authModalAiGateActive = false;
+      },
+      onUserResolved: async ({ user, profile }) => {
+        authUser = user || null;
+        authProfile = profile || null;
+        authResolved = true;
+        allowGuestAiRequests = false;
+        writeGuestAiAuthBypassFlag(false);
+        authModalAiGateActive = false;
+        await syncUserApiKeyWithCloud({ force: false, source: "auth-core" });
+        if (shouldRunAuthDrivenSync({ userId: authUser?.id })) {
+          markAuthDrivenSync(authUser.id);
+          await syncLocalAndCloudState({ force: false, source: "auth-core" });
+        }
+        if (hasPendingCloudWork()) {
+          await flushPendingMutations();
+        }
+      },
+      onSignedOut: async () => {
+        authUser = null;
+        authProfile = null;
+        authResolved = true;
+        lastKnownAccessToken = "";
+      },
+      onManualSync: async ({ user }) => {
+        const session = await authController.getActiveSession();
+        if (session === undefined) {
+          await authController.refreshAuthUserInBackground({ force: true, source: "manual-sync" });
+          return;
+        }
+        if (!session?.access_token) {
+          authUser = null;
+          authProfile = null;
+          setAuthSessionCheckedNow();
+          updateAuthButtonLabel();
+          applyAuthModalMode();
+          setAuthStatus("Сессия истекла. Войдите заново.");
+          return;
+        }
+        await syncUserApiKeyWithCloud({ force: true, source: "manual" });
+        await restRequest("question_progress", {
+          method: "GET",
+          query: `select=question_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`
+        });
+        await syncLocalAndCloudState({ force: true, source: "manual" });
+      }
+    });
+    await authController.init();
+    const state = authController.getState();
+    authUser = state.authUser;
+    authProfile = state.authProfile;
+    authResolved = state.authResolved;
+    return authController;
+  }
+  authControllerInitPromise = ensureUnifiedAuthController().catch((e) => {
+    console.warn("Unified auth controller init failed", e);
+    return null;
+  });
 
   if (apiKeySave) {
     apiKeySave.addEventListener("click", async () => {
@@ -2322,243 +2295,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     });
   }
 
-  if (authOpenBtn) {
-    authOpenBtn.addEventListener("click", async () => {
-      if (!authUser || !isAuthSessionCheckFresh() || isOptimisticAuthUiActive()) {
-        refreshAuthUserInBackground({ force: isOptimisticAuthUiActive() }).catch((e) => console.warn("Background auth refresh failed", e));
-      }
-      showAuthModal("");
-      applyAuthModalMode();
-    });
-
-    const supportsHover = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches;
-    if (supportsHover && authModal) {
-      const clearHoverClose = () => {
-        if (!authHoverCloseTimer) return;
-        clearTimeout(authHoverCloseTimer);
-        authHoverCloseTimer = null;
-      };
-      const scheduleHoverClose = () => {
-        clearHoverClose();
-        authHoverCloseTimer = setTimeout(() => {
-          if (!authUser) return;
-          if (!authModal.matches(":hover") && !authOpenBtn.matches(":hover")) {
-            hideAuthModal();
-          }
-        }, 1000);
-      };
-      authOpenBtn.addEventListener("mouseenter", () => {
-        if (!authUser) return;
-        clearHoverClose();
-        showAuthModal("");
-      });
-      authOpenBtn.addEventListener("mouseleave", scheduleHoverClose);
-      authModal.addEventListener("mouseenter", clearHoverClose);
-      authModal.addEventListener("mouseleave", scheduleHoverClose);
-    }
-  }
-
-  if (authSendBtn) {
-    authSendBtn.addEventListener("click", async () => {
-      if (!isCloudReady()) {
-        setAuthStatus("Supabase не подключен.");
-        return;
-      }
-      const isAuthorizedView = !!authUser;
-      if (isAuthorizedView) {
-        try {
-          const signOutFn = supabaseStore.signOut || (supabaseStore.client?.auth?.signOut
-            ? () => supabaseStore.client.auth.signOut()
-            : null);
-          if (!signOutFn) {
-            setAuthStatus("Выход недоступен. Обновите страницу.");
-            return;
-          }
-          setAuthSyncButtonBusy(false);
-          setAuthStatus("");
-          authUser = null;
-          authProfile = null;
-          authResolved = true;
-          lastKnownAccessToken = "";
-          updateAuthButtonLabel();
-          hideAuthModal();
-          const { error } = await signOutFn();
-          if (error) {
-            console.warn("Sign out returned error", error);
-          }
-        } catch (e) {
-          console.warn("Sign out failed", e);
-        }
-        return;
-      }
-
-      if (isOptimisticAuthUiActive()) {
-        setAuthStatus("Восстанавливаю сессию...");
-        refreshAuthUserInBackground({ force: true }).catch((e) => console.warn("Background auth refresh failed", e));
-        return;
-      }
-      await refreshAuthUser();
-      const track = (authTrackSelect?.value || "").trim();
-      const grade = (authGradeSelect?.value || "").trim();
-      if (!track || !grade) {
-        setAuthStatus("Выберите направление и уровень.");
-        return;
-      }
-      const email = (authEmailInput?.value || "").trim();
-      if (!email) {
-        setAuthStatus("Введите email.");
-        return;
-      }
-      if (!email.includes("@")) {
-        setAuthStatus("Введите корректный email: нужен символ @.");
-        return;
-      }
-      writePendingProfile({ email, track, grade, ts: Date.now() });
-      setAuthStatus("Отправляю ссылку для входа...");
-      saveAuthReturnScrollPosition();
-      const redirectTo = getCleanRedirectUrl();
-      const { error } = await supabaseStore.signInWithOtp(email, redirectTo);
-      if (error) {
-        const errCode = String(error.code || "");
-        const errMsg = String(error.message || "").toLowerCase();
-        if (errCode === "over_email_send_rate_limit" || errMsg.includes("email rate limit exceeded")) {
-          setAuthStatus("Лимит писем Supabase исчерпан. Подождите 60 сек и попробуйте снова.");
-          authSendBtn.disabled = true;
-          setTimeout(() => {
-            authSendBtn.disabled = false;
-          }, 60000);
-          return;
-        }
-        setAuthStatus("Не удалось отправить ссылку. Проверьте email и повторите.");
-        return;
-      }
-      setAuthStatus("Ссылка отправлена. Откройте письмо и вернитесь на страницу.");
-    });
-  }
-
-  if (authEmailToggle) {
-    authEmailToggle.addEventListener("click", () => {
-      if (authUser) return;
-      setEmailLoginExpanded(!authEmailLoginExpanded);
-      applyAuthModalMode();
-      positionAuthModal();
-      if (authEmailLoginExpanded && authEmailInput) {
-        requestAnimationFrame(() => authEmailInput.focus());
-      }
-    });
-  }
-
-  if (authTrackSelect) {
-    authTrackSelect.addEventListener("change", () => {
-      persistPendingProfileSelection();
-      syncProfileUiFromState();
-    });
-  }
-
-  if (authGradeSelect) {
-    authGradeSelect.addEventListener("change", () => {
-      persistPendingProfileSelection();
-      syncProfileUiFromState();
-    });
-  }
-
-  if (authGoogleBtn) {
-    authGoogleBtn.addEventListener("click", async () => {
-      if (!isCloudReady()) {
-        setAuthStatus("Supabase не подключен.");
-        return;
-      }
-      const track = (authTrackSelect?.value || "").trim();
-      const grade = (authGradeSelect?.value || "").trim();
-      if (!track || !grade) {
-        setAuthStatus("Выберите направление и уровень.");
-        return;
-      }
-      writePendingProfile({
-        email: (authEmailInput?.value || "").trim() || null,
-        track,
-        grade,
-        ts: Date.now()
-      });
-      setAuthStatus("Перенаправляю в Google...");
-      saveAuthReturnScrollPosition();
-      const redirectTo = getCleanRedirectUrl();
-      const signInOAuthFn = supabaseStore.signInWithOAuth || (supabaseStore.client?.auth?.signInWithOAuth
-        ? (provider, rt) => supabaseStore.client.auth.signInWithOAuth({ provider, options: { redirectTo: rt } })
-        : null);
-      if (!signInOAuthFn) {
-        setAuthStatus("Google вход недоступен. Обновите страницу.");
-        return;
-      }
-      const { error } = await signInOAuthFn("google", redirectTo);
-      if (error) {
-        console.warn("Google OAuth sign-in failed", error);
-        setAuthStatus("Не удалось открыть Google вход.");
-      }
-    });
-  }
-
-  if (authCloseBtn) {
-    authCloseBtn.addEventListener("click", hideAuthModal);
-  }
-
-  if (authSyncBtn) {
-    authSyncBtn.addEventListener("click", async () => {
-      if (!authUser && isOptimisticAuthUiActive()) {
-        refreshAuthUserInBackground({ force: true }).catch((e) => {
-          console.warn("Auth refresh for manual sync failed", e);
-        });
-        return;
-      }
-      if (!authUser) {
-        setAuthStatus("Сначала войдите");
-        return;
-      }
-      const session = await getActiveSession();
-      if (session === undefined) {
-        refreshAuthUserInBackground({ force: true }).catch((e) => {
-          console.warn("Auth refresh for manual sync failed", e);
-        });
-        return;
-      }
-      if (!session?.access_token) {
-        authUser = null;
-        authProfile = null;
-        setAuthSessionCheckedNow();
-        updateAuthButtonLabel();
-        applyAuthModalMode();
-        setAuthStatus("Сессия истекла. Войдите заново.");
-        return;
-      }
-      await refreshAuthUser();
-      if (!authUser) {
-        setAuthStatus("Сначала войдите");
-        return;
-      }
-      try {
-        setAuthSyncButtonBusy(true);
-        refreshAuthUserInBackground({ force: true }).catch((e) => {
-          console.warn("Auth profile refresh for sync failed", e);
-        });
-        // явный REST ping, чтобы в Network всегда был виден запрос синхронизации
-        await restRequest("question_progress", {
-          method: "GET",
-          query: `select=question_id&user_id=eq.${encodeURIComponent(authUser.id)}&limit=1`
-        });
-        await syncUserApiKeyWithCloud({ force: true, source: "manual" });
-        await syncLocalAndCloudState({ force: true, source: "manual" });
-      } finally {
-        setAuthSyncButtonBusy(false);
-      }
-    });
-  }
-
-  if (authModal) {
-    authModal.addEventListener("click", (e) => {
-      if (e.target === authModal) hideAuthModal();
-    });
-  }
-
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
     if (apiKeyModal?.classList.contains("show")) {
@@ -2566,19 +2302,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       hideApiKeyModal();
       return;
     }
-    if (!authModal?.classList.contains("show")) return;
-    hideAuthModal();
   });
 
   window.addEventListener("resize", () => {
     syncHeaderAiNotchViewportMode();
-    if (authModal?.classList.contains("show")) {
-      applyAuthModalMode();
-      positionAuthModal();
-    }
-  });
-  window.addEventListener("scroll", () => {
-    if (authModal?.classList.contains("show")) positionAuthModal();
   }, { passive: true });
   if (headerAiNotch) {
     syncHeaderAiNotchViewportMode();
@@ -2593,100 +2320,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     });
   }
 
-  if (isCloudReady() && supabaseStore.client?.auth?.onAuthStateChange) {
-    supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
-      authResolved = true;
-      authUser = session?.user || null;
-      lastKnownAccessToken = session?.access_token || "";
-      if (authUser) {
-        setAuthSessionCheckedNow();
-      } else if (event === "INITIAL_SESSION") {
-        // Don't cache a potentially transient "logged out" state on page reload.
-        authLastSessionCheckTs = 0;
-      } else {
-        setAuthSessionCheckedNow();
-      }
-      if (authUser) {
-        allowGuestAiRequests = false;
-        writeGuestAiAuthBypassFlag(false);
-        authModalAiGateActive = false;
-        await refreshAuthUser();
-        await syncUserApiKeyWithCloud({ force: false, source: "auth" });
-        if (shouldRunAuthDrivenSync({ userId: authUser.id })) {
-          markAuthDrivenSync(authUser.id);
-          await syncLocalAndCloudState({ force: false, source: "auth" });
-        }
-        if (hasPendingCloudWork()) {
-          await flushPendingMutations();
-        }
-      } else {
-        lastKnownAccessToken = "";
-        authProfile = null;
-        updateAuthButtonLabel();
-      }
-      applyAuthModalMode();
-    });
-  }
-
-  initializeCloudState().catch((e) => {
-    console.warn("Cloud state init skipped", e);
-  });
-  // Supabase session restoration may lag on hard reload; retry a few times quickly.
-  [600, 1800, 4000].forEach((delay) => {
-    setTimeout(async () => {
-      if (authUser) return;
-      try {
-        const user = await refreshAuthUserInBackground({ force: true });
-        if (user && shouldRunAuthDrivenSync({ userId: user.id })) {
-          await syncUserApiKeyWithCloud({ force: false, source: "startup-retry" });
-          markAuthDrivenSync(user.id);
-          await syncLocalAndCloudState({ force: false, source: "auth" });
-        }
-        if (user && hasPendingCloudWork()) {
-          await flushPendingMutations();
-        }
-      } catch (e) {
-        console.warn("Startup auth retry failed", e);
-      }
-    }, delay);
-  });
-  setInterval(() => {
-    refreshAuthUserInBackground().catch((e) => console.warn("Periodic auth refresh failed", e));
-  }, AUTH_SESSION_CHECK_TTL_MS);
-  setInterval(() => {
-    if (!authUser) return;
-    if (!hasPendingCloudWork()) return;
-    syncLocalAndCloudState({ force: false, source: "interval-pending" }).catch((e) => console.warn("Pending cloud sync failed", e));
-    flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
-  }, 5 * 60 * 1000);
-  setInterval(() => {
-    if (!authUser) return;
-    syncUserApiKeyWithCloud({ force: false, source: "interval" }).catch((e) => console.warn("Periodic API key sync failed", e));
-  }, USER_API_KEY_SYNC_INTERVAL_MS);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") {
-      refreshAuthUserInBackground()
-        .then(() => {
-          if (!authUser || !hasPendingCloudWork()) return;
-          return syncUserApiKeyWithCloud({ force: false, source: "visibility" });
-        })
-        .catch((e) => console.warn("Visibility auth refresh failed", e));
-    }
-  });
-  window.addEventListener("online", () => {
-    refreshAuthUserInBackground({ force: true })
-      .then(() => Promise.allSettled([
-        authUser ? syncUserApiKeyWithCloud({ force: false, source: "online" }) : Promise.resolve(),
-        authUser && hasPendingCloudWork() ? syncLocalAndCloudState({ force: false, source: "online" }) : Promise.resolve(),
-        authUser && hasPendingCloudWork() ? flushPendingMutations() : Promise.resolve()
-      ]))
-      .catch((e) => console.warn("Online recovery sync failed", e));
-  });
-  setInterval(() => {
-    if (!authUser) return;
-    if (!hasPendingCloudWork()) return;
-    flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
-  }, 15000);
   scheduleQuestionsLoadFallback();
   const publicAiLoadPromise = loadPublicAppendAnswers({
     onUpdate: () => {
@@ -2735,6 +2368,44 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       console.error("Questions source: repo JSON/Supabase load failed, no local fallback available.");
     }
   }
+
+  initializeCloudState().catch((e) => {
+    console.warn("Cloud state init skipped", e);
+  });
+  setInterval(() => {
+    if (!authUser) return;
+    if (!hasPendingCloudWork()) return;
+    syncLocalAndCloudState({ force: false, source: "interval-pending" }).catch((e) => console.warn("Pending cloud sync failed", e));
+    flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
+  }, 5 * 60 * 1000);
+  setInterval(() => {
+    if (!authUser) return;
+    syncUserApiKeyWithCloud({ force: false, source: "interval" }).catch((e) => console.warn("Periodic API key sync failed", e));
+  }, USER_API_KEY_SYNC_INTERVAL_MS);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      refreshAuthUserInBackground()
+        .then(() => {
+          if (!authUser || !hasPendingCloudWork()) return;
+          return syncUserApiKeyWithCloud({ force: false, source: "visibility" });
+        })
+        .catch((e) => console.warn("Visibility auth refresh failed", e));
+    }
+  });
+  window.addEventListener("online", () => {
+    refreshAuthUserInBackground({ force: true })
+      .then(() => Promise.allSettled([
+        authUser ? syncUserApiKeyWithCloud({ force: false, source: "online" }) : Promise.resolve(),
+        authUser && hasPendingCloudWork() ? syncLocalAndCloudState({ force: false, source: "online" }) : Promise.resolve(),
+        authUser && hasPendingCloudWork() ? flushPendingMutations() : Promise.resolve()
+      ]))
+      .catch((e) => console.warn("Online recovery sync failed", e));
+  });
+  setInterval(() => {
+    if (!authUser) return;
+    if (!hasPendingCloudWork()) return;
+    flushPendingMutations().catch((e) => console.warn("Pending flush failed", e));
+  }, 15000);
   // Questions are loaded from repo JSON / cache on page boot.
   // DB refresh is done by snapshot sync scripts (manual or scheduled), not from client runtime.
   clearQuestionsLoadFallbackTimer();

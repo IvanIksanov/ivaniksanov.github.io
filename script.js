@@ -3,14 +3,22 @@
  * --- QA Skills ---
  ***********************/
 document.addEventListener('DOMContentLoaded', function(){
+  const debugLog = window.DebugLog || null;
   // Массив для хранения выбранных навыков
   let selectedSkills = [];
   const STUDY_PLAN_AUTH_BYPASS_KEY = 'study_plan_guest_auth_bypass_v1';
+  const SHARED_AUTH_PENDING_ACTION_KEY = 'shared_auth_pending_action_v1';
+  const STUDY_PLAN_RETURN_LOADER_ID = 'study-plan-return-loader';
   const RESOURCE_STATUS_STORAGE_KEY = 'studyPlanResourceStatuses';
   const LEGACY_VISITED_STORAGE_KEY = 'studyPlanVisitedLinks';
   const RESOURCE_STATUS_CLOUD_SYNC_TS_KEY = 'studyPlanResourceStatusesCloudSyncTsV1';
+  const RESOURCE_STATUS_AUTH_SYNC_TS_KEY = 'studyPlanResourceStatusesAuthSyncTsV1';
+  const RESOURCE_STATUS_AUTH_SYNC_USER_KEY = 'studyPlanResourceStatusesAuthSyncUserV1';
   const RESOURCE_STATUS_TABLE = 'study_plan_resource_progress';
-  const RESOURCE_STATUS_SYNC_TTL_MS = 20000;
+  const RESOURCE_STATUS_SYNC_TTL_MS = 2 * 60 * 1000;
+  const RESOURCE_STATUS_AUTH_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
+  const STUDY_PLAN_RETRY_BASE_DELAY_MS = 350;
+  const STUDY_PLAN_SOFT_LOG_TTL_MS = 2 * 60 * 1000;
   const RESOURCE_STATUSES = {
     priority: {
       label: 'Приоритет',
@@ -129,6 +137,81 @@ document.addEventListener('DOMContentLoaded', function(){
   let openInfoPopover = null;
   let resourceStatusSyncPromise = null;
   let resourceStatusAuthSubscriptionBound = false;
+  let queuedStudyPlanSyncTimer = null;
+  let lastStudyPlanSoftLogTs = 0;
+
+  function readPendingSharedAuthAction() {
+    try {
+      return JSON.parse(localStorage.getItem(SHARED_AUTH_PENDING_ACTION_KEY) || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function ensureStudyPlanReturnLoader() {
+    let loader = document.getElementById(STUDY_PLAN_RETURN_LOADER_ID);
+    if (loader) return loader;
+
+    loader = document.createElement('div');
+    loader.id = STUDY_PLAN_RETURN_LOADER_ID;
+    loader.setAttribute('aria-live', 'polite');
+    loader.style.cssText = [
+      'position:fixed',
+      'left:50%',
+      'top:96px',
+      'transform:translateX(-50%)',
+      'z-index:9999',
+      'display:none',
+      'align-items:center',
+      'gap:12px',
+      'padding:12px 16px',
+      'border-radius:18px',
+      'background:rgba(22,22,22,0.72)',
+      'border:1px solid rgba(255,255,255,0.08)',
+      'color:#f5f5f5',
+      'box-shadow:0 18px 40px rgba(0,0,0,0.22)',
+      'backdrop-filter:blur(14px)',
+      '-webkit-backdrop-filter:blur(14px)',
+      'font-size:14px',
+      'font-weight:600',
+      'line-height:1.35',
+      'max-width:min(92vw, 420px)'
+    ].join(';');
+    loader.innerHTML = [
+      '<span aria-hidden="true" style="width:18px;min-width:18px;max-width:18px;height:18px;min-height:18px;max-height:18px;box-sizing:border-box;flex:0 0 18px;border:2px solid rgba(255,255,255,0.24);border-top-color:#ffffff;border-radius:50%;display:inline-block;animation:studyPlanReturnSpin .9s linear infinite;"></span>',
+      '<span>Возвращаем вас в конструктор навыков</span>'
+    ].join('');
+
+    if (!document.getElementById('study-plan-return-loader-style')) {
+      const style = document.createElement('style');
+      style.id = 'study-plan-return-loader-style';
+      style.textContent = '@keyframes studyPlanReturnSpin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(style);
+    }
+
+    document.body.appendChild(loader);
+    return loader;
+  }
+
+  function showStudyPlanReturnLoader() {
+    const loader = ensureStudyPlanReturnLoader();
+    loader.style.display = 'inline-flex';
+  }
+
+  function hideStudyPlanReturnLoader() {
+    const loader = document.getElementById(STUDY_PLAN_RETURN_LOADER_ID);
+    if (!loader) return;
+    loader.style.display = 'none';
+  }
+
+  function completeStudyPlanReturnFlow() {
+    const restorePendingScroll = () => window.SharedAuth?.restorePendingScroll?.();
+    restorePendingScroll();
+    requestAnimationFrame(restorePendingScroll);
+    setTimeout(restorePendingScroll, 120);
+    setTimeout(restorePendingScroll, 420);
+    setTimeout(hideStudyPlanReturnLoader, 650);
+  }
 
   function getActiveTypes() {
     if (!planFilters) return null;
@@ -352,9 +435,12 @@ document.addEventListener('DOMContentLoaded', function(){
 
   bindInfoPopovers();
   bindStudyPlanCloudSync();
+  if (readPendingSharedAuthAction()?.id === 'show-study-plan') {
+    showStudyPlanReturnLoader();
+  }
   document.addEventListener('shared-auth:ready', function() {
     if (localStorage.getItem('showStudyPlan') === 'true') {
-      queueStudyPlanStatusSync({ force: true });
+      queueStudyPlanStatusSync({ force: false });
     }
   });
   const shouldShowPlan = localStorage.getItem('showStudyPlan') === 'true';
@@ -386,8 +472,9 @@ document.addEventListener('DOMContentLoaded', function(){
   document.addEventListener('shared-auth:execute-action', function(event) {
     if (event?.detail?.action?.id !== 'show-study-plan') return;
     if (selectedSkills.length === 0) return;
+    showStudyPlanReturnLoader();
     showStudyPlan({ shouldScroll: false });
-    window.SharedAuth?.restorePendingScroll?.();
+    completeStudyPlanReturnFlow();
   });
 
   getPlanButton.addEventListener('click', async function(){
@@ -719,6 +806,38 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }
 
+  function getStudyPlanAuthSyncLastTs() {
+    try {
+      return Number(localStorage.getItem(RESOURCE_STATUS_AUTH_SYNC_TS_KEY) || 0);
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function getStudyPlanAuthSyncLastUserId() {
+    try {
+      return String(localStorage.getItem(RESOURCE_STATUS_AUTH_SYNC_USER_KEY) || '');
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function markStudyPlanAuthSync(userId) {
+    try {
+      localStorage.setItem(RESOURCE_STATUS_AUTH_SYNC_TS_KEY, String(Date.now()));
+      localStorage.setItem(RESOURCE_STATUS_AUTH_SYNC_USER_KEY, String(userId || ''));
+    } catch (e) {}
+  }
+
+  function shouldRunStudyPlanAuthSync(userId) {
+    const normalizedUserId = String(userId || '');
+    if (!normalizedUserId) return false;
+    const lastUserId = getStudyPlanAuthSyncLastUserId();
+    const lastTs = getStudyPlanAuthSyncLastTs();
+    if (lastUserId !== normalizedUserId) return true;
+    return (Date.now() - lastTs) >= RESOURCE_STATUS_AUTH_SYNC_COOLDOWN_MS;
+  }
+
   function markResourceSyncTs() {
     try {
       localStorage.setItem(RESOURCE_STATUS_CLOUD_SYNC_TS_KEY, String(Date.now()));
@@ -743,6 +862,35 @@ document.addEventListener('DOMContentLoaded', function(){
     return null;
   }
 
+  function waitForStudyPlanRetry(ms) {
+    return new Promise(function(resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function isTransientStudyPlanError(error) {
+    const message = String(error?.message || error || '').toLowerCase();
+    return (
+      message.includes('failed to fetch') ||
+      message.includes('networkerror') ||
+      message.includes('network error') ||
+      message.includes('err_connection_closed') ||
+      message.includes('timeout') ||
+      message.includes('aborterror')
+    );
+  }
+
+  function logStudyPlanSoftIssue(message, error) {
+    const now = Date.now();
+    if ((now - lastStudyPlanSoftLogTs) < STUDY_PLAN_SOFT_LOG_TTL_MS) return;
+    lastStudyPlanSoftLogTs = now;
+    if (error) {
+      console.info(message, error);
+      return;
+    }
+    console.info(message);
+  }
+
   async function studyPlanRestRequest(pathName, options) {
     const supabaseStore = window.AppSupabase;
     if (!isStudyPlanCloudReady() || !supabaseStore) {
@@ -753,6 +901,7 @@ document.addEventListener('DOMContentLoaded', function(){
     const query = nextOptions.query || '';
     const prefer = Object.prototype.hasOwnProperty.call(nextOptions, 'prefer') ? nextOptions.prefer : 'return=representation';
     const body = nextOptions.body || null;
+    const retryCount = Number.isFinite(nextOptions.retryCount) ? Math.max(0, Number(nextOptions.retryCount)) : 0;
     const session = typeof supabaseStore.getSession === 'function'
       ? await supabaseStore.getSession()
       : null;
@@ -770,17 +919,49 @@ document.addEventListener('DOMContentLoaded', function(){
     if (body !== null) {
       headers['Content-Type'] = 'application/json';
     }
-    const response = await fetch(url.toString(), {
-      method: method,
-      headers: headers,
-      body: body !== null ? JSON.stringify(body) : undefined
-    });
-    if (!response.ok) {
-      throw new Error('Study plan REST ' + method + ' ' + pathName + ' failed: ' + response.status + ' ' + await response.text());
+    let attempt = 0;
+    while (true) {
+      try {
+        const startedAt = Date.now();
+        const response = await fetch(url.toString(), {
+          method: method,
+          headers: headers,
+          body: body !== null ? JSON.stringify(body) : undefined
+        });
+        if (!response.ok) {
+          debugLog?.warn('network', 'study-plan-rest-fail', {
+            path: pathName,
+            method: method,
+            status: response.status,
+            durationMs: Date.now() - startedAt,
+            attempt: attempt + 1
+          });
+          throw new Error('Study plan REST ' + method + ' ' + pathName + ' failed: ' + response.status + ' ' + await response.text());
+        }
+        if (response.status === 204) return null;
+        const text = await response.text();
+        debugLog?.debug('network', 'study-plan-rest-ok', {
+          path: pathName,
+          method: method,
+          status: response.status,
+          durationMs: Date.now() - startedAt,
+          attempt: attempt + 1
+        });
+        return text ? JSON.parse(text) : null;
+      } catch (error) {
+        const canRetry = attempt < retryCount && isTransientStudyPlanError(error);
+        debugLog?.warn('sync', 'study-plan-request-error', {
+          path: pathName,
+          method: method,
+          attempt: attempt + 1,
+          retrying: canRetry,
+          message: String(error?.message || error || '')
+        });
+        if (!canRetry) throw error;
+        attempt += 1;
+        await waitForStudyPlanRetry(STUDY_PLAN_RETRY_BASE_DELAY_MS * attempt);
+      }
     }
-    if (response.status === 204) return null;
-    const text = await response.text();
-    return text ? JSON.parse(text) : null;
   }
 
   async function loadCloudResourceStatuses(userId) {
@@ -788,7 +969,8 @@ document.addEventListener('DOMContentLoaded', function(){
     const data = await studyPlanRestRequest(RESOURCE_STATUS_TABLE, {
       method: 'GET',
       query: 'select=resource_url,status,skill_id,resource_type,updated_at&user_id=eq.' + encodeURIComponent(userId),
-      prefer: ''
+      prefer: '',
+      retryCount: 2
     });
     return Array.isArray(data) ? data : [];
   }
@@ -866,11 +1048,13 @@ document.addEventListener('DOMContentLoaded', function(){
     if (!authUser?.id) return { ok: false, skipped: 'guest' };
     if (!force && resourceStatusSyncPromise) return resourceStatusSyncPromise;
     if (!force && (Date.now() - getResourceSyncLastTs()) < RESOURCE_STATUS_SYNC_TTL_MS) {
+      debugLog?.debug('sync', 'study-plan-skip', { reason: 'ttl' });
       return { ok: true, skipped: 'ttl' };
     }
 
     resourceStatusSyncPromise = (async function() {
       try {
+        debugLog?.info('sync', 'study-plan-start', { force: force });
         const localMap = loadResourceStatuses();
         const cloudRows = await loadCloudResourceStatuses(authUser.id);
         const merged = mergeStudyPlanStatusMaps(localMap, cloudRows, authUser.id);
@@ -881,7 +1065,7 @@ document.addEventListener('DOMContentLoaded', function(){
           await upsertCloudResourceStatuses(merged.rowsToUpload);
         }
 
-        if (merged.rowsToUpload.length || cloudRows.length) {
+        if (merged.rowsToUpload.length) {
           const finalCloudRows = await loadCloudResourceStatuses(authUser.id);
           const finalMap = {};
           finalCloudRows.forEach(function(row) {
@@ -901,9 +1085,27 @@ document.addEventListener('DOMContentLoaded', function(){
         if (studyPlan && studyPlan.style.display !== 'none') {
           renderStudyPlan(false);
         }
+        debugLog?.info('sync', 'study-plan-success', {
+          force: force,
+          localResources: Object.keys(localMap || {}).length,
+          cloudRows: cloudRows.length,
+          rowsToUpload: merged.rowsToUpload.length
+        });
         return { ok: true };
       } catch (e) {
+        if (isTransientStudyPlanError(e)) {
+          logStudyPlanSoftIssue('Study plan cloud sync is temporarily unavailable, using local data.', e);
+          debugLog?.info('sync', 'study-plan-local-fallback', {
+            force: force,
+            message: String(e?.message || e || '')
+          });
+          return { ok: false, transient: true, skipped: 'local-fallback', error: e };
+        }
         console.warn('Study plan status sync failed', e);
+        debugLog?.warn('sync', 'study-plan-failed', {
+          force: force,
+          message: String(e?.message || e || '')
+        });
         return { ok: false, error: e };
       } finally {
         resourceStatusSyncPromise = null;
@@ -915,11 +1117,20 @@ document.addEventListener('DOMContentLoaded', function(){
 
   function queueStudyPlanStatusSync(options) {
     const nextOptions = options || {};
-    setTimeout(function() {
+    if (queuedStudyPlanSyncTimer) {
+      clearTimeout(queuedStudyPlanSyncTimer);
+      queuedStudyPlanSyncTimer = null;
+    }
+    queuedStudyPlanSyncTimer = setTimeout(function() {
+      queuedStudyPlanSyncTimer = null;
       syncStudyPlanResourceStatuses(nextOptions).catch(function(error) {
+        if (isTransientStudyPlanError(error)) {
+          logStudyPlanSoftIssue('Queued study plan sync skipped due to transient network issue.', error);
+          return;
+        }
         console.warn('Queued study plan status sync failed', error);
       });
-    }, 0);
+    }, 80);
   }
 
   function bindStudyPlanCloudSync() {
@@ -930,8 +1141,9 @@ document.addEventListener('DOMContentLoaded', function(){
       if (!client?.auth?.onAuthStateChange || resourceStatusAuthSubscriptionBound) return;
       resourceStatusAuthSubscriptionBound = true;
       client.auth.onAuthStateChange(function(event, session) {
-        if (session?.user) {
-          queueStudyPlanStatusSync({ force: true });
+        if (session?.user?.id && shouldRunStudyPlanAuthSync(session.user.id)) {
+          markStudyPlanAuthSync(session.user.id);
+          queueStudyPlanStatusSync({ force: false });
         }
       });
     };
@@ -945,7 +1157,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
     document.addEventListener('visibilitychange', function() {
       if (document.visibilityState === 'visible' && localStorage.getItem('showStudyPlan') === 'true') {
-        queueStudyPlanStatusSync({ force: true });
+        queueStudyPlanStatusSync({ force: false });
       }
     });
 
@@ -953,7 +1165,7 @@ document.addEventListener('DOMContentLoaded', function(){
       if (document.visibilityState !== 'visible') return;
       if (localStorage.getItem('showStudyPlan') !== 'true') return;
       queueStudyPlanStatusSync({ force: false });
-    }, 60000);
+    }, 3 * 60 * 1000);
   }
 
   function setCardStatus(card, status) {

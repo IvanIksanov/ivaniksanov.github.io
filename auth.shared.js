@@ -1,4 +1,5 @@
 (function () {
+  const debugLog = window.DebugLog || null;
   const path = window.location.pathname || "";
   if (path.endsWith("/questions.html") || path.endsWith("questions.html")) {
     return;
@@ -9,25 +10,27 @@
   const SHARED_AUTH_PENDING_ACTION_KEY = "shared_auth_pending_action_v1";
   const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
   const CLOUD_SYNC_TS_KEY = "cloud_sync_ts_v1";
+  const CLOUD_AUTH_SYNC_TS_KEY = "cloud_auth_sync_ts_v1";
+  const CLOUD_AUTH_SYNC_USER_KEY = "cloud_auth_sync_user_v1";
   const PENDING_MUTATIONS_KEY = "cloud_pending_mutations_v1";
   const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
   const CLOUD_SYNC_TTL_MS = 60 * 1000;
   const AUTH_SESSION_CHECK_TTL_MS = 5 * 60 * 1000;
+  const AUTH_STARTUP_GRACE_MS = 5000;
+  const CLOUD_AUTH_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
   const CLOUD_OP_TIMEOUT_MS = 10000;
   const REST_TIMEOUT_MS = 7000;
 
   let supabaseStore = null;
   let authUser = null;
   let authProfile = null;
-  let authEmailLoginExpanded = false;
   let authLastSessionCheckTs = 0;
-  let authRefreshInFlight = null;
   let cloudSyncPromise = null;
   let initialized = false;
   let authResolved = false;
   let activeGuestGate = null;
-  let hoverCloseTimer = null;
   let pendingAuthReturnScrollY = null;
+  let authController = null;
 
   const authStateShared = window.AuthStateShared || {
     getAuthUiConfig(options) {
@@ -131,18 +134,31 @@
   }
 
   function setAuthStatus(message) {
+    if (authController) {
+      authController.setStatus(message);
+      return;
+    }
     const authStatus = getEl("auth-status");
     if (authStatus) authStatus.textContent = message || "";
   }
 
   function setAuthSyncButtonBusy(isBusy) {
+    if (authController) {
+      authController.setSyncBusy(isBusy);
+      return;
+    }
     const authSyncBtn = getEl("auth-sync-btn");
     if (!authSyncBtn) return;
     authSyncBtn.classList.toggle("is-busy", !!isBusy);
     authSyncBtn.disabled = !!isBusy;
+    applyAuthModalMode();
   }
 
   function flashAuthSyncButtonSuccess() {
+    if (authController) {
+      authController.flashSyncSuccess();
+      return;
+    }
     const authSyncBtn = getEl("auth-sync-btn");
     if (!authSyncBtn) return;
     authSyncBtn.classList.remove("is-success");
@@ -335,179 +351,36 @@
     authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
   }
 
-  function setEmailLoginExpanded(next) {
-    authEmailLoginExpanded = !!next;
-    const authModal = getEl("auth-modal");
-    const authEmailToggle = getEl("auth-email-toggle");
-    if (authModal) authModal.classList.toggle("auth-email-expanded", authEmailLoginExpanded);
-    if (authEmailToggle) authEmailToggle.setAttribute("aria-expanded", authEmailLoginExpanded ? "true" : "false");
-  }
-
   function syncProfileUiFromState() {
-    const authTrackSelect = getEl("auth-track-select");
-    const authGradeSelect = getEl("auth-grade-select");
-    const authTitle = getEl("auth-title");
-    if (authTrackSelect && authProfile?.track) authTrackSelect.value = authProfile.track;
-    if (authGradeSelect && authProfile?.grade) authGradeSelect.value = authProfile.grade;
-    if (!authTitle) return;
-    const fallbackPending = !authProfile ? readPendingProfile() : null;
-    const label = profileLabel(authProfile) || profileLabel(fallbackPending);
-    authTitle.textContent = label || "Аккаунт подключен";
-  }
-
-  async function applyPendingProfileToCloud() {
-    if (!authUser || !supabaseStore?.upsertUserProfile) return false;
-    const pending = readPendingProfile();
-    if (!pending?.track || !pending?.grade) return false;
-    const payload = {
-      user_id: authUser.id,
-      email: authUser.email || pending.email || null,
-      track: pending.track,
-      grade: pending.grade,
-      updated_at: new Date().toISOString()
-    };
-    const { data: saved, error } = await supabaseStore.upsertUserProfile(payload);
-    if (error) {
-      console.warn("Failed to upsert pending user profile", error);
-      return false;
+    if (authController) {
+      authController.applyAuthModalMode();
+      return;
     }
-    authProfile = saved || payload;
-    clearPendingProfile();
-    syncProfileUiFromState();
-    return true;
   }
 
   function updateAuthButtonLabel() {
+    if (authController) {
+      authController.updateAuthButtonUi();
+      return;
+    }
     updateAuthButtonUi();
   }
 
   function positionAuthModal() {
-    const authModal = getEl("auth-modal");
-    const authCard = authModal?.querySelector(".auth-card");
-    if (!authModal || !authCard) return;
-    const uiConfig = authStateShared.getAuthUiConfig({ isAuthenticated: !!authUser });
-    authModal.dataset.placement = uiConfig.modalPlacement;
-    if (uiConfig.modalPlacement === "anchored") {
-      const authOpenBtn = getEl("auth-open-btn");
-      const trigger = authOpenBtn?.getBoundingClientRect();
-      const top = trigger ? Math.max(8, Math.round(trigger.bottom + 8)) : 68;
-      const right = trigger ? Math.max(8, Math.round(window.innerWidth - trigger.right)) : 12;
-      authCard.style.left = "auto";
-      authCard.style.top = `${top}px`;
-      authCard.style.right = `${right}px`;
-      return;
-    }
-    authCard.style.left = "50%";
-    authCard.style.top = "50%";
-    authCard.style.right = "auto";
+    authController?.positionModal();
   }
 
   function applyAuthModalMode() {
-    const authModal = getEl("auth-modal");
-    const authEmailInput = getEl("auth-email-input");
-    const authSendBtn = getEl("auth-send-btn");
-    const authCloseBtn = getEl("auth-close-btn");
-    const authDescription = getEl("auth-description");
-    const authLevelWrap = getEl("auth-level-wrap");
-    const authOAuthRow = getEl("auth-oauth-row");
-    const authEmailToggle = getEl("auth-email-toggle");
-    const authSyncBtn = getEl("auth-sync-btn");
-    const authTitle = getEl("auth-title");
-
-    if (!authModal || !authEmailInput || !authSendBtn || !authCloseBtn) return;
-
-    const isOptimisticAuth = isOptimisticAuthUiActive();
-    const isAuthorized = !!authUser || isOptimisticAuth;
-    authModal.classList.toggle("compact-auth", isAuthorized);
-
-    if (isAuthorized) {
-      if (authDescription) authDescription.style.display = "";
-      if (authLevelWrap) authLevelWrap.style.display = "";
-      if (authOAuthRow) authOAuthRow.style.display = isOptimisticAuth ? "none" : "";
-      if (authEmailToggle) authEmailToggle.style.display = "none";
-      authEmailInput.style.display = "none";
-      syncProfileUiFromState();
-      if (isOptimisticAuth) {
-        authModal.classList.add("auth-profile-pending");
-        if (authSyncBtn) authSyncBtn.style.display = "none";
-        authSendBtn.textContent = "Закрыть";
-        authSendBtn.disabled = false;
-        authSendBtn.style.display = "";
-        authCloseBtn.textContent = "Закрыть";
-        return;
-      }
-      const hasResolvedProfileLabel = !!profileLabel(authProfile);
-      const titleShowsProgressPlaceholder = !!authTitle && authTitle.textContent === "Аккаунт подключен";
-      const canShowAuthorizedActions = hasResolvedProfileLabel && !titleShowsProgressPlaceholder;
-      authModal.classList.toggle("auth-profile-pending", !canShowAuthorizedActions);
-      if (authSyncBtn) authSyncBtn.style.display = "inline-flex";
-      authSendBtn.textContent = "Выйти";
-      authSendBtn.disabled = false;
-      authSendBtn.style.display = "";
-      authCloseBtn.textContent = "Закрыть";
-      return;
-    }
-
-    authModal.classList.remove("auth-profile-pending");
-    if (authTitle) authTitle.textContent = "Сохранение прогресса";
-    if (authDescription) authDescription.style.display = "";
-    if (authLevelWrap) authLevelWrap.style.display = "";
-    if (authOAuthRow) authOAuthRow.style.display = "";
-    if (authEmailToggle) authEmailToggle.style.display = "";
-    authEmailInput.style.display = authEmailLoginExpanded ? "" : "none";
-    if (authSyncBtn) authSyncBtn.style.display = "none";
-    authSendBtn.textContent = "Получить ссылку";
-    authSendBtn.style.display = authEmailLoginExpanded ? "" : "none";
-    authCloseBtn.textContent = "Закрыть";
-
-    positionAuthModal();
+    authController?.applyAuthModalMode();
   }
 
   function showAuthModal(prefillMessage, options) {
-    const authModal = getEl("auth-modal");
-    const authTrackSelect = getEl("auth-track-select");
-    const authGradeSelect = getEl("auth-grade-select");
-    const authEmailInput = getEl("auth-email-input");
-    if (!authModal) return;
     activeGuestGate = options?.guestGate || null;
-
-    setEmailLoginExpanded(false);
-    if (!authUser) {
-      const pending = readPendingProfile();
-      if (authTrackSelect && pending?.track) authTrackSelect.value = pending.track;
-      if (authGradeSelect && pending?.grade) authGradeSelect.value = pending.grade;
-    }
-    applyAuthModalMode();
-    authModal.classList.add("show");
-    authModal.setAttribute("aria-hidden", "false");
-    positionAuthModal();
-    setAuthStatus(prefillMessage || "");
-
-    if (authEmailInput && authEmailLoginExpanded && authEmailInput.style.display !== "none") {
-      authEmailInput.focus();
-    }
+    authController?.showModal(prefillMessage, options);
   }
 
   function hideAuthModal() {
-    const authModal = getEl("auth-modal");
-    if (!authModal) return;
-    const gate = activeGuestGate;
-    const closeDecision = authStateShared.resolveGuestModalClose({
-      isAuthenticated: !!authUser,
-      allowsGuestAfterClose: !!gate?.allowsGuestAfterClose
-    });
-    if (closeDecision.enableGuestBypass) {
-      writeGuestBypass(gate?.bypassStorageKey, true);
-      if (gate?.action) {
-        clearPendingAction();
-        dispatchPendingAction(gate.action, { source: "guest-bypass" });
-      }
-    }
-    activeGuestGate = null;
-    authModal.classList.remove("auth-profile-pending");
-    authModal.classList.remove("show");
-    authModal.setAttribute("aria-hidden", "true");
-    setAuthStatus("");
+    authController?.hideModal();
   }
 
   function getCleanRedirectUrl() {
@@ -515,76 +388,25 @@
   }
 
   async function getActiveSession() {
-    if (!isCloudReady()) return null;
-    try {
-      if (supabaseStore?.getSession) {
-        const session = await withTimeout(supabaseStore.getSession(), 3000, "get session");
-        if (session?.access_token) return session;
-      }
-      const fallback = await withTimeout(
-        supabaseStore.client?.auth?.getSession?.() || Promise.resolve({ data: { session: null } }),
-        3000,
-        "get session fallback"
-      );
-      return fallback?.data?.session || null;
-    } catch (e) {
-      console.warn("getActiveSession failed", e);
-      return undefined;
-    }
+    return authController?.getActiveSession();
   }
 
   async function refreshAuthUser() {
-    if (authRefreshInFlight) return authRefreshInFlight;
-    if (!isCloudReady()) return null;
-    authRefreshInFlight = (async () => {
-      try {
-        const session = await getActiveSession();
-        if (session === undefined) {
-          updateAuthButtonLabel();
-          applyAuthModalMode();
-          return authUser || null;
-        }
-        if (!session?.access_token) {
-          authResolved = true;
-          authUser = null;
-          authProfile = null;
-          setAuthSessionCheckedNow();
-          updateAuthButtonLabel();
-          applyAuthModalMode();
-          return null;
-        }
-        authResolved = true;
-        authUser = await supabaseStore.getUser();
-        if (authUser) {
-          const { data } = await supabaseStore.getUserProfile(authUser.id);
-          authProfile = data || null;
-          await applyPendingProfileToCloud();
-          syncProfileUiFromState();
-        } else {
-          authProfile = null;
-        }
-        updateAuthButtonLabel();
-        setAuthSessionCheckedNow();
-        applyAuthModalMode();
-        return authUser;
-      } catch (e) {
-        console.warn("Supabase auth init failed", e);
-        updateAuthButtonLabel();
-        applyAuthModalMode();
-        return authUser || null;
-      } finally {
-        authRefreshInFlight = null;
-      }
-    })();
-    return authRefreshInFlight;
+    const user = await authController?.refreshAuthUser({ source: "shared-wrapper" });
+    const state = authController?.getState?.();
+    authUser = state?.authUser || null;
+    authProfile = state?.authProfile || null;
+    authResolved = !!state?.authResolved;
+    return user || null;
   }
 
   async function refreshAuthUserInBackground(options) {
-    const force = !!options?.force;
-    if (!isCloudReady()) return null;
-    if (!force && isAuthSessionCheckFresh() && authUser) return authUser;
-    if (document.visibilityState === "hidden" && !force) return authUser;
-    return refreshAuthUser();
+    const user = await authController?.refreshAuthUserInBackground(options || {});
+    const state = authController?.getState?.();
+    authUser = state?.authUser || null;
+    authProfile = state?.authProfile || null;
+    authResolved = !!state?.authResolved;
+    return user || null;
   }
 
   function getCloudSyncLastTs() {
@@ -595,6 +417,38 @@
     try {
       localStorage.setItem(CLOUD_SYNC_TS_KEY, String(Date.now()));
     } catch {}
+  }
+
+  function getCloudAuthSyncLastTs() {
+    try {
+      return Number(localStorage.getItem(CLOUD_AUTH_SYNC_TS_KEY) || 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  function getCloudAuthSyncLastUserId() {
+    try {
+      return String(localStorage.getItem(CLOUD_AUTH_SYNC_USER_KEY) || "");
+    } catch {
+      return "";
+    }
+  }
+
+  function markCloudAuthSync(userId) {
+    try {
+      localStorage.setItem(CLOUD_AUTH_SYNC_TS_KEY, String(Date.now()));
+      localStorage.setItem(CLOUD_AUTH_SYNC_USER_KEY, String(userId || ""));
+    } catch {}
+  }
+
+  function shouldRunCloudAuthSync(userId) {
+    const normalizedUserId = String(userId || "");
+    if (!normalizedUserId) return false;
+    const lastUserId = getCloudAuthSyncLastUserId();
+    const lastTs = getCloudAuthSyncLastTs();
+    if (lastUserId !== normalizedUserId) return true;
+    return (Date.now() - lastTs) >= CLOUD_AUTH_SYNC_COOLDOWN_MS;
   }
 
   function readPendingMutations() {
@@ -660,6 +514,7 @@
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS);
     let res;
+    const startedAt = Date.now();
     try {
       res = await fetch(buildRestUrl(pathName, query), {
         method,
@@ -681,8 +536,20 @@
     }
 
     if (!res.ok) {
+      debugLog?.warn("network", "shared-rest-fail", {
+        path: pathName,
+        method,
+        status: res.status,
+        durationMs: Date.now() - startedAt
+      });
       throw new Error(`${method} ${pathName} failed: ${res.status} ${typeof data === "string" ? data : JSON.stringify(data)}`);
     }
+    debugLog?.debug("network", "shared-rest-ok", {
+      path: pathName,
+      method,
+      status: res.status,
+      durationMs: Date.now() - startedAt
+    });
     return data;
   }
 
@@ -969,11 +836,13 @@
     const now = Date.now();
     if (!force && cloudSyncPromise) return cloudSyncPromise;
     if (!force && (now - getCloudSyncLastTs()) < CLOUD_SYNC_TTL_MS) {
+      debugLog?.debug("sync", "shared-cloud-skip", { reason: "ttl", source });
       return { ok: true, skipped: true };
     }
 
     cloudSyncPromise = (async () => {
       try {
+        debugLog?.info("sync", "shared-cloud-start", { source, force });
         if (source === "manual") setAuthSyncButtonBusy(true);
         const hadPendingMutationsAtStart = readPendingMutations().length > 0;
 
@@ -1038,10 +907,22 @@
         }
 
         markCloudSyncTs();
+        debugLog?.info("sync", "shared-cloud-success", {
+          source,
+          force,
+          localProgressRows: localProgressRows.length,
+          localAiRows: localAiRows.length,
+          hadPendingMutationsAtStart
+        });
         if (source === "manual") flashAuthSyncButtonSuccess();
         return { ok: true };
       } catch (e) {
         console.warn("Cloud sync failed", e);
+        debugLog?.warn("sync", "shared-cloud-failed", {
+          source,
+          force,
+          message: String(e?.message || e || "")
+        });
         return { ok: false, error: e };
       } finally {
         if (source === "manual") setAuthSyncButtonBusy(false);
@@ -1052,11 +933,119 @@
     return cloudSyncPromise;
   }
 
+  function hasPendingCloudWork() {
+    if (readPendingMutations().length > 0) return true;
+    if (!authUser?.id) return false;
+    if (getLocalProgressRows().length > 0) return true;
+    return getLocalAiRows(new Set()).length > 0;
+  }
+
+  async function ensureAuthController() {
+    if (authController || !window.AuthCoreShared) return authController;
+    authController = window.AuthCoreShared.create({
+      supabaseStore,
+      authStateShared,
+      startupGraceMs: AUTH_STARTUP_GRACE_MS,
+      sessionCheckTtlMs: AUTH_SESSION_CHECK_TTL_MS,
+      shouldDeferInitialScrollRestore: () => !!readPendingAction()?.id,
+      storageKeys: {
+        pendingProfile: AUTH_PENDING_PROFILE_KEY,
+        visualState: AUTH_VISUAL_STATE_KEY,
+        returnScroll: AUTH_RETURN_SCROLL_KEY
+      },
+      dom: {
+        authOpenBtn: getEl("auth-open-btn"),
+        authModal: getEl("auth-modal"),
+        authCard: getEl("auth-modal")?.querySelector(".auth-card"),
+        authTitle: getEl("auth-title"),
+        authDescription: getEl("auth-description"),
+        authLevelWrap: getEl("auth-level-wrap"),
+        authTrackSelect: getEl("auth-track-select"),
+        authGradeSelect: getEl("auth-grade-select"),
+        authOAuthRow: getEl("auth-oauth-row"),
+        authGoogleBtn: getEl("auth-google-btn"),
+        authEmailToggle: getEl("auth-email-toggle"),
+        authEmailInput: getEl("auth-email-input"),
+        authSyncBtn: getEl("auth-sync-btn"),
+        authSendBtn: getEl("auth-send-btn"),
+        authCloseBtn: getEl("auth-close-btn"),
+        authStatus: getEl("auth-status")
+      },
+      ensureSupabaseReady: async () => supabaseStore || ensureSupabaseReady(),
+      loadUserProfile: async (user) => {
+        if (!user || !supabaseStore?.getUserProfile) return null;
+        const { data } = await supabaseStore.getUserProfile(user.id);
+        return data || null;
+      },
+      savePendingProfile: async (user, pending) => {
+        if (!user || !pending?.track || !pending?.grade || !supabaseStore?.upsertUserProfile) return null;
+        const payload = {
+          user_id: user.id,
+          email: user.email || pending.email || null,
+          track: pending.track,
+          grade: pending.grade,
+          updated_at: new Date().toISOString()
+        };
+        const { data: saved, error } = await supabaseStore.upsertUserProfile(payload);
+        if (error) {
+          console.warn("Failed to upsert pending user profile", error);
+          return null;
+        }
+        return saved || payload;
+      },
+      onModalHide: (options, meta) => {
+        const gate = activeGuestGate;
+        const closeDecision = authStateShared.resolveGuestModalClose({
+          isAuthenticated: !!meta?.isAuthenticated,
+          allowsGuestAfterClose: !!gate?.allowsGuestAfterClose
+        });
+        if (closeDecision.enableGuestBypass) {
+          writeGuestBypass(gate?.bypassStorageKey, true);
+          if (gate?.action) {
+            clearPendingAction();
+            dispatchPendingAction(gate.action, { source: "guest-bypass" });
+          }
+        }
+        activeGuestGate = null;
+      },
+      onUserResolved: async ({ user, profile }) => {
+        authUser = user || null;
+        authProfile = profile || null;
+        authResolved = true;
+        debugLog?.info("auth", "shared-user-resolved", {
+          userId: authUser?.id || "",
+          hasProfile: !!authProfile
+        });
+        if (hasPendingCloudWork() && shouldRunCloudAuthSync(authUser?.id)) {
+          markCloudAuthSync(authUser.id);
+          await syncLocalAndCloudState({ force: false, source: "auth" });
+        }
+        await flushPendingMutations();
+        flushPendingActionAfterAuth();
+      },
+      onSignedOut: async () => {
+        authUser = null;
+        authProfile = null;
+        authResolved = true;
+      },
+      onManualSync: async () => {
+        const session = await authController.getActiveSession();
+        if (!session?.access_token) {
+          setAuthStatus("Связь с аккаунтом временно недоступна. Попробуйте снова.");
+          await authController.refreshAuthUserInBackground({ force: true, source: "manual-sync" });
+          return;
+        }
+        await syncLocalAndCloudState({ force: true, source: "manual" });
+      }
+    });
+    return authController;
+  }
+
   async function requireAuthForAction(options) {
     const action = options?.action || null;
     const bypassStorageKey = options?.bypassStorageKey || "";
     if (isCloudReady() && !authUser) {
-      await refreshAuthUserInBackground({ force: true });
+      await refreshAuthUserInBackground({ force: true, source: "protected-action" });
     }
     const decision = authStateShared.resolveProtectedAction({
       isAuthenticated: !!authUser,
@@ -1092,255 +1081,6 @@
     return false;
   }
 
-  async function bindAuthHandlers() {
-    const authModal = getEl("auth-modal");
-    const authOpenBtn = getEl("auth-open-btn");
-    const authSendBtn = getEl("auth-send-btn");
-    const authEmailToggle = getEl("auth-email-toggle");
-    const authGoogleBtn = getEl("auth-google-btn");
-    const authCloseBtn = getEl("auth-close-btn");
-    const authSyncBtn = getEl("auth-sync-btn");
-
-    if (!authModal || !authOpenBtn) return;
-
-    authOpenBtn.addEventListener("click", async () => {
-      if (!authUser || !isAuthSessionCheckFresh() || isOptimisticAuthUiActive()) {
-        refreshAuthUserInBackground({ force: isOptimisticAuthUiActive() }).catch((e) => console.warn("Background auth refresh failed", e));
-      }
-      showAuthModal("");
-      applyAuthModalMode();
-    });
-
-    const supportsHover = window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches;
-    if (supportsHover) {
-      const clearHoverClose = () => {
-        if (!hoverCloseTimer) return;
-        clearTimeout(hoverCloseTimer);
-        hoverCloseTimer = null;
-      };
-      const scheduleHoverClose = () => {
-        clearHoverClose();
-        hoverCloseTimer = setTimeout(() => {
-          if (!authUser) return;
-          if (!authModal.matches(":hover") && !authOpenBtn.matches(":hover")) {
-            hideAuthModal();
-          }
-        }, 1000);
-      };
-      authOpenBtn.addEventListener("mouseenter", () => {
-        if (!authUser) return;
-        clearHoverClose();
-        showAuthModal("");
-      });
-      authOpenBtn.addEventListener("mouseleave", scheduleHoverClose);
-      authModal.addEventListener("mouseenter", clearHoverClose);
-      authModal.addEventListener("mouseleave", scheduleHoverClose);
-    }
-
-    if (authSendBtn) {
-      authSendBtn.addEventListener("click", async () => {
-        if (!isCloudReady()) {
-          setAuthStatus("Supabase не подключен.");
-          return;
-        }
-
-        if (authUser) {
-          try {
-            const signOutFn = supabaseStore.signOut || (supabaseStore.client?.auth?.signOut
-              ? () => supabaseStore.client.auth.signOut()
-              : null);
-            if (!signOutFn) {
-              setAuthStatus("Выход недоступен. Обновите страницу.");
-              return;
-            }
-            setAuthSyncButtonBusy(false);
-            setAuthStatus("");
-            authUser = null;
-            authProfile = null;
-            authResolved = true;
-            updateAuthButtonLabel();
-            hideAuthModal();
-            const { error } = await signOutFn();
-            if (error) {
-              console.warn("Sign out returned error", error);
-            }
-          } catch (e) {
-            console.warn("Sign out failed", e);
-          }
-          return;
-        }
-
-        if (isOptimisticAuthUiActive()) {
-          setAuthStatus("Восстанавливаю сессию...");
-          refreshAuthUserInBackground({ force: true }).catch((e) => console.warn("Forced auth refresh failed", e));
-          return;
-        }
-
-        await refreshAuthUser();
-        const authTrackSelect = getEl("auth-track-select");
-        const authGradeSelect = getEl("auth-grade-select");
-        const authEmailInput = getEl("auth-email-input");
-        const track = (authTrackSelect?.value || "").trim();
-        const grade = (authGradeSelect?.value || "").trim();
-        if (!track || !grade) {
-          setAuthStatus("Выберите направление и уровень.");
-          return;
-        }
-        const email = (authEmailInput?.value || "").trim();
-        if (!email) {
-          setAuthStatus("Введите email.");
-          return;
-        }
-        if (!email.includes("@")) {
-          setAuthStatus("Введите корректный email: нужен символ @.");
-          return;
-        }
-
-        writePendingProfile({ email, track, grade, ts: Date.now() });
-        setAuthStatus("Отправляю ссылку для входа...");
-        saveAuthReturnScrollPosition();
-
-        const redirectTo = getCleanRedirectUrl();
-        const { error } = await supabaseStore.signInWithOtp(email, redirectTo);
-        if (error) {
-          const errCode = String(error.code || "");
-          const errMsg = String(error.message || "").toLowerCase();
-          if (errCode === "over_email_send_rate_limit" || errMsg.includes("email rate limit exceeded")) {
-            setAuthStatus("Лимит писем Supabase исчерпан. Подождите 60 сек и попробуйте снова.");
-            authSendBtn.disabled = true;
-            setTimeout(() => {
-              authSendBtn.disabled = false;
-            }, 60000);
-            return;
-          }
-          setAuthStatus("Не удалось отправить ссылку. Проверьте email и повторите.");
-          return;
-        }
-
-        setAuthStatus("Ссылка отправлена. Откройте письмо и вернитесь на страницу.");
-      });
-    }
-
-    if (authEmailToggle) {
-      authEmailToggle.addEventListener("click", () => {
-        if (authUser) return;
-        const authEmailInput = getEl("auth-email-input");
-        setEmailLoginExpanded(!authEmailLoginExpanded);
-        applyAuthModalMode();
-        positionAuthModal();
-        if (authEmailLoginExpanded && authEmailInput) {
-          requestAnimationFrame(() => authEmailInput.focus());
-        }
-      });
-    }
-
-    if (authGoogleBtn) {
-      authGoogleBtn.addEventListener("click", async () => {
-        if (!isCloudReady()) {
-          setAuthStatus("Supabase не подключен.");
-          return;
-        }
-
-        const authTrackSelect = getEl("auth-track-select");
-        const authGradeSelect = getEl("auth-grade-select");
-        const authEmailInput = getEl("auth-email-input");
-        const track = (authTrackSelect?.value || "").trim();
-        const grade = (authGradeSelect?.value || "").trim();
-        if (!track || !grade) {
-          setAuthStatus("Выберите направление и уровень.");
-          return;
-        }
-
-        writePendingProfile({
-          email: (authEmailInput?.value || "").trim() || null,
-          track,
-          grade,
-          ts: Date.now()
-        });
-        setAuthStatus("Перенаправляю в Google...");
-        saveAuthReturnScrollPosition();
-
-        const redirectTo = getCleanRedirectUrl();
-        const signInOAuthFn = supabaseStore.signInWithOAuth || (supabaseStore.client?.auth?.signInWithOAuth
-          ? (provider, rt) => supabaseStore.client.auth.signInWithOAuth({ provider, options: { redirectTo: rt } })
-          : null);
-        if (!signInOAuthFn) {
-          setAuthStatus("Google вход недоступен. Обновите страницу.");
-          return;
-        }
-
-        const { error } = await signInOAuthFn("google", redirectTo);
-        if (error) {
-          console.warn("Google OAuth sign-in failed", error);
-          setAuthStatus("Не удалось открыть Google вход.");
-        }
-      });
-    }
-
-    if (authCloseBtn) {
-      authCloseBtn.addEventListener("click", hideAuthModal);
-    }
-
-    if (authSyncBtn) {
-      authSyncBtn.addEventListener("click", async () => {
-        if (!authUser && isOptimisticAuthUiActive()) {
-          setAuthStatus("Восстанавливаю сессию...");
-          refreshAuthUserInBackground({ force: true }).catch((e) => {
-            console.warn("Auth profile refresh for sync failed", e);
-          });
-          return;
-        }
-        if (!authUser) {
-          setAuthStatus("Сначала войдите");
-          return;
-        }
-        if (!profileLabel(authProfile)) {
-          refreshAuthUserInBackground({ force: true }).catch((e) => {
-            console.warn("Auth profile refresh for sync failed", e);
-          });
-        }
-
-        const session = await getActiveSession();
-        if (!session?.access_token) {
-          setAuthStatus("Связь с аккаунтом временно недоступна. Попробуйте снова.");
-          refreshAuthUserInBackground({ force: true }).catch((e) => {
-            console.warn("Auth refresh for sync failed", e);
-          });
-          return;
-        }
-
-        await refreshAuthUser();
-        if (!authUser) {
-          setAuthStatus("Сначала войдите");
-          return;
-        }
-
-        await syncLocalAndCloudState({ force: true, source: "manual" });
-      });
-    }
-
-    authModal.addEventListener("click", (e) => {
-      if (e.target === authModal) hideAuthModal();
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key !== "Escape") return;
-      if (!authModal.classList.contains("show")) return;
-      hideAuthModal();
-    });
-
-    window.addEventListener("resize", () => {
-      if (authModal.classList.contains("show")) {
-        applyAuthModalMode();
-        positionAuthModal();
-      }
-    });
-
-    window.addEventListener("scroll", () => {
-      if (authModal.classList.contains("show")) positionAuthModal();
-    }, { passive: true });
-  }
-
   function publishSharedAuthApi() {
     window.SharedAuth = {
       requireAuthForAction,
@@ -1351,6 +1091,10 @@
         return readGuestBypass(storageKey);
       },
       restorePendingScroll() {
+        if (authController) {
+          authController.restorePendingScroll();
+          return;
+        }
         restoreAuthReturnScrollPosition();
       }
     };
@@ -1370,66 +1114,15 @@
       return;
     }
 
+    await ensureAuthController();
     publishSharedAuthApi();
-    pendingAuthReturnScrollY = consumeAuthReturnScrollPosition();
-    restoreAuthReturnScrollPosition();
-    await bindAuthHandlers();
-    updateAuthButtonLabel();
-    applyAuthModalMode();
-    if (!isCloudReady()) return;
-
-    await refreshAuthUser();
-    flushPendingActionAfterAuth();
-
-    if (supabaseStore.client?.auth?.onAuthStateChange) {
-      supabaseStore.client.auth.onAuthStateChange(async (event, session) => {
-        authResolved = true;
-        authUser = session?.user || null;
-        if (authUser) {
-          setAuthSessionCheckedNow();
-        } else if (event === "INITIAL_SESSION") {
-          authLastSessionCheckTs = 0;
-        } else {
-          setAuthSessionCheckedNow();
-        }
-
-        if (authUser) {
-          await refreshAuthUser();
-          await syncLocalAndCloudState({ force: false, source: "auth" });
-          await flushPendingMutations();
-          flushPendingActionAfterAuth();
-        } else {
-          authProfile = null;
-          updateAuthButtonLabel();
-        }
-        applyAuthModalMode();
-      });
+    if (authController) {
+      await authController.init();
+      const state = authController.getState();
+      authUser = state.authUser;
+      authProfile = state.authProfile;
+      authResolved = state.authResolved;
     }
-
-    [600, 1800, 4000].forEach((delay) => {
-      setTimeout(async () => {
-        if (authUser) return;
-        try {
-          const user = await refreshAuthUserInBackground({ force: true });
-          if (user) {
-            await syncLocalAndCloudState({ force: false, source: "auth" });
-            await flushPendingMutations();
-          }
-        } catch (e) {
-          console.warn("Startup auth retry failed", e);
-        }
-      }, delay);
-    });
-
-    setInterval(() => {
-      refreshAuthUserInBackground().catch((e) => console.warn("Periodic auth refresh failed", e));
-    }, AUTH_SESSION_CHECK_TTL_MS);
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") {
-        refreshAuthUserInBackground().catch((e) => console.warn("Visibility auth refresh failed", e));
-      }
-    });
 
     setInterval(() => {
       if (!authUser) return;

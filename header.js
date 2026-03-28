@@ -169,6 +169,20 @@
 
   function ensureSharedAuthScript() {
     if (window.location.pathname.endsWith('/questions.html') || window.location.pathname.endsWith('questions.html')) return;
+    const appendDebugScript = (onReady) => {
+      if (document.querySelector('script[data-debug-shared="true"]')) {
+        if (typeof onReady === 'function') onReady();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'debug.shared.js';
+      script.async = false;
+      script.dataset.debugShared = 'true';
+      if (typeof onReady === 'function') {
+        script.addEventListener('load', onReady, { once: true });
+      }
+      document.body.appendChild(script);
+    };
     const appendSharedAuthScript = () => {
       if (document.querySelector('script[data-shared-auth="true"]')) return;
       const script = document.createElement('script');
@@ -177,15 +191,27 @@
       script.dataset.sharedAuth = 'true';
       document.body.appendChild(script);
     };
+    const appendCoreScript = () => {
+      if (document.querySelector('script[data-auth-core-shared="true"]')) {
+        appendSharedAuthScript();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'auth.core.shared.js';
+      script.async = false;
+      script.dataset.authCoreShared = 'true';
+      script.addEventListener('load', appendSharedAuthScript, { once: true });
+      document.body.appendChild(script);
+    };
     if (document.querySelector('script[data-auth-state-shared="true"]')) {
-      appendSharedAuthScript();
+      appendDebugScript(appendCoreScript);
       return;
     }
     const stateScript = document.createElement('script');
     stateScript.src = 'auth.state.shared.js';
     stateScript.async = false;
     stateScript.dataset.authStateShared = 'true';
-    stateScript.addEventListener('load', appendSharedAuthScript, { once: true });
+    stateScript.addEventListener('load', () => appendDebugScript(appendCoreScript), { once: true });
     document.body.appendChild(stateScript);
   }
 
