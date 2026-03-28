@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const debugLog = window.DebugLog || null;
+  function logUserAction(event, details = {}) {
+    debugLog?.info("user", event, details);
+  }
   const SCROLL_POS_KEY = "questions_scroll_y_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
   const savedScrollY = Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
@@ -1212,18 +1215,43 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       headers["Content-Type"] = "application/json";
     }
     const urls = buildFunctionUrlCandidates("ai-chat", query);
+    debugLog?.info("ai", "proxy-start", {
+      method,
+      urlCount: urls.length,
+      hasAccessToken: !!accessToken,
+      authUserId: authUser?.id || "",
+      model: body?.model || "",
+      hasUserApiKey: !!body?.userApiKey
+    });
     let lastError = null;
     for (let i = 0; i < urls.length; i += 1) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS + 23000);
+      const startedAt = Date.now();
       try {
-        return await fetch(urls[i], {
+        debugLog?.debug("ai", "proxy-attempt", {
+          attempt: i + 1,
+          url: urls[i],
+          method,
+          model: body?.model || ""
+        });
+        const response = await fetch(urls[i], {
           method,
           headers,
           body: body !== null ? JSON.stringify(body) : undefined,
           cache: "no-store",
           signal: controller.signal
         });
+        debugLog?.info("ai", "proxy-response", {
+          attempt: i + 1,
+          url: urls[i],
+          method,
+          model: body?.model || "",
+          status: response.status,
+          ok: response.ok,
+          durationMs: Date.now() - startedAt
+        });
+        return response;
       } catch (e) {
         lastError = e;
         if (e?.name === "AbortError") {
@@ -1231,6 +1259,15 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           err.code = "AI_PROXY_TIMEOUT";
           lastError = err;
         }
+        debugLog?.warn("ai", "proxy-error", {
+          attempt: i + 1,
+          url: urls[i],
+          method,
+          model: body?.model || "",
+          durationMs: Date.now() - startedAt,
+          message: String(lastError?.message || lastError || ""),
+          code: String(lastError?.code || "")
+        });
         if (i === urls.length - 1) {
           throw lastError;
         }
@@ -2304,6 +2341,49 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     }
   });
 
+  document.addEventListener("click", (event) => {
+    const target = event.target instanceof Element ? event.target.closest([
+      "#auth-open-btn",
+      "#auth-google-btn",
+      "#auth-sync-btn",
+      "#auth-send-btn",
+      "#api-key-save",
+      "#api-key-close",
+      "#search-clear-btn",
+      "#header-ai-notch",
+      ".ai-append-btn",
+      ".study-btn",
+      ".unclear-btn",
+      ".t849__trigger-button",
+      ".ai-nav-delete",
+      ".ai-refine-action",
+      ".ai-refine-send",
+      ".ai-refine-cancel",
+      ".category-filter-chip",
+      ".bottom-filter-chip"
+    ].join(",")) : null;
+    if (!target) return;
+    const questionId = target.getAttribute("data-id") || target.closest("[data-id]")?.getAttribute("data-id") || "";
+    const label = target.textContent ? String(target.textContent).trim().slice(0, 80) : "";
+    logUserAction("click", {
+      target: target.id || target.className || target.tagName.toLowerCase(),
+      questionId,
+      label
+    });
+  }, true);
+
+  searchInput?.addEventListener("input", () => {
+    logUserAction("search-input", {
+      termLength: String(searchInput.value || "").trim().length
+    });
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    logUserAction("visibility-change", {
+      state: document.visibilityState
+    });
+  });
+
   window.addEventListener("resize", () => {
     syncHeaderAiNotchViewportMode();
   }, { passive: true });
@@ -2740,6 +2820,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const startedAt = Date.now();
     const authMode = getCurrentApiKeyMode();
     let res;
+    debugLog?.info("ai", "answer-start", {
+      model,
+      authMode,
+      questionLength: String(userQ || "").length,
+      hasAuthUser: !!authUser?.id
+    });
     try {
       res = await callAiProxy({
         method: "POST",
@@ -2757,6 +2843,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         }
       });
     } catch (e) {
+      debugLog?.warn("ai", "answer-proxy-failed", {
+        model,
+        authMode,
+        durationMs: Date.now() - startedAt,
+        message: String(e?.message || e || ""),
+        code: String(e?.code || "")
+      });
       const err = new Error("AI_REGION_UNAVAILABLE");
       err.code = "AI_REGION_UNAVAILABLE";
       err.detail = String(e?.message || e || "");
@@ -2798,6 +2891,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       const err = new Error(`AI request failed: ${res.status}`);
       err.status = res.status;
       err.detail = detail;
+      debugLog?.warn("ai", "answer-http-failed", {
+        model,
+        authMode,
+        status: res.status,
+        durationMs: Date.now() - startedAt,
+        detail: detail || ""
+      });
       throw err;
     }
     const json = await res.json();
@@ -2806,10 +2906,22 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (!answer) {
       const hasReasoning = Array.isArray(msg?.reasoning_details) && msg.reasoning_details.length > 0;
       recordModelFailure(model, hasReasoning ? "reasoning_only" : "empty_content");
+      debugLog?.warn("ai", "answer-empty", {
+        model,
+        authMode,
+        durationMs: Date.now() - startedAt,
+        hasReasoning
+      });
       throw new Error("Empty AI answer");
     }
     const elapsedMs = Date.now() - startedAt;
     recordModelTiming(model, elapsedMs);
+    debugLog?.info("ai", "answer-success", {
+      model,
+      authMode,
+      durationMs: elapsedMs,
+      answerLength: answer.length
+    });
     return {
       answer,
       elapsedMs,
