@@ -176,6 +176,24 @@
       buffer = [];
       persist();
     },
+    enableVerbose(options = {}) {
+      try {
+        localStorage.setItem("debug_mode", "verbose");
+      } catch {}
+      if (options?.reload !== false && typeof window !== "undefined") {
+        window.location.reload();
+      }
+      return "verbose";
+    },
+    disableVerbose(options = {}) {
+      try {
+        localStorage.removeItem("debug_mode");
+      } catch {}
+      if (options?.reload !== false && typeof window !== "undefined") {
+        window.location.reload();
+      }
+      return "default";
+    },
     exportBugReport,
     copy() {
       const payload = JSON.stringify(exportBugReport(), null, 2);
