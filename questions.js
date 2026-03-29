@@ -98,7 +98,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const QUESTIONS_REST_TIMEOUT_MS = 45 * 1000;
   const QUESTIONS_LOAD_USE_SDK = false;
   const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
-  const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
+  const PUBLIC_AI_APPEND_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
   const USER_API_KEY_SYNC_INTERVAL_MS = 10 * 60 * 1000;
   const AI_SUPPLEMENT_META_KEY = "ai_supplement_meta_v1";
   const AI_RESPONSES_LOCAL_PREFIX = "ai_responses_";
@@ -120,6 +120,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const clearBtn       = document.getElementById("search-clear-btn");
   const resultsTitle   = document.getElementById("search-results-title");
   const about          = document.getElementById("about");
+  const accordionContainerEl = document.getElementById("accordion-container");
   const questionsLoadStatusEl = document.getElementById("questions-load-status");
   const apiKeyModal    = document.getElementById("api-key-modal");
   const apiKeyDescription = document.getElementById("api-key-description");
@@ -135,13 +136,18 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const authCard       = authModal?.querySelector(".auth-card");
   const authTitle      = document.getElementById("auth-title");
   const authDescription = document.getElementById("auth-description");
+  const authIdentity   = document.getElementById("auth-identity");
+  const authChipRow    = document.getElementById("auth-chip-row");
+  const authUserEmail  = document.getElementById("auth-user-email");
   const authLevelWrap  = document.getElementById("auth-level-wrap");
   const authTrackSelect = document.getElementById("auth-track-select");
   const authGradeSelect = document.getElementById("auth-grade-select");
   const authOAuthRow    = document.getElementById("auth-oauth-row");
   const authGoogleBtn   = document.getElementById("auth-google-btn");
+  const authGithubBtn   = document.getElementById("auth-github-btn");
   const authEmailToggle = document.getElementById("auth-email-toggle");
   const authEmailInput = document.getElementById("auth-email-input");
+  const authEmailError = document.getElementById("auth-email-error");
   const authSyncBtn    = document.getElementById("auth-sync-btn");
   const authSendBtn    = document.getElementById("auth-send-btn");
   const authCloseBtn   = document.getElementById("auth-close-btn");
@@ -169,13 +175,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const AUTH_STARTUP_GRACE_MS = 5000;
   const CLOUD_OP_TIMEOUT_MS = 10000;
   const REST_TIMEOUT_MS = 7000;
-  const cloudProgressByQuestion = new Map();
-  const cloudAnswersByQuestion = new Map();
+  let cloudProgressByQuestion = new Map();
+  let cloudAnswersByQuestion = new Map();
   const publicAppendAnswersByQuestion = new Map();
   const aiItemState = new Map();
   let questionsUiRendered = false;
   let questionsLoadFallbackTimer = null;
-  let cloudSyncPromise = null;
   let userApiKeySyncPromise = null;
   let authLastSessionCheckTs = 0;
   let authResolved = false;
@@ -185,6 +190,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   let headerAiNotchPendingCount = 0;
   let authController = null;
   let authControllerInitPromise = null;
+  let questionsCloudSyncController = null;
+  let syncCoordinator = null;
 
   function setAuthSessionCheckedNow() {
     authLastSessionCheckTs = Date.now();
@@ -240,6 +247,36 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (!questionsLoadFallbackTimer) return;
     clearTimeout(questionsLoadFallbackTimer);
     questionsLoadFallbackTimer = null;
+  }
+
+  function renderQuestionsSkeleton() {
+    if (!accordionContainerEl || accordionContainerEl.childElementCount) return;
+    accordionContainerEl.classList.add("is-loading");
+    accordionContainerEl.innerHTML = `
+      <div class="questions-skeleton" aria-hidden="true">
+        ${Array.from({ length: 5 }).map(() => `
+          <section class="article">
+            <div class="questions-skeleton-card">
+              <div class="questions-skeleton-head">
+                <div class="questions-skeleton-line questions-skeleton-line--title"></div>
+                <div class="questions-skeleton-line questions-skeleton-line--progress"></div>
+              </div>
+              <div class="questions-skeleton-line questions-skeleton-line--item"></div>
+              <div class="questions-skeleton-line questions-skeleton-line--item"></div>
+              <div class="questions-skeleton-line questions-skeleton-line--item"></div>
+            </div>
+          </section>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function clearQuestionsSkeleton() {
+    if (!accordionContainerEl) return;
+    accordionContainerEl.classList.remove("is-loading");
+    if (accordionContainerEl.querySelector(".questions-skeleton")) {
+      accordionContainerEl.innerHTML = "";
+    }
   }
 
   function finalizeAuthCardMorph(token) {
@@ -892,47 +929,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   async function loadCloudProgress() {
-    cloudProgressByQuestion.clear();
-    if (!isCloudReady() || !authUser) return;
-    try {
-      const data = await restRequest("question_progress", {
-        method: "GET",
-        query: `select=user_id,question_id,status,updated_at&user_id=eq.${encodeURIComponent(authUser.id)}`
-      });
-      (data || []).forEach(row => {
-        if (row?.question_id && row?.status) {
-          cloudProgressByQuestion.set(row.question_id, row.status);
-        }
-      });
-    } catch (e) {
-      console.warn("Failed to load question progress from Supabase", e);
-    }
+    return questionsCloudSyncController?.loadCloudProgress() || [];
   }
 
   async function loadCloudAnswers() {
-    cloudAnswersByQuestion.clear();
-    if (!isCloudReady() || !authUser) return;
-    try {
-      const data = await restRequest("ai_answers", {
-        method: "GET",
-        query: `select=id,question_id,answer_type,model,seconds,content,created_at&user_id=eq.${encodeURIComponent(authUser.id)}&order=created_at.asc`
-      });
-      (data || []).forEach(row => {
-        if (!row?.question_id || !row?.content) return;
-        const list = cloudAnswersByQuestion.get(row.question_id) || [];
-        list.push({
-          cloudId: row.id || null,
-          answer: row.content,
-          model: row.model || "",
-          seconds: row.seconds || 0,
-          arrivedAt: row.created_at ? Date.parse(row.created_at) || Date.now() : Date.now(),
-          answerType: row.answer_type || "append"
-        });
-        cloudAnswersByQuestion.set(row.question_id, list);
-      });
-    } catch (e) {
-      console.warn("Failed to load AI answers from Supabase", e);
-    }
+    return questionsCloudSyncController?.loadCloudAnswers() || [];
   }
 
   function readPublicAppendAnswersCache() {
@@ -1020,6 +1021,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (cachedRows) {
       fillPublicAppendAnswersMap(cachedRows);
       notify("cache");
+      return { source: "cache", count: cachedRows.length };
     }
 
     const repoRows = await loadPublicAppendAnswersFromRepoJson();
@@ -1642,132 +1644,84 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     });
   }
 
-  async function syncLocalAndCloudState(options = {}) {
-    const { force = false, source = "auto" } = options;
-    if (!isCloudReady() || !authUser) return { ok: false };
-    const now = Date.now();
-    if (!force && cloudSyncPromise) return cloudSyncPromise;
-    if (!force && (now - getCloudSyncLastTs()) < CLOUD_SYNC_TTL_MS) {
-      debugLog?.debug("sync", "questions-cloud-skip", { reason: "ttl", source });
-      return { ok: true, skipped: true };
-    }
-    cloudSyncPromise = (async () => {
-      try {
-        debugLog?.info("sync", "questions-cloud-start", { source, force });
-        if (source === "manual") setAuthSyncButtonBusy(true);
-        const pendingMutationsAtStart = readPendingMutations();
-        const hadPendingMutationsAtStart = pendingMutationsAtStart.length > 0;
-        await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "initial cloud load");
+  questionsCloudSyncController = window.QuestionsCloudSyncShared?.create({
+    debugLog,
+    cloudSyncTsKey: CLOUD_SYNC_TS_KEY,
+    pendingMutationsKey: PENDING_MUTATIONS_KEY,
+    cloudSyncTtlMs: CLOUD_SYNC_TTL_MS,
+    cloudOpTimeoutMs: CLOUD_OP_TIMEOUT_MS,
+    restTimeoutMs: REST_TIMEOUT_MS,
+    aiResponsesLocalPrefix: AI_RESPONSES_LOCAL_PREFIX,
+    logEvents: {
+      start: "questions-cloud-start",
+      success: "questions-cloud-success",
+      failed: "questions-cloud-failed",
+      skipped: "questions-cloud-skip",
+      restOk: "questions-rest-ok",
+      restFail: "questions-rest-fail"
+    },
+    getSupabaseStore: () => supabaseStore,
+    getAuthUser: () => authUser,
+    getActiveSession,
+    ensureAuthContext,
+    readPendingMutations,
+    writePendingMutations,
+    enqueueMutation,
+    getLocalProgressRows,
+    prepareProgressRowsForUpload: (rows, progressMap) => rows.filter((row) => {
+      if (!row?.question_id || !row?.status) return false;
+      return progressMap.get(row.question_id) !== row.status;
+    }),
+    getLocalAiRows,
+    getReloadPlan: ({ progressRowsToUpload, localAiRows, pendingMutationsAtStart }) => {
+      const hasPendingProgressMutations = pendingMutationsAtStart.some((mutation) => mutation?.type === "saveProgress");
+      const hasPendingAiMutations = pendingMutationsAtStart.some((mutation) => (
+        mutation?.type === "saveAiAnswer" ||
+        mutation?.type === "deleteAiById" ||
+        mutation?.type === "deleteAiByPayload"
+      ));
+      return {
+        progress: !!(progressRowsToUpload.length || hasPendingProgressMutations),
+        answers: !!(localAiRows.length || hasPendingAiMutations)
+      };
+    },
+    onSyncBusyChange: setAuthSyncButtonBusy,
+    onSyncSuccessFlash: flashAuthSyncButtonSuccess,
+    onSyncStatusMessage: setAuthStatus,
+    onCloudStateApplied: ({ progressMap, answersMap }) => {
+      cloudProgressByQuestion = progressMap;
+      cloudAnswersByQuestion = answersMap;
+      applyCloudStateToUi();
+    },
+    shouldEnqueueAiSaveOnMissingAuth: ({ hasAuth, enqueueOnFail, questionId, response }) => (
+      !!(enqueueOnFail && questionId && response?.answer && !(allowGuestAiRequests && !hasAuth))
+    )
+  }) || null;
 
-        const localProgressRows = getLocalProgressRows();
-        const progressRowsToUpload = localProgressRows.filter((row) => {
-          if (!row?.question_id || !row?.status) return false;
-          return cloudProgressByQuestion.get(row.question_id) !== row.status;
-        });
-        if (progressRowsToUpload.length) {
-          if (supabaseStore.upsertQuestionProgressBulk) {
-            const { error } = await withTimeout(
-              supabaseStore.upsertQuestionProgressBulk(progressRowsToUpload),
-              CLOUD_OP_TIMEOUT_MS,
-              "progress bulk upsert"
-            );
-            if (error) {
-              console.warn("Bulk progress sync failed, fallback to row upsert", error);
-              await Promise.all(progressRowsToUpload.map((r) => saveProgressCloud(r.question_id, r.status)));
-            }
-          } else {
-            await Promise.all(progressRowsToUpload.map((r) => saveProgressCloud(r.question_id, r.status)));
-          }
-        }
+  if (questionsCloudSyncController) {
+    cloudProgressByQuestion = questionsCloudSyncController.getProgressMap();
+    cloudAnswersByQuestion = questionsCloudSyncController.getAnswersMap();
+  }
 
-        const cloudSignatures = new Set();
-        cloudAnswersByQuestion.forEach((list, questionId) => {
-          (list || []).forEach((resp) => {
-            cloudSignatures.add(aiSignature(questionId, resp.answerType, resp.model, resp.answer));
-          });
-        });
-        // Avoid duplicate inserts when the same AI answer/refine is already queued in pending mutations
-        // and will be flushed in the same sync cycle.
-        readPendingMutations().forEach((m) => {
-          if (!m || m.type !== "saveAiAnswer") return;
-          const p = m.payload || {};
-          const r = p.response || {};
-          const qid = p.questionId;
-          const content = String(r.answer || "").trim();
-          if (!qid || !content) return;
-          cloudSignatures.add(aiSignature(qid, p.answerType || r.answerType || "append", r.model || null, content));
-        });
-        const localAiRows = getLocalAiRows(cloudSignatures);
-        if (localAiRows.length) {
-          if (supabaseStore.saveAiAnswersBulk) {
-            const { error } = await withTimeout(
-              supabaseStore.saveAiAnswersBulk(localAiRows),
-              CLOUD_OP_TIMEOUT_MS,
-              "ai answers bulk insert"
-            );
-            if (error) {
-              console.warn("Bulk AI answers sync failed", error);
-            }
-          } else {
-            await Promise.all(localAiRows.map((row) =>
-              saveAiAnswerCloud(row.question_id, row.answer_type, {
-                answer: row.content,
-                model: row.model,
-                seconds: row.seconds
-              })
-            ));
-          }
-        }
-
-        // Flush queued mutations (especially deletes) before final reload, so deleted AI answers
-        // are not briefly rehydrated from cloud right after manual sync.
-        await flushPendingMutations();
-
-        const hasPendingProgressMutations = pendingMutationsAtStart.some((m) => m?.type === "saveProgress");
-        const hasPendingAiMutations = pendingMutationsAtStart.some((m) => (
-          m?.type === "saveAiAnswer" ||
-          m?.type === "deleteAiById" ||
-          m?.type === "deleteAiByPayload"
-        ));
-        const shouldReloadProgress = !!(progressRowsToUpload.length || force || hasPendingProgressMutations);
-        const shouldReloadAiAnswers = !!(localAiRows.length || force || hasPendingAiMutations);
-
-        if (shouldReloadProgress || shouldReloadAiAnswers) {
-          const reloadTasks = [];
-          if (shouldReloadProgress) {
-            reloadTasks.push(loadCloudProgress());
-          }
-          if (shouldReloadAiAnswers) {
-            reloadTasks.push(loadCloudAnswers());
-          }
-          await withTimeout(Promise.all(reloadTasks), CLOUD_OP_TIMEOUT_MS, "final cloud reload");
-        }
-        applyCloudStateToUi();
-        markCloudSyncTs();
-        debugLog?.info("sync", "questions-cloud-success", {
-          source,
-          force,
-          progressRowsToUpload: progressRowsToUpload.length,
-          localAiRows: localAiRows.length,
-          shouldReloadProgress,
-          shouldReloadAiAnswers
-        });
-        if (source === "manual") flashAuthSyncButtonSuccess();
-        return { ok: true };
-      } catch (e) {
-        console.warn("Cloud sync failed", e);
-        debugLog?.warn("sync", "questions-cloud-failed", {
-          source,
-          force,
-          message: String(e?.message || e || "")
-        });
-        return { ok: false, error: e };
-      } finally {
-        if (source === "manual") setAuthSyncButtonBusy(false);
-        cloudSyncPromise = null;
+  syncCoordinator = window.SyncShared?.create({
+    debugLog,
+    shouldRunAuthSync: ({ userId, force }) => shouldRunAuthDrivenSync({ userId, force }),
+    markAuthSync: (userId) => markAuthDrivenSync(userId),
+    resolveManualTasks: () => ([
+      {
+        name: "questions-cloud",
+        shouldRun: () => true,
+        run: () => syncLocalAndCloudState({ force: true, source: "manual" })
       }
-    })();
-    return cloudSyncPromise;
+    ]),
+    authResolvedTask: {
+      shouldRun: ({ userId, force }) => shouldRunAuthDrivenSync({ userId, force }),
+      run: () => syncLocalAndCloudState({ force: false, source: "auth-core" })
+    }
+  }) || null;
+
+  async function syncLocalAndCloudState(options = {}) {
+    return questionsCloudSyncController?.syncNow(options || {}) || { ok: false, skipped: "controller-unavailable" };
   }
 
   function mapQuestionsPayload(sections, questions) {
@@ -1930,195 +1884,33 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   function hasPendingCloudWork() {
-    return readPendingMutations().length > 0;
+    return !!questionsCloudSyncController?.hasPendingCloudWork();
   }
 
   async function saveProgressCloud(questionId, status, options = {}) {
-    const { enqueueOnFail = true } = options;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !questionId) {
-      console.warn("Skip cloud progress save: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
-      if (enqueueOnFail) enqueueMutation("saveProgress", { questionId, status });
-      return;
-    }
-    const payload = {
-      user_id: authUser.id,
-      question_id: questionId,
-      status,
-      updated_at: new Date().toISOString()
-    };
-    try {
-      await withTimeout(
-        restRequest("question_progress", {
-          method: "POST",
-          query: "on_conflict=user_id,question_id",
-          body: payload,
-          prefer: "resolution=merge-duplicates,return=representation"
-        }),
-        CLOUD_OP_TIMEOUT_MS,
-        "save progress"
-      );
-      console.info("Cloud progress saved", { questionId, status });
-    } catch (e) {
-      console.warn("Failed to save question progress to Supabase", e);
-      if (enqueueOnFail) enqueueMutation("saveProgress", { questionId, status });
-    }
+    return questionsCloudSyncController?.saveProgress(questionId, status, options || {});
   }
 
   async function saveAiAnswerCloud(questionId, answerType, response, options = {}) {
-    const { enqueueOnFail = true } = options;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
-      console.warn("Skip cloud AI save: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
-      const shouldQueue = enqueueOnFail && questionId && response?.answer && !(allowGuestAiRequests && !hasAuth);
-      if (shouldQueue) {
-        enqueueMutation("saveAiAnswer", { questionId, answerType, response });
-      }
-      return null;
-    }
-    const payload = {
-      user_id: authUser.id,
-      question_id: questionId,
-      answer_type: answerType || response.answerType || "append",
-      model: response.model || null,
-      seconds: response.seconds || null,
-      content: response.answer
-    };
-    try {
-      const data = await withTimeout(
-        restRequest("ai_answers", {
-          method: "POST",
-          body: payload,
-          prefer: "return=representation"
-        }),
-        CLOUD_OP_TIMEOUT_MS,
-        "save ai answer"
-      );
-      const row = Array.isArray(data) ? data[0] : data;
-      console.info("Cloud AI answer saved", { questionId, answerType: payload.answer_type, model: payload.model });
-      return row?.id || null;
-    } catch (e) {
-      console.warn("Failed to save AI answer to Supabase", e);
-      if (enqueueOnFail) enqueueMutation("saveAiAnswer", { questionId, answerType, response });
-      return null;
-    }
+    return questionsCloudSyncController?.saveAiAnswer(questionId, answerType, response, options || {}) || null;
   }
 
   async function deleteAiAnswerCloud(answerId, options = {}) {
-    const { enqueueOnFail = true } = options;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !answerId) {
-      console.warn("Skip cloud AI delete by id: no auth/cloud", { answerId, hasCloud: isCloudReady(), hasAuth });
-      if (enqueueOnFail && answerId) enqueueMutation("deleteAiById", { answerId });
-      return false;
-    }
-    try {
-      const data = await withTimeout(
-        restRequest("ai_answers", {
-          method: "DELETE",
-          query: `id=eq.${encodeURIComponent(answerId)}&user_id=eq.${encodeURIComponent(authUser.id)}`,
-          prefer: "return=representation"
-        }),
-        CLOUD_OP_TIMEOUT_MS,
-        "delete ai by id"
-      );
-      console.info("Cloud AI answer deleted by id", { answerId });
-      return Array.isArray(data) ? data.length > 0 : true;
-    } catch (e) {
-      console.warn("Failed to delete AI answer from Supabase", e);
-      if (enqueueOnFail) enqueueMutation("deleteAiById", { answerId });
-      return false;
-    }
+    return questionsCloudSyncController?.deleteAiAnswer(answerId, options || {}) || false;
   }
 
   async function deleteAiAnswerCloudByPayload(questionId, response, options = {}) {
-    const { enqueueOnFail = true } = options;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
-      console.warn("Skip cloud AI delete by payload: no auth/cloud", { questionId, hasCloud: isCloudReady(), hasAuth });
-      if (enqueueOnFail && questionId && response?.answer) enqueueMutation("deleteAiByPayload", { questionId, response });
-      return false;
-    }
-    try {
-      // Avoid sending huge answer text in URL (PostgREST DELETE filters are query-string based).
-      // First find candidate rows by compact filters, then delete exact match by id.
-      let lookupQuery = [
-        "select=id,content,model,answer_type,created_at",
-        `user_id=eq.${encodeURIComponent(authUser.id)}`,
-        `question_id=eq.${encodeURIComponent(questionId)}`,
-        `answer_type=eq.${encodeURIComponent(response.answerType || "append")}`,
-        "order=created_at.desc",
-        "limit=50"
-      ].join("&");
-      if (response.model) {
-        lookupQuery += `&model=eq.${encodeURIComponent(response.model)}`;
-      }
-      const rows = await withTimeout(
-        restRequest("ai_answers", {
-          method: "GET",
-          query: lookupQuery,
-          prefer: null
-        }),
-        CLOUD_OP_TIMEOUT_MS,
-        "find ai by payload"
-      );
-      const target = (Array.isArray(rows) ? rows : []).find((row) => (
-        row &&
-        String(row.content || "") === String(response.answer || "") &&
-        String(row.answer_type || "append") === String(response.answerType || "append") &&
-        String(row.model || "") === String(response.model || "")
-      ));
-      if (!target?.id) {
-        console.info("Cloud AI answer delete by payload skipped: row not found", { questionId });
-        return true;
-      }
-      return await deleteAiAnswerCloud(target.id, { enqueueOnFail });
-    } catch (e) {
-      console.warn("Failed to delete AI answer by payload from Supabase", e);
-      if (enqueueOnFail) enqueueMutation("deleteAiByPayload", { questionId, response });
-      return false;
-    }
+    return questionsCloudSyncController?.deleteAiAnswerByPayload(questionId, response, options || {}) || false;
   }
 
   async function flushPendingMutations() {
-    if (!isCloudReady() || !authUser) return;
-    const queue = readPendingMutations();
-    if (!queue.length) return;
-    const now = Date.now();
-    const failed = [];
-    for (const m of queue) {
-      if ((m?.nextTs || 0) > now) {
-        failed.push(m);
-        continue;
-      }
-      try {
-        if (m.type === "saveProgress") {
-          await saveProgressCloud(m.payload.questionId, m.payload.status, { enqueueOnFail: false });
-        } else if (m.type === "saveAiAnswer") {
-          const id = await saveAiAnswerCloud(m.payload.questionId, m.payload.answerType, m.payload.response, { enqueueOnFail: false });
-          if (!id) throw new Error("saveAiAnswer retry failed");
-        } else if (m.type === "deleteAiById") {
-          const ok = await deleteAiAnswerCloud(m.payload.answerId, { enqueueOnFail: false });
-          if (!ok) throw new Error("deleteAiById retry failed");
-        } else if (m.type === "deleteAiByPayload") {
-          const ok = await deleteAiAnswerCloudByPayload(m.payload.questionId, m.payload.response, { enqueueOnFail: false });
-          if (!ok) throw new Error("deleteAiByPayload retry failed");
-        }
-      } catch {
-        const attempts = Number(m?.attempts || 0) + 1;
-        const backoffMs = Math.min(120000, 5000 * attempts);
-        failed.push({
-          ...m,
-          attempts,
-          nextTs: Date.now() + backoffMs
-        });
-      }
-    }
-    writePendingMutations(failed);
-    if (!failed.length) {
+    const queueBefore = readPendingMutations();
+    await questionsCloudSyncController?.flushPendingMutations();
+    const queueAfter = readPendingMutations();
+    if (!queueAfter.length && queueBefore.length) {
       console.info("Pending mutations flushed");
-    } else {
-      console.warn("Pending mutations left", failed.length);
+    } else if (queueAfter.length) {
+      console.warn("Pending mutations left", queueAfter.length);
     }
   }
 
@@ -2171,13 +1963,18 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         authCard,
         authTitle,
         authDescription,
+        authIdentity,
+        authChipRow,
+        authUserEmail,
         authLevelWrap,
         authTrackSelect,
         authGradeSelect,
         authOAuthRow,
         authGoogleBtn,
+        authGithubBtn,
         authEmailToggle,
         authEmailInput,
+        authEmailError,
         authSyncBtn,
         authSendBtn,
         authCloseBtn,
@@ -2232,10 +2029,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         writeGuestAiAuthBypassFlag(false);
         authModalAiGateActive = false;
         await syncUserApiKeyWithCloud({ force: false, source: "auth-core" });
-        if (shouldRunAuthDrivenSync({ userId: authUser?.id })) {
-          markAuthDrivenSync(authUser.id);
-          await syncLocalAndCloudState({ force: false, source: "auth-core" });
-        }
+        await syncCoordinator?.runAuthResolvedSync({
+          userId: authUser?.id,
+          source: "auth-core"
+        });
         if (hasPendingCloudWork()) {
           await flushPendingMutations();
         }
@@ -2246,7 +2043,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         authResolved = true;
         lastKnownAccessToken = "";
       },
-      onManualSync: async ({ user }) => {
+      onManualSync: async () => {
         const session = await authController.getActiveSession();
         if (session === undefined) {
           await authController.refreshAuthUserInBackground({ force: true, source: "manual-sync" });
@@ -2262,11 +2059,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           return;
         }
         await syncUserApiKeyWithCloud({ force: true, source: "manual" });
-        await restRequest("question_progress", {
-          method: "GET",
-          query: `select=question_id&user_id=eq.${encodeURIComponent(user.id)}&limit=1`
-        });
-        await syncLocalAndCloudState({ force: true, source: "manual" });
+        await syncCoordinator?.runManualSync({ source: "manual" });
       }
     });
     await authController.init();
@@ -2367,6 +2160,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const target = event.target instanceof Element ? event.target.closest([
       "#auth-open-btn",
       "#auth-google-btn",
+      "#auth-github-btn",
       "#auth-sync-btn",
       "#auth-send-btn",
       "#api-key-save",
@@ -2424,6 +2218,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   scheduleQuestionsLoadFallback();
+  renderQuestionsSkeleton();
   const publicAiLoadPromise = loadPublicAppendAnswers({
     onUpdate: () => {
       applyPublicAppendAnswersToVisibleUi();
@@ -2438,37 +2233,39 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return { source: "error", count: 0 };
   });
   let questionsSource = "none";
-  const repoQuestionsData = await loadQuestionsFromRepoJson();
   const cachedQuestionsData = readQuestionsCache();
   const staleCachedQuestionsData = cachedQuestionsData || readQuestionsCache({ allowStale: true });
-  if (Array.isArray(repoQuestionsData) && repoQuestionsData.length) {
-    runtimeQuestionsData = repoQuestionsData;
-    window.questionsData = runtimeQuestionsData;
-    writeQuestionsCache(repoQuestionsData);
-    questionsSource = "repo-json";
-    console.info(`Questions source: repo JSON (${runtimeQuestionsData.length} sections)`);
-  } else if (Array.isArray(cachedQuestionsData) && cachedQuestionsData.length) {
+  if (Array.isArray(cachedQuestionsData) && cachedQuestionsData.length) {
     runtimeQuestionsData = cachedQuestionsData;
     window.questionsData = runtimeQuestionsData;
     questionsSource = "local-cache";
     console.info(`Questions source: local cache (${runtimeQuestionsData.length} sections)`);
   } else {
-    const dbData = await loadQuestionsFromDbWithTimeout();
-    if (Array.isArray(dbData) && dbData.length) {
-      runtimeQuestionsData = dbData;
+    const repoQuestionsData = await loadQuestionsFromRepoJson();
+    if (Array.isArray(repoQuestionsData) && repoQuestionsData.length) {
+      runtimeQuestionsData = repoQuestionsData;
       window.questionsData = runtimeQuestionsData;
-      writeQuestionsCache(dbData);
-      questionsSource = "supabase";
-      console.info(`Questions source: Supabase (${runtimeQuestionsData.length} sections)`);
-    } else if (Array.isArray(staleCachedQuestionsData) && staleCachedQuestionsData.length) {
-      runtimeQuestionsData = staleCachedQuestionsData;
-      window.questionsData = runtimeQuestionsData;
-      questionsSource = "stale-cache";
-      console.warn(`Questions source: stale local cache fallback (${runtimeQuestionsData.length} sections)`);
+      writeQuestionsCache(repoQuestionsData);
+      questionsSource = "repo-json";
+      console.info(`Questions source: repo JSON (${runtimeQuestionsData.length} sections)`);
     } else {
-      runtimeQuestionsData = [];
-      window.questionsData = runtimeQuestionsData;
-      console.error("Questions source: repo JSON/Supabase load failed, no local fallback available.");
+      const dbData = await loadQuestionsFromDbWithTimeout();
+      if (Array.isArray(dbData) && dbData.length) {
+        runtimeQuestionsData = dbData;
+        window.questionsData = runtimeQuestionsData;
+        writeQuestionsCache(dbData);
+        questionsSource = "supabase";
+        console.info(`Questions source: Supabase (${runtimeQuestionsData.length} sections)`);
+      } else if (Array.isArray(staleCachedQuestionsData) && staleCachedQuestionsData.length) {
+        runtimeQuestionsData = staleCachedQuestionsData;
+        window.questionsData = runtimeQuestionsData;
+        questionsSource = "stale-cache";
+        console.warn(`Questions source: stale local cache fallback (${runtimeQuestionsData.length} sections)`);
+      } else {
+        runtimeQuestionsData = [];
+        window.questionsData = runtimeQuestionsData;
+        console.error("Questions source: repo JSON/Supabase load failed, no local fallback available.");
+      }
     }
   }
 
@@ -3771,6 +3568,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     console.info("Accordion UI not found on this page, questions list render skipped.");
     return;
   }
+  clearQuestionsSkeleton();
 
   function escapeHtml(str) {
     return str
@@ -4026,7 +3824,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
     section.innerHTML = `
       <div class="answer-image">
-        <img src="${imgSrc}" alt="Иконка для ${cat.category}" class="category-icon" />
+        <img src="${imgSrc}" alt="Иконка для ${cat.category}" class="category-icon" width="720" height="405" loading="eager" decoding="async" />
         <h3 class="category-title">${cat.category}</h3>
       </div>
     `;
@@ -4096,7 +3894,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             class="answer-link author-link"
           >
             Блог ревьюера
-            <img src="${item.avatar}" alt="Аватар ревьюера">
+            <img src="${item.avatar}" alt="Аватар ревьюера" width="22" height="22" loading="lazy" decoding="async">
           </a>
         `);
       }

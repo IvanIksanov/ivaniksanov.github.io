@@ -60,24 +60,7 @@
 
   async function signOut() {
     if (!client) return { error: new Error("Supabase client is not initialized") };
-    try {
-      const { data: sessionData } = await client.auth.getSession();
-      const accessToken = sessionData?.session?.access_token;
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-        method: "POST",
-        headers: {
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${accessToken || SUPABASE_ANON_KEY}`
-        }
-      });
-      if (!res.ok && res.status !== 401) {
-        const txt = await res.text();
-        return { error: new Error(`Logout failed: ${res.status} ${txt}`) };
-      }
-    } catch (e) {
-      return { error: e };
-    }
-    return client.auth.signOut();
+    return client.auth.signOut({ scope: "local" });
   }
 
   async function saveAiAnswer(row) {

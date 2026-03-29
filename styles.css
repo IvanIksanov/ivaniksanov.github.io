@@ -530,7 +530,6 @@ textarea {
   border-radius: 5px;
   background-color: var(--input-background);
   color: var(--input-text-color);
-  font-size: 8px;
   width: 100%;
   box-sizing: border-box;
 }

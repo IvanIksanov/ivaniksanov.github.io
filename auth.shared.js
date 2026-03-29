@@ -25,12 +25,12 @@
   let authUser = null;
   let authProfile = null;
   let authLastSessionCheckTs = 0;
-  let cloudSyncPromise = null;
   let initialized = false;
   let authResolved = false;
   let activeGuestGate = null;
   let pendingAuthReturnScrollY = null;
   let authController = null;
+  let syncCoordinator = null;
 
   const authStateShared = window.AuthStateShared || {
     getAuthUiConfig(options) {
@@ -81,7 +81,7 @@
     }
   };
 
-  const cloudAnswersByQuestion = new Map();
+  let questionsCloudSyncController = null;
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
@@ -419,38 +419,6 @@
     } catch {}
   }
 
-  function getCloudAuthSyncLastTs() {
-    try {
-      return Number(localStorage.getItem(CLOUD_AUTH_SYNC_TS_KEY) || 0);
-    } catch {
-      return 0;
-    }
-  }
-
-  function getCloudAuthSyncLastUserId() {
-    try {
-      return String(localStorage.getItem(CLOUD_AUTH_SYNC_USER_KEY) || "");
-    } catch {
-      return "";
-    }
-  }
-
-  function markCloudAuthSync(userId) {
-    try {
-      localStorage.setItem(CLOUD_AUTH_SYNC_TS_KEY, String(Date.now()));
-      localStorage.setItem(CLOUD_AUTH_SYNC_USER_KEY, String(userId || ""));
-    } catch {}
-  }
-
-  function shouldRunCloudAuthSync(userId) {
-    const normalizedUserId = String(userId || "");
-    if (!normalizedUserId) return false;
-    const lastUserId = getCloudAuthSyncLastUserId();
-    const lastTs = getCloudAuthSyncLastTs();
-    if (lastUserId !== normalizedUserId) return true;
-    return (Date.now() - lastTs) >= CLOUD_AUTH_SYNC_COOLDOWN_MS;
-  }
-
   function readPendingMutations() {
     try {
       const raw = localStorage.getItem(PENDING_MUTATIONS_KEY);
@@ -572,35 +540,6 @@
     return set;
   }
 
-  async function loadCloudProgress() {
-    if (!isCloudReady() || !authUser) return;
-    await restRequest("question_progress", {
-      method: "GET",
-      query: `select=user_id,question_id,status,updated_at&user_id=eq.${encodeURIComponent(authUser.id)}`,
-      prefer: ""
-    });
-  }
-
-  async function loadCloudAnswers() {
-    cloudAnswersByQuestion.clear();
-    if (!isCloudReady() || !authUser) return;
-    const data = await restRequest("ai_answers", {
-      method: "GET",
-      query: `select=id,question_id,answer_type,model,seconds,content,created_at&user_id=eq.${encodeURIComponent(authUser.id)}&order=created_at.asc`,
-      prefer: ""
-    });
-    (data || []).forEach((row) => {
-      if (!row?.question_id || !row?.content) return;
-      const list = cloudAnswersByQuestion.get(row.question_id) || [];
-      list.push({
-        answer: row.content,
-        model: row.model || "",
-        answerType: row.answer_type || "append"
-      });
-      cloudAnswersByQuestion.set(row.question_id, list);
-    });
-  }
-
   function getLocalProgressRows() {
     if (!authUser?.id) return [];
     const dedupe = new Map();
@@ -672,273 +611,110 @@
     return rows;
   }
 
+  questionsCloudSyncController = window.QuestionsCloudSyncShared?.create({
+    debugLog,
+    cloudSyncTsKey: CLOUD_SYNC_TS_KEY,
+    pendingMutationsKey: PENDING_MUTATIONS_KEY,
+    cloudSyncTtlMs: CLOUD_SYNC_TTL_MS,
+    cloudOpTimeoutMs: CLOUD_OP_TIMEOUT_MS,
+    restTimeoutMs: REST_TIMEOUT_MS,
+    aiResponsesLocalPrefix: AI_RESPONSES_LOCAL_PREFIX,
+    logEvents: {
+      start: "shared-cloud-start",
+      success: "shared-cloud-success",
+      failed: "shared-cloud-failed",
+      skipped: "shared-cloud-skip",
+      restOk: "shared-rest-ok",
+      restFail: "shared-rest-fail"
+    },
+    getSupabaseStore: () => supabaseStore,
+    getAuthUser: () => authUser,
+    getActiveSession,
+    ensureAuthContext,
+    readPendingMutations,
+    writePendingMutations,
+    getLocalProgressRows,
+    getLocalAiRows,
+    includeLocalProgressInPendingCheck: true,
+    includeLocalAiInPendingCheck: true,
+    onSyncBusyChange: setAuthSyncButtonBusy,
+    onSyncSuccessFlash: flashAuthSyncButtonSuccess,
+    onSyncStatusMessage: setAuthStatus
+  }) || null;
+
+  async function loadCloudProgress() {
+    return questionsCloudSyncController?.loadCloudProgress() || [];
+  }
+
+  async function loadCloudAnswers() {
+    return questionsCloudSyncController?.loadCloudAnswers() || [];
+  }
+
   async function saveProgressCloud(questionId, status, options) {
-    const enqueueOnFail = options?.enqueueOnFail !== false;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !questionId) {
-      if (enqueueOnFail) {
-        const pending = readPendingMutations();
-        pending.push({ type: "saveProgress", payload: { questionId, status }, attempts: 0, nextTs: Date.now() });
-        writePendingMutations(pending);
-      }
-      return;
-    }
-
-    const payload = {
-      user_id: authUser.id,
-      question_id: questionId,
-      status,
-      updated_at: new Date().toISOString()
-    };
-
-    await withTimeout(restRequest("question_progress", {
-      method: "POST",
-      query: "on_conflict=user_id,question_id",
-      body: payload,
-      prefer: "resolution=merge-duplicates,return=representation"
-    }), CLOUD_OP_TIMEOUT_MS, "save progress");
+    return questionsCloudSyncController?.saveProgress(questionId, status, options || {});
   }
 
   async function saveAiAnswerCloud(questionId, answerType, response, options) {
-    const enqueueOnFail = options?.enqueueOnFail !== false;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
-      if (enqueueOnFail && questionId && response?.answer) {
-        const pending = readPendingMutations();
-        pending.push({ type: "saveAiAnswer", payload: { questionId, answerType, response }, attempts: 0, nextTs: Date.now() });
-        writePendingMutations(pending);
-      }
-      return null;
-    }
-
-    const payload = {
-      user_id: authUser.id,
-      question_id: questionId,
-      answer_type: answerType || response.answerType || "append",
-      model: response.model || null,
-      seconds: response.seconds || null,
-      content: response.answer
-    };
-
-    const data = await withTimeout(restRequest("ai_answers", {
-      method: "POST",
-      body: payload,
-      prefer: "return=representation"
-    }), CLOUD_OP_TIMEOUT_MS, "save ai answer");
-
-    const row = Array.isArray(data) ? data[0] : data;
-    return row?.id || null;
+    return questionsCloudSyncController?.saveAiAnswer(questionId, answerType, response, options || {});
   }
 
   async function deleteAiAnswerCloud(answerId, options) {
-    const enqueueOnFail = options?.enqueueOnFail !== false;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !answerId) {
-      if (enqueueOnFail && answerId) {
-        const pending = readPendingMutations();
-        pending.push({ type: "deleteAiById", payload: { answerId }, attempts: 0, nextTs: Date.now() });
-        writePendingMutations(pending);
-      }
-      return false;
-    }
-
-    const data = await withTimeout(restRequest("ai_answers", {
-      method: "DELETE",
-      query: `id=eq.${encodeURIComponent(answerId)}&user_id=eq.${encodeURIComponent(authUser.id)}`,
-      prefer: "return=representation"
-    }), CLOUD_OP_TIMEOUT_MS, "delete ai by id");
-
-    return Array.isArray(data) ? data.length > 0 : true;
+    return questionsCloudSyncController?.deleteAiAnswer(answerId, options || {});
   }
 
   async function deleteAiAnswerCloudByPayload(questionId, response, options) {
-    const enqueueOnFail = options?.enqueueOnFail !== false;
-    const hasAuth = await ensureAuthContext();
-    if (!isCloudReady() || !hasAuth || !questionId || !response?.answer) {
-      if (enqueueOnFail && questionId && response?.answer) {
-        const pending = readPendingMutations();
-        pending.push({ type: "deleteAiByPayload", payload: { questionId, response }, attempts: 0, nextTs: Date.now() });
-        writePendingMutations(pending);
-      }
-      return false;
-    }
-
-    let lookupQuery = [
-      "select=id,content,model,answer_type,created_at",
-      `user_id=eq.${encodeURIComponent(authUser.id)}`,
-      `question_id=eq.${encodeURIComponent(questionId)}`,
-      `answer_type=eq.${encodeURIComponent(response.answerType || "append")}`,
-      "order=created_at.desc",
-      "limit=50"
-    ].join("&");
-    if (response.model) {
-      lookupQuery += `&model=eq.${encodeURIComponent(response.model)}`;
-    }
-
-    const rows = await withTimeout(restRequest("ai_answers", {
-      method: "GET",
-      query: lookupQuery,
-      prefer: ""
-    }), CLOUD_OP_TIMEOUT_MS, "find ai by payload");
-
-    const target = (Array.isArray(rows) ? rows : []).find((row) => (
-      row &&
-      String(row.content || "") === String(response.answer || "") &&
-      String(row.answer_type || "append") === String(response.answerType || "append") &&
-      String(row.model || "") === String(response.model || "")
-    ));
-    if (!target?.id) return true;
-
-    return deleteAiAnswerCloud(target.id, { enqueueOnFail });
+    return questionsCloudSyncController?.deleteAiAnswerByPayload(questionId, response, options || {});
   }
 
   async function flushPendingMutations() {
-    if (!isCloudReady() || !authUser) return;
-    const queue = readPendingMutations();
-    if (!queue.length) return;
-    const now = Date.now();
-    const failed = [];
-
-    for (const m of queue) {
-      if ((m?.nextTs || 0) > now) {
-        failed.push(m);
-        continue;
-      }
-      try {
-        if (m.type === "saveProgress") {
-          await saveProgressCloud(m.payload.questionId, m.payload.status, { enqueueOnFail: false });
-        } else if (m.type === "saveAiAnswer") {
-          const id = await saveAiAnswerCloud(m.payload.questionId, m.payload.answerType, m.payload.response, { enqueueOnFail: false });
-          if (!id) throw new Error("saveAiAnswer retry failed");
-        } else if (m.type === "deleteAiById") {
-          const ok = await deleteAiAnswerCloud(m.payload.answerId, { enqueueOnFail: false });
-          if (!ok) throw new Error("deleteAiById retry failed");
-        } else if (m.type === "deleteAiByPayload") {
-          const ok = await deleteAiAnswerCloudByPayload(m.payload.questionId, m.payload.response, { enqueueOnFail: false });
-          if (!ok) throw new Error("deleteAiByPayload retry failed");
-        }
-      } catch {
-        const attempts = Number(m?.attempts || 0) + 1;
-        const backoffMs = Math.min(120000, 5000 * attempts);
-        failed.push({ ...m, attempts, nextTs: Date.now() + backoffMs });
-      }
-    }
-
-    writePendingMutations(failed);
+    return questionsCloudSyncController?.flushPendingMutations();
   }
 
   async function syncLocalAndCloudState(options) {
-    const force = !!options?.force;
-    const source = options?.source || "auto";
-
-    if (!isCloudReady() || !authUser) return { ok: false };
-
-    const now = Date.now();
-    if (!force && cloudSyncPromise) return cloudSyncPromise;
-    if (!force && (now - getCloudSyncLastTs()) < CLOUD_SYNC_TTL_MS) {
-      debugLog?.debug("sync", "shared-cloud-skip", { reason: "ttl", source });
-      return { ok: true, skipped: true };
-    }
-
-    cloudSyncPromise = (async () => {
-      try {
-        debugLog?.info("sync", "shared-cloud-start", { source, force });
-        if (source === "manual") setAuthSyncButtonBusy(true);
-        const hadPendingMutationsAtStart = readPendingMutations().length > 0;
-
-        await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "initial cloud load");
-
-        const localProgressRows = getLocalProgressRows();
-        if (localProgressRows.length) {
-          if (supabaseStore.upsertQuestionProgressBulk) {
-            const { error } = await withTimeout(
-              supabaseStore.upsertQuestionProgressBulk(localProgressRows),
-              CLOUD_OP_TIMEOUT_MS,
-              "progress bulk upsert"
-            );
-            if (error) {
-              await Promise.all(localProgressRows.map((r) => saveProgressCloud(r.question_id, r.status)));
-            }
-          } else {
-            await Promise.all(localProgressRows.map((r) => saveProgressCloud(r.question_id, r.status)));
-          }
-        }
-
-        const cloudSignatures = new Set();
-        cloudAnswersByQuestion.forEach((list, questionId) => {
-          (list || []).forEach((resp) => {
-            cloudSignatures.add(aiSignature(questionId, resp.answerType, resp.model, resp.answer));
-          });
-        });
-
-        readPendingMutations().forEach((m) => {
-          if (!m || m.type !== "saveAiAnswer") return;
-          const p = m.payload || {};
-          const r = p.response || {};
-          const qid = p.questionId;
-          const content = String(r.answer || "").trim();
-          if (!qid || !content) return;
-          cloudSignatures.add(aiSignature(qid, p.answerType || r.answerType || "append", r.model || null, content));
-        });
-
-        const localAiRows = getLocalAiRows(cloudSignatures);
-        if (localAiRows.length) {
-          if (supabaseStore.saveAiAnswersBulk) {
-            await withTimeout(
-              supabaseStore.saveAiAnswersBulk(localAiRows),
-              CLOUD_OP_TIMEOUT_MS,
-              "ai answers bulk insert"
-            );
-          } else {
-            await Promise.all(localAiRows.map((row) =>
-              saveAiAnswerCloud(row.question_id, row.answer_type, {
-                answer: row.content,
-                model: row.model,
-                seconds: row.seconds
-              })
-            ));
-          }
-        }
-
-        await flushPendingMutations();
-
-        if (localProgressRows.length || localAiRows.length || force || hadPendingMutationsAtStart) {
-          await withTimeout(Promise.all([loadCloudProgress(), loadCloudAnswers()]), CLOUD_OP_TIMEOUT_MS, "final cloud reload");
-        }
-
-        markCloudSyncTs();
-        debugLog?.info("sync", "shared-cloud-success", {
-          source,
-          force,
-          localProgressRows: localProgressRows.length,
-          localAiRows: localAiRows.length,
-          hadPendingMutationsAtStart
-        });
-        if (source === "manual") flashAuthSyncButtonSuccess();
-        return { ok: true };
-      } catch (e) {
-        console.warn("Cloud sync failed", e);
-        debugLog?.warn("sync", "shared-cloud-failed", {
-          source,
-          force,
-          message: String(e?.message || e || "")
-        });
-        return { ok: false, error: e };
-      } finally {
-        if (source === "manual") setAuthSyncButtonBusy(false);
-        cloudSyncPromise = null;
-      }
-    })();
-
-    return cloudSyncPromise;
+    return questionsCloudSyncController?.syncNow(options || {}) || { ok: false, skipped: "controller-unavailable" };
   }
 
   function hasPendingCloudWork() {
-    if (readPendingMutations().length > 0) return true;
-    if (!authUser?.id) return false;
-    if (getLocalProgressRows().length > 0) return true;
-    return getLocalAiRows(new Set()).length > 0;
+    return !!questionsCloudSyncController?.hasPendingCloudWork();
   }
+
+  function hasPendingSharedMutations() {
+    return readPendingMutations().length > 0;
+  }
+
+  function canManualSyncStudyPlanOnCurrentPage() {
+    return !!(window.StudyPlanCloudSync && typeof window.StudyPlanCloudSync.syncNow === "function");
+  }
+
+  async function runManualSyncForCurrentPage() {
+    return syncCoordinator?.runManualSync({ source: "manual" }) || { ok: false, skipped: "coordinator-unavailable" };
+  }
+
+  syncCoordinator = window.SyncShared?.create({
+    debugLog,
+    authSyncTsKey: CLOUD_AUTH_SYNC_TS_KEY,
+    authSyncUserKey: CLOUD_AUTH_SYNC_USER_KEY,
+    authSyncCooldownMs: CLOUD_AUTH_SYNC_COOLDOWN_MS,
+    onBusyChange: setAuthSyncButtonBusy,
+    onSuccessFlash: flashAuthSyncButtonSuccess,
+    onStatusMessage: setAuthStatus,
+    resolveManualTasks: ({ source }) => ([
+      {
+        name: "study-plan",
+        shouldRun: () => canManualSyncStudyPlanOnCurrentPage(),
+        run: () => window.StudyPlanCloudSync.syncNow({ force: true, source })
+      },
+      {
+        name: "shared-cloud",
+        shouldRun: () => hasPendingSharedMutations(),
+        run: () => syncLocalAndCloudState({ force: true, source: "manual-pending" })
+      }
+    ]),
+    authResolvedTask: {
+      shouldRun: () => hasPendingCloudWork(),
+      run: () => syncLocalAndCloudState({ force: false, source: "auth" })
+    }
+  }) || null;
 
   async function ensureAuthController() {
     if (authController || !window.AuthCoreShared) return authController;
@@ -959,13 +735,18 @@
         authCard: getEl("auth-modal")?.querySelector(".auth-card"),
         authTitle: getEl("auth-title"),
         authDescription: getEl("auth-description"),
+        authIdentity: getEl("auth-identity"),
+        authChipRow: getEl("auth-chip-row"),
+        authUserEmail: getEl("auth-user-email"),
         authLevelWrap: getEl("auth-level-wrap"),
         authTrackSelect: getEl("auth-track-select"),
         authGradeSelect: getEl("auth-grade-select"),
         authOAuthRow: getEl("auth-oauth-row"),
         authGoogleBtn: getEl("auth-google-btn"),
+        authGithubBtn: getEl("auth-github-btn"),
         authEmailToggle: getEl("auth-email-toggle"),
         authEmailInput: getEl("auth-email-input"),
+        authEmailError: getEl("auth-email-error"),
         authSyncBtn: getEl("auth-sync-btn"),
         authSendBtn: getEl("auth-send-btn"),
         authCloseBtn: getEl("auth-close-btn"),
@@ -1016,10 +797,10 @@
           userId: authUser?.id || "",
           hasProfile: !!authProfile
         });
-        if (hasPendingCloudWork() && shouldRunCloudAuthSync(authUser?.id)) {
-          markCloudAuthSync(authUser.id);
-          await syncLocalAndCloudState({ force: false, source: "auth" });
-        }
+        await syncCoordinator?.runAuthResolvedSync({
+          userId: authUser?.id,
+          source: "auth"
+        });
         await flushPendingMutations();
         flushPendingActionAfterAuth();
       },
@@ -1035,7 +816,7 @@
           await authController.refreshAuthUserInBackground({ force: true, source: "manual-sync" });
           return;
         }
-        await syncLocalAndCloudState({ force: true, source: "manual" });
+        await runManualSyncForCurrentPage();
       }
     });
     return authController;
