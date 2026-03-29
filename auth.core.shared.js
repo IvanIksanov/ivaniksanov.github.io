@@ -559,11 +559,11 @@
       if (dom.authEmailToggle) dom.authEmailToggle.setAttribute("aria-expanded", authEmailLoginExpanded ? "true" : "false");
     }
 
-    function resetGuestModalEphemeralState() {
-      setEmailLoginExpanded(false);
+    function resetGuestModalEphemeralState(options = {}) {
+      const shouldClearValue = !!options.clearValue;
       setEmailError("");
       setEmailInputInvalid(false);
-      if (dom.authEmailInput) {
+      if (shouldClearValue && dom.authEmailInput) {
         dom.authEmailInput.value = "";
       }
     }
@@ -948,7 +948,7 @@
       dom.authModal.classList.remove("auth-profile-pending");
       dom.authModal.classList.remove("show");
       dom.authModal.setAttribute("aria-hidden", "true");
-      resetGuestModalEphemeralState();
+      resetGuestModalEphemeralState({ clearValue: true });
       setStatus("");
     }
 
