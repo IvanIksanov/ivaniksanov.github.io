@@ -126,6 +126,10 @@
       <div class="auth-card">
         <h3 id="auth-title">Сохранение прогресса</h3>
         <p id="auth-description" class="auth-text">Войдите, чтобы сохранить ответы ИИ и прогресс изучения.</p>
+        <div id="auth-identity" class="auth-identity" aria-live="polite">
+          <div id="auth-chip-row" class="auth-chip-row"></div>
+          <p id="auth-user-email" class="auth-user-email"></p>
+        </div>
         <div id="auth-level-wrap" class="auth-level-wrap">
           <select id="auth-track-select" class="auth-select" aria-label="Направление в ИТ">
             <option value="QA">QA</option>
@@ -152,9 +156,18 @@
             </span>
             <span>Google</span>
           </button>
+          <button type="button" id="auth-github-btn" class="auth-oauth-btn auth-github-btn" aria-label="Войти через GitHub">
+            <span class="auth-oauth-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true">
+                <path fill="currentColor" d="M12 .5C5.65.5.5 5.7.5 12.12c0 5.14 3.3 9.49 7.88 11.03.58.11.79-.25.79-.57 0-.28-.01-1.02-.02-2-3.2.71-3.88-1.56-3.88-1.56-.53-1.35-1.28-1.71-1.28-1.71-1.04-.72.08-.71.08-.71 1.15.08 1.75 1.19 1.75 1.19 1.02 1.77 2.67 1.26 3.32.96.1-.75.4-1.26.72-1.55-2.55-.29-5.24-1.29-5.24-5.72 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.14 1.18a10.8 10.8 0 0 1 5.72 0c2.18-1.49 3.14-1.18 3.14-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.84 1.18 3.1 0 4.44-2.69 5.42-5.25 5.71.41.36.78 1.08.78 2.18 0 1.58-.01 2.85-.01 3.24 0 .32.21.69.8.57 4.57-1.55 7.86-5.89 7.86-11.03C23.5 5.7 18.35.5 12 .5z"></path>
+              </svg>
+            </span>
+            <span>GitHub</span>
+          </button>
         </div>
         <button type="button" id="auth-email-toggle" class="auth-email-toggle" aria-expanded="false">Войти по email</button>
         <input type="email" id="auth-email-input" class="auth-email-input" placeholder="Ваш email" autocomplete="email">
+        <p id="auth-email-error" class="auth-email-error" aria-live="polite"></p>
         <p class="auth-legal-note">Продолжая вход, вы подтверждаете согласие на обработку персональных данных на условиях <a href="personal-data-consent.html" target="_blank" rel="noopener noreferrer">Согласия</a> и ознакомление с <a href="privacy-policy.html" target="_blank" rel="noopener noreferrer">Политикой</a>.</p>
         <p id="auth-status" class="auth-text auth-status"></p>
         <div class="auth-actions">
@@ -191,16 +204,40 @@
       script.dataset.sharedAuth = 'true';
       document.body.appendChild(script);
     };
+    const appendSyncCoordinatorScript = () => {
+      if (document.querySelector('script[data-sync-shared="true"]')) {
+        appendSharedAuthScript();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'sync.shared.js';
+      script.async = false;
+      script.dataset.syncShared = 'true';
+      script.addEventListener('load', appendSharedAuthScript, { once: true });
+      document.body.appendChild(script);
+    };
+    const appendQuestionsCloudSyncScript = () => {
+      if (document.querySelector('script[data-questions-cloud-sync-shared="true"]')) {
+        appendSyncCoordinatorScript();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'questions-cloud-sync.shared.js';
+      script.async = false;
+      script.dataset.questionsCloudSyncShared = 'true';
+      script.addEventListener('load', appendSyncCoordinatorScript, { once: true });
+      document.body.appendChild(script);
+    };
     const appendCoreScript = () => {
       if (document.querySelector('script[data-auth-core-shared="true"]')) {
-        appendSharedAuthScript();
+        appendQuestionsCloudSyncScript();
         return;
       }
       const script = document.createElement('script');
       script.src = 'auth.core.shared.js';
       script.async = false;
       script.dataset.authCoreShared = 'true';
-      script.addEventListener('load', appendSharedAuthScript, { once: true });
+      script.addEventListener('load', appendQuestionsCloudSyncScript, { once: true });
       document.body.appendChild(script);
     };
     if (document.querySelector('script[data-auth-state-shared="true"]')) {

@@ -156,10 +156,7 @@ document.addEventListener('DOMContentLoaded', function(){
   let openStatusMenu = null;
   let closeStatusMenuTimer = null;
   let openInfoPopover = null;
-  let resourceStatusSyncPromise = null;
-  let resourceStatusAuthSubscriptionBound = false;
-  let queuedStudyPlanSyncTimer = null;
-  let lastStudyPlanSoftLogTs = 0;
+  let studyPlanSyncController = null;
 
   function readPendingSharedAuthAction() {
     try {
@@ -865,193 +862,6 @@ document.addEventListener('DOMContentLoaded', function(){
     return nextEntry;
   }
 
-  function getResourceSyncLastTs() {
-    try {
-      return Number(localStorage.getItem(RESOURCE_STATUS_CLOUD_SYNC_TS_KEY) || 0);
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  function getStudyPlanAuthSyncLastTs() {
-    try {
-      return Number(localStorage.getItem(RESOURCE_STATUS_AUTH_SYNC_TS_KEY) || 0);
-    } catch (e) {
-      return 0;
-    }
-  }
-
-  function getStudyPlanAuthSyncLastUserId() {
-    try {
-      return String(localStorage.getItem(RESOURCE_STATUS_AUTH_SYNC_USER_KEY) || '');
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function markStudyPlanAuthSync(userId) {
-    try {
-      localStorage.setItem(RESOURCE_STATUS_AUTH_SYNC_TS_KEY, String(Date.now()));
-      localStorage.setItem(RESOURCE_STATUS_AUTH_SYNC_USER_KEY, String(userId || ''));
-    } catch (e) {}
-  }
-
-  function shouldRunStudyPlanAuthSync(userId) {
-    const normalizedUserId = String(userId || '');
-    if (!normalizedUserId) return false;
-    const lastUserId = getStudyPlanAuthSyncLastUserId();
-    const lastTs = getStudyPlanAuthSyncLastTs();
-    if (lastUserId !== normalizedUserId) return true;
-    return (Date.now() - lastTs) >= RESOURCE_STATUS_AUTH_SYNC_COOLDOWN_MS;
-  }
-
-  function markResourceSyncTs() {
-    try {
-      localStorage.setItem(RESOURCE_STATUS_CLOUD_SYNC_TS_KEY, String(Date.now()));
-    } catch (e) {}
-  }
-
-  function isStudyPlanCloudReady() {
-    return !!(window.AppSupabase?.url && window.AppSupabase?.anonKey);
-  }
-
-  async function ensureStudyPlanAuthUser() {
-    if (!isStudyPlanCloudReady()) return null;
-    const supabaseStore = window.AppSupabase;
-    try {
-      const session = typeof supabaseStore.getSession === 'function'
-        ? await supabaseStore.getSession()
-        : null;
-      if (session?.user) return session.user;
-    } catch (e) {
-      console.warn('Study plan auth context failed', e);
-    }
-    return null;
-  }
-
-  function waitForStudyPlanRetry(ms) {
-    return new Promise(function(resolve) {
-      setTimeout(resolve, ms);
-    });
-  }
-
-  function isTransientStudyPlanError(error) {
-    const message = String(error?.message || error || '').toLowerCase();
-    return (
-      message.includes('failed to fetch') ||
-      message.includes('networkerror') ||
-      message.includes('network error') ||
-      message.includes('err_connection_closed') ||
-      message.includes('timeout') ||
-      message.includes('aborterror')
-    );
-  }
-
-  function logStudyPlanSoftIssue(message, error) {
-    const now = Date.now();
-    if ((now - lastStudyPlanSoftLogTs) < STUDY_PLAN_SOFT_LOG_TTL_MS) return;
-    lastStudyPlanSoftLogTs = now;
-    if (error) {
-      console.info(message, error);
-      return;
-    }
-    console.info(message);
-  }
-
-  async function studyPlanRestRequest(pathName, options) {
-    const supabaseStore = window.AppSupabase;
-    if (!isStudyPlanCloudReady() || !supabaseStore) {
-      throw new Error('Supabase is not ready');
-    }
-    const nextOptions = options || {};
-    const method = nextOptions.method || 'GET';
-    const query = nextOptions.query || '';
-    const prefer = Object.prototype.hasOwnProperty.call(nextOptions, 'prefer') ? nextOptions.prefer : 'return=representation';
-    const body = nextOptions.body || null;
-    const retryCount = Number.isFinite(nextOptions.retryCount) ? Math.max(0, Number(nextOptions.retryCount)) : 0;
-    const session = typeof supabaseStore.getSession === 'function'
-      ? await supabaseStore.getSession()
-      : null;
-    const url = new URL('/rest/v1/' + pathName, supabaseStore.url);
-    if (query) {
-      url.search = query;
-    }
-    const headers = {
-      apikey: supabaseStore.anonKey,
-      Authorization: 'Bearer ' + (session?.access_token || supabaseStore.anonKey)
-    };
-    if (prefer) {
-      headers.Prefer = prefer;
-    }
-    if (body !== null) {
-      headers['Content-Type'] = 'application/json';
-    }
-    let attempt = 0;
-    while (true) {
-      try {
-        const startedAt = Date.now();
-        const response = await fetch(url.toString(), {
-          method: method,
-          headers: headers,
-          body: body !== null ? JSON.stringify(body) : undefined
-        });
-        if (!response.ok) {
-          debugLog?.warn('network', 'study-plan-rest-fail', {
-            path: pathName,
-            method: method,
-            status: response.status,
-            durationMs: Date.now() - startedAt,
-            attempt: attempt + 1
-          });
-          throw new Error('Study plan REST ' + method + ' ' + pathName + ' failed: ' + response.status + ' ' + await response.text());
-        }
-        if (response.status === 204) return null;
-        const text = await response.text();
-        debugLog?.debug('network', 'study-plan-rest-ok', {
-          path: pathName,
-          method: method,
-          status: response.status,
-          durationMs: Date.now() - startedAt,
-          attempt: attempt + 1
-        });
-        return text ? JSON.parse(text) : null;
-      } catch (error) {
-        const canRetry = attempt < retryCount && isTransientStudyPlanError(error);
-        debugLog?.warn('sync', 'study-plan-request-error', {
-          path: pathName,
-          method: method,
-          attempt: attempt + 1,
-          retrying: canRetry,
-          message: String(error?.message || error || '')
-        });
-        if (!canRetry) throw error;
-        attempt += 1;
-        await waitForStudyPlanRetry(STUDY_PLAN_RETRY_BASE_DELAY_MS * attempt);
-      }
-    }
-  }
-
-  async function loadCloudResourceStatuses(userId) {
-    if (!userId || !isStudyPlanCloudReady()) return [];
-    const data = await studyPlanRestRequest(RESOURCE_STATUS_TABLE, {
-      method: 'GET',
-      query: 'select=resource_url,status,skill_id,resource_type,updated_at&user_id=eq.' + encodeURIComponent(userId),
-      prefer: '',
-      retryCount: 2
-    });
-    return Array.isArray(data) ? data : [];
-  }
-
-  async function upsertCloudResourceStatuses(rows) {
-    if (!Array.isArray(rows) || !rows.length) return;
-    await studyPlanRestRequest(RESOURCE_STATUS_TABLE, {
-      method: 'POST',
-      query: 'on_conflict=user_id,resource_url',
-      body: rows,
-      prefer: 'resolution=merge-duplicates,return=representation'
-    });
-  }
-
   function mergeStudyPlanStatusMaps(localMap, cloudRows, userId) {
     const mergedMap = Object.assign({}, localMap);
     const rowsToUpload = [];
@@ -1107,133 +917,57 @@ document.addEventListener('DOMContentLoaded', function(){
     };
   }
 
-  async function syncStudyPlanResourceStatuses(options) {
-    const nextOptions = options || {};
-    const force = !!nextOptions.force;
-    if (!isStudyPlanCloudReady()) return { ok: false, skipped: 'cloud-unavailable' };
-    const authUser = await ensureStudyPlanAuthUser();
-    if (!authUser?.id) return { ok: false, skipped: 'guest' };
-    if (!force && resourceStatusSyncPromise) return resourceStatusSyncPromise;
-    if (!force && (Date.now() - getResourceSyncLastTs()) < RESOURCE_STATUS_SYNC_TTL_MS) {
-      debugLog?.debug('sync', 'study-plan-skip', { reason: 'ttl' });
-      return { ok: true, skipped: 'ttl' };
-    }
-
-    resourceStatusSyncPromise = (async function() {
-      try {
-        debugLog?.info('sync', 'study-plan-start', { force: force });
-        const localMap = loadResourceStatuses();
-        const cloudRows = await loadCloudResourceStatuses(authUser.id);
-        const merged = mergeStudyPlanStatusMaps(localMap, cloudRows, authUser.id);
-
-        saveResourceStatuses(merged.mergedMap);
-
-        if (merged.rowsToUpload.length) {
-          await upsertCloudResourceStatuses(merged.rowsToUpload);
-        }
-
-        if (merged.rowsToUpload.length) {
-          const finalCloudRows = await loadCloudResourceStatuses(authUser.id);
-          const finalMap = {};
-          finalCloudRows.forEach(function(row) {
-            const entry = buildResourceStatusEntry(row.status, {
-              updatedAt: row.updated_at || null,
-              skillId: row.skill_id || null,
-              resourceType: row.resource_type || null
-            });
-            if (entry && row.resource_url) {
-              finalMap[row.resource_url] = entry;
-            }
-          });
-          saveResourceStatuses(finalMap);
-        }
-
-        markResourceSyncTs();
-        if (studyPlan && studyPlan.style.display !== 'none') {
-          renderStudyPlan(false);
-        }
-        debugLog?.info('sync', 'study-plan-success', {
-          force: force,
-          localResources: Object.keys(localMap || {}).length,
-          cloudRows: cloudRows.length,
-          rowsToUpload: merged.rowsToUpload.length
-        });
-        return { ok: true };
-      } catch (e) {
-        if (isTransientStudyPlanError(e)) {
-          logStudyPlanSoftIssue('Study plan cloud sync is temporarily unavailable, using local data.', e);
-          debugLog?.info('sync', 'study-plan-local-fallback', {
-            force: force,
-            message: String(e?.message || e || '')
-          });
-          return { ok: false, transient: true, skipped: 'local-fallback', error: e };
-        }
-        console.warn('Study plan status sync failed', e);
-        debugLog?.warn('sync', 'study-plan-failed', {
-          force: force,
-          message: String(e?.message || e || '')
-        });
-        return { ok: false, error: e };
-      } finally {
-        resourceStatusSyncPromise = null;
+  studyPlanSyncController = window.StudyPlanSyncShared?.create({
+    debugLog,
+    resourceStatusTable: RESOURCE_STATUS_TABLE,
+    resourceSyncTtlMs: RESOURCE_STATUS_SYNC_TTL_MS,
+    authSyncCooldownMs: RESOURCE_STATUS_AUTH_SYNC_COOLDOWN_MS,
+    retryBaseDelayMs: STUDY_PLAN_RETRY_BASE_DELAY_MS,
+    softLogTtlMs: STUDY_PLAN_SOFT_LOG_TTL_MS,
+    resourceStatusCloudSyncTsKey: RESOURCE_STATUS_CLOUD_SYNC_TS_KEY,
+    resourceStatusAuthSyncTsKey: RESOURCE_STATUS_AUTH_SYNC_TS_KEY,
+    resourceStatusAuthSyncUserKey: RESOURCE_STATUS_AUTH_SYNC_USER_KEY,
+    getSupabaseStore: () => window.AppSupabase || null,
+    loadLocalMap: loadResourceStatuses,
+    saveLocalMap: saveResourceStatuses,
+    mergeLocalWithCloud: mergeStudyPlanStatusMaps,
+    cloudRowToLocalEntry: (row) => buildResourceStatusEntry(row.status, {
+      updatedAt: row.updated_at || null,
+      skillId: row.skill_id || null,
+      resourceType: row.resource_type || null
+    }),
+    onSyncSuccess: async () => {
+      if (studyPlan && studyPlan.style.display !== 'none') {
+        renderStudyPlan(false);
       }
-    })();
+    },
+    shouldAutoSync: () => localStorage.getItem('showStudyPlan') === 'true',
+    document
+  }) || null;
 
-    return resourceStatusSyncPromise;
+  async function syncStudyPlanResourceStatuses(options) {
+    if (!studyPlanSyncController) return { ok: false, skipped: 'controller-unavailable' };
+    return studyPlanSyncController.syncNow(options || {});
   }
 
   function queueStudyPlanStatusSync(options) {
-    const nextOptions = options || {};
-    if (queuedStudyPlanSyncTimer) {
-      clearTimeout(queuedStudyPlanSyncTimer);
-      queuedStudyPlanSyncTimer = null;
-    }
-    queuedStudyPlanSyncTimer = setTimeout(function() {
-      queuedStudyPlanSyncTimer = null;
-      syncStudyPlanResourceStatuses(nextOptions).catch(function(error) {
-        if (isTransientStudyPlanError(error)) {
-          logStudyPlanSoftIssue('Queued study plan sync skipped due to transient network issue.', error);
-          return;
-        }
-        console.warn('Queued study plan status sync failed', error);
-      });
-    }, 80);
+    if (!studyPlanSyncController) return;
+    studyPlanSyncController.queue(options || {});
   }
 
   function bindStudyPlanCloudSync() {
-    if (resourceStatusAuthSubscriptionBound) return;
-
-    const bindSubscription = function() {
-      const client = window.AppSupabase?.client;
-      if (!client?.auth?.onAuthStateChange || resourceStatusAuthSubscriptionBound) return;
-      resourceStatusAuthSubscriptionBound = true;
-      client.auth.onAuthStateChange(function(event, session) {
-        if (session?.user?.id && shouldRunStudyPlanAuthSync(session.user.id)) {
-          markStudyPlanAuthSync(session.user.id);
-          queueStudyPlanStatusSync({ force: false });
-        }
-      });
-    };
-
-    bindSubscription();
-    [600, 1800, 4000].forEach(function(delay) {
-      setTimeout(function() {
-        bindSubscription();
-      }, delay);
-    });
-
-    document.addEventListener('visibilitychange', function() {
-      if (document.visibilityState === 'visible' && localStorage.getItem('showStudyPlan') === 'true') {
-        queueStudyPlanStatusSync({ force: false });
-      }
-    });
-
-    setInterval(function() {
-      if (document.visibilityState !== 'visible') return;
-      if (localStorage.getItem('showStudyPlan') !== 'true') return;
-      queueStudyPlanStatusSync({ force: false });
-    }, 3 * 60 * 1000);
+    if (!studyPlanSyncController) return;
+    studyPlanSyncController.bind();
   }
+
+  window.StudyPlanCloudSync = {
+    syncNow(options) {
+      return syncStudyPlanResourceStatuses(options || {});
+    },
+    queue(options) {
+      queueStudyPlanStatusSync(options || {});
+    }
+  };
 
   function setCardStatus(card, status) {
     const normalizedStatus = getResourceStatus(status);
