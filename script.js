@@ -1715,7 +1715,7 @@ document.addEventListener('DOMContentLoaded', function () {
             embedSurface.innerHTML = [
             '<div class="tg-preview-fallback">',
             '<h4 class="tg-preview-fallback-title">Не удалось быстро загрузить предпросмотр</h4>',
-            '<p class="tg-preview-fallback-text">Не удалось загрузить пост в предпросмотре. Попробуйте открыть его напрямую.</p>',
+            '<p class="tg-preview-fallback-text">В вашем регионе возможны ограничения.</p>',
             '<a class="tg-preview-fallback-link" href="' + telegramUrl + '" target="_blank" rel="noopener noreferrer">Открыть пост</a>',
             '</div>'
             ].join('');
