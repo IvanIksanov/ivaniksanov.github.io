@@ -1626,7 +1626,9 @@ html[data-theme="dark"] .auth-user-email {
 }
 
 html[data-theme="dark"] .auth-legal-note a:hover {
+  background: transparent;
   color: rgba(220, 231, 255, 0.95);
+  text-decoration-color: rgba(220, 231, 255, 0.34);
 }
 
 html[data-theme="dark"] .auth-close-btn {
