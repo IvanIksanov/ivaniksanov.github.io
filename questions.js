@@ -1,7 +1,14 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const debugLog = window.DebugLog || null;
+  const metrics = window.QAtoDevMetrics || null;
   function logUserAction(event, details = {}) {
     debugLog?.info("user", event, details);
+  }
+  function trackQuestionsGoal(params) {
+    metrics?.reachGoal?.("questions_interaction", params);
+  }
+  function shortenText(value, maxLength = 120) {
+    return String(value || "").replace(/\s+/g, " ").trim().slice(0, maxLength);
   }
   const SCROLL_POS_KEY = "questions_scroll_y_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
@@ -2342,6 +2349,21 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   });
 
   document.addEventListener("click", (event) => {
+    const metricsTarget = event.target instanceof Element ? event.target.closest(".read-link, .author-link") : null;
+    if (metricsTarget) {
+      const questionItem = metricsTarget.closest(".t-item");
+      const questionButton = questionItem?.querySelector(".study-btn, .unclear-btn, .ai-append-btn");
+      const questionTitle = questionItem?.querySelector(".t849__title")?.textContent || "";
+      const categoryTitle = questionItem?.closest(".article")?.querySelector(".category-title")?.textContent || "";
+      trackQuestionsGoal({
+        action: metricsTarget.classList.contains("author-link") ? "author_link_open" : "read_link_open",
+        question_id: questionButton?.getAttribute("data-id") || "",
+        category: shortenText(categoryTitle, 80),
+        question_title: shortenText(questionTitle),
+        link_url: metricsTarget.getAttribute("href") || ""
+      });
+    }
+
     const target = event.target instanceof Element ? event.target.closest([
       "#auth-open-btn",
       "#auth-google-btn",
@@ -2355,12 +2377,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       ".study-btn",
       ".unclear-btn",
       ".t849__trigger-button",
+      ".read-link",
+      ".author-link",
       ".ai-nav-delete",
       ".ai-refine-action",
       ".ai-refine-send",
       ".ai-refine-cancel",
-      ".category-filter-chip",
-      ".bottom-filter-chip"
+      ".filter-chip"
     ].join(",")) : null;
     if (!target) return;
     const questionId = target.getAttribute("data-id") || target.closest("[data-id]")?.getAttribute("data-id") || "";
@@ -4136,6 +4159,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           header.classList.add('studied');
           updateProgress(c, sArr.length, uArr.length, total);
           saveProgressCloud(id, "studied");
+          trackQuestionsGoal({
+            action: "mark_studied",
+            question_id: id,
+            category: c,
+            question_title: shortenText(item.title)
+          });
         }
       });
 
@@ -4155,6 +4184,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           header.classList.add('unclear');
           updateProgress(c, sArr.length, uArr.length, total);
           saveProgressCloud(id, "unclear");
+          trackQuestionsGoal({
+            action: "mark_unclear",
+            question_id: id,
+            category: c,
+            question_title: shortenText(item.title)
+          });
         }
       });
 
@@ -4184,6 +4219,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           header.classList.add("t849__opened");
           openSet.delete(item.id);
           openSet.add(item.id);
+          trackQuestionsGoal({
+            action: "question_open",
+            question_id: item.id,
+            category: cat.category,
+            question_title: shortenText(item.title)
+          });
         }
         safeSetItemWithAiEviction(openKey, JSON.stringify(Array.from(openSet)));
       });
@@ -4418,6 +4459,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         state.pushRuntimeResponse = pushRuntimeResponse;
 
         aiAppendBtn.addEventListener("click", async () => {
+          trackQuestionsGoal({
+            action: "ai_append_request",
+            question_id: item.id,
+            category: cat.category,
+            question_title: shortenText(item.title)
+          });
           aiAppendBtn.disabled = true;
           showHeaderAiNotchProcessing(item.id, { fromPrimaryAiAppend: true });
           const canContinue = await ensureAuthForAiAction();
@@ -4529,6 +4576,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   // --- Поиск/фильтрация ---
+  let searchMetricsTimer = null;
   searchInput.addEventListener("input", () => {
     const term = searchInput.value.trim().toLowerCase();
     const has  = term.length > 0;
@@ -4559,6 +4607,16 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         });
       }
     }
+
+    if (searchMetricsTimer) {
+      clearTimeout(searchMetricsTimer);
+    }
+    searchMetricsTimer = setTimeout(() => {
+      trackQuestionsGoal({
+        action: term ? "search" : "search_clear",
+        term_length: term.length
+      });
+    }, 500);
   });
 
   clearBtn.addEventListener("click", () => {
@@ -4772,6 +4830,25 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   }
+
+  categoryFilters.addEventListener('click', (event) => {
+    const chip = event.target.closest('.filter-chip');
+    if (!chip) return;
+    trackQuestionsGoal({
+      action: 'category_filter',
+      category: chip.dataset.category || ''
+    });
+  });
+
+  categoryFiltersBottom?.addEventListener('click', (event) => {
+    const chip = event.target.closest('.filter-chip');
+    if (!chip) return;
+    trackQuestionsGoal({
+      action: 'category_filter',
+      category: chip.dataset.category || '',
+      placement: 'bottom'
+    });
+  });
 
   // Восстановление состояния после полной загрузки
   function restoreFilterState() {

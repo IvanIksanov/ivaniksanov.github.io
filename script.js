@@ -4,6 +4,13 @@
  ***********************/
 document.addEventListener('DOMContentLoaded', function(){
   const debugLog = window.DebugLog || null;
+  const metrics = window.QAtoDevMetrics || null;
+  function trackMainGoal(goalId, params) {
+    metrics?.reachGoal?.(goalId, params);
+  }
+  function getSkillLabel(skill) {
+    return skill?.childNodes?.[0]?.textContent?.trim() || skill?.textContent?.trim() || '';
+  }
   // Массив для хранения выбранных навыков
   let selectedSkills = [];
   const STUDY_PLAN_AUTH_BYPASS_KEY = 'study_plan_guest_auth_bypass_v1';
@@ -91,6 +98,8 @@ document.addEventListener('DOMContentLoaded', function(){
   skillLinks.forEach(function(skill){
     skill.addEventListener('click', function(e){
       e.preventDefault();
+      const skillId = skill.getAttribute('data-skill-id') || '';
+      const skillName = getSkillLabel(skill);
       if (skill.classList.contains('selected')) {
         // Если навык уже выбран, снимаем выбор
         skill.classList.remove('selected');
@@ -103,11 +112,23 @@ document.addEventListener('DOMContentLoaded', function(){
         }
         updateCounters();
         updateSelectedSkillsStorage();
+        trackMainGoal('skill_constructor_interaction', {
+          action: 'skill_unselect',
+          skill_id: skillId,
+          skill_name: skillName,
+          selected_count: selectedSkills.length
+        });
       } else {
         skill.classList.add('selected');
         selectedSkills.push(skill);
         updateCounters();
         updateSelectedSkillsStorage();
+        trackMainGoal('skill_constructor_interaction', {
+          action: 'skill_select',
+          skill_id: skillId,
+          skill_name: skillName,
+          selected_count: selectedSkills.length
+        });
       }
     });
   });
@@ -393,6 +414,11 @@ document.addEventListener('DOMContentLoaded', function(){
       chip.addEventListener('click', function() {
         chip.classList.toggle('is-disabled');
         applyPlanFilters();
+        trackMainGoal('study_plan_interaction', {
+          action: 'resource_filter_toggle',
+          filter_type: chip.dataset.type || '',
+          enabled: !chip.classList.contains('is-disabled')
+        });
       });
     });
     syncResetPlanFiltersButton();
@@ -401,12 +427,18 @@ document.addEventListener('DOMContentLoaded', function(){
   if (clearPlanFiltersButton) {
     clearPlanFiltersButton.addEventListener('click', function() {
       clearSelectedSkills();
+      trackMainGoal('skill_constructor_interaction', {
+        action: 'selection_clear'
+      });
     });
   }
 
   if (resetPlanFiltersButton) {
     resetPlanFiltersButton.addEventListener('click', function() {
       resetPlanFilterChips();
+      trackMainGoal('study_plan_interaction', {
+        action: 'resource_filters_reset'
+      });
     });
   }
 
@@ -426,6 +458,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
       setSelectedSkillsByIds(trackSkillIds);
       closeTrackModal();
+      trackMainGoal('skill_constructor_interaction', {
+        action: 'preset_apply',
+        preset_id: trackTrigger.dataset.trackId || '',
+        selected_count: trackSkillIds.length
+      });
 
       const allowed = await ensureAuthBeforeStudyPlan();
       if (!allowed) return;
@@ -479,12 +516,23 @@ document.addEventListener('DOMContentLoaded', function(){
 
   getPlanButton.addEventListener('click', async function(){
     if(selectedSkills.length === 0){
+      trackMainGoal('skill_constructor_interaction', {
+        action: 'preset_modal_open'
+      });
       openTrackModal();
       return;
     }
     const allowed = await ensureAuthBeforeStudyPlan();
     if (!allowed) return;
     showStudyPlan({ shouldScroll: true });
+    trackMainGoal('skill_constructor_interaction', {
+      action: 'study_plan_open',
+      selected_count: selectedSkills.length,
+      selected_skills: selectedSkills
+        .map(function(skill) { return skill.getAttribute('data-skill-id') || ''; })
+        .filter(Boolean)
+        .slice(0, 10)
+    });
   });
 
   function renderStudyPlan(shouldScroll) {
@@ -587,6 +635,16 @@ document.addEventListener('DOMContentLoaded', function(){
           if (!savedStatus) {
             updateCardStatus('opened');
           }
+          trackMainGoal('study_plan_interaction', {
+            action: 'resource_open',
+            skill_id: skillId,
+            skill_name: skillName,
+            resource_type: typeLabel,
+            resource_host: parsed.displayHost || '',
+            resource_path: parsed.pathname || '',
+            resource_index: index + 1,
+            resource_status: savedStatus || 'opened'
+          });
           window.open(url, '_blank', 'noopener,noreferrer');
         }
 
@@ -598,6 +656,15 @@ document.addEventListener('DOMContentLoaded', function(){
             resourceType: typeLabel
           });
           syncCardIndicator(card, statusButton, getResourceStatus(nextEntry));
+          trackMainGoal('study_plan_interaction', {
+            action: 'resource_status_change',
+            skill_id: skillId,
+            skill_name: skillName,
+            resource_type: typeLabel,
+            resource_host: parsed.displayHost || '',
+            resource_index: index + 1,
+            next_status: normalizedStatus
+          });
         }
 
         syncCardIndicator(card, statusButton, currentStatus);
@@ -1432,6 +1499,7 @@ document.addEventListener("DOMContentLoaded", function() {
 document.addEventListener('DOMContentLoaded', function () {
     const carousel = document.querySelector('#practice-covers .carousel');
     if (!carousel) return;
+    const metrics = window.QAtoDevMetrics || null;
     const items = Array.from(carousel.querySelectorAll('.carousel-images .carousel-item'));
     if (!items.length) return;
     const prevBtn = carousel.querySelector('#prev');
@@ -1442,6 +1510,22 @@ document.addEventListener('DOMContentLoaded', function () {
     let autoRotateId = null;
     let isSliding = false;
     const slideDurationMs = 560;
+
+    function trackCarousel(params) {
+        metrics?.reachGoal?.('main_carousel_interaction', params);
+    }
+
+    function getSlideMeta(item, index) {
+        const link = item?.querySelector('.skills-cover-link, .skills-cover-cta');
+        const title = item?.querySelector('.skills-cover-title')?.textContent?.trim()
+            || item?.querySelector('.skills-cover-img')?.getAttribute('alt')
+            || '';
+        return {
+            slide_index: index + 1,
+            slide_title: title,
+            slide_href: link?.getAttribute('href') || ''
+        };
+    }
 
     function wrapIndex(index) {
         const len = items.length;
@@ -1500,13 +1584,33 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     prevBtn.addEventListener('click', function() {
+        const fromMeta = getSlideMeta(items[currentIndex], currentIndex);
         goTo(currentIndex - 1);
         startAutoRotate();
+        const toIndex = wrapIndex(currentIndex);
+        const toMeta = getSlideMeta(items[toIndex], toIndex);
+        trackCarousel({
+            action: 'nav_prev',
+            from_slide_index: fromMeta.slide_index,
+            from_slide_title: fromMeta.slide_title,
+            to_slide_index: toMeta.slide_index,
+            to_slide_title: toMeta.slide_title
+        });
     });
 
     nextBtn.addEventListener('click', function() {
+        const fromMeta = getSlideMeta(items[currentIndex], currentIndex);
         goTo(currentIndex + 1);
         startAutoRotate();
+        const toIndex = wrapIndex(currentIndex);
+        const toMeta = getSlideMeta(items[toIndex], toIndex);
+        trackCarousel({
+            action: 'nav_next',
+            from_slide_index: fromMeta.slide_index,
+            from_slide_title: fromMeta.slide_title,
+            to_slide_index: toMeta.slide_index,
+            to_slide_title: toMeta.slide_title
+        });
     });
 
     carousel.addEventListener('click', function (event) {
@@ -1515,12 +1619,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const item = clickedLink.closest('.carousel-item');
         if (!item) return;
+        const itemIndex = items.indexOf(item);
+        const meta = getSlideMeta(item, itemIndex);
+        const isCta = clickedLink.classList.contains('skills-cover-cta');
 
         if (item.classList.contains('prev')) {
             event.preventDefault();
             event.stopPropagation();
             goTo(currentIndex - 1);
             startAutoRotate();
+            trackCarousel({
+                action: 'side_slide_prev',
+                click_type: isCta ? 'cta' : 'cover',
+                slide_index: meta.slide_index,
+                slide_title: meta.slide_title
+            });
             return;
         }
 
@@ -1529,7 +1642,22 @@ document.addEventListener('DOMContentLoaded', function () {
             event.stopPropagation();
             goTo(currentIndex + 1);
             startAutoRotate();
+            trackCarousel({
+                action: 'side_slide_next',
+                click_type: isCta ? 'cta' : 'cover',
+                slide_index: meta.slide_index,
+                slide_title: meta.slide_title
+            });
+            return;
         }
+
+        trackCarousel({
+            action: 'slide_open',
+            click_type: isCta ? 'cta' : 'cover',
+            slide_index: meta.slide_index,
+            slide_title: meta.slide_title,
+            slide_href: meta.slide_href
+        });
     }, true);
 
     // Изначально показываем первое изображение без анимации
