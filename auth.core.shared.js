@@ -895,13 +895,15 @@
     function persistPendingProfileSelection() {
       const track = (dom.authTrackSelect?.value || "").trim();
       const grade = (dom.authGradeSelect?.value || "").trim();
+      const email = (dom.authEmailInput?.value || "").trim();
       const current = readPendingProfile() || {};
-      if (!track && !grade && !current?.email) {
+      if (!track && !grade && !email && !current?.email) {
         clearPendingProfile();
         return;
       }
       writePendingProfile({
         ...current,
+        email: email || current?.email || "",
         track: track || current?.track || "",
         grade: grade || current?.grade || "",
         ts: Date.now()
@@ -919,6 +921,8 @@
         const pending = readPendingProfile();
         if (dom.authTrackSelect && pending?.track) dom.authTrackSelect.value = pending.track;
         if (dom.authGradeSelect && pending?.grade) dom.authGradeSelect.value = pending.grade;
+        if (dom.authEmailInput) dom.authEmailInput.value = pending?.email || "";
+        if (pending?.email) setEmailLoginExpanded(true);
       }
       syncSelectChipUi();
       if (!startChecking) {
@@ -1160,6 +1164,7 @@
           if (dom.authEmailError?.textContent) {
             setEmailError("");
           }
+          persistPendingProfileSelection();
         });
       }
 
