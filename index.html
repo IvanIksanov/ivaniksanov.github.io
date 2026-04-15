@@ -159,25 +159,102 @@
             </div>
         </div>
 
-        <div class="article">
-            <h2>Тренажеры по тестированию</h2>
-            <div class="tg-links-grid">
-                <a href="pageBooks.html" class="tg-card" style="--hover-color: #3091FF;">
-                    <h3 class="tg-title">Книжная полка</h3>
-                    <p class="tg-subtitle">Протестировать по чек-листу страницу с книгами.</p>
+        <div class="article" id="qa-mini-trainers">
+            <div class="qa-mini-trainers__head">
+                <h2>Мини-тренажеры для QA</h2>
+                <p>4 мини-тренажера, чтобы прокачать внимательность, UI, логику и API на практике.</p>
+            </div>
+
+            <div class="qa-mini-trainers__layout" aria-label="Мини-тренажеры для QA">
+                <a
+                    href="loginSandbox.html"
+                    class="qa-trainer-card qa-trainer-card--featured qa-trainer-card--login"
+                    aria-label="Login Sandbox. Проверить форму логина"
+                >
+                    <div class="qa-trainer-card__media">
+                        <img src="img/cover/login_poster.webp" alt="Login Sandbox" loading="lazy">
+                        <span class="qa-trainer-card__level">Junior</span>
+                    </div>
+                    <div class="qa-trainer-card__body">
+                        <h3>Login-тренажер</h3>
+                        <p>Проверь форму логина: позитивные, негативные сценарии и валидацию полей.</p>
+                        <div class="qa-trainer-card__meta" aria-label="Тема и время прохождения">
+                            <span class="qa-trainer-card__chip qa-trainer-card__chip--ui">UI/UX</span>
+                            <span class="qa-trainer-card__chip qa-trainer-card__chip--devtools qa-trainer-card__chip--wide">DevTools</span>
+                            <span class="qa-trainer-card__time">5 мин</span>
+                        </div>
+                        <span class="qa-trainer-card__cta">Проверить</span>
+                    </div>
                 </a>
-                <a href="flappy.html" class="tg-card" style="--hover-color: #00FF62;">
-                    <h3 class="tg-title">Flappy Bird</h3>
-                    <p class="tg-subtitle">Игра с багами. Отточить навыки тест-дизайна и наблюдательности.</p>
-                </a>
-                <a href="loginSandbox.html" class="tg-card" style="--hover-color: #FF82F2;">
-                    <h3 class="tg-title">Login Sandbox</h3>
-                    <p class="tg-subtitle">Проверка формы логина: позитивные и негативные сценарии по чек-листу.</p>
-                </a>
-                <a href="swagger_api.html" class="tg-card" style="--hover-color: #FFB35D;">
-                    <h3 class="tg-title">Swagger тренажер</h3>
-                    <p class="tg-subtitle">Практика по API. Пройди задания по отправке запросов и ответов.</p>
-                </a>
+
+                <div class="qa-mini-trainers__side">
+                    <a
+                        href="flappy.html"
+                        class="qa-trainer-card qa-trainer-card--flappy"
+                        aria-label="Flappy Bird с багами. Играть и тестировать"
+                    >
+                        <div class="qa-trainer-card__media">
+                            <img src="img/cover/flappy_poster.webp" alt="Flappy Bird с багами" loading="lazy">
+                            <span class="qa-trainer-card__level">Junior</span>
+                        </div>
+                        <div class="qa-trainer-card__body">
+                            <h3>
+                                <span class="qa-trainer-card__title-full">Flappy Bird с багами</span>
+                                <span class="qa-trainer-card__title-short" aria-hidden="true">Flappy</span>
+                            </h3>
+                            <div class="qa-trainer-card__meta" aria-label="Тема и время прохождения">
+                                <span class="qa-trainer-card__chip qa-trainer-card__chip--game">Web-game</span>
+                                <span class="qa-trainer-card__time">5-10 мин</span>
+                            </div>
+                            <span class="qa-trainer-card__cta">Играть</span>
+                        </div>
+                    </a>
+
+                    <a
+                        href="pageBooks.html"
+                        class="qa-trainer-card qa-trainer-card--books"
+                        aria-label="Книжная полка. Начать практику"
+                    >
+                        <div class="qa-trainer-card__media">
+                            <img src="img/cover/book_poster.webp" alt="Книжная полка" loading="lazy">
+                            <span class="qa-trainer-card__level">Junior</span>
+                        </div>
+                        <div class="qa-trainer-card__body">
+                            <h3>
+                                <span class="qa-trainer-card__title-full">Книжная полка</span>
+                                <span class="qa-trainer-card__title-short" aria-hidden="true">Полка</span>
+                            </h3>
+                            <div class="qa-trainer-card__meta" aria-label="Тема и время прохождения">
+                                <span class="qa-trainer-card__chip qa-trainer-card__chip--ui">UI/UX</span>
+                                <span class="qa-trainer-card__time">10-15 мин</span>
+                            </div>
+                            <span class="qa-trainer-card__cta">Начать</span>
+                        </div>
+                    </a>
+
+                    <a
+                        href="swagger_api.html"
+                        class="qa-trainer-card qa-trainer-card--swagger"
+                        aria-label="Swagger тренажер. Открыть API практику"
+                    >
+                        <div class="qa-trainer-card__media">
+                            <img src="img/cover/magic_poster.webp" alt="Swagger тренажер" loading="lazy">
+                            <span class="qa-trainer-card__level">Junior+</span>
+                        </div>
+                        <div class="qa-trainer-card__body">
+                            <h3>
+                                <span class="qa-trainer-card__title-full">Swagger тренажер</span>
+                                <span class="qa-trainer-card__title-short" aria-hidden="true">Swagger</span>
+                            </h3>
+                            <div class="qa-trainer-card__meta" aria-label="Тема и время прохождения">
+                                <span class="qa-trainer-card__chip qa-trainer-card__chip--api">API</span>
+                                <span class="qa-trainer-card__chip qa-trainer-card__chip--postman qa-trainer-card__chip--wide">Postman</span>
+                                <span class="qa-trainer-card__time">10-15 мин</span>
+                            </div>
+                            <span class="qa-trainer-card__cta">GET</span>
+                        </div>
+                    </a>
+                </div>
             </div>
         </div>
     </section>
