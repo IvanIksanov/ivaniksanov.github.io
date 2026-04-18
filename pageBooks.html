@@ -43,6 +43,9 @@
         };
     </script>
     <script src="trainer-welcome.js" defer></script>
+    <script src="over/answer.data.js"></script>
+    <script src="over/answer_testing.data.js"></script>
+    <script src="over/answer_team.data.js"></script>
 
     <script src="metrika.shared.js"></script>
 </head>
@@ -322,7 +325,7 @@
             <button id="tab-programming" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-books">Программирование</button>
             <button id="tab-testing" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Тестирование</button>
             <button id="tab-team" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Команда</button>
-            <button id="tab-favorites" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Избранное️</button>
+            <button id="tab-favorites" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Избранное</button>
         </div>
         <script>
             (function () {
@@ -462,6 +465,10 @@
         <div class="books-qa-grid">
             <section class="books-qa-block">
                 <div id="books-checklist" class="books-checklist-groups"></div>
+                <div class="books-checklist-actions">
+                    <button id="books-checklist-verify" class="books-action" type="button">Проверить регресс</button>
+                </div>
+                <p id="books-checklist-feedback" class="books-checklist-feedback" aria-live="polite"></p>
             </section>
         </div>
     </div>
@@ -586,6 +593,8 @@
       const API_URL_TEAM  = './over/answer_team.json';     // Команда
       // Внешний API с новинками (входит в агрегированную вкладку «Все»)
       const API_URL_NEW   = 'https://api.litres.ru/foundation/api/arts/facets?languages=ru&limit=30&o=new';
+      const IS_FILE_PROTOCOL = location.protocol === 'file:';
+      const LOCAL_BOOKS_DATA = window.__BOOKS_DATA__ || {};
       const API_NEW_HEADERS = {
         'accept': 'application/json, text/plain, */*',
         'accept-version': '2',
@@ -612,7 +621,7 @@
         { api: API_URL },
         { api: API_URL_TEST },
         { api: API_URL_TEAM },
-        { api: API_URL_NEW, requestHeaders: API_NEW_HEADERS }
+        ...(!IS_FILE_PROTOCOL ? [{ api: API_URL_NEW, requestHeaders: API_NEW_HEADERS }] : [])
       ];
 
       /*** DOM элементы ***/
@@ -681,7 +690,8 @@
 
       /* Глобальное хранилище избранных карточек, чтобы вкладка «Избранное» знала о лайках из любых разделов */
       const LS_FAV_STORE = 'books_fav_items'; // объект: { [id]: {id,title,url,cover_url,persons} }
-      const LS_CHECKLIST_DONE = 'books_checklist_done';
+      const LS_CHECKLIST_ANSWERS = 'books_checklist_answers_v2';
+      const LS_CHECKLIST_VERIFIED = 'books_checklist_verified_v2';
 
       function readFavStore() {
         try {
@@ -704,15 +714,27 @@
       function writeFavorites(keys, set) {
         try { localStorage.setItem(keys.FAVES, JSON.stringify([...set])); } catch {}
       }
-      function readChecklistDone() {
+      function readChecklistAnswers() {
         try {
-          const raw = localStorage.getItem(LS_CHECKLIST_DONE);
-          const arr = raw ? JSON.parse(raw) : [];
-          return new Set(Array.isArray(arr) ? arr : []);
-        } catch { return new Set(); }
+          const raw = localStorage.getItem(LS_CHECKLIST_ANSWERS);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch { return {}; }
       }
-      function writeChecklistDone(set) {
-        try { localStorage.setItem(LS_CHECKLIST_DONE, JSON.stringify([...set])); } catch {}
+      function writeChecklistAnswers(map) {
+        try { localStorage.setItem(LS_CHECKLIST_ANSWERS, JSON.stringify(map)); } catch {}
+      }
+      function readChecklistVerified() {
+        return localStorage.getItem(LS_CHECKLIST_VERIFIED) === '1';
+      }
+      function writeChecklistVerified(verified) {
+        try {
+          if (verified) {
+            localStorage.setItem(LS_CHECKLIST_VERIFIED, '1');
+          } else {
+            localStorage.removeItem(LS_CHECKLIST_VERIFIED);
+          }
+        } catch {}
       }
       /*** Утилиты ***/
       function getAuthorSummary(persons) {
@@ -756,7 +778,24 @@
         return Number.isFinite(value) ? value : 0;
       }
 
+      function extractItemsFromPayload(json) {
+        let items = json?.payload?.data;
+        if (!Array.isArray(items)) {
+          items = json?.payload?.items || json?.data || json?.items || json?.result?.items || [];
+        }
+        return Array.isArray(items) ? items : [];
+      }
+
       async function fetchBooksFromApi(url, requestHeaders) {
+        if (LOCAL_BOOKS_DATA[url]) {
+          return extractItemsFromPayload(LOCAL_BOOKS_DATA[url]);
+        }
+        if (IS_FILE_PROTOCOL && !/^https?:\/\//i.test(url)) {
+          throw new Error('Локальные данные не предзагружены для режима file://');
+        }
+        if (IS_FILE_PROTOCOL && /^https?:\/\//i.test(url)) {
+          throw new Error('Внешний API недоступен при открытии страницы через file://');
+        }
         const baseHeaders = { 'Accept': 'application/json' };
         const headers = Object.assign({}, baseHeaders, requestHeaders || {});
         const resp = await fetch(url, {
@@ -767,11 +806,7 @@
         });
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const json = await resp.json();
-        let items = json?.payload?.data;
-        if (!Array.isArray(items)) {
-          items = json?.payload?.items || json?.data || json?.items || json?.result?.items || [];
-        }
-        return Array.isArray(items) ? items : [];
+        return extractItemsFromPayload(json);
       }
 
       function formatPrice(art) {
@@ -1075,35 +1110,260 @@
         };
       }
 
-      function renderChecklistGroups(groups) {
+      const CHECKLIST_GROUPS = [
+        {
+          title: 'Вкладки:',
+          items: [
+            { text: 'Проверить адаптивность хэддера (объединение/разделение) при разной ширине страницы', expected: true },
+            { text: 'Заголовок соответствует выбранной вкладке: Все = Все книги', expected: true },
+            { text: 'Заголовок соответствует вкладке: Программирование = Книги по программированию', expected: true },
+            { text: 'Заголовок соответствует вкладке: Тестирование = Книги по тестированию', expected: true },
+            { text: 'Заголовок соответствует вкладке: Команда = Книги по лидерству', expected: true },
+            { text: 'Заголовок соответствует вкладке: Избранное = Любимые книги', expected: false },
+            { text: 'При открытии страницы вкладка по умолчанию - Тестирование', expected: false },
+            { text: 'При открытии страницы повторно отображается ранее выбранная вкладка по умолчанию', expected: true },
+            { text: 'Вкладки расположены по ширине страницы', expected: true },
+            { text: 'Текст не заезжает за края вкладок', expected: true }
+          ]
+        },
+        {
+          title: 'Поиск:',
+          items: [
+            { text: 'По умолчанию на странице отображается инпут поиска и кнопка фильтры на всю ширину страницы', expected: true },
+            { text: 'Плейсхолдер в инпуте поиска: "Название, автор или URL"', expected: false },
+            { text: 'При переходе между вкладками параметры поиска сохраняются', expected: true },
+            { text: 'При вводе первого символа пропадает плейсхолдер', expected: true },
+            { text: 'При вводе первого символа отображается кнопка-крестик', expected: true },
+            { text: 'Кнопка-крестик при нажатии очищает только поле ввода поиска', expected: true }
+          ]
+        },
+        {
+          title: 'Фильтры:',
+          items: [
+            { text: 'При нажатии на кнопку Фильтры появляются плашки фильтрации и кнопка "Сбросить"', expected: true },
+            { text: 'При нажатии на кнопку Фильтры - кнопка переименовывается в "Скрыть"', expected: true },
+            { text: 'При скрытии блока фильтров система не отменяет поиск/сортировку/фильтрацию', expected: true },
+            { text: 'Название каждой плашки отображается в формате плейсхолдера', expected: true },
+            { text: 'При нажатии на плашку раскрывается значение каждого фильтра', expected: true },
+            { text: 'При выборе значения - значение отображается вместо наименования плашки + кнопка-крестик', expected: true },
+            { text: 'Кнопка-крестик сбрасывает ранее выбранное значение фильтра', expected: true },
+            { text: 'Кнопка "Сбросить" сбрасывает полностью только фильтрацию', expected: false },
+            { text: 'Поиск и фильтрация сортируют вместе, а не по отдельности', expected: true },
+            { text: 'Порядок отображения плашек: Цена, Возраст, Рейтинг, Бейдж, Тип, Сортировка.', expected: false }
+          ]
+        },
+        {
+          title: 'Сетка:',
+          items: [
+            { text: 'В сетке вмещается максимально 6 книг в ряд', expected: true },
+            { text: 'При уменьшении ширины максимальное кол-во книг в ряду уменьшается', expected: true },
+            { text: 'Минимальное отображение 1 книга в ряд', expected: true },
+            { text: 'Максимальное отображение 6 книг в ряд', expected: true },
+            { text: 'Размер карточек не увеличивается по ширине, если в ряду не добирается максимум', expected: true }
+          ]
+        },
+        {
+          title: 'Карточка:',
+          items: [
+            { text: 'Карточка содержит в себе Обложку, Наименование, Автор, Категории', expected: true },
+            { text: 'Обложка в каждой карточке имеет одинаковый размер', expected: false },
+            { text: 'Обложка подтягивается с бэка при обновлении страницы', expected: true },
+            { text: 'Длинное наименование скрывается под эллипсисом (многоточие)', expected: true },
+            { text: 'При наведении курсором на наименование - цветной hover', expected: true },
+            { text: 'При нажатии на карточку - отображается Инспектор книги', expected: true },
+            { text: 'При нажатии на наименование - переход на литрес', expected: true },
+            { text: 'Ссылка литрес отображает выбранную книгу', expected: true },
+            { text: 'При нажатии на иконку Лайк - книга попадает во вкладку Избранное', expected: true },
+            { text: 'Если более одного автора отображается первый в списке и "+1"', expected: true },
+            { text: '"+1" - цифра отображает кол-во авторов, которых не отобразили в карточке', expected: true }
+          ]
+        }
+      ];
+
+      function getChecklistItemId(groupTitle, text) {
+        return `${groupTitle}:${text}`;
+      }
+
+      function getChecklistStats(groups = CHECKLIST_GROUPS) {
+        const answers = readChecklistAnswers();
+        let total = 0;
+        let answered = 0;
+        let correct = 0;
+        groups.forEach((group) => {
+          group.items.forEach((item) => {
+            total += 1;
+            const itemId = getChecklistItemId(group.title, item.text);
+            if (typeof answers[itemId] === 'boolean') {
+              answered += 1;
+              if (answers[itemId] === item.expected) correct += 1;
+            }
+          });
+        });
+        return { total, answered, correct };
+      }
+
+      function renderChecklistGroups(groups, options = {}) {
         if (!checklistEl) return;
-        const doneSet = readChecklistDone();
+        const { animateBadges = false } = options;
+        const answers = readChecklistAnswers();
+        const verified = readChecklistVerified();
         checklistEl.innerHTML = '';
-        groups.forEach((group, groupIndex) => {
+        groups.forEach((group) => {
           const section = document.createElement('section');
           section.className = 'books-checklist-group';
           const title = document.createElement('h5');
           title.textContent = group.title;
           const list = document.createElement('ul');
-          group.items.forEach((text, itemIndex) => {
-            const checkId = `${group.title}:${text}`;
+          group.items.forEach((item) => {
+            const checkId = getChecklistItemId(group.title, item.text);
+            const answer = answers[checkId];
             const li = document.createElement('li');
-            const label = document.createElement('label');
-            const checkbox = document.createElement('input');
-            const span = document.createElement('span');
-            checkbox.type = 'checkbox';
-            checkbox.checked = doneSet.has(checkId);
-            checkbox.dataset.checkId = checkId;
-            span.textContent = text;
-            label.appendChild(checkbox);
-            label.appendChild(span);
-            li.appendChild(label);
+            li.className = 'books-checklist-item';
+            li.dataset.checkId = checkId;
+            const row = document.createElement('div');
+            row.className = 'books-checklist-row';
+            const text = document.createElement('span');
+            text.className = 'books-checklist-text';
+            text.textContent = item.text;
+
+            const controls = document.createElement('div');
+            controls.className = 'books-checklist-controls';
+
+            [true, false].forEach((value) => {
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.className = 'books-checklist-answer';
+              if (answer === value) button.classList.add('is-selected');
+              button.dataset.checkId = checkId;
+              button.dataset.answer = String(value);
+              button.setAttribute('aria-pressed', answer === value ? 'true' : 'false');
+              button.textContent = value ? 'Passed' : 'Failed';
+              controls.appendChild(button);
+            });
+
+            row.appendChild(text);
+            row.appendChild(controls);
+            li.appendChild(row);
+
+            if (verified && typeof answer === 'boolean') {
+              const badge = document.createElement('span');
+              badge.className = 'books-checklist-badge';
+              const isCorrect = answer === item.expected;
+              badge.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+              badge.textContent = isCorrect ? 'Верно' : 'Неверно';
+              li.appendChild(badge);
+              if (animateBadges) {
+                requestAnimationFrame(() => badge.classList.add('is-visible'));
+              } else {
+                badge.classList.add('is-visible', 'is-static');
+              }
+            }
+
             list.appendChild(li);
           });
           section.appendChild(title);
           section.appendChild(list);
           checklistEl.appendChild(section);
         });
+      }
+
+      function rerenderChecklist(options = {}) {
+        renderChecklistGroups(CHECKLIST_GROUPS, options);
+      }
+
+      function updateChecklistBadges({ animateBadges = false } = {}) {
+        if (!checklistEl) return;
+        const container = qaHubBodyEl || qaPanelEl || checklistEl;
+        const answers = readChecklistAnswers();
+        const verified = readChecklistVerified();
+        const containerRect = container.getBoundingClientRect();
+        const checklistItems = Array.from(checklistEl.querySelectorAll('.books-checklist-item[data-check-id]'));
+        const anchorItem = checklistItems.find((itemEl) => itemEl.getBoundingClientRect().bottom > containerRect.top);
+        const anchorId = anchorItem?.dataset.checkId || null;
+        const anchorOffset = anchorItem ? (anchorItem.getBoundingClientRect().top - containerRect.top) : 0;
+
+        CHECKLIST_GROUPS.forEach((group) => {
+          group.items.forEach((item) => {
+            const checkId = getChecklistItemId(group.title, item.text);
+            const li = checklistEl.querySelector(`.books-checklist-item[data-check-id="${CSS.escape(checkId)}"]`);
+            if (!li) return;
+
+            const existingBadge = li.querySelector('.books-checklist-badge');
+            const answer = answers[checkId];
+
+            if (!verified || typeof answer !== 'boolean') {
+              existingBadge?.remove();
+              return;
+            }
+
+            const isCorrect = answer === item.expected;
+            const badge = existingBadge || document.createElement('span');
+            badge.className = 'books-checklist-badge';
+            badge.classList.add(isCorrect ? 'is-correct' : 'is-wrong');
+            badge.textContent = isCorrect ? 'Верно' : 'Неверно';
+            if (!existingBadge) {
+              li.appendChild(badge);
+            }
+
+            if (animateBadges) {
+              badge.classList.remove('is-static', 'is-visible');
+              requestAnimationFrame(() => badge.classList.add('is-visible'));
+            } else {
+              badge.classList.add('is-visible', 'is-static');
+            }
+          });
+        });
+
+        if (anchorId) {
+          const restoreViewport = () => {
+            const nextAnchor = checklistEl.querySelector(`.books-checklist-item[data-check-id="${CSS.escape(anchorId)}"]`);
+            if (!nextAnchor) return;
+            const nextOffset = nextAnchor.getBoundingClientRect().top - container.getBoundingClientRect().top;
+            container.scrollTop += (nextOffset - anchorOffset);
+          };
+          restoreViewport();
+          requestAnimationFrame(restoreViewport);
+        }
+      }
+
+      function getVerifyButton() {
+        return document.getElementById('books-checklist-verify');
+      }
+
+      function blurVerifyButton() {
+        const verifyBtn = getVerifyButton();
+        if (verifyBtn && document.activeElement === verifyBtn) {
+          verifyBtn.blur();
+        }
+      }
+
+      function updateChecklistFeedback() {
+        const feedbackEl = document.getElementById('books-checklist-feedback');
+        const verifyBtn = getVerifyButton();
+        if (!feedbackEl) return;
+        const { total, answered, correct } = getChecklistStats();
+        const ratio = total ? (correct / total) : 0;
+        if (verifyBtn) {
+          verifyBtn.style.setProperty('--checklist-correct-width', `${Math.max(0, Math.min(100, ratio * 100))}%`);
+        }
+        if (!readChecklistVerified()) {
+          verifyBtn?.classList.remove('is-verified');
+          if (verifyBtn) verifyBtn.textContent = 'Проверить регресс';
+          feedbackEl.textContent = answered
+            ? `Ответы выбраны: ${answered} из ${total}.`
+            : 'Выбери Passed или Failed для каждого пункта.';
+          return;
+        }
+        verifyBtn?.classList.add('is-verified');
+        if (verifyBtn) verifyBtn.textContent = 'Результат регресса';
+        feedbackEl.textContent = `Корректность выбора: ${correct} из ${total}. Ответов заполнено: ${answered} из ${total}.`;
+      }
+
+      function verifyChecklist() {
+        blurVerifyButton();
+        writeChecklistVerified(true);
+        updateChecklistBadges({ animateBadges: true });
+        updateChecklistFeedback();
       }
 
       function setQaHubTab(tab) {
@@ -1224,86 +1484,8 @@
         if (qaSummaryEl) {
           qaSummaryEl.textContent = `Проверь страницу по составленному чек-листу:`;
         }
-        if (checklistEl && checklistEl.dataset.rendered !== '1') {
-          renderChecklistGroups([
-            {
-              title: 'Классы эквивалентности',
-              items: [
-                'Проверить цену: бесплатно.',
-                'Проверить цену: до 100.',
-                'Проверить цену: 100-500.',
-                'Проверить цену: 500+.',
-                'Проверить цену: без цены.',
-                'Проверить возраст: 0+.',
-                'Проверить возраст: 12+.',
-                'Проверить возраст: 16+.',
-                'Проверить возраст: 18+.'
-              ]
-            },
-            {
-              title: 'Граничные значения',
-              items: [
-                'Проверить цену около 0.',
-                'Проверить цену около 100.',
-                'Проверить цену около 500.',
-                'Проверить рейтинг 0.',
-                'Проверить рейтинг 4.',
-                'Проверить рейтинг 4.5.',
-                'Проверить рейтинг 5.',
-                'Проверить ширину 385px без горизонтального скролла.'
-              ]
-            },
-            {
-              title: 'Таблица принятия решений',
-              items: [
-                'Проверить поиск + фильтр цены + сортировку.',
-                'Проверить поиск + фильтр рейтинга + пустой результат.',
-                'Проверить проблемные данные + вкладку избранного.',
-                'Проверить добавление в избранное при активном фильтре.',
-                'Проверить удаление из избранного при активном фильтре.',
-                'Проверить сохранение избранного после перезагрузки.'
-              ]
-            },
-            {
-              title: 'Попарное тестирование',
-              items: [
-                'Проверить вкладка + тема.',
-                'Проверить вкладка + поиск.',
-                'Проверить вкладка + фильтр цены.',
-                'Проверить вкладка + фильтр рейтинга.',
-                'Проверить сортировка + тестовый сценарий.',
-                'Проверить проблемные данные + тестовый сценарий.'
-              ]
-            },
-            {
-              title: 'Негативные сценарии',
-              items: [
-                'Проверить сценарий: пустой ответ.',
-                'Проверить сценарий: ошибка загрузки.',
-                'Проверить сценарий: медленная загрузка.',
-                'Проверить сценарий: длинное название.',
-                'Проверить сценарий: нет автора.',
-                'Проверить сценарий: нет обложки.',
-                'Проверить сценарий: дубль книги.',
-                'Проверить сценарий: нет цены.'
-              ]
-            },
-            {
-              title: 'Сравнение UI с данными',
-              items: [
-                'Открыть инспектор карточки.',
-                'Сравнить название карточки с raw JSON.',
-                'Сравнить автора карточки с raw JSON.',
-                'Сравнить цену карточки с raw JSON.',
-                'Сравнить рейтинг карточки с raw JSON.',
-                'Сравнить бейджи карточки с raw JSON.',
-                'Сравнить список рисков с raw JSON.'
-              ]
-            }
-          ]);
-          checklistEl.dataset.rendered = '1';
-        }
-
+        rerenderChecklist();
+        updateChecklistFeedback();
       }
 
       function applyWorkbench() {
@@ -1643,7 +1825,12 @@
         tabTeam.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TEAM ? 'true' : 'false');
         tabAll.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.ALL ? 'true' : 'false');
         tabFav.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.FAVORITES ? 'true' : 'false');
-        location.hash = CURRENT_TAB;
+        try {
+          if (history && typeof history.replaceState === 'function') {
+            const hashUrl = `${location.pathname}${location.search}#${CURRENT_TAB}`;
+            history.replaceState(null, '', hashUrl);
+          }
+        } catch {}
         localStorage.setItem(TAB_LS_KEY, CURRENT_TAB);
       }
 
@@ -1681,8 +1868,10 @@
       qaHubFabEl?.addEventListener('click', () => {
         const isOpen = qaHubPanelEl?.getAttribute('aria-hidden') === 'false';
         if (!isOpen) {
-          setQaHubTab('bugs');
-          window.refreshBugStatuses?.();
+          const state = readQaHubState();
+          const tab = state.tab === 'checklist' ? 'checklist' : 'bugs';
+          setQaHubTab(tab);
+          if (tab === 'bugs') window.refreshBugStatuses?.();
         }
         setQaHubOpen(!isOpen);
       });
@@ -1692,17 +1881,17 @@
         window.refreshBugStatuses?.();
       });
       qaHubTabChecklistEl?.addEventListener('click', () => setQaHubTab('checklist'));
-      checklistEl?.addEventListener('change', (event) => {
-        const checkbox = event.target.closest('input[type="checkbox"][data-check-id]');
-        if (!checkbox) return;
-        const doneSet = readChecklistDone();
-        if (checkbox.checked) {
-          doneSet.add(checkbox.dataset.checkId);
-        } else {
-          doneSet.delete(checkbox.dataset.checkId);
-        }
-        writeChecklistDone(doneSet);
+      checklistEl?.addEventListener('click', (event) => {
+        const answerBtn = event.target.closest('.books-checklist-answer[data-check-id][data-answer]');
+        if (!answerBtn) return;
+        const answers = readChecklistAnswers();
+        answers[answerBtn.dataset.checkId] = answerBtn.dataset.answer === 'true';
+        writeChecklistAnswers(answers);
+        writeChecklistVerified(false);
+        rerenderChecklist();
+        updateChecklistFeedback();
       });
+      getVerifyButton()?.addEventListener('click', verifyChecklist);
       scenarioEl?.addEventListener('change', () => {
         syncFilterPlaceholders();
         writeFilterState();
