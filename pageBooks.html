@@ -12,6 +12,17 @@
             }
         })();
     </script>
+    <script>
+        (function () {
+            try {
+                const raw = localStorage.getItem('books_qa_hub_state_v1');
+                const parsed = raw ? JSON.parse(raw) : {};
+                if (parsed && parsed.open === true) {
+                    document.documentElement.classList.add('qa-hub-preopen');
+                }
+            } catch {}
+        })();
+    </script>
     <script src="auth.bootstrap.shared.js"></script>
     <link rel="stylesheet" href="header.css">
     <link rel="stylesheet" href="styles.css">
@@ -84,8 +95,20 @@
     <h2 id="page-title">Книги по программированию</h2>
 </div>
 
-<!-- Плавающая кнопка -->
-<button class="bug-fab" id="bugFab" title="Показать баги">🐞</button>
+<!-- Единая кнопка QA -->
+<button class="qa-hub-fab" id="qa-hub-fab" type="button" aria-expanded="false" aria-controls="qa-hub-panel" title="Открыть QA-панель">QA</button>
+
+<!-- Объединенная QA-панель -->
+<div class="qa-hub-panel" id="qa-hub-panel" aria-hidden="true" role="dialog" aria-label="QA-панель">
+    <div class="qa-hub-head">
+        <div class="qa-hub-tabs" role="tablist" aria-label="Разделы QA-панели">
+            <button class="qa-hub-tab" id="qa-hub-tab-bugs" role="tab" aria-selected="true" aria-controls="bugPanel" type="button">Баги</button>
+            <button class="qa-hub-tab" id="qa-hub-tab-checklist" role="tab" aria-selected="false" aria-controls="books-qa-panel" type="button">Чек-лист</button>
+        </div>
+        <button class="qa-hub-close" id="qa-hub-close" type="button" aria-label="Закрыть QA-панель">×</button>
+    </div>
+    <div class="qa-hub-body" id="qa-hub-body"></div>
+</div>
 
 <!-- Панель багов -->
 <div class="bug-panel" id="bugPanel" role="dialog" aria-label="Список найденных багов">
@@ -130,15 +153,6 @@
 
     <div class="bug-item" data-bug-id="bug-cards-bottom-align">
         <div class="bug-text">Баг №5: Карточки не выровнены по нижней границе (разная длина из-за авторов).</div>
-        <div class="bug-actions">
-            <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
-            <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
-        </div>
-        <div class="bug-status" aria-live="polite"></div>
-    </div>
-
-    <div class="bug-item" data-bug-id="bug-team-rating-not-saved">
-        <div class="bug-text">Баг №6: Не сохраняется рейтинг пользователя на карточках во вкладке «Команда».</div>
         <div class="bug-actions">
             <button class="icon-btn btn-open" title="Баг воспроизводится" aria-label="Баг воспроизводится">🐞</button>
             <button class="icon-btn btn-fixed" title="Баг исправили" aria-label="Баг исправили">👍</button>
@@ -304,19 +318,166 @@
 <section class="books-section" aria-labelledby="books-heading">
     <div class="books-toolbar">
         <div role="tablist" aria-label="Переключение разделов" class="tabs">
+            <button id="tab-all" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Все</button>
             <button id="tab-programming" class="tab-btn" role="tab" aria-selected="true" aria-controls="panel-books">Программирование</button>
             <button id="tab-testing" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Тестирование</button>
             <button id="tab-team" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Команда</button>
-            <button id="tab-new" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Новое</button>
             <button id="tab-favorites" class="tab-btn" role="tab" aria-selected="false" aria-controls="panel-books">Избранное️</button>
         </div>
+        <script>
+            (function () {
+                const validTabs = new Set(['programming', 'testing', 'team', 'all', 'favorites']);
+                const titles = {
+                    programming: 'Книги по программированию',
+                    testing: 'Книги по тестированию',
+                    team: 'Книги по лидерству',
+                    all: 'Все книги',
+                    favorites: 'Избранные книги'
+                };
+                const hashTab = (location.hash || '').replace('#', '');
+                const lsTab = localStorage.getItem('books_tab_active') || '';
+                const initialTab = validTabs.has(hashTab) ? hashTab : (validTabs.has(lsTab) ? lsTab : 'programming');
+
+                const tabButtons = {
+                    programming: document.getElementById('tab-programming'),
+                    testing: document.getElementById('tab-testing'),
+                    team: document.getElementById('tab-team'),
+                    all: document.getElementById('tab-all'),
+                    favorites: document.getElementById('tab-favorites')
+                };
+
+                Object.entries(tabButtons).forEach(([tab, el]) => {
+                    if (!el) return;
+                    el.setAttribute('aria-selected', tab === initialTab ? 'true' : 'false');
+                });
+
+                const titleEl = document.getElementById('page-title');
+                if (titleEl) titleEl.textContent = titles[initialTab] || titles.programming;
+            })();
+        </script>
         <div class="hint" id="books-hint"></div>
+    </div>
+    <div class="books-workbench" aria-label="Инструменты тестирования книжной витрины">
+        <label class="books-field books-field--search">
+            <span>Поиск</span>
+            <input id="books-search" type="search" placeholder="Название, автор, ID или URL" autocomplete="off">
+        </label>
+        <div class="books-workbench__actions">
+            <button id="books-filter-toggle" class="books-action" type="button" aria-expanded="false">Фильтры</button>
+            <button id="books-filter-close" class="books-action books-action--close" type="button" aria-label="Скрыть фильтры">Скрыть</button>
+        </div>
+        <div class="books-filters" id="books-filters">
+            <label class="books-field books-field--placeholder" data-placeholder="Цена">
+                <select id="books-price-filter" aria-label="Цена">
+                    <option value="all">Любая</option>
+                    <option value="free">Бесплатно</option>
+                    <option value="lt100">До 100</option>
+                    <option value="100-500">100-500</option>
+                    <option value="gt500">500+</option>
+                    <option value="unknown">Без цены</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Цена">×</button>
+            </label>
+            <label class="books-field books-field--placeholder" data-placeholder="Возраст">
+                <select id="books-age-filter" aria-label="Возраст">
+                    <option value="all">Любой</option>
+                    <option value="0">0+</option>
+                    <option value="12">12+</option>
+                    <option value="16">16+</option>
+                    <option value="18">18+</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Возраст">×</button>
+            </label>
+            <label class="books-field books-field--placeholder" data-placeholder="Рейтинг">
+                <select id="books-rating-filter" aria-label="Рейтинг">
+                    <option value="all">Любой</option>
+                    <option value="none">Без оценок</option>
+                    <option value="lt4">До 4</option>
+                    <option value="gte4">4+</option>
+                    <option value="gte45">4.5+</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Рейтинг">×</button>
+            </label>
+            <label class="books-field books-field--placeholder" data-placeholder="Бейдж">
+                <select id="books-label-filter" aria-label="Бейдж">
+                    <option value="all">Любой</option>
+                    <option value="is_bestseller">Бестселлер</option>
+                    <option value="is_new">Новинка</option>
+                    <option value="is_sales_hit">Хит продаж</option>
+                    <option value="is_litres_exclusive">Эксклюзив</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Бейдж">×</button>
+            </label>
+            <label class="books-field books-field--placeholder" data-placeholder="Доступ">
+                <select id="books-access-filter" aria-label="Доступ">
+                    <option value="all">Любой</option>
+                    <option value="free">Бесплатная</option>
+                    <option value="abonement">Абонемент</option>
+                    <option value="subscription">Подписка</option>
+                    <option value="drm">DRM</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Доступ">×</button>
+            </label>
+            <label class="books-field books-field--placeholder" data-placeholder="Сортировка" data-placeholder-value="default">
+                <select id="books-sort" aria-label="Сортировка">
+                    <option value="default">Как в данных</option>
+                    <option value="title-asc">Название А-Я</option>
+                    <option value="title-desc">Название Я-А</option>
+                    <option value="price-asc">Цена по возрастанию</option>
+                    <option value="price-desc">Цена по убыванию</option>
+                    <option value="rating-desc">Рейтинг выше</option>
+                    <option value="votes-desc">Оценок больше</option>
+                    <option value="year-desc">Год новее</option>
+                    <option value="authors-desc">Авторов больше</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Сортировка">×</button>
+            </label>
+            <label class="books-field books-field--placeholder" data-placeholder="Тестовые данные" data-placeholder-value="normal">
+                <select id="books-scenario" aria-label="Тестовые данные">
+                    <option value="normal">Обычные</option>
+                    <option value="empty">Пустой ответ</option>
+                    <option value="error">Ошибка загрузки</option>
+                    <option value="slow">Медленная загрузка</option>
+                    <option value="long-title">Длинное название</option>
+                    <option value="no-author">Без автора</option>
+                    <option value="no-cover">Без обложки</option>
+                    <option value="duplicate">Дубль книги</option>
+                    <option value="missing-price">Без цены</option>
+                </select>
+                <button class="books-filter-clear" type="button" aria-label="Сбросить фильтр Тестовые данные">×</button>
+            </label>
+            <div class="books-filter-button-slot">
+                <span aria-hidden="true">Действие</span>
+                <button id="books-reset-filters" class="books-action" type="button">Сбросить</button>
+            </div>
+        </div>
+    </div>
+    <div class="books-qa-panel" id="books-qa-panel" aria-label="Чек-лист и техники тест-дизайна" aria-hidden="true">
+        <div class="books-qa-panel__head">
+            <div>
+                <h3>QA-чек-лист</h3>
+                <p id="books-qa-summary"></p>
+            </div>
+        </div>
+        <div class="books-qa-grid">
+            <section class="books-qa-block">
+                <div id="books-checklist" class="books-checklist-groups"></div>
+            </section>
+        </div>
     </div>
     <div id="panel-books">
         <div id="books-grid" class="books-grid" aria-live="polite" aria-busy="true"></div>
         <div id="books-error" class="inline-note" style="display:none;"></div>
     </div>
 </section>
+
+<div class="book-inspector" id="book-inspector" aria-hidden="true">
+    <div class="book-inspector__dialog" role="dialog" aria-modal="true" aria-labelledby="book-inspector-title">
+        <button class="book-inspector__close" id="book-inspector-close" type="button" aria-label="Закрыть инспектор">×</button>
+        <h3 id="book-inspector-title">Инспектор книги</h3>
+        <div id="book-inspector-content"></div>
+    </div>
+</div>
 
 <footer class="qatodev">
     <p>
@@ -328,9 +489,6 @@
 <!-- === JS для панели багов === -->
 <script>
     (function() {
-      const fab = document.getElementById("bugFab");
-      const panel = document.getElementById("bugPanel");
-
       // Хранилище статусов: { [bugId]: "open" | "fixed" }
       const LS_KEY = "qa_bugs_status";
 
@@ -377,7 +535,9 @@
           const current = statuses[id] || "open";
           applyStatus(item, current);
 
-          // Обработчики
+          if (item.dataset.bugBound === "1") return;
+          item.dataset.bugBound = "1";
+
           item.querySelector(".btn-open").addEventListener("click", (e) => {
             statuses[id] = "open";
             writeStatuses(statuses);
@@ -391,17 +551,8 @@
         });
       }
 
-      fab.addEventListener("click", () => {
-        panel.style.display = (panel.style.display === "flex") ? "none" : "flex";
-        if (panel.style.display === "flex") {
-          initBugItems(); // на всякий случай актуализируем статусы при открытии
-        }
-      });
-
-      // Инициализация статусов на загрузке (если панель уже будет видна стилями)
-      document.addEventListener("DOMContentLoaded", () => {
-        if (getComputedStyle(panel).display !== "none") initBugItems();
-      });
+      window.refreshBugStatuses = initBugItems;
+      document.addEventListener("DOMContentLoaded", initBugItems, { once: true });
     })();
 </script>
 
@@ -433,15 +584,20 @@
       const API_URL       = './over/answer.json';          // Программирование
       const API_URL_TEST  = './over/answer_testing.json';  // Тестирование
       const API_URL_TEAM  = './over/answer_team.json';     // Команда
-      // Новое — внешний API по вашему cURL
+      // Внешний API с новинками (входит в агрегированную вкладку «Все»)
       const API_URL_NEW   = 'https://api.litres.ru/foundation/api/arts/facets?languages=ru&limit=30&o=new';
+      const API_NEW_HEADERS = {
+        'accept': 'application/json, text/plain, */*',
+        'accept-version': '2',
+        'app-id': '115'
+      };
 
       /*** Конфигурация вкладок ***/
       const TAB_IDS = {
         PROGRAMMING: 'programming',
         TESTING: 'testing',
         TEAM: 'team',
-        NEW: 'new',            // <— добавлено
+        ALL: 'all',
         FAVORITES: 'favorites'
       };
 
@@ -449,19 +605,15 @@
         [TAB_IDS.PROGRAMMING]: { title: 'Книги по программированию', api: API_URL,      lsSuffix: 'prog' },
         [TAB_IDS.TESTING]:     { title: 'Книги по тестированию',     api: API_URL_TEST, lsSuffix: 'qa'   },
         [TAB_IDS.TEAM]:        { title: 'Книги по лидерству',        api: API_URL_TEAM, lsSuffix: 'team' },
-        // Новая вкладка «Новое»: используем внешний URL и требуемые заголовки (не влияем на остальные вкладки)
-        [TAB_IDS.NEW]:         {
-                                  title: 'Книжные новинки',
-                                  api: API_URL_NEW,
-                                  lsSuffix: 'new',
-                                  requestHeaders: {
-                                    'accept': 'application/json, text/plain, */*',
-                                    'accept-version': '2',
-                                    'app-id': '115'
-                                  }
-                                },
+        [TAB_IDS.ALL]:         { title: 'Все книги', api: null, lsSuffix: 'all', isAll: true },
         [TAB_IDS.FAVORITES]:   { title: 'Избранные книги',                  api: null,         lsSuffix: 'fav', isFavorites: true },
       };
+      const ALL_TAB_SOURCES = [
+        { api: API_URL },
+        { api: API_URL_TEST },
+        { api: API_URL_TEAM },
+        { api: API_URL_NEW, requestHeaders: API_NEW_HEADERS }
+      ];
 
       /*** DOM элементы ***/
       const gridEl   = document.getElementById('books-grid')  || (function(){ const d=document.createElement('div'); d.id='books-grid'; document.body.appendChild(d); return d; })();
@@ -471,8 +623,37 @@
       const tabProg  = document.getElementById('tab-programming');
       const tabTest  = document.getElementById('tab-testing');
       const tabTeam  = document.getElementById('tab-team');
-      const tabNew   = document.getElementById('tab-new');        // <— добавлено
+      const tabAll   = document.getElementById('tab-all');
       const tabFav   = document.getElementById('tab-favorites');
+      const searchEl = document.getElementById('books-search');
+      const priceFilterEl = document.getElementById('books-price-filter');
+      const ageFilterEl = document.getElementById('books-age-filter');
+      const ratingFilterEl = document.getElementById('books-rating-filter');
+      const labelFilterEl = document.getElementById('books-label-filter');
+      const accessFilterEl = document.getElementById('books-access-filter');
+      const sortEl = document.getElementById('books-sort');
+      const scenarioEl = document.getElementById('books-scenario');
+      const filterToggleEl = document.getElementById('books-filter-toggle');
+      const filterCloseEl = document.getElementById('books-filter-close');
+      const resetFiltersEl = document.getElementById('books-reset-filters');
+      const workbenchEl = document.querySelector('.books-workbench');
+      const qaHubFabEl = document.getElementById('qa-hub-fab');
+      const qaHubPanelEl = document.getElementById('qa-hub-panel');
+      const qaHubBodyEl = document.getElementById('qa-hub-body');
+      const qaHubCloseEl = document.getElementById('qa-hub-close');
+      const qaHubTabBugsEl = document.getElementById('qa-hub-tab-bugs');
+      const qaHubTabChecklistEl = document.getElementById('qa-hub-tab-checklist');
+      const bugPanelEl = document.getElementById('bugPanel');
+      const qaPanelEl = document.getElementById('books-qa-panel');
+      const qaSummaryEl = document.getElementById('books-qa-summary');
+      const checklistEl = document.getElementById('books-checklist');
+      const inspectorEl = document.getElementById('book-inspector');
+      const inspectorDialogEl = inspectorEl?.querySelector('.book-inspector__dialog') || null;
+      const inspectorContentEl = document.getElementById('book-inspector-content');
+      const inspectorCloseEl = document.getElementById('book-inspector-close');
+      const placeholderFieldEls = document.querySelectorAll('.books-field--placeholder');
+      let filterWidthMeasureEl = null;
+      const QA_HUB_STATE_KEY = 'books_qa_hub_state_v1';
 
       /*** Сохранение выбранной вкладки ***/
       const TAB_LS_KEY = 'books_tab_active';
@@ -484,18 +665,23 @@
         return TAB_IDS.PROGRAMMING;
       }
       let CURRENT_TAB = getInitialTab();
+      let CURRENT_ITEMS = [];
+      let CURRENT_FILTERED_ITEMS = [];
+      let CURRENT_FAVORITES = new Set();
+      let CURRENT_LS_KEYS = LS_KEYS_FOR(CURRENT_TAB);
+      const FILTER_STATE_KEY = 'books_filter_state_v1';
 
       /*** LocalStorage — ключи зависят от вкладки ***/
       function LS_KEYS_FOR(tab){
         const s = TABS[tab].lsSuffix;
         return {
           FAVES:   `books_favorites_${s}`,
-          RATINGS: `books_ratings_1_10_${s}`,
         };
       }
 
       /* Глобальное хранилище избранных карточек, чтобы вкладка «Избранное» знала о лайках из любых разделов */
       const LS_FAV_STORE = 'books_fav_items'; // объект: { [id]: {id,title,url,cover_url,persons} }
+      const LS_CHECKLIST_DONE = 'books_checklist_done';
 
       function readFavStore() {
         try {
@@ -518,21 +704,687 @@
       function writeFavorites(keys, set) {
         try { localStorage.setItem(keys.FAVES, JSON.stringify([...set])); } catch {}
       }
-      function readRatings(keys) {
+      function readChecklistDone() {
         try {
-          const v = JSON.parse(localStorage.getItem(keys.RATINGS) || '{}');
-          return v && typeof v === 'object' ? v : {};
-        } catch { return {}; }
+          const raw = localStorage.getItem(LS_CHECKLIST_DONE);
+          const arr = raw ? JSON.parse(raw) : [];
+          return new Set(Array.isArray(arr) ? arr : []);
+        } catch { return new Set(); }
       }
-      function writeRatings(keys, obj) {
-        try { localStorage.setItem(keys.RATINGS, JSON.stringify(obj)); } catch {}
+      function writeChecklistDone(set) {
+        try { localStorage.setItem(LS_CHECKLIST_DONE, JSON.stringify([...set])); } catch {}
       }
-
       /*** Утилиты ***/
-      const authorsFromPersons = (persons) =>
-        (Array.isArray(persons) ? persons.filter(p=>p?.role==='author' && p.full_name).map(p=>p.full_name.trim()) : []).join(', ') || '—';
+      function getAuthorSummary(persons) {
+        const authors = Array.isArray(persons)
+          ? persons.filter(p => p?.role === 'author' && p.full_name).map(p => p.full_name.trim()).filter(Boolean)
+          : [];
+        return {
+          first: authors[0] || '—',
+          hiddenCount: Math.max(0, authors.length - 1)
+        };
+      }
 
       const coverAbsolute = (u) => !u ? '' : /^https?:\/\//i.test(u) ? u : 'https://www.litres.ru' + u;
+
+      function getAuthors(art) {
+        return Array.isArray(art.persons) ? art.persons.filter(p => p?.role === 'author' && p.full_name) : [];
+      }
+
+      function getTranslators(art) {
+        return Array.isArray(art.persons) ? art.persons.filter(p => p?.role === 'translator' && p.full_name) : [];
+      }
+
+      function getPrice(art) {
+        const value = Number(art?.prices?.final_price);
+        return Number.isFinite(value) ? value : null;
+      }
+
+      function getYear(art) {
+        const raw = art?.date_written_at || art?.last_released_at || art?.available_from || '';
+        const year = Number(String(raw).slice(0, 4));
+        return Number.isFinite(year) ? year : null;
+      }
+
+      function getRatingAvg(art) {
+        const value = Number(art?.rating?.rated_avg);
+        return Number.isFinite(value) ? value : null;
+      }
+
+      function getVotes(art) {
+        const value = Number(art?.rating?.rated_total_count);
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      async function fetchBooksFromApi(url, requestHeaders) {
+        const baseHeaders = { 'Accept': 'application/json' };
+        const headers = Object.assign({}, baseHeaders, requestHeaders || {});
+        const resp = await fetch(url, {
+          method: 'GET',
+          headers,
+          credentials: 'same-origin',
+          cache: 'no-store'
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const json = await resp.json();
+        let items = json?.payload?.data;
+        if (!Array.isArray(items)) {
+          items = json?.payload?.items || json?.data || json?.items || json?.result?.items || [];
+        }
+        return Array.isArray(items) ? items : [];
+      }
+
+      function formatPrice(art) {
+        const price = getPrice(art);
+        const currency = art?.prices?.currency;
+        if (price === null) return 'цена неизвестна';
+        if (price === 0 || art.is_free) return 'бесплатно';
+        return currency ? `${price} ${currency}` : `${price}`;
+      }
+
+      function artTypeName(type) {
+        const map = {
+          0: 'книга',
+          1: 'аудио',
+          4: 'книга',
+          22: 'подборка',
+          23: 'серия',
+          24: 'контент'
+        };
+        return map[type] || `тип ${type}`;
+      }
+
+      function buildSearchText(art) {
+        return [
+          art.id,
+          art.uuid,
+          art.title,
+          art.subtitle,
+          art.url,
+          art.language_code,
+          ...(Array.isArray(art.persons) ? art.persons.map(p => p.full_name) : [])
+        ].filter(Boolean).join(' ').toLowerCase();
+      }
+
+      function findDataIssues(art, allItems) {
+        const issues = [];
+        const title = String(art.title || '');
+        const price = getPrice(art);
+        const currency = art?.prices?.currency;
+        const rating = getRatingAvg(art);
+        const votes = getVotes(art);
+        const authors = getAuthors(art);
+        const year = getYear(art);
+        const duplicateTitle = title && allItems.filter(item => item.title === art.title).length > 1;
+        const realRatio = Number(art.cover_width) && Number(art.cover_height) ? Number(art.cover_width) / Number(art.cover_height) : null;
+        const declaredRatio = Number(art.cover_ratio);
+
+        if (!title) issues.push('нет названия');
+        if (title.length > 64) issues.push('очень длинное название');
+        if (!art.cover_url) issues.push('нет обложки');
+        if (!authors.length) issues.push('нет автора');
+        if (authors.length > 3) issues.push('много авторов');
+        if (price === null || !currency) issues.push('неполная цена');
+        if (rating === null || votes === 0) issues.push('нет пользовательского рейтинга');
+        if (!year) issues.push('нет даты книги');
+        if (duplicateTitle) issues.push('дубль названия');
+        if (art.min_age === 18) issues.push('18+ контент');
+        if (art.art_type !== 0 && art.art_type !== 4) issues.push('нестандартный тип');
+        if (realRatio && declaredRatio && Math.abs(realRatio - declaredRatio) > 0.04) issues.push('cover_ratio не совпадает');
+        return issues;
+      }
+
+      function getControlState() {
+        return {
+          query: (searchEl?.value || '').trim().toLowerCase(),
+          price: priceFilterEl?.value || 'all',
+          age: ageFilterEl?.value || 'all',
+          rating: ratingFilterEl?.value || 'all',
+          label: labelFilterEl?.value || 'all',
+          access: accessFilterEl?.value || 'all',
+          sort: sortEl?.value || 'default',
+          scenario: scenarioEl?.value || 'normal'
+        };
+      }
+
+      function syncFilterPlaceholders() {
+        placeholderFieldEls.forEach((field) => {
+          const select = field.querySelector('select');
+          if (!select) return;
+          const placeholderValue = field.dataset.placeholderValue || 'all';
+          field.classList.toggle('is-selected', select.value !== placeholderValue);
+        });
+        syncFilterWidths();
+      }
+
+      function getFilterWidthMeasureEl() {
+        if (filterWidthMeasureEl) return filterWidthMeasureEl;
+        const probe = document.createElement('span');
+        probe.style.position = 'fixed';
+        probe.style.left = '-9999px';
+        probe.style.top = '-9999px';
+        probe.style.visibility = 'hidden';
+        probe.style.whiteSpace = 'nowrap';
+        probe.style.pointerEvents = 'none';
+        document.body.appendChild(probe);
+        filterWidthMeasureEl = probe;
+        return filterWidthMeasureEl;
+      }
+
+      function syncFilterWidths() {
+        const probe = getFilterWidthMeasureEl();
+        const viewportLimit = Math.max(120, window.innerWidth - 32);
+        placeholderFieldEls.forEach((field) => {
+          const select = field.querySelector('select');
+          if (!select) return;
+          const placeholderValue = field.dataset.placeholderValue || 'all';
+          const selectedText = select.options?.[select.selectedIndex]?.text?.trim() || '';
+          const isSelected = select.value !== placeholderValue;
+          const baseText = isSelected
+            ? selectedText
+            : (field.dataset.placeholder || selectedText || '');
+
+          const computed = window.getComputedStyle(select);
+          probe.style.fontFamily = computed.fontFamily;
+          probe.style.fontSize = computed.fontSize;
+          probe.style.fontWeight = computed.fontWeight;
+          probe.style.letterSpacing = computed.letterSpacing;
+          probe.style.fontStyle = computed.fontStyle;
+          probe.style.textTransform = computed.textTransform;
+          probe.textContent = baseText || ' ';
+
+          const textWidth = Math.ceil(probe.getBoundingClientRect().width);
+          const horizontalPadding = (parseFloat(computed.paddingLeft) || 0) + (parseFloat(computed.paddingRight) || 0);
+          const affordanceWidth = isSelected ? 4 : 12;
+          const targetWidth = Math.ceil(textWidth + horizontalPadding + affordanceWidth + 2);
+          const finalWidth = Math.max(64, Math.min(220, Math.min(targetWidth, viewportLimit)));
+          field.style.setProperty('--books-filter-dyn-width', `${finalWidth}px`);
+        });
+      }
+
+      function readFilterState() {
+        try {
+          const raw = localStorage.getItem(FILTER_STATE_KEY);
+          const parsed = raw ? JSON.parse(raw) : null;
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch { return {}; }
+      }
+
+      function writeFilterState() {
+        const state = getControlState();
+        try {
+          localStorage.setItem(FILTER_STATE_KEY, JSON.stringify({
+            query: state.query,
+            price: state.price,
+            age: state.age,
+            rating: state.rating,
+            label: state.label,
+            access: state.access,
+            sort: state.sort,
+            scenario: state.scenario,
+            isOpen: !!workbenchEl?.classList.contains('is-open')
+          }));
+        } catch {}
+      }
+
+      function restoreFilterState() {
+        const state = readFilterState();
+        if (searchEl && typeof state.query === 'string') searchEl.value = state.query;
+        if (priceFilterEl) priceFilterEl.value = state.price || 'all';
+        if (ageFilterEl) ageFilterEl.value = state.age || 'all';
+        if (ratingFilterEl) ratingFilterEl.value = state.rating || 'all';
+        if (labelFilterEl) labelFilterEl.value = state.label || 'all';
+        if (accessFilterEl) accessFilterEl.value = state.access || 'all';
+        if (sortEl && state.sort) sortEl.value = state.sort;
+        if (scenarioEl && state.scenario) scenarioEl.value = state.scenario;
+        setFilterPanelOpen(!!state.isOpen);
+        syncFilterPlaceholders();
+      }
+
+      function setFilterPanelOpen(open) {
+        workbenchEl?.classList.toggle('is-open', open);
+        filterToggleEl?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        writeFilterState();
+      }
+
+      function cloneArt(art, suffix) {
+        try {
+          return JSON.parse(JSON.stringify({ ...art, id: `${art.id}_${suffix}` }));
+        } catch {
+          return { ...art, id: `${art.id}_${suffix}` };
+        }
+      }
+
+      function applyScenario(items, scenario) {
+        const list = items.map(item => ({ ...item }));
+        if (scenario === 'empty') return [];
+        if (!list.length) return list;
+        const first = cloneArt(list[0], 'scenario');
+        if (scenario === 'long-title') {
+          first.title = `${first.title || 'Книга'}: очень длинное название для проверки переносов, многоточия и стабильности карточки на узкой ширине`;
+          return [first, ...list.slice(1)];
+        }
+        if (scenario === 'no-author') {
+          first.persons = (first.persons || []).filter(p => p.role !== 'author');
+          return [first, ...list.slice(1)];
+        }
+        if (scenario === 'no-cover') {
+          first.cover_url = '';
+          return [first, ...list.slice(1)];
+        }
+        if (scenario === 'missing-price') {
+          first.prices = { ...(first.prices || {}), final_price: null, currency: null };
+          return [first, ...list.slice(1)];
+        }
+        if (scenario === 'duplicate') {
+          return [first, ...list, cloneArt(first, 'duplicate')];
+        }
+        return list;
+      }
+
+      function itemMatchesFilters(art, state, allItems) {
+        const price = getPrice(art);
+        const currency = art?.prices?.currency;
+        const age = Number(art.min_age || 0);
+        const rating = getRatingAvg(art);
+        const votes = getVotes(art);
+
+        if (state.query && !buildSearchText(art).includes(state.query)) return false;
+
+        if (state.price === 'free' && !(price === 0 || art.is_free)) return false;
+        if (state.price === 'lt100' && !(price !== null && price > 0 && price < 100)) return false;
+        if (state.price === '100-500' && !(price !== null && price >= 100 && price <= 500)) return false;
+        if (state.price === 'gt500' && !(price !== null && price > 500)) return false;
+        if (state.price === 'unknown' && !(price === null || !currency)) return false;
+
+        if (state.age !== 'all' && age !== Number(state.age)) return false;
+
+        if (state.rating === 'none' && !(rating === null || votes === 0)) return false;
+        if (state.rating === 'lt4' && !(rating !== null && rating < 4)) return false;
+        if (state.rating === 'gte4' && !(rating !== null && rating >= 4)) return false;
+        if (state.rating === 'gte45' && !(rating !== null && rating >= 4.5)) return false;
+
+        if (state.label !== 'all' && !art?.labels?.[state.label]) return false;
+
+        if (state.access === 'free' && !(art.is_free || price === 0)) return false;
+        if (state.access === 'abonement' && !art.is_abonement_art) return false;
+        if (state.access === 'subscription' && !(art.is_subscription_art || art.is_subscription_token_art || art.is_available_with_subscription)) return false;
+        if (state.access === 'drm' && !art.is_drm) return false;
+
+        return true;
+      }
+
+      function sortItems(items, sort) {
+        const sorted = [...items];
+        if (sort === 'title-asc') sorted.sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'ru'));
+        if (sort === 'title-desc') sorted.sort((a, b) => String(b.title || '').localeCompare(String(a.title || ''), 'ru'));
+        if (sort === 'price-asc') sorted.sort((a, b) => (getPrice(a) ?? Infinity) - (getPrice(b) ?? Infinity));
+        if (sort === 'price-desc') sorted.sort((a, b) => (getPrice(b) ?? -Infinity) - (getPrice(a) ?? -Infinity));
+        if (sort === 'rating-desc') sorted.sort((a, b) => (getRatingAvg(b) ?? -1) - (getRatingAvg(a) ?? -1));
+        if (sort === 'votes-desc') sorted.sort((a, b) => getVotes(b) - getVotes(a));
+        if (sort === 'year-desc') sorted.sort((a, b) => (getYear(b) ?? 0) - (getYear(a) ?? 0));
+        if (sort === 'authors-desc') sorted.sort((a, b) => getAuthors(b).length - getAuthors(a).length);
+        return sorted;
+      }
+
+      function getGridMaxCardWidth() {
+        const gridWidth = gridEl.clientWidth || window.innerWidth || 0;
+        return Math.max(108, Math.min(gridWidth * 0.18, 176));
+      }
+
+      function getAvailableGridColumns() {
+        const gridWidth = gridEl.clientWidth || window.innerWidth || 0;
+        if (!gridWidth) return 1;
+        const styles = window.getComputedStyle(gridEl);
+        const gap = parseFloat(styles.columnGap) || 0;
+        const cardWidth = getGridMaxCardWidth();
+        return Math.max(1, Math.floor((gridWidth + gap) / (cardWidth + gap)));
+      }
+
+      function updateGridLayoutMode(count) {
+        const availableColumns = getAvailableGridColumns();
+        gridEl.classList.toggle('books-grid--limited', count > 0 && count < availableColumns);
+      }
+
+      function renderList(items) {
+        clearGrid();
+        updateGridLayoutMode(items.length);
+        const frag = document.createDocumentFragment();
+        for (const art of items) frag.appendChild(renderCard(art, CURRENT_FAVORITES, CURRENT_LS_KEYS));
+        gridEl.appendChild(frag);
+        gridEl.setAttribute('aria-busy','false');
+      }
+
+      function renderListMessage(message) {
+        clearGrid();
+        updateGridLayoutMode(0);
+        showError(message);
+      }
+
+      function summarizeStats(items, sourceItems) {
+        const prices = items.map(getPrice).filter(v => v !== null);
+        const avgRating = items.map(getRatingAvg).filter(v => v !== null);
+        return {
+          shown: items.length,
+          total: sourceItems.length,
+          free: items.filter(item => item.is_free || getPrice(item) === 0).length,
+          noRating: items.filter(item => getRatingAvg(item) === null || getVotes(item) === 0).length,
+          issueCount: sourceItems.filter(item => findDataIssues(item, sourceItems).length).length,
+          maxPrice: prices.length ? Math.max(...prices) : null,
+          bestRating: avgRating.length ? Math.max(...avgRating) : null
+        };
+      }
+
+      function renderChecklistGroups(groups) {
+        if (!checklistEl) return;
+        const doneSet = readChecklistDone();
+        checklistEl.innerHTML = '';
+        groups.forEach((group, groupIndex) => {
+          const section = document.createElement('section');
+          section.className = 'books-checklist-group';
+          const title = document.createElement('h5');
+          title.textContent = group.title;
+          const list = document.createElement('ul');
+          group.items.forEach((text, itemIndex) => {
+            const checkId = `${group.title}:${text}`;
+            const li = document.createElement('li');
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            const span = document.createElement('span');
+            checkbox.type = 'checkbox';
+            checkbox.checked = doneSet.has(checkId);
+            checkbox.dataset.checkId = checkId;
+            span.textContent = text;
+            label.appendChild(checkbox);
+            label.appendChild(span);
+            li.appendChild(label);
+            list.appendChild(li);
+          });
+          section.appendChild(title);
+          section.appendChild(list);
+          checklistEl.appendChild(section);
+        });
+      }
+
+      function setQaHubTab(tab) {
+        const isBugs = tab === 'bugs';
+        qaHubTabBugsEl?.setAttribute('aria-selected', isBugs ? 'true' : 'false');
+        qaHubTabChecklistEl?.setAttribute('aria-selected', isBugs ? 'false' : 'true');
+        bugPanelEl?.setAttribute('aria-hidden', isBugs ? 'false' : 'true');
+        qaPanelEl?.setAttribute('aria-hidden', isBugs ? 'true' : 'false');
+        writeQaHubState();
+      }
+
+      function setQaHubOpen(open) {
+        qaHubPanelEl?.setAttribute('aria-hidden', open ? 'false' : 'true');
+        qaHubFabEl?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        document.body.classList.toggle('qa-hub-open', open);
+        writeQaHubState();
+      }
+
+      function readQaHubState() {
+        try {
+          const raw = localStorage.getItem(QA_HUB_STATE_KEY);
+          const parsed = raw ? JSON.parse(raw) : {};
+          return parsed && typeof parsed === 'object' ? parsed : {};
+        } catch {
+          return {};
+        }
+      }
+
+      function writeQaHubState() {
+        try {
+          const tab = qaHubTabChecklistEl?.getAttribute('aria-selected') === 'true' ? 'checklist' : 'bugs';
+          const open = qaHubPanelEl?.getAttribute('aria-hidden') === 'false';
+          localStorage.setItem(QA_HUB_STATE_KEY, JSON.stringify({ tab, open }));
+        } catch {}
+      }
+
+      function restoreQaHubState() {
+        const state = readQaHubState();
+        const tab = state.tab === 'checklist' ? 'checklist' : 'bugs';
+        setQaHubTab(tab);
+        setQaHubOpen(!!state.open);
+      }
+
+      function installScrollBoundaryGuard(scrollHost) {
+        if (!scrollHost || scrollHost.dataset.boundaryGuard === '1') return;
+        scrollHost.dataset.boundaryGuard = '1';
+
+        let touchStartY = 0;
+        let touchStartScrollTop = 0;
+        let touchInnerScrollable = null;
+
+        const isAtTop = () => scrollHost.scrollTop <= 0;
+        const isAtBottom = () => {
+          const max = scrollHost.scrollHeight - scrollHost.clientHeight;
+          return max <= 0 || scrollHost.scrollTop >= max - 1;
+        };
+        const getInnerScrollable = (target) => {
+          let node = target instanceof Element ? target : null;
+          while (node && node !== scrollHost) {
+            const style = window.getComputedStyle(node);
+            const overflowY = style.overflowY;
+            const canScrollY = (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay')
+              && node.scrollHeight > node.clientHeight + 1;
+            if (canScrollY) return node;
+            node = node.parentElement;
+          }
+          return null;
+        };
+        const canScrollByDelta = (element, deltaY) => {
+          if (!element || !deltaY) return false;
+          if (deltaY < 0) return element.scrollTop > 0;
+          return element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+        };
+
+        scrollHost.addEventListener('wheel', (event) => {
+          const deltaY = event.deltaY;
+          if (!deltaY) return;
+          const innerScrollable = getInnerScrollable(event.target);
+          if (innerScrollable && canScrollByDelta(innerScrollable, deltaY)) return;
+          const shouldBlock =
+            (deltaY < 0 && isAtTop()) ||
+            (deltaY > 0 && isAtBottom()) ||
+            (scrollHost.scrollHeight <= scrollHost.clientHeight);
+          if (shouldBlock) event.preventDefault();
+        }, { passive: false });
+
+        scrollHost.addEventListener('touchstart', (event) => {
+          if (!event.touches || !event.touches.length) return;
+          touchStartY = event.touches[0].clientY;
+          touchStartScrollTop = scrollHost.scrollTop;
+          touchInnerScrollable = getInnerScrollable(event.target);
+        }, { passive: true });
+
+        scrollHost.addEventListener('touchmove', (event) => {
+          if (!event.touches || !event.touches.length) return;
+          const currentY = event.touches[0].clientY;
+          const dy = currentY - touchStartY;
+          const intendedDeltaY = dy < 0 ? 1 : (dy > 0 ? -1 : 0);
+          if (touchInnerScrollable && canScrollByDelta(touchInnerScrollable, intendedDeltaY)) return;
+          const movedDown = dy > 0;
+          const movedUp = dy < 0;
+          const noScrollableSpace = scrollHost.scrollHeight <= scrollHost.clientHeight;
+          const atTopOnStart = touchStartScrollTop <= 0;
+          const atBottomOnStart = touchStartScrollTop >= (scrollHost.scrollHeight - scrollHost.clientHeight - 1);
+
+          if (noScrollableSpace || (movedDown && atTopOnStart) || (movedUp && atBottomOnStart)) {
+            event.preventDefault();
+          }
+        }, { passive: false });
+      }
+
+      function setChecklistOpen(open) {
+        setQaHubOpen(open);
+        if (open) setQaHubTab('checklist');
+      }
+
+      function updateQaPanel(items, sourceItems) {
+        if (qaSummaryEl) {
+          qaSummaryEl.textContent = `Проверь страницу по составленному чек-листу:`;
+        }
+        if (checklistEl && checklistEl.dataset.rendered !== '1') {
+          renderChecklistGroups([
+            {
+              title: 'Классы эквивалентности',
+              items: [
+                'Проверить цену: бесплатно.',
+                'Проверить цену: до 100.',
+                'Проверить цену: 100-500.',
+                'Проверить цену: 500+.',
+                'Проверить цену: без цены.',
+                'Проверить возраст: 0+.',
+                'Проверить возраст: 12+.',
+                'Проверить возраст: 16+.',
+                'Проверить возраст: 18+.'
+              ]
+            },
+            {
+              title: 'Граничные значения',
+              items: [
+                'Проверить цену около 0.',
+                'Проверить цену около 100.',
+                'Проверить цену около 500.',
+                'Проверить рейтинг 0.',
+                'Проверить рейтинг 4.',
+                'Проверить рейтинг 4.5.',
+                'Проверить рейтинг 5.',
+                'Проверить ширину 385px без горизонтального скролла.'
+              ]
+            },
+            {
+              title: 'Таблица принятия решений',
+              items: [
+                'Проверить поиск + фильтр цены + сортировку.',
+                'Проверить поиск + фильтр рейтинга + пустой результат.',
+                'Проверить проблемные данные + вкладку избранного.',
+                'Проверить добавление в избранное при активном фильтре.',
+                'Проверить удаление из избранного при активном фильтре.',
+                'Проверить сохранение избранного после перезагрузки.'
+              ]
+            },
+            {
+              title: 'Попарное тестирование',
+              items: [
+                'Проверить вкладка + тема.',
+                'Проверить вкладка + поиск.',
+                'Проверить вкладка + фильтр цены.',
+                'Проверить вкладка + фильтр рейтинга.',
+                'Проверить сортировка + тестовый сценарий.',
+                'Проверить проблемные данные + тестовый сценарий.'
+              ]
+            },
+            {
+              title: 'Негативные сценарии',
+              items: [
+                'Проверить сценарий: пустой ответ.',
+                'Проверить сценарий: ошибка загрузки.',
+                'Проверить сценарий: медленная загрузка.',
+                'Проверить сценарий: длинное название.',
+                'Проверить сценарий: нет автора.',
+                'Проверить сценарий: нет обложки.',
+                'Проверить сценарий: дубль книги.',
+                'Проверить сценарий: нет цены.'
+              ]
+            },
+            {
+              title: 'Сравнение UI с данными',
+              items: [
+                'Открыть инспектор карточки.',
+                'Сравнить название карточки с raw JSON.',
+                'Сравнить автора карточки с raw JSON.',
+                'Сравнить цену карточки с raw JSON.',
+                'Сравнить рейтинг карточки с raw JSON.',
+                'Сравнить бейджи карточки с raw JSON.',
+                'Сравнить список рисков с raw JSON.'
+              ]
+            }
+          ]);
+          checklistEl.dataset.rendered = '1';
+        }
+
+      }
+
+      function applyWorkbench() {
+        const state = getControlState();
+        errorEl.style.display = 'none';
+        let sourceItems = applyScenario(CURRENT_ITEMS, state.scenario);
+        let items = sourceItems.filter(item => itemMatchesFilters(item, state, sourceItems));
+        const effectiveSort = (CURRENT_TAB === TAB_IDS.ALL && state.sort === 'default')
+          ? 'title-asc'
+          : state.sort;
+        items = sortItems(items, effectiveSort);
+        CURRENT_FILTERED_ITEMS = items;
+        if (!items.length) {
+          renderListMessage('По текущим условиям книги не найдены.');
+        } else {
+          renderList(items);
+        }
+        if (hintEl) hintEl.textContent = `Показано книг: ${items.length} из ${sourceItems.length}.`;
+        updateQaPanel(items, sourceItems);
+      }
+
+      function getFieldRows(art) {
+        const authors = getAuthors(art).map(p => p.full_name).join(', ') || '—';
+        const translators = getTranslators(art).map(p => p.full_name).join(', ') || '—';
+        const rating = getRatingAvg(art);
+        return [
+          ['ID', art.id],
+          ['Тип', artTypeName(art.art_type)],
+          ['Автор', authors],
+          ['Переводчик', translators],
+          ['Цена', formatPrice(art)],
+          ['Возраст', `${Number(art.min_age || 0)}+`],
+          ['Рейтинг', rating === null ? 'нет' : `${rating.toFixed(2)} (${getVotes(art)} оценок)`],
+          ['Год', getYear(art) || '—'],
+          ['Язык', art.language_code || '—'],
+          ['Доступность', `availability=${art.availability ?? '—'}`],
+          ['Обложка', `${art.cover_width || '?'}x${art.cover_height || '?'} / ratio ${art.cover_ratio || '?'}`],
+          ['URL', art.url || '—']
+        ];
+      }
+
+      function openInspector(art) {
+        if (!inspectorEl || !inspectorContentEl) return;
+        const issues = findDataIssues(art, applyScenario(CURRENT_ITEMS, getControlState().scenario));
+        inspectorContentEl.innerHTML = '';
+        const rows = document.createElement('dl');
+        rows.className = 'book-inspector__rows';
+        getFieldRows(art).forEach(([key, value]) => {
+          const dt = document.createElement('dt');
+          const dd = document.createElement('dd');
+          dt.textContent = key;
+          dd.textContent = String(value);
+          rows.appendChild(dt);
+          rows.appendChild(dd);
+        });
+        const issueTitle = document.createElement('h4');
+        issueTitle.textContent = 'Риски данных';
+        const issueList = document.createElement('ul');
+        issueList.className = 'book-inspector__issues';
+        (issues.length ? issues : ['Риски не найдены']).forEach(text => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          issueList.appendChild(li);
+        });
+        const rawTitle = document.createElement('h4');
+        rawTitle.textContent = 'Raw JSON';
+        const raw = document.createElement('pre');
+        raw.textContent = JSON.stringify(art, null, 2);
+        inspectorContentEl.appendChild(rows);
+        inspectorContentEl.appendChild(issueTitle);
+        inspectorContentEl.appendChild(issueList);
+        inspectorContentEl.appendChild(rawTitle);
+        inspectorContentEl.appendChild(raw);
+        inspectorEl.setAttribute('aria-hidden', 'false');
+        document.body.classList.add('book-inspector-open');
+      }
+
+      function closeInspector() {
+        inspectorEl?.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('book-inspector-open');
+      }
 
       function makeSkeletonCard() {
         const card = document.createElement('article');
@@ -544,14 +1396,13 @@
         return card;
       }
       function clearGrid(){ while (gridEl.firstChild) gridEl.removeChild(gridEl.firstChild); }
-      function showSkeletons(n){ gridEl.setAttribute('aria-busy','true'); clearGrid(); for(let i=0;i<n;i++) gridEl.appendChild(makeSkeletonCard()); }
-      function showError(msg){ errorEl.textContent = msg; errorEl.style.display='block'; gridEl.setAttribute('aria-busy','false'); }
+      function showSkeletons(n){ gridEl.setAttribute('aria-busy','true'); clearGrid(); updateGridLayoutMode(n); for(let i=0;i<n;i++) gridEl.appendChild(makeSkeletonCard()); }
+      function showError(msg){ updateGridLayoutMode(0); errorEl.textContent = msg; errorEl.style.display='block'; gridEl.setAttribute('aria-busy','false'); }
 
       /*** Рендер карточки ***/
-      function renderCard(art, favoritesSet, ratingsMap, lsKeys){
+      function renderCard(art, favoritesSet, lsKeys){
         const artId = String(art.id);
         const isFav = favoritesSet.has(artId);
-        const savedRating = Number(ratingsMap[artId] ?? 0);
 
         const card = document.createElement('article');
         card.className = 'book-card';
@@ -561,7 +1412,12 @@
         const img = document.createElement('img');
         img.className = 'book-cover'; img.loading='lazy';
         img.alt = art.title ? ('Обложка: ' + art.title) : 'Обложка книги';
-        img.src = coverAbsolute(art.cover_url || '');
+        if (art.cover_url) {
+          img.src = coverAbsolute(art.cover_url);
+        } else {
+          coverWrap.classList.add('book-cover-wrap--empty');
+        }
+        img.onerror = () => { img.removeAttribute('src'); coverWrap.classList.add('book-cover-wrap--empty'); };
         coverWrap.appendChild(img);
 
         const likeBtn = document.createElement('button');
@@ -582,20 +1438,43 @@
         title.appendChild(a);
 
         const authors = document.createElement('div'); authors.className='book-authors';
-        authors.textContent = authorsFromPersons(art.persons);
+        const authorSummary = getAuthorSummary(art.persons);
+        const firstAuthor = document.createElement('span');
+        firstAuthor.className = 'book-author-pill';
+        firstAuthor.textContent = authorSummary.first;
+        authors.appendChild(firstAuthor);
+        if (authorSummary.hiddenCount > 0) {
+          const moreAuthors = document.createElement('span');
+          moreAuthors.className = 'book-author-pill book-author-pill--more';
+          moreAuthors.textContent = `+${authorSummary.hiddenCount}`;
+          moreAuthors.title = `Еще авторов: ${authorSummary.hiddenCount}`;
+          authors.appendChild(moreAuthors);
+        }
 
-        const ratingRow = document.createElement('div'); ratingRow.className='rating-row';
-        const range = document.createElement('input');
-        range.type='range'; range.min='1'; range.max='10'; range.step='1'; range.className='rating-range';
-        range.value = String(savedRating || 5);
-        const value = document.createElement('div'); value.className='rating-value';
-        value.textContent = savedRating ? savedRating : '?';
-        ratingRow.appendChild(range);
-        ratingRow.appendChild(value);
+        const meta = document.createElement('div'); meta.className = 'book-meta';
+        const year = getYear(art);
+        const avg = getRatingAvg(art);
+        const labels = art.labels || {};
+        const chips = [
+          formatPrice(art),
+          year ? String(year) : 'год неизвестен',
+          `${Number(art.min_age || 0)}+`,
+          avg ? `★ ${avg.toFixed(1)}` : 'без рейтинга',
+          labels.is_bestseller ? 'бестселлер' : '',
+          labels.is_new ? 'новинка' : '',
+          labels.is_sales_hit ? 'хит' : '',
+          labels.is_litres_exclusive ? 'эксклюзив' : '',
+          artTypeName(art.art_type)
+        ].filter(Boolean);
+        chips.slice(0, 5).forEach(text => {
+          const chip = document.createElement('span');
+          chip.textContent = text;
+          meta.appendChild(chip);
+        });
 
         body.appendChild(title);
         body.appendChild(authors);
-        body.appendChild(ratingRow);
+        body.appendChild(meta);
         card.appendChild(coverWrap);
         card.appendChild(body);
 
@@ -626,18 +1505,14 @@
           // Если мы во вкладке «Избранное», удаляем карточку из списка при снятии лайка
           if (CURRENT_TAB === TAB_IDS.FAVORITES && pressed) {
             card.remove();
-            if (!gridEl.children.length) {
-              showError('В избранном пока пусто. Поставьте лайк на любой книге.');
-            }
+            CURRENT_ITEMS = CURRENT_ITEMS.filter(item => String(item.id) !== artId);
+            applyWorkbench();
           }
         });
 
-        range.addEventListener('input', () => { value.textContent = range.value; });
-        range.addEventListener('change', () => {
-          const v = Math.max(1, Math.min(10, Number(range.value) || 0));
-          ratingsMap[artId] = v;
-          writeRatings(lsKeys, ratingsMap);
-          value.textContent = String(v);
+        card.addEventListener('click', (event) => {
+          if (event.target.closest('button') || event.target.closest('a')) return;
+          openInspector(art);
         });
 
         return card;
@@ -646,22 +1521,31 @@
       /*** Загрузка и рендер ***/
       async function loadAndRender(url){
         const cfg = TABS[CURRENT_TAB];
-        const lsKeys    = LS_KEYS_FOR(CURRENT_TAB);
-        const ratings   = readRatings(lsKeys);
+        CURRENT_LS_KEYS = LS_KEYS_FOR(CURRENT_TAB);
 
         errorEl.style.display = 'none';
         gridEl.setAttribute('aria-busy','true');
         clearGrid();
+        CURRENT_ITEMS = [];
+        CURRENT_FILTERED_ITEMS = [];
+
+        const state = getControlState();
+        if (state.scenario === 'error') {
+          renderListMessage('Тестовый сценарий: ошибка загрузки данных.');
+          updateQaPanel([], []);
+          return;
+        }
 
         if (cfg.isFavorites) {
           // Рендер избранного из общего хранилища
           const favStore = readFavStore();
           const ids = Object.keys(favStore);
-          const favoritesSet = new Set(ids); // для корректной инициализации лайков
+          CURRENT_FAVORITES = new Set(ids); // для корректной инициализации лайков
           if (!ids.length) {
             gridEl.setAttribute('aria-busy','false');
             showError('В избранном пока пусто. Поставьте лайк на любой книге.');
             hintEl && (hintEl.textContent = 'Избранное формируется из лайков во всех разделах.');
+            updateQaPanel([], []);
             return;
           }
           // Преобразуем в массив артов в формате, ожидаемом рендерером
@@ -675,56 +1559,78 @@
               persons: it.persons
             };
           });
-          const frag = document.createDocumentFragment();
-          for (const art of items) frag.appendChild(renderCard(art, favoritesSet, ratings, lsKeys));
-          gridEl.appendChild(frag);
-          gridEl.setAttribute('aria-busy','false');
-          hintEl && (hintEl.textContent = `В избранном: ${items.length} книг(и).`);
+          CURRENT_ITEMS = items;
+          applyWorkbench();
+          return;
+        }
+
+        if (cfg.isAll) {
+          CURRENT_FAVORITES = readFavorites(CURRENT_LS_KEYS);
+          showSkeletons(10);
+          errorEl.style.display = 'none';
+          try {
+            if (state.scenario === 'slow') {
+              await new Promise(resolve => setTimeout(resolve, 900));
+            }
+            const settled = await Promise.allSettled(
+              ALL_TAB_SOURCES.map(src => fetchBooksFromApi(src.api, src.requestHeaders))
+            );
+            const merged = [];
+            const seen = new Set();
+            settled.forEach(result => {
+              if (result.status !== 'fulfilled') return;
+              result.value.forEach(item => {
+                const key = String(item?.id || `${item?.title || ''}|${item?.url || ''}`);
+                if (seen.has(key)) return;
+                seen.add(key);
+                merged.push(item);
+              });
+            });
+            clearGrid();
+            if (!merged.length) {
+              const firstRejected = settled.find(result => result.status === 'rejected');
+              if (firstRejected && firstRejected.reason) {
+                throw firstRejected.reason;
+              }
+              showError('По данному запросу книги не найдены.');
+              updateQaPanel([], []);
+              return;
+            }
+            CURRENT_ITEMS = merged;
+            applyWorkbench();
+          } catch (e) {
+            clearGrid();
+            showError('Не удалось загрузить список книг: ' + (e?.message || 'ошибка.'));
+            updateQaPanel([], []);
+          }
           return;
         }
 
         // Обычные вкладки: тянем из API
-        const favoritesSet = readFavorites(lsKeys);
+        CURRENT_FAVORITES = readFavorites(CURRENT_LS_KEYS);
         showSkeletons(8);
         errorEl.style.display = 'none';
 
         try {
-          // Базовые заголовки остаются прежними, для вкладки «Новое» добавим требуемые
-          const baseHeaders = { 'Accept': 'application/json' };
-          const headers = Object.assign({}, baseHeaders, cfg.requestHeaders || {});
-
-          const resp = await fetch(url, {
-            method: 'GET',
-            headers,
-            credentials: 'same-origin',
-            cache: 'no-store'
-          });
-
-          if (!resp.ok) throw new Error('HTTP ' + resp.status);
-
-          const json = await resp.json();
-          // Оставляем старую логику, но добавим мягкий фолбэк на другие возможные поля
-          let items = json?.payload?.data;
-          if (!Array.isArray(items)) {
-            items = json?.payload?.items || json?.data || json?.items || json?.result?.items || [];
+          if (state.scenario === 'slow') {
+            await new Promise(resolve => setTimeout(resolve, 900));
           }
+          const items = await fetchBooksFromApi(url, cfg.requestHeaders);
 
           clearGrid();
           if (!Array.isArray(items) || items.length === 0) {
             showError('По данному запросу книги не найдены.');
+            updateQaPanel([], []);
             return;
           }
 
-          const frag = document.createDocumentFragment();
-          for (const art of items) frag.appendChild(renderCard(art, favoritesSet, ratings, lsKeys));
-          gridEl.appendChild(frag);
-          gridEl.setAttribute('aria-busy','false');
-
-          if (hintEl) hintEl.textContent = `Загружено книг: ${items.length}.`;
+          CURRENT_ITEMS = items;
+          applyWorkbench();
 
         } catch (e) {
           clearGrid();
           showError('Не удалось загрузить список книг: ' + (e?.message || 'ошибка.'));
+          updateQaPanel([], []);
         }
       }
 
@@ -735,7 +1641,7 @@
         tabProg.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.PROGRAMMING ? 'true' : 'false');
         tabTest.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TESTING ? 'true' : 'false');
         tabTeam.setAttribute('aria-selected', CURRENT_TAB === TAB_IDS.TEAM ? 'true' : 'false');
-        tabNew.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.NEW ? 'true' : 'false');   // <— добавлено
+        tabAll.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.ALL ? 'true' : 'false');
         tabFav.setAttribute('aria-selected',  CURRENT_TAB === TAB_IDS.FAVORITES ? 'true' : 'false');
         location.hash = CURRENT_TAB;
         localStorage.setItem(TAB_LS_KEY, CURRENT_TAB);
@@ -752,11 +1658,127 @@
       tabProg.addEventListener('click', () => switchTab(TAB_IDS.PROGRAMMING));
       tabTest.addEventListener('click', () => switchTab(TAB_IDS.TESTING));
       tabTeam.addEventListener('click', () => switchTab(TAB_IDS.TEAM));
-      tabNew.addEventListener('click',  () => switchTab(TAB_IDS.NEW));        // <— добавлено
+      tabAll.addEventListener('click',  () => switchTab(TAB_IDS.ALL));
       tabFav.addEventListener('click',  () => switchTab(TAB_IDS.FAVORITES));
+      [searchEl, priceFilterEl, ageFilterEl, ratingFilterEl, labelFilterEl, accessFilterEl, sortEl].forEach(el => {
+        el?.addEventListener('input', () => {
+          syncFilterPlaceholders();
+          applyWorkbench();
+          writeFilterState();
+        });
+        el?.addEventListener('change', () => {
+          syncFilterPlaceholders();
+          applyWorkbench();
+          writeFilterState();
+        });
+      });
+      filterToggleEl?.addEventListener('click', () => {
+        setFilterPanelOpen(true);
+      });
+      filterCloseEl?.addEventListener('click', () => {
+        setFilterPanelOpen(false);
+      });
+      qaHubFabEl?.addEventListener('click', () => {
+        const isOpen = qaHubPanelEl?.getAttribute('aria-hidden') === 'false';
+        if (!isOpen) {
+          setQaHubTab('bugs');
+          window.refreshBugStatuses?.();
+        }
+        setQaHubOpen(!isOpen);
+      });
+      qaHubCloseEl?.addEventListener('click', () => setQaHubOpen(false));
+      qaHubTabBugsEl?.addEventListener('click', () => {
+        setQaHubTab('bugs');
+        window.refreshBugStatuses?.();
+      });
+      qaHubTabChecklistEl?.addEventListener('click', () => setQaHubTab('checklist'));
+      checklistEl?.addEventListener('change', (event) => {
+        const checkbox = event.target.closest('input[type="checkbox"][data-check-id]');
+        if (!checkbox) return;
+        const doneSet = readChecklistDone();
+        if (checkbox.checked) {
+          doneSet.add(checkbox.dataset.checkId);
+        } else {
+          doneSet.delete(checkbox.dataset.checkId);
+        }
+        writeChecklistDone(doneSet);
+      });
+      scenarioEl?.addEventListener('change', () => {
+        syncFilterPlaceholders();
+        writeFilterState();
+        const cfg = TABS[CURRENT_TAB];
+        loadAndRender(cfg.api);
+      });
+      resetFiltersEl?.addEventListener('click', () => {
+        if (searchEl) searchEl.value = '';
+        if (priceFilterEl) priceFilterEl.value = 'all';
+        if (ageFilterEl) ageFilterEl.value = 'all';
+        if (ratingFilterEl) ratingFilterEl.value = 'all';
+        if (labelFilterEl) labelFilterEl.value = 'all';
+        if (accessFilterEl) accessFilterEl.value = 'all';
+        if (sortEl) sortEl.value = 'default';
+        if (scenarioEl) scenarioEl.value = 'normal';
+        syncFilterPlaceholders();
+        writeFilterState();
+        const cfg = TABS[CURRENT_TAB];
+        loadAndRender(cfg.api);
+      });
+
+      document.addEventListener('click', (event) => {
+        const btn = event.target.closest('.books-filter-clear');
+        if (!btn) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        const field = btn.closest('.books-field--placeholder');
+        const select = field?.querySelector('select');
+        if (!field || !select) return;
+
+        const placeholderValue = field.dataset.placeholderValue || 'all';
+        select.value = placeholderValue;
+        syncFilterPlaceholders();
+
+        // Scenario affects load mode (slow/error/empty), so rerun loading path.
+        if (select.id === 'books-scenario') {
+          writeFilterState();
+          const cfg = TABS[CURRENT_TAB];
+          loadAndRender(cfg.api);
+          return;
+        }
+
+        applyWorkbench();
+        writeFilterState();
+      });
+      inspectorCloseEl?.addEventListener('click', closeInspector);
+      inspectorEl?.addEventListener('click', (event) => {
+        if (event.target === inspectorEl) closeInspector();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          closeInspector();
+          setQaHubOpen(false);
+        }
+      });
+      window.addEventListener('resize', () => {
+        updateGridLayoutMode(CURRENT_FILTERED_ITEMS.length);
+        syncFilterWidths();
+      });
 
       /*** Инициализация ***/
       function init(){
+        if (qaHubBodyEl && bugPanelEl) qaHubBodyEl.appendChild(bugPanelEl);
+        if (qaHubBodyEl && qaPanelEl) qaHubBodyEl.appendChild(qaPanelEl);
+        installScrollBoundaryGuard(qaHubBodyEl);
+        installScrollBoundaryGuard(inspectorDialogEl);
+        document.body.classList.add('qa-hub-no-anim');
+        restoreQaHubState();
+        document.documentElement.classList.remove('qa-hub-preopen');
+        document.body.classList.add('qa-hub-ready');
+        requestAnimationFrame(() => {
+          document.body.classList.remove('qa-hub-no-anim');
+        });
+        restoreFilterState();
+        syncFilterPlaceholders();
         applyTabUI();
         const cfg = TABS[CURRENT_TAB];
         loadAndRender(cfg.api);
