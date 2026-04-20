@@ -586,48 +586,142 @@
         </div>
     </section>
 
-    <section id="testimonials" class="frame1">
+    <section id="testimonials" class="article">
         <h2>Статьи от автора</h2>
 
-        <!-- Оболочка карусели -->
-        <div class="habr-carousel">
-            <!-- Вся "лента" миниатюр -->
-            <div class="habr-carousel-track">
-                <!-- Каждая статья: обёртка <a> с нужным href -->
-                <a href="https://habr.com/ru/companies/sberbank/articles/867366/" target="_blank">
-                    <img src="img/article2.png" alt="Статья 2" />
-                </a>
-                <a href="https://habr.com/ru/articles/814379/" target="_blank">
-                    <img src="img/article4.jpeg" alt="Статья 4" />
-                </a>
-                <a href="https://habr.com/ru/articles/810525/" target="_blank">
-                    <img src="img/article5.png" alt="Статья 5" />
-                </a>
-                <a href="https://habr.com/ru/articles/804171/" target="_blank">
-                    <img src="img/article6.jpeg" alt="Статья 6" />
-                </a>
-                <a href="https://habr.com/ru/articles/792894/" target="_blank">
-                    <img src="img/article7.jpeg" alt="Статья 7" />
-                </a>
-                <a href="https://habr.com/ru/articles/789524/" target="_blank">
-                    <img src="img/article8.jpeg" alt="Статья 8" />
-                </a>
-                <a href="https://habr.com/ru/articles/784710/" target="_blank">
-                    <img src="img/article9.jpeg" alt="Статья 9" />
-                </a>
-                <a href="https://habr.com/ru/articles/784116/" target="_blank">
-                    <img src="img/article10.jpeg" alt="Статья 10" />
-                </a>
-                <a href="https://habr.com/ru/articles/782682/" target="_blank">
-                    <img src="img/article11.jpeg" alt="Статья 11" />
-                </a>
-                <a href="https://habr.com/ru/articles/862232/" target="_blank">
-                    <img src="img/article1.jpeg" alt="Статья 1" />
-                </a>
-                <a href="https://habr.com/ru/articles/843876/" target="_blank">
-                    <img src="img/article3.png" alt="Статья 3" />
-                </a>
-            </div>
+        <div class="habr-grid" aria-label="Статьи от автора">
+            <a class="habr-card" href="https://habr.com/ru/companies/sberbank/articles/867366/" target="_blank" rel="noopener noreferrer" aria-label="Идеальное резюме тестировщика, или Как не забыть поливать цветы">
+                <span class="habr-card__media">
+                    <img src="img/article2.png" alt="Идеальное резюме тестировщика, или Как не забыть поливать цветы" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">20K</span>
+                    </span>
+                    <span class="habr-card__title">Идеальное резюме тестировщика</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/782682/" target="_blank" rel="noopener noreferrer" aria-label="JavaScript для QA. Фронтендер учит дебажить код через Devtools">
+                <span class="habr-card__media">
+                    <img src="img/article11.jpeg" alt="JavaScript для QA. Фронтендер учит дебажить код через Devtools" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">20K</span>
+                    </span>
+                    <span class="habr-card__title">JavaScript для QA через DevTools</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/862232/" target="_blank" rel="noopener noreferrer" aria-label="Дизайн-ревью Яндекс Музыки. Тестировщик сравнивает дизайн макета с тестовой сборкой">
+                <span class="habr-card__media">
+                    <img src="img/article1.jpeg" alt="Дизайн-ревью Яндекс Музыки. Тестировщик сравнивает дизайн макета с тестовой сборкой" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">8.1K</span>
+                    </span>
+                    <span class="habr-card__title">Дизайн-ревью Яндекс Музыки</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/804171/" target="_blank" rel="noopener noreferrer" aria-label="Как защитить PROD от багов и себя от стресса">
+                <span class="habr-card__media">
+                    <img src="img/article6.jpeg" alt="Как защитить PROD от багов и себя от стресса" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">4.9K</span>
+                    </span>
+                    <span class="habr-card__title">Как защитить PROD от багов</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/792894/" target="_blank" rel="noopener noreferrer" aria-label="Cypress для Junior QA. Легкий способ войти в автоматизацию">
+                <span class="habr-card__media">
+                    <img src="img/article7.jpeg" alt="Cypress для Junior QA. Легкий способ войти в автоматизацию" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">5.4K</span>
+                    </span>
+                    <span class="habr-card__title">Cypress для Junior QA</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/789524/" target="_blank" rel="noopener noreferrer" aria-label="Без ручного нет автоматизированного. Простой тест на Java для начинающих QA">
+                <span class="habr-card__media">
+                    <img src="img/article8.jpeg" alt="Без ручного нет автоматизированного. Простой тест на Java для начинающих QA" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">3.8K</span>
+                    </span>
+                    <span class="habr-card__title">Простой тест на Java для начинающих QA</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/784710/" target="_blank" rel="noopener noreferrer" aria-label="Технические задания на собеседовании QA Junior+">
+                <span class="habr-card__media">
+                    <img src="img/article9.jpeg" alt="Технические задания на собеседовании QA Junior+" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">51K</span>
+                    </span>
+                    <span class="habr-card__title">Технические задания на собеседовании QA Junior+</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/784116/" target="_blank" rel="noopener noreferrer" aria-label="Какие вопросы я задаю на собеседовании QA Junior+">
+                <span class="habr-card__media">
+                    <img src="img/article10.jpeg" alt="Какие вопросы я задаю на собеседовании QA Junior+" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">113K</span>
+                    </span>
+                    <span class="habr-card__title">Какие вопросы я задаю на собеседовании QA Junior+</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/814379/" target="_blank" rel="noopener noreferrer" aria-label="Интеллект-карта с вопросами для подготовки к собеседованию Junior QA">
+                <span class="habr-card__media">
+                    <img src="img/article4.jpeg" alt="Интеллект-карта с вопросами для подготовки к собеседованию Junior QA" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">12K</span>
+                    </span>
+                    <span class="habr-card__title">Интеллект-карта для собеседования Junior QA</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/810525/" target="_blank" rel="noopener noreferrer" aria-label="Лучшие альтернативы ChatGPT для QA">
+                <span class="habr-card__media">
+                    <img src="img/article5.png" alt="Лучшие альтернативы ChatGPT для QA" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">37K</span>
+                    </span>
+                    <span class="habr-card__title">Лучшие альтернативы ChatGPT для QA</span>
+                </span>
+            </a>
+            <a class="habr-card" href="https://habr.com/ru/articles/843876/" target="_blank" rel="noopener noreferrer" aria-label="Тестирование полей ввода. Реквизиты">
+                <span class="habr-card__media">
+                    <img src="img/article3.png" alt="Тестирование полей ввода. Реквизиты" />
+                </span>
+                <span class="habr-card__body">
+                    <span class="habr-card__meta">
+                        <span class="habr-card__source">Habr</span>
+                        <span class="habr-card__source">4.9K</span>
+                    </span>
+                    <span class="habr-card__title">Тестирование полей ввода</span>
+                </span>
+            </a>
         </div>
     </section>
 
