@@ -2,6 +2,7 @@
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
+  const SHARED_ASSET_VERSION = '8.9.4';
   const AUTH_BUTTON_INNER_HTML = `
     <span class="auth-open-btn__icon" aria-hidden="true">
       <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -11,6 +12,11 @@
     <span class="auth-open-btn__label">Войти</span>
   `;
   let headerScrolled = false;
+
+  function withVersion(src) {
+    if (!src || /^https?:\/\//i.test(src) || src.includes('?')) return src;
+    return `${src}?v=${SHARED_ASSET_VERSION}`;
+  }
 
   function readStoredAuthVisualState() {
     try {
@@ -188,7 +194,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = 'debug.shared.js';
+      script.src = withVersion('debug.shared.js');
       script.async = false;
       script.dataset.debugShared = 'true';
       if (typeof onReady === 'function') {
@@ -199,7 +205,7 @@
     const appendSharedAuthScript = () => {
       if (document.querySelector('script[data-shared-auth="true"]')) return;
       const script = document.createElement('script');
-      script.src = 'auth.shared.js';
+      script.src = withVersion('auth.shared.js');
       script.async = false;
       script.dataset.sharedAuth = 'true';
       document.body.appendChild(script);
@@ -210,7 +216,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = 'sync.shared.js';
+      script.src = withVersion('sync.shared.js');
       script.async = false;
       script.dataset.syncShared = 'true';
       script.addEventListener('load', appendSharedAuthScript, { once: true });
@@ -222,7 +228,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = 'questions-cloud-sync.shared.js';
+      script.src = withVersion('questions-cloud-sync.shared.js');
       script.async = false;
       script.dataset.questionsCloudSyncShared = 'true';
       script.addEventListener('load', appendSyncCoordinatorScript, { once: true });
@@ -234,7 +240,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = 'auth.core.shared.js';
+      script.src = withVersion('auth.core.shared.js');
       script.async = false;
       script.dataset.authCoreShared = 'true';
       script.addEventListener('load', appendQuestionsCloudSyncScript, { once: true });
@@ -245,7 +251,7 @@
       return;
     }
     const stateScript = document.createElement('script');
-    stateScript.src = 'auth.state.shared.js';
+    stateScript.src = withVersion('auth.state.shared.js');
     stateScript.async = false;
     stateScript.dataset.authStateShared = 'true';
     stateScript.addEventListener('load', () => appendDebugScript(appendCoreScript), { once: true });
@@ -260,7 +266,7 @@
     if (hasQuestionsScript) return;
     if (document.querySelector('script[data-model-preflight="true"]')) return;
     const script = document.createElement('script');
-    script.src = 'model-preflight.shared.js';
+    script.src = withVersion('model-preflight.shared.js');
     script.defer = true;
     script.dataset.modelPreflight = 'true';
     document.body.appendChild(script);
