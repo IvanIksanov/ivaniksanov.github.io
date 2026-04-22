@@ -17,7 +17,8 @@
             try {
                 const raw = localStorage.getItem('books_qa_hub_state_v1');
                 const parsed = raw ? JSON.parse(raw) : {};
-                if (parsed && parsed.open === true) {
+                const hasSavedOpen = parsed && typeof parsed === 'object' && Object.prototype.hasOwnProperty.call(parsed, 'open');
+                if (!hasSavedOpen || parsed.open === true) {
                     document.documentElement.classList.add('qa-hub-preopen');
                 }
             } catch {}
@@ -105,8 +106,8 @@
 <div class="qa-hub-panel" id="qa-hub-panel" aria-hidden="true" role="dialog" aria-label="QA-панель">
     <div class="qa-hub-head">
         <div class="qa-hub-tabs" role="tablist" aria-label="Разделы QA-панели">
-            <button class="qa-hub-tab" id="qa-hub-tab-bugs" role="tab" aria-selected="true" aria-controls="bugPanel" type="button">Баги</button>
-            <button class="qa-hub-tab" id="qa-hub-tab-checklist" role="tab" aria-selected="false" aria-controls="books-qa-panel" type="button">Чек-лист</button>
+            <button class="qa-hub-tab" id="qa-hub-tab-bugs" role="tab" aria-selected="false" aria-controls="bugPanel" type="button">Баги</button>
+            <button class="qa-hub-tab" id="qa-hub-tab-checklist" role="tab" aria-selected="true" aria-controls="books-qa-panel" type="button">Чек-лист</button>
         </div>
         <button class="qa-hub-close" id="qa-hub-close" type="button" aria-label="Закрыть QA-панель">×</button>
     </div>
@@ -114,7 +115,7 @@
 </div>
 
 <!-- Панель багов -->
-<div class="bug-panel" id="bugPanel" role="dialog" aria-label="Список найденных багов">
+<div class="bug-panel" id="bugPanel" role="dialog" aria-label="Список найденных багов" aria-hidden="true">
     <h4>Актуальны ли баги?</h4>
 
     <!-- Примерные баг-репорты: вы можете заменить текст и id на свои -->
@@ -455,7 +456,7 @@
             </div>
         </div>
     </div>
-    <div class="books-qa-panel" id="books-qa-panel" aria-label="Чек-лист и техники тест-дизайна" aria-hidden="true">
+    <div class="books-qa-panel" id="books-qa-panel" aria-label="Чек-лист и техники тест-дизайна" aria-hidden="false">
         <div class="books-qa-panel__head">
             <div>
                 <h3>QA-чек-лист</h3>
@@ -1402,9 +1403,12 @@
 
       function restoreQaHubState() {
         const state = readQaHubState();
-        const tab = state.tab === 'checklist' ? 'checklist' : 'bugs';
+        const hasSavedTab = Object.prototype.hasOwnProperty.call(state, 'tab');
+        const tab = hasSavedTab ? (state.tab === 'bugs' ? 'bugs' : 'checklist') : 'checklist';
+        const hasSavedOpen = Object.prototype.hasOwnProperty.call(state, 'open');
+        const open = hasSavedOpen ? !!state.open : true;
         setQaHubTab(tab);
-        setQaHubOpen(!!state.open);
+        setQaHubOpen(open);
       }
 
       function installScrollBoundaryGuard(scrollHost) {
