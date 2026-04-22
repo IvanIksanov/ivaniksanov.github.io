@@ -1342,7 +1342,7 @@ body.qa-hub-open .qa-hub-fab {
 @media (min-width: 721px) {
   html.qa-hub-preopen .page-header,
   html.qa-hub-preopen .books-section {
-    max-width: calc(1220px - min(460px, 38vw) - 40px);
+    max-width: min(1220px, calc(100vw - min(460px, 38vw) - 56px));
     margin-left: calc(min(460px, 38vw) + 36px);
     margin-right: 20px;
     transition: none !important;
@@ -1364,7 +1364,7 @@ body.qa-hub-open .qa-hub-fab {
 
   body.qa-hub-open .page-header,
   body.qa-hub-open .books-section {
-    max-width: calc(1220px - min(460px, 38vw) - 40px);
+    max-width: min(1220px, calc(100vw - min(460px, 38vw) - 56px));
     margin-left: calc(min(460px, 38vw) + 36px);
     margin-right: 20px;
     transition: margin-left .24s ease, max-width .24s ease;
