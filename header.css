@@ -354,6 +354,7 @@ html[data-theme="dark"] .site-title {
 }
 
 .site-header nav::before,
+.theme-switcher .trainer-welcome-help-btn::before,
 .theme-switcher .auth-open-btn::before,
 .theme-switcher #theme-toggle::before {
   content: "";
@@ -665,6 +666,26 @@ header.welcome { justify-self: start; }
     border-radius 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.theme-switcher .trainer-welcome-help-btn {
+  position: relative;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-radius: 50%;
+  width: calc(2rem * var(--header-desktop-scale));
+  min-width: calc(2rem * var(--header-desktop-scale));
+  height: calc(2rem * var(--header-desktop-scale));
+  padding: 0;
+  margin-right: calc(4px * var(--header-desktop-scale));
+  color: #1A1A1A;
+  font-size: calc(15px * var(--header-desktop-scale));
+  font-weight: 800;
+  line-height: 1;
+  transition: color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .theme-switcher .auth-open-btn.is-guest {
   gap: calc(6px * var(--header-desktop-scale));
   width: auto;
@@ -694,6 +715,7 @@ html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth
     color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.theme-switcher .trainer-welcome-help-btn > *,
 .theme-switcher .auth-open-btn > *,
 .theme-switcher #theme-toggle > * {
   position: relative;
@@ -701,6 +723,7 @@ html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth
 }
 
 @media (min-width: 601px) {
+  .site-header.is-scrolled .theme-switcher .trainer-welcome-help-btn::before,
   .site-header.is-scrolled .theme-switcher .auth-open-btn::before,
   .site-header.is-scrolled .theme-switcher #theme-toggle::before {
     opacity: 1;
@@ -710,6 +733,15 @@ html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth
 .theme-switcher .auth-open-btn svg {
   width: calc(20px * var(--header-desktop-scale));
   height: calc(20px * var(--header-desktop-scale));
+}
+
+.theme-switcher .trainer-welcome-help-btn__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
 .theme-switcher .auth-open-btn__icon,
@@ -758,6 +790,20 @@ html[data-auth-visual-state="guest"] .theme-switcher .auth-open-btn:not(.is-auth
 }
 
 .theme-switcher .auth-open-btn:hover {
+  background: transparent;
+  color: #FFA001;
+}
+
+.theme-switcher .trainer-welcome-help-btn:hover {
+  background: transparent;
+  color: #FFA001;
+}
+
+html[data-theme="dark"] .theme-switcher .trainer-welcome-help-btn {
+  color: #F1F1F1;
+}
+
+html[data-theme="dark"] .theme-switcher .trainer-welcome-help-btn:hover {
   background: transparent;
   color: #FFA001;
 }
@@ -1675,6 +1721,7 @@ html[data-theme="dark"] .auth-sync-btn.is-success {
     opacity: 1;
   }
 
+  .theme-switcher .trainer-welcome-help-btn,
   .theme-switcher .auth-open-btn {
     width: 1.9rem;
     min-width: 1.9rem;
