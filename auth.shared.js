@@ -20,6 +20,7 @@
   const CLOUD_AUTH_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
   const CLOUD_OP_TIMEOUT_MS = 10000;
   const REST_TIMEOUT_MS = 7000;
+  const SHARED_ASSET_VERSION = "8.9.4";
 
   let supabaseStore = null;
   let authUser = null;
@@ -31,6 +32,11 @@
   let pendingAuthReturnScrollY = null;
   let authController = null;
   let syncCoordinator = null;
+
+  function withVersion(src) {
+    if (!src || /^https?:\/\//i.test(src) || src.includes("?")) return src;
+    return `${src}?v=${SHARED_ASSET_VERSION}`;
+  }
 
   const authStateShared = window.AuthStateShared || {
     getAuthUiConfig(options) {
@@ -85,16 +91,20 @@
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
-      const existing = Array.from(document.querySelectorAll("script")).find((s) => (s.src || "").includes(src));
+      const requestedSrc = withVersion(src);
+      const existing = Array.from(document.querySelectorAll("script")).find((s) => {
+        const currentSrc = String(s.src || "");
+        return currentSrc.includes(src) || currentSrc.includes(requestedSrc);
+      });
       if (existing && (window.supabase || window.AppSupabase || src === "supabase.client.js")) {
         resolve();
         return;
       }
       const script = document.createElement("script");
-      script.src = src;
+      script.src = requestedSrc;
       script.async = true;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      script.onerror = () => reject(new Error(`Failed to load ${requestedSrc}`));
       document.head.appendChild(script);
     });
   }
