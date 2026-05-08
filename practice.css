@@ -1,13 +1,14 @@
 .practice-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
   gap: 18px;
   margin-top: 20px;
 }
 
 .practice-card {
+  min-width: 0;
   border: 1px solid #d6d6d6;
-  border-radius: 16px;
+  border-radius: 8px;
   padding: 14px;
   background-color: #fff;
   display: flex;
@@ -21,15 +22,17 @@
 
 .practice-card h3 {
   margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .practice-card p {
   margin: 0;
   color: #444;
+  overflow-wrap: anywhere;
 }
 
 .practice-thumb {
-  border-radius: 12px;
+  border-radius: 8px;
   overflow: hidden;
   background: #f2f2f2;
   aspect-ratio: 16 / 9;
@@ -46,10 +49,32 @@
   align-self: flex-start;
   font-weight: 600;
   color: #111;
-  background: #ffa001;
+  background: var(--practice-accent, #ffa001);
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 0.9rem;
+}
+
+.practice-card--books {
+  --practice-accent: #2fb344;
+}
+
+.practice-card--login {
+  --practice-accent: #3091ff;
+}
+
+.practice-card--swagger {
+  --practice-accent: #44bbc1;
+}
+
+.practice-card--five {
+  --practice-accent: #ffa001;
+}
+
+.practice-card--books .practice-cta,
+.practice-card--login .practice-cta,
+.practice-card--swagger .practice-cta {
+  color: #fff;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -91,6 +116,7 @@ html[data-theme="dark"] .practice-cta {
 
 @media (max-width: 520px) {
   .practice-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 20rem);
+    justify-content: start;
   }
 }

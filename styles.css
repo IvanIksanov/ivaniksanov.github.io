@@ -2881,9 +2881,12 @@ body.trainer-welcome-lock {
 }
 
 .trainer-welcome__dialog {
+  box-sizing: border-box;
   width: min(100%, 460px);
+  max-width: calc(100vw - clamp(1.5rem, 4vw, 2.5rem));
   max-height: calc(100dvh - clamp(1rem, 4vw, 2.5rem));
   overflow: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(26, 26, 26, 0.1);
@@ -2895,6 +2898,8 @@ body.trainer-welcome-lock {
 
 .trainer-welcome__media {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   aspect-ratio: 16 / 7;
   max-height: clamp(7rem, 24vh, 10.5rem);
   overflow: hidden;
@@ -2911,8 +2916,13 @@ body.trainer-welcome-lock {
 
 .trainer-welcome__body {
   display: grid;
+  min-width: 0;
   gap: clamp(0.42rem, 1.2vw, 0.62rem);
   padding: clamp(0.72rem, 2.2vw, 1rem);
+}
+
+.trainer-welcome__body > * {
+  min-width: 0;
 }
 
 .trainer-welcome__kicker {
@@ -2925,7 +2935,7 @@ body.trainer-welcome-lock {
   font-size: clamp(0.58rem, 0.52rem + 0.22vw, 0.72rem);
   font-weight: 800;
   line-height: 1.1;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .trainer-welcome__body h2 {
@@ -2941,6 +2951,7 @@ body.trainer-welcome-lock {
   color: #454545;
   font-size: clamp(0.76rem, 0.68rem + 0.28vw, 0.92rem);
   line-height: 1.34;
+  overflow-wrap: anywhere;
 }
 
 .trainer-welcome__list {
@@ -3006,7 +3017,8 @@ html[data-theme="dark"] .trainer-welcome__kicker {
   }
 
   .trainer-welcome__dialog {
-    width: 100%;
+    width: min(20rem, calc(100vw - 1.5rem));
+    max-width: calc(100vw - 1.5rem);
   }
 
   .trainer-welcome__media {
