@@ -1,7 +1,11 @@
 (function () {
   const STORAGE_KEY = 'qatodev_five_letters_state_v2';
   const STATS_KEY = 'qatodev_five_letters_stats_v1';
+  const DEMO_STORAGE_KEY = 'qatodev_five_letters_demo_seen_v1';
+  const DEMO_ANSWER = 'тикер';
+  const DEMO_GUESSES = ['слово', 'такси', 'крест', 'тикер'];
   const ALPHABET_RE = /[а-яё]/giu;
+  const CYRILLIC_CHAR_RE = /^[а-яё]$/i;
 const dictionary = window.FIVE_LETTERS_DICTIONARY || { answers: [], allowed: [] };
 const answers = dictionary.answers || [];
 const allowed = new Set(dictionary.allowed || answers);
@@ -32,16 +36,23 @@ function createHelperColumns(rows) {
   };
 
   const els = {
+    tabsWrap: document.querySelector('.five-tabs'),
     tabs: Array.from(document.querySelectorAll('.five-tab')),
     panels: Array.from(document.querySelectorAll('.five-panel')),
     board: document.getElementById('five-board'),
     hiddenInput: document.getElementById('five-grid-input'),
     status: document.getElementById('five-game-status'),
+    playActions: document.getElementById('five-play-actions'),
+    submitGuess: document.getElementById('five-submit-guess'),
+    deleteLetter: document.getElementById('five-delete-letter'),
+    demoActions: document.getElementById('five-demo-actions'),
+    startPlay: document.getElementById('five-start-play'),
     replayActions: document.getElementById('five-replay-actions'),
     playAgain: document.getElementById('five-play-again'),
     correctRow: document.getElementById('five-correct-row'),
     presentGrid: document.getElementById('five-present-grid'),
     excludedGrid: document.getElementById('five-excluded-grid'),
+    helperSync: document.getElementById('five-helper-sync'),
     clearHelper: document.getElementById('five-clear-helper'),
     candidatesHead: document.getElementById('five-candidates-head'),
     candidates: document.getElementById('five-candidates'),
@@ -53,13 +64,43 @@ function createHelperColumns(rows) {
     history: document.getElementById('five-history')
   };
 
+  const hadSavedGame = storageHasKey(STORAGE_KEY);
   let state = loadState();
+  let demoActive = !hadSavedGame && !storageHasKey(DEMO_STORAGE_KEY);
+  let invalidFlash = null;
+  let invalidFlashTimer = 0;
   let hintTimer = 0;
   let suppressFocusHintUntil = 0;
+  const touchControlsQuery = window.matchMedia?.('(hover: none), (pointer: coarse)');
+  let touchControlsEnabled = Boolean(touchControlsQuery?.matches);
   const revealedCandidateKeys = new Set();
 
   function resetCandidateReveals() {
     revealedCandidateKeys.clear();
+  }
+
+  function storageHasKey(key) {
+    try {
+      return localStorage.getItem(key) !== null;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  function markDemoSeen() {
+    try {
+      localStorage.setItem(DEMO_STORAGE_KEY, '1');
+    } catch (error) {
+      // localStorage can be unavailable in private modes.
+    }
+  }
+
+  function dismissDemo() {
+    if (!demoActive) return false;
+    demoActive = false;
+    markDemoSeen();
+    renderBoard();
+    return true;
   }
 
   function getCandidateRevealKey(word, index) {
@@ -72,6 +113,10 @@ function createHelperColumns(rows) {
 
   function normalizeLetters(value) {
     return Array.from(new Set(((value || '').toLowerCase().replace(/ё/g, 'е').match(ALPHABET_RE) || []))).join('');
+  }
+
+  function isCyrillicLetter(value) {
+    return CYRILLIC_CHAR_RE.test(value || '');
   }
 
   function normalizeHelperColumns(value, rows) {
@@ -217,18 +262,26 @@ function createHelperColumns(rows) {
 
   function renderBoard() {
     els.board.innerHTML = '';
+    const demoGuesses = demoActive ? DEMO_GUESSES : null;
+    const answerForScores = demoActive ? DEMO_ANSWER : state.answer;
     for (let rowIndex = 0; rowIndex < 6; rowIndex += 1) {
-      const guess = getRowWord(rowIndex);
+      const guess = demoGuesses?.[rowIndex] || getRowWord(rowIndex);
       const row = document.createElement('div');
       row.className = 'five-board-row';
-      const score = state.guesses[rowIndex] ? scoreGuess(guess, state.answer) : [];
-      const isWinningRow = state.guesses[rowIndex] === state.answer;
+      const isScoredRow = demoActive ? rowIndex < DEMO_GUESSES.length : Boolean(state.guesses[rowIndex]);
+      const score = isScoredRow ? scoreGuess(guess, answerForScores) : [];
+      const isWinningRow = guess === answerForScores && isScoredRow;
       for (let index = 0; index < 5; index += 1) {
         const cell = document.createElement('div');
         cell.className = 'five-cell';
-        const letter = guess[index] || '';
+        const isInvalidCell = invalidFlash
+          && !demoActive
+          && rowIndex === invalidFlash.rowIndex
+          && index === invalidFlash.cellIndex;
+        const letter = isInvalidCell ? invalidFlash.char : guess[index] || '';
         cell.textContent = letter;
         if (letter) cell.classList.add('is-filled');
+        if (isInvalidCell) cell.classList.add('is-invalid', 'is-shaking');
         if (isWinningRow) cell.classList.add('is-win');
         if (score[index]) {
           cell.classList.add(`is-${score[index]}`);
@@ -238,9 +291,18 @@ function createHelperColumns(rows) {
       }
       els.board.appendChild(row);
     }
-    els.status.textContent = state.message || '';
+    els.status.textContent = demoActive
+      ? 'Пример: три слова введены, на четвертой попытке слово отгадано.'
+      : state.message || '';
     els.hiddenInput.disabled = state.finished;
     els.hiddenInput.value = state.currentGuess;
+    const showTouchActions = touchControlsEnabled
+      && !state.finished
+      && !demoActive
+      && state.currentGuess.length > 0;
+    els.playActions.hidden = !touchControlsEnabled || state.finished || demoActive;
+    els.playActions.classList.toggle('is-visible', showTouchActions);
+    els.demoActions.hidden = !demoActive;
     els.replayActions.hidden = !state.finished;
     renderStats();
   }
@@ -287,7 +349,39 @@ function createHelperColumns(rows) {
     }, 1500);
   }
 
+  function flashInvalidInput(value) {
+    dismissDemo();
+    const char = String(value || '').slice(-1).toUpperCase();
+    if (!char || state.finished) return;
+    window.clearTimeout(invalidFlashTimer);
+    invalidFlash = {
+      rowIndex: state.guesses.length,
+      cellIndex: Math.min(state.currentGuess.length, 4),
+      char
+    };
+    state.message = '';
+    renderBoard();
+    invalidFlashTimer = window.setTimeout(() => {
+      invalidFlash = null;
+      renderBoard();
+      focusGrid();
+    }, 520);
+  }
+
+  function deleteLastLetter() {
+    if (dismissDemo() || state.finished) return;
+    state.currentGuess = state.currentGuess.slice(0, -1);
+    state.message = '';
+    saveState();
+    renderBoard();
+    focusGrid();
+  }
+
   function submitGuess() {
+    if (dismissDemo()) {
+      focusGrid();
+      return;
+    }
     if (state.finished) return;
     const guess = normalizeWord(state.currentGuess);
     if (guess.length !== 5) {
@@ -303,6 +397,7 @@ function createHelperColumns(rows) {
         finishGame(false);
       } else {
         state.message = '';
+        syncHelperFromGame();
       }
     }
     saveState();
@@ -322,14 +417,18 @@ function createHelperColumns(rows) {
   }
 
   function resetHelperConditions() {
-    state.helper = {
+    state.helper = createEmptyHelper();
+    state.helperDetached = false;
+    renderHelperInputs();
+    renderCandidates();
+  }
+
+  function createEmptyHelper() {
+    return {
       correct: ['', '', '', '', ''],
       present: createHelperColumns(HELPER_PRESENT_ROWS),
       excluded: createHelperColumns(HELPER_EXCLUDED_ROWS)
     };
-    state.helperDetached = false;
-    renderHelperInputs();
-    renderCandidates();
   }
 
   function recordResult(success, durationMs) {
@@ -362,17 +461,21 @@ function createHelperColumns(rows) {
       submitGuess();
       return;
     }
-    if (event.key === 'Backspace') {
+    if (event.key === 'Backspace' || event.key === 'Delete') {
       event.preventDefault();
-      state.currentGuess = state.currentGuess.slice(0, -1);
-      state.message = '';
-      saveState();
-      renderBoard();
+      deleteLastLetter();
+      return;
+    }
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key.length === 1 && !isCyrillicLetter(event.key)) {
+      event.preventDefault();
+      flashInvalidInput(event.key);
       return;
     }
     const letter = normalizeWord(event.key);
     if (!letter) return;
     event.preventDefault();
+    dismissDemo();
     state.currentGuess = normalizeWord(state.currentGuess + letter);
     state.message = '';
     saveState();
@@ -380,6 +483,8 @@ function createHelperColumns(rows) {
   }
 
   function renderHelperInputs() {
+    const syncEnabled = !state.helperDetached;
+    els.helperSync.checked = syncEnabled;
     els.correctRow.innerHTML = '';
     els.presentGrid.innerHTML = '';
     els.excludedGrid.innerHTML = '';
@@ -435,9 +540,18 @@ function createHelperColumns(rows) {
       input.value = getHelperCell(type, index, presentRowIndex);
       input.className = `five-helper-tile five-helper-tile--${type}`;
       input.classList.toggle('has-value', Boolean(input.value));
+      input.disabled = !state.helperDetached;
       input.setAttribute('aria-label', `${label}, позиция ${index + 1}`);
 
       input.addEventListener('input', () => {
+        if (!state.helperDetached) return;
+        const invalidChar = getInvalidHelperChar(input.value);
+        if (invalidChar) {
+          input.value = '';
+          input.classList.remove('has-value');
+          flashHelperInvalidInput(input);
+          return;
+        }
         state.helperDetached = true;
         resetCandidateReveals();
 
@@ -492,8 +606,31 @@ function createHelperColumns(rows) {
     return els.excludedGrid.querySelector(`[data-excluded-row="${rowIndex}"]`);
   }
 
+  function getInvalidHelperChar(value) {
+    return Array.from(value || '').find((char) => !isCyrillicLetter(char));
+  }
+
+  function flashHelperInvalidInput(input) {
+    if (!input) return;
+    window.clearTimeout(input._helperInvalidTimer);
+    input.classList.remove('is-invalid');
+    void input.offsetWidth;
+    input.classList.add('is-invalid');
+    input._helperInvalidTimer = window.setTimeout(() => {
+      input.classList.remove('is-invalid');
+    }, 520);
+  }
+
   function handleHelperGridPaste(event, type, index, presentRowIndex = 0) {
-    const pasted = normalizeWord(event.clipboardData?.getData('text') || '');
+    if (!state.helperDetached) return;
+    const rawText = event.clipboardData?.getData('text') || '';
+    const pasted = normalizeWord(rawText);
+    const invalidChar = getInvalidHelperChar(rawText);
+    if (invalidChar) {
+      event.preventDefault();
+      flashHelperInvalidInput(event.target);
+      return;
+    }
     if (!pasted) return;
 
     event.preventDefault();
@@ -549,6 +686,7 @@ function createHelperColumns(rows) {
   }
 
   function handleHelperGridKeydown(event, type, index, rowIndex = 0) {
+    if (!state.helperDetached) return;
     const row = getHelperInputRow(type, rowIndex);
     const inputs = Array.from(row?.querySelectorAll('input') || []);
 
@@ -606,6 +744,14 @@ function createHelperColumns(rows) {
     if (event.key === 'Backspace' && !getHelperCell(type, index, rowIndex)) {
       event.preventDefault();
       inputs[Math.max(index - 1, 0)]?.focus();
+      return;
+    }
+
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+    if (event.key.length === 1 && !isCyrillicLetter(event.key)) {
+      event.preventDefault();
+      flashHelperInvalidInput(event.target);
     }
   }
 
@@ -632,20 +778,19 @@ function createHelperColumns(rows) {
   function renderCandidates() {
     const candidates = (dictionary.allowed || []).filter(candidateMatches);
     const hasFilters = helperHasFilters();
-    const shouldShowCandidates = hasFilters && candidates.length <= 10;
+    const shouldShowCandidates = candidates.length <= 10;
     const hiddenCount = Math.min(3, candidates.length);
 
-    els.candidatesHead.hidden = !shouldShowCandidates;
-    els.candidates.hidden = !shouldShowCandidates;
-    els.count.textContent = `${candidates.length} ${plural(candidates.length, ['вариант', 'варианта', 'вариантов'])}`;
-
-    els.candidatesNote.textContent = hiddenCount === 1
-      ? 'В нашем словаре нашелся ответ. Нажми, чтобы открыть.'
-      : `${hiddenCount} ${plural(hiddenCount, ['плашка скрыта', 'плашки скрыты', 'плашек скрыто'])}, чтобы не спойлерить подбор.`;
-
+    els.count.textContent = 'Вероятный ответ в вашей игре';
     els.candidates.innerHTML = '';
+    els.candidates.classList.toggle('is-marquee', !shouldShowCandidates);
+    els.candidates.classList.toggle('is-single-answer', candidates.length === 1);
 
     if (shouldShowCandidates) {
+      els.candidatesNote.textContent = hiddenCount === 1
+        ? `${candidates.length} ${plural(candidates.length, ['вариант', 'варианта', 'вариантов'])} из словаря. Нажми на плашку, чтобы открыть.`
+        : `${candidates.length} ${plural(candidates.length, ['вариант', 'варианта', 'вариантов'])}. ${hiddenCount} ${plural(hiddenCount, ['плашка скрыта', 'плашки скрыты', 'плашек скрыто'])}, чтобы не спойлерить подбор.`;
+
       candidates.forEach((word, index) => {
         if (index < hiddenCount) {
           renderHiddenCandidate(word, index);
@@ -657,9 +802,62 @@ function createHelperColumns(rows) {
         chip.textContent = word;
         els.candidates.appendChild(chip);
       });
+    } else {
+      els.candidatesNote.textContent = `${candidates.length} ${plural(candidates.length, ['вариант', 'варианта', 'вариантов'])}. Слишком много совпадений, используй проверочные слова, чтобы быстрее сузить ответ.`;
+      renderCandidateMarquee(candidates);
     }
 
     renderProbes(candidates, hasFilters);
+  }
+
+  function renderCandidateMarquee(candidates) {
+    const marqueeWords = selectCandidateMarqueeWords(candidates, 16);
+    if (!marqueeWords.length) return;
+
+    [marqueeWords, marqueeWords.slice().reverse()].forEach((words, rowIndex) => {
+      const row = document.createElement('div');
+      row.className = `five-candidates-marquee${rowIndex ? ' five-candidates-marquee--alt' : ''}`;
+
+      [...words, ...words].forEach((word) => {
+        const chip = document.createElement('span');
+        chip.className = 'five-word-chip';
+        chip.textContent = word;
+        row.appendChild(chip);
+      });
+
+      els.candidates.appendChild(row);
+    });
+  }
+
+  function selectCandidateMarqueeWords(candidates, limit) {
+    if (candidates.length <= limit) return [...candidates];
+
+    const grouped = new Map();
+    candidates.forEach((word) => {
+      const key = word[0] || '';
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(word);
+    });
+
+    const letters = Array.from(grouped.keys()).sort();
+    const selected = [];
+    let round = 0;
+
+    while (selected.length < limit && letters.length) {
+      let addedInRound = false;
+
+      letters.forEach((letter) => {
+        const words = grouped.get(letter);
+        if (!words || round >= words.length || selected.length >= limit) return;
+        selected.push(words[round]);
+        addedInRound = true;
+      });
+
+      if (!addedInRound) break;
+      round += 1;
+    }
+
+    return selected;
   }
 
   function renderHiddenCandidate(word, index) {
@@ -749,6 +947,12 @@ function createHelperColumns(rows) {
   }
 
   function renderProbes(candidates, hasFilters) {
+    if (candidates.length <= 1) {
+      els.probesWrap.hidden = true;
+      els.probes.innerHTML = '';
+      return;
+    }
+
     els.probesWrap.hidden = false;
     els.probes.innerHTML = '';
 
@@ -869,7 +1073,7 @@ function createHelperColumns(rows) {
     els.history.innerHTML = '';
 
     if (!stats.leaderboard.length) {
-      els.leaderboard.appendChild(createEmptyNote('Пока нет побед.'));
+      els.leaderboard.appendChild(createEmptyNote('Пока нет честных побед.'));
     } else {
       stats.leaderboard.sort(compareResults).slice(0, 5).forEach((result, index) => {
         els.leaderboard.appendChild(createResultRow(result, index));
@@ -900,6 +1104,7 @@ function createHelperColumns(rows) {
       tab.classList.toggle('is-active', active);
       tab.setAttribute('aria-selected', String(active));
     });
+    els.tabsWrap.classList.toggle('is-helper', mode === 'helper');
     els.panels.forEach((panel) => {
       const active = panel.id === `five-panel-${mode}`;
       panel.classList.toggle('is-active', active);
@@ -909,6 +1114,10 @@ function createHelperColumns(rows) {
   }
 
   function startNewGame(message = 'Новое слово выбрано. Можно начинать.') {
+    demoActive = false;
+    markDemoSeen();
+    invalidFlash = null;
+    window.clearTimeout(invalidFlashTimer);
     state.answer = pickAnswer();
     state.guesses = [];
     state.currentGuess = '';
@@ -928,22 +1137,20 @@ function createHelperColumns(rows) {
 
   function syncHelperFromGame() {
     if (state.helperDetached) {
+      els.helperSync.checked = false;
       renderHelperInputs();
       renderCandidates();
       return;
     }
 
     if (!state.guesses.length) {
+      state.helper = createEmptyHelper();
       renderHelperInputs();
       renderCandidates();
       return;
     }
 
-    const helper = {
-      correct: ['', '', '', '', ''],
-      present: createHelperColumns(HELPER_PRESENT_ROWS),
-      excluded: createHelperColumns(HELPER_EXCLUDED_ROWS)
-    };
+    const helper = createEmptyHelper();
 
     state.guesses.forEach((guess) => {
       const score = scoreGuess(guess, state.answer);
@@ -965,11 +1172,11 @@ function createHelperColumns(rows) {
   }
 
   function focusGrid() {
-    window.setTimeout(() => {
-      if (!state.finished) els.hiddenInput.focus({ preventScroll: true });
-    }, 0);
+    if (state.finished || demoActive) return;
+    els.hiddenInput.focus({ preventScroll: true });
   }
 
+  els.board.addEventListener('pointerdown', focusGrid);
   els.board.addEventListener('click', focusGrid);
   els.board.addEventListener('pointerup', (event) => {
     const cell = event.target.closest('.five-cell[data-hint]');
@@ -995,25 +1202,57 @@ function createHelperColumns(rows) {
     const target = event.target.closest('.five-result-word[data-hint], .five-helper-count[data-hint]');
     if (target) showCellHint(target);
   });
+  touchControlsQuery?.addEventListener?.('change', (event) => {
+    touchControlsEnabled = Boolean(event.matches);
+    renderBoard();
+  });
   els.board.addEventListener('keydown', handleTyping);
   els.hiddenInput.addEventListener('keydown', handleTyping);
   els.hiddenInput.addEventListener('input', () => {
-    state.currentGuess = normalizeWord(els.hiddenInput.value);
+    if (state.mode !== 'game' || state.finished) return;
+    const raw = els.hiddenInput.value || '';
+    const invalidChar = Array.from(raw).find((char) => !isCyrillicLetter(char));
+    if (invalidChar) {
+      els.hiddenInput.value = state.currentGuess;
+      flashInvalidInput(invalidChar);
+      return;
+    }
+    dismissDemo();
+    state.currentGuess = normalizeWord(raw);
     state.message = '';
     saveState();
     renderBoard();
   });
   els.tabs.forEach((tab) => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
+  els.submitGuess.addEventListener('click', () => {
+    submitGuess();
+    focusGrid();
+  });
+  els.deleteLetter.addEventListener('click', deleteLastLetter);
+  els.startPlay.addEventListener('click', () => {
+    dismissDemo();
+    focusGrid();
+  });
   els.playAgain.addEventListener('click', () => startNewGame(''));
+
+  els.helperSync.addEventListener('change', () => {
+    resetCandidateReveals();
+    if (els.helperSync.checked) {
+      state.helperDetached = false;
+      syncHelperFromGame();
+    } else {
+      state.helperDetached = true;
+      state.helper = createEmptyHelper();
+      renderHelperInputs();
+      renderCandidates();
+    }
+    saveState();
+  });
 
   els.clearHelper.addEventListener('click', () => {
     state.helperDetached = true;
     resetCandidateReveals();
-    state.helper = {
-      correct: ['', '', '', '', ''],
-      present: createHelperColumns(HELPER_PRESENT_ROWS),
-      excluded: createHelperColumns(HELPER_EXCLUDED_ROWS)
-    };
+    state.helper = createEmptyHelper();
     saveState();
     renderHelperInputs();
     renderCandidates();

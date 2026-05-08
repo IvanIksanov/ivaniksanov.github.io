@@ -86,7 +86,14 @@
         <section class="five-panel is-active" id="five-panel-game" role="tabpanel" aria-labelledby="five-tab-game">
             <div class="five-status" id="five-game-status" aria-live="polite"></div>
             <div class="five-board" id="five-board" tabindex="0" aria-label="Игровое поле"></div>
-            <input class="five-hidden-input" id="five-grid-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-hidden="true" tabindex="-1">
+            <input class="five-hidden-input" id="five-grid-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Ввод слова">
+            <div class="five-actions five-actions--play" id="five-play-actions">
+                <button class="five-submit-guess" type="button" id="five-submit-guess">Подтвердить</button>
+                <button class="five-delete-letter" type="button" id="five-delete-letter">Удалить</button>
+            </div>
+            <div class="five-actions five-actions--demo" id="five-demo-actions" hidden>
+                <button type="button" id="five-start-play">Сыграть</button>
+            </div>
             <div class="five-actions five-actions--replay" id="five-replay-actions" hidden>
                 <button type="button" id="five-play-again">Играть снова</button>
             </div>
@@ -103,6 +110,11 @@
         </section>
 
         <section class="five-panel" id="five-panel-helper" role="tabpanel" aria-labelledby="five-tab-helper" hidden>
+            <label class="five-helper-sync">
+                <input id="five-helper-sync" type="checkbox">
+                <span>Синхронизировать с игрой</span>
+            </label>
+
             <div class="five-helper-grid five-helper-grid--boards">
                 <div class="five-helper-card five-helper-card--conditions">
                     <h3>Сетка подсказок</h3>
