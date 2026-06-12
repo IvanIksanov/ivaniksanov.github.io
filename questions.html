@@ -107,19 +107,60 @@
 </div>
 <div id="questions-load-status" class="questions-load-status" aria-live="polite"></div>
     
-    <!-- Вставить после .search-container -->
-    <div id="category-filters" class="category-filters">
-        <button class="filter-chip" data-category="Все">Все</button>
-        <button class="filter-chip" data-category="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ">Теория</button>
-        <button class="filter-chip" data-category="WEB">Web</button>
-        <button class="filter-chip" data-category="API">API</button>
-        <button class="filter-chip" data-category="БАЗЫ ДАННЫХ">Базы данных</button>
-        <button class="filter-chip" data-category="GIT + IDE + SELENIUM">Git + IDE</button>
-        <button class="filter-chip" data-category="DEVOPS">DevOps</button>
-        <button class="filter-chip" data-category="Вопросы к руководителю | команде | HR">HR</button>
-        <button class="filter-chip" data-category="AQA Java">Java</button>
-        <button class="filter-chip" data-category="AQA Python">Python</button>
-        <button class="filter-chip" data-category="AQA JS">JS</button>
+    <div class="filter-mode-switcher" aria-label="Режим фильтрации">
+        <span class="filter-mode-label" id="filter-mode-categories-label">По категориям</span>
+        <button
+                type="button"
+                id="filter-mode-toggle"
+                class="filter-mode-toggle"
+                role="switch"
+                aria-checked="false"
+                aria-labelledby="filter-mode-categories-label filter-mode-companies-label"
+        >
+            <span class="filter-mode-toggle__track" aria-hidden="true">
+                <span class="filter-mode-toggle__thumb"></span>
+            </span>
+        </button>
+        <span class="filter-mode-label" id="filter-mode-companies-label">По компаниям</span>
+    </div>
+
+    <div class="filters-stage">
+        <div id="category-filters" class="category-filters filter-row">
+            <button class="filter-chip" data-category="Все">Все</button>
+            <button class="filter-chip" data-category="ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ">Теория</button>
+            <button class="filter-chip" data-category="WEB">Web</button>
+            <button class="filter-chip" data-category="API">API</button>
+            <button class="filter-chip" data-category="БАЗЫ ДАННЫХ">Базы данных</button>
+            <button class="filter-chip" data-category="GIT + IDE + SELENIUM">Git + IDE</button>
+            <button class="filter-chip" data-category="DEVOPS">DevOps</button>
+            <button class="filter-chip" data-category="Вопросы к руководителю | команде | HR">HR</button>
+            <button class="filter-chip" data-category="AQA Java">Java</button>
+            <button class="filter-chip" data-category="AQA Python">Python</button>
+            <button class="filter-chip" data-category="AQA JS">JS</button>
+        </div>
+        <div id="company-filters" class="category-filters filter-row company-filters is-hidden" aria-hidden="true">
+            <button class="filter-chip company-chip" data-company="yandex">
+                <span>Yandex</span>
+            </button>
+            <button class="filter-chip company-chip" data-company="sber">
+                <span>Сбер</span>
+            </button>
+            <button class="filter-chip company-chip" data-company="ozon">
+                <span>Ozon</span>
+            </button>
+            <button class="filter-chip company-chip" data-company="avito">
+                <span>Авито</span>
+            </button>
+            <button class="filter-chip company-chip" data-company="tbank">
+                <span>Т-Банк</span>
+            </button>
+            <button class="filter-chip company-chip" data-company="vk">
+                <span>VK</span>
+            </button>
+            <button class="filter-chip company-chip" data-company="wildberries">
+                <span>Wildberries</span>
+            </button>
+        </div>
     </div>
 </div>
 

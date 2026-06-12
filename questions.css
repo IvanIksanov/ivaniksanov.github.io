@@ -1837,6 +1837,117 @@ button.unclear-btn:hover {
      max-width: 800px;
    }
 
+   .filter-mode-switcher {
+     display: inline-flex;
+     align-items: center;
+     justify-content: center;
+     gap: 0.7rem;
+     width: min(100%, 800px);
+     margin: 0.35rem auto 0.7rem;
+     color: var(--text-color, #333);
+   }
+
+   .filter-mode-label {
+     font-size: 0.78rem;
+     line-height: 1.2;
+     color: inherit;
+     opacity: 0.82;
+     user-select: none;
+     white-space: nowrap;
+     transition: opacity 0.2s ease, color 0.2s ease;
+   }
+
+   body.filters-no-transition .filter-mode-label,
+   body.filters-no-transition .filter-mode-toggle__track,
+   body.filters-no-transition .filter-mode-toggle__thumb,
+   body.filters-no-transition .filter-row {
+     transition: none !important;
+   }
+
+   .filter-mode-switcher:not(.is-companies) #filter-mode-categories-label {
+     opacity: 1;
+     color: #44BBC1;
+   }
+
+   .filter-mode-switcher.is-companies #filter-mode-companies-label {
+     opacity: 1;
+     color: #FFA001;
+   }
+
+   .filter-mode-toggle {
+     appearance: none;
+     border: 0;
+     background: transparent;
+     padding: 0;
+     cursor: pointer;
+     line-height: 0;
+   }
+
+   .filter-mode-toggle:focus-visible {
+     outline: 2px solid rgba(68, 187, 193, 0.75);
+     outline-offset: 4px;
+     border-radius: 999px;
+   }
+
+   .filter-mode-toggle__track {
+     position: relative;
+     display: inline-flex;
+     width: 50px;
+     height: 24px;
+     border-radius: 999px;
+     background: rgba(250, 250, 250, 0.6);
+     border: 1px solid rgba(0, 0, 0, 0.08);
+     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08), var(--search-shadow, 0 2px 4px rgba(0, 0, 0, 0.1));
+     backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
+     -webkit-backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
+     transition: background-color 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+   }
+
+   .filter-mode-toggle__thumb {
+     position: absolute;
+     top: 3px;
+     left: 3px;
+     width: 18px;
+     height: 18px;
+     border-radius: 50%;
+     background: #44BBC1;
+     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+     transition: transform 0.24s ease, background-color 0.24s ease;
+   }
+
+   .filter-mode-toggle[aria-checked="true"] .filter-mode-toggle__thumb {
+     transform: translateX(26px);
+     background: #FFA001;
+   }
+
+   .filters-stage {
+     width: 100%;
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+   }
+
+   .filter-row {
+     max-height: 140px;
+     opacity: 1;
+     transform: translateY(0);
+     overflow: visible;
+     pointer-events: auto;
+     visibility: visible;
+     transition: opacity 0.24s ease, transform 0.24s ease, max-height 0.28s ease, margin 0.28s ease;
+   }
+
+   .filter-row.is-hidden {
+     max-height: 0;
+     opacity: 0;
+     transform: translateY(-6px);
+     margin-top: 0;
+     margin-bottom: 0;
+     pointer-events: none;
+     visibility: hidden;
+     overflow: hidden;
+   }
+
    .filter-chip {
      padding: 0.5rem 1rem;
      border-radius: 20px;
@@ -1850,6 +1961,26 @@ button.unclear-btn:hover {
      -webkit-backdrop-filter: blur(var(--header-glass-blur, 3px)) saturate(var(--header-glass-saturate, 90%));
    }
 
+   .company-chip {
+     display: inline-flex;
+     align-items: center;
+     box-shadow: none;
+   }
+
+   .company-chip:hover {
+     filter: none;
+   }
+
+   .company-chip.active {
+     color: #fff;
+     border-color: rgba(255, 255, 255, 0.62);
+     box-shadow: none;
+   }
+
+   .company-chip[data-company="tbank"].active {
+     color: #222;
+   }
+
    .filter-chip:hover {
      background-color: rgba(242, 250, 251, 0.65);
    }
@@ -1858,6 +1989,14 @@ button.unclear-btn:hover {
      background-color: rgba(68, 187, 193, 0.55);
      color: white;
      border-color: rgba(68, 187, 193, 0.4);
+   }
+
+   .filter-chip.company-chip.active {
+     border-color: transparent;
+   }
+
+   body.questions-companies-mode #accordion-container .progress-container {
+     display: none;
    }
 
    /* Темная тема */
@@ -1877,9 +2016,88 @@ button.unclear-btn:hover {
      border-color: rgba(68, 187, 193, 0.4);
    }
 
+   html[data-theme="dark"] .filter-chip.company-chip.active {
+     border-color: transparent;
+   }
+
+   html[data-theme="dark"] .company-chip.active {
+     border-color: transparent;
+     box-shadow: none;
+   }
+
+   .company-chip[data-company="yandex"].active,
+   html[data-theme="dark"] .company-chip[data-company="yandex"].active {
+     background-color: rgba(252, 63, 29, 0.92);
+   }
+
+   .company-chip[data-company="sber"].active,
+   html[data-theme="dark"] .company-chip[data-company="sber"].active {
+     background-color: rgba(33, 160, 56, 0.92);
+   }
+
+   .company-chip[data-company="ozon"].active,
+   html[data-theme="dark"] .company-chip[data-company="ozon"].active {
+     background-color: rgba(0, 91, 255, 0.92);
+   }
+
+   .company-chip[data-company="avito"].active,
+   html[data-theme="dark"] .company-chip[data-company="avito"].active {
+     background-color: rgba(0, 170, 255, 0.92);
+   }
+
+   .company-chip[data-company="tbank"].active,
+   html[data-theme="dark"] .company-chip[data-company="tbank"].active {
+     background-color: rgba(255, 221, 45, 0.96);
+     color: #222;
+   }
+
+   .company-chip[data-company="vk"].active,
+   html[data-theme="dark"] .company-chip[data-company="vk"].active {
+     background-color: rgba(0, 122, 255, 0.92);
+   }
+
+   .company-chip[data-company="wildberries"].active,
+   html[data-theme="dark"] .company-chip[data-company="wildberries"].active {
+     background-color: rgba(203, 17, 171, 0.92);
+   }
+
+   html[data-theme="dark"] .filter-mode-switcher {
+     color: #eee;
+   }
+
+   html[data-theme="dark"] .filter-mode-toggle__track {
+     background: rgba(35, 35, 35, 0.55);
+     border-color: rgba(255, 255, 255, 0.1);
+     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.25);
+   }
+
    @media (max-width: 600px) {
      .category-filters {
        padding: 0 0.5rem;
+     }
+
+     .filter-mode-switcher {
+       gap: 0.48rem;
+       margin-top: 0.2rem;
+       margin-bottom: 0.55rem;
+     }
+
+     .filter-mode-label {
+       font-size: 0.72rem;
+     }
+
+     .filter-mode-toggle__track {
+       width: 46px;
+       height: 24px;
+     }
+
+     .filter-mode-toggle__thumb {
+       width: 18px;
+       height: 18px;
+     }
+
+     .filter-mode-toggle[aria-checked="true"] .filter-mode-toggle__thumb {
+       transform: translateX(22px);
      }
 
      .filter-chip {
