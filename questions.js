@@ -4366,6 +4366,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       section.style.display = sectionKey === selectedKey ? "" : "none";
     });
   }
+  if (typeof window.__questionsApplyActiveFilter === "function") {
+    window.__questionsApplyActiveFilter();
+  }
 
   if (authUser) {
     syncLocalAndCloudState({ force: false, source: "post-render" }).catch((e) => {
@@ -4395,7 +4398,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     resultsTitle.style.display = has ? "block"       : "none";
     about.style.display        = has ? "none"        : "";
 
-    if (!has) {
+    if (window.__questionsFilterMode === "companies" && typeof window.__questionsApplyCompanyFilter === "function") {
+      window.__questionsApplyCompanyFilter({ preserveSearch: has });
+    } else if (!has) {
       const selectedFilter = localStorage.getItem("selectedFilter") || "Все";
       if (selectedFilter !== "Все") {
         const selectedKey = normalizeCategoryKey(selectedFilter);
@@ -4557,10 +4562,125 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const categoryFilters = document.getElementById('category-filters');
   const categoryFiltersBottom = document.getElementById('category-filters-bottom');
+  const companyFilters = document.getElementById('company-filters');
+  const filterModeToggle = document.getElementById('filter-mode-toggle');
+  const filterModeSwitcher = document.querySelector('.filter-mode-switcher');
   const searchInputEl = document.getElementById('search-input');
   if (!categoryFilters) return;
   const filterChips = categoryFilters.querySelectorAll('.filter-chip');
+  const companyChips = companyFilters ? [...companyFilters.querySelectorAll('.company-chip')] : [];
   const bottomChips = [];
+  const FILTER_MODE_KEY = 'questionsFilterMode';
+  const SELECTED_COMPANY_KEY = 'selectedCompanyFilter';
+  const filterMetrics = window.QAtoDevMetrics || null;
+  function trackFilterGoal(params) {
+    filterMetrics?.reachGoal?.("questions_interaction", params);
+  }
+  const COMPANIES = {
+    yandex: [
+      'accordion_theory_q4', 'accordion_theory_q21', 'accordion_theory_q22',
+      'accordion_theory_q25', 'accordion_theory_q29', 'accordion_theory_q30',
+      'accordion_theory_q40',
+      'accordion_web_q3', 'accordion_web_q5', 'accordion_web_q11',
+      'accordion_web_q14', 'accordion_web_q15', 'accordion_web_q16',
+      'accordion_web_q24',
+      'accordion_api_q1', 'accordion_api_q6', 'accordion_api_q7',
+      'accordion_api_q9', 'accordion_api_q10', 'accordion_api_q12',
+      'accordion_api_q23',
+      'accordion_db_q4', 'accordion_db_q5', 'accordion_db_q8',
+      'accordion_db_q10', 'accordion_db_q15'
+    ],
+    sber: [
+      'accordion_theory_q16', 'accordion_theory_q18', 'accordion_theory_q24',
+      'accordion_theory_q27', 'accordion_theory_q32', 'accordion_theory_q33',
+      'accordion_theory_q35',
+      'accordion_web_q6', 'accordion_web_q9', 'accordion_web_q10',
+      'accordion_web_q12', 'accordion_web_q18',
+      'accordion_api_q7', 'accordion_api_q11', 'accordion_api_q12',
+      'accordion_api_q14', 'accordion_api_q16', 'accordion_api_q23',
+      'accordion_db_q1', 'accordion_db_q4', 'accordion_db_q5',
+      'accordion_db_q8', 'accordion_db_q10', 'accordion_db_q14',
+      'accordion_db_q15', 'accordion_db_q17',
+      'accordion_devops_q1', 'accordion_devops_q2', 'accordion_devops_q3',
+      'accordion_devops_q5', 'accordion_devops_q6'
+    ],
+    ozon: [
+      'accordion_theory_q19', 'accordion_theory_q20', 'accordion_theory_q22',
+      'accordion_theory_q24', 'accordion_theory_q31', 'accordion_theory_q35',
+      'accordion_theory_q39',
+      'accordion_web_q6', 'accordion_web_q10', 'accordion_web_q16',
+      'accordion_web_q18', 'accordion_web_q20', 'accordion_web_q23',
+      'accordion_api_q3', 'accordion_api_q5', 'accordion_api_q9',
+      'accordion_api_q11', 'accordion_api_q14', 'accordion_api_q16',
+      'accordion_api_q23',
+      'accordion_db_q5', 'accordion_db_q8', 'accordion_db_q10',
+      'accordion_db_q12', 'accordion_db_q16',
+      'accordion_devops_q1', 'accordion_devops_q2', 'accordion_devops_q3',
+      'accordion_devops_q5', 'accordion_devops_q6'
+    ],
+    avito: [
+      'accordion_theory_q4', 'accordion_theory_q5', 'accordion_theory_q21',
+      'accordion_theory_q25', 'accordion_theory_q29', 'accordion_theory_q30',
+      'accordion_theory_q40',
+      'accordion_web_q4', 'accordion_web_q11', 'accordion_web_q14',
+      'accordion_web_q15', 'accordion_web_q21', 'accordion_web_q22',
+      'accordion_web_q23', 'accordion_web_q24',
+      'accordion_api_q1', 'accordion_api_q7', 'accordion_api_q8',
+      'accordion_api_q13', 'accordion_api_q22',
+      'accordion_db_q4', 'accordion_db_q5', 'accordion_db_q8',
+      'accordion_db_q10', 'accordion_db_q15'
+    ],
+    tbank: [
+      'accordion_theory_q16', 'accordion_theory_q20', 'accordion_theory_q24',
+      'accordion_theory_q27', 'accordion_theory_q33', 'accordion_theory_q36',
+      'accordion_theory_q39', 'accordion_theory_q52',
+      'accordion_web_q7', 'accordion_web_q10', 'accordion_web_q12',
+      'accordion_web_q18', 'accordion_web_q20',
+      'accordion_api_q2', 'accordion_api_q3', 'accordion_api_q7',
+      'accordion_api_q11', 'accordion_api_q12', 'accordion_api_q16',
+      'accordion_api_q22', 'accordion_api_q23',
+      'accordion_db_q2', 'accordion_db_q3', 'accordion_db_q4',
+      'accordion_db_q5', 'accordion_db_q7', 'accordion_db_q8',
+      'accordion_db_q11', 'accordion_db_q12', 'accordion_db_q14',
+      'accordion_db_q15', 'accordion_db_q17',
+      'accordion_devops_q1', 'accordion_devops_q2', 'accordion_devops_q3',
+      'accordion_devops_q5', 'accordion_devops_q6',
+      'accordion_aqajava_q7', 'accordion_aqajava_q19',
+      'accordion_aqajava_q23', 'accordion_aqajava_q25',
+      'accordion_aqajava_q27'
+    ],
+    vk: [
+      'accordion_theory_q16', 'accordion_theory_q19', 'accordion_theory_q31',
+      'accordion_theory_q40', 'accordion_theory_q41',
+      'accordion_web_q1', 'accordion_web_q2', 'accordion_web_q5',
+      'accordion_web_q11', 'accordion_web_q12', 'accordion_web_q14',
+      'accordion_web_q15', 'accordion_web_q16', 'accordion_web_q19',
+      'accordion_web_q20', 'accordion_web_q21', 'accordion_web_q22',
+      'accordion_web_q24',
+      'accordion_api_q7', 'accordion_api_q10', 'accordion_api_q11',
+      'accordion_api_q12', 'accordion_api_q13', 'accordion_api_q23',
+      'accordion_db_q4', 'accordion_db_q5', 'accordion_db_q8',
+      'accordion_db_q10', 'accordion_db_q15',
+      'accordion_aqajs_q6', 'accordion_aqajs_q7', 'accordion_aqajs_q8',
+      'accordion_aqajs_q9', 'accordion_aqajs_q11'
+    ],
+    wildberries: [
+      'accordion_theory_q5', 'accordion_theory_q18', 'accordion_theory_q21',
+      'accordion_theory_q24', 'accordion_theory_q29', 'accordion_theory_q31',
+      'accordion_theory_q32', 'accordion_theory_q35', 'accordion_theory_q53',
+      'accordion_web_q6', 'accordion_web_q8', 'accordion_web_q9',
+      'accordion_web_q10', 'accordion_web_q12',
+      'accordion_api_q6', 'accordion_api_q7', 'accordion_api_q10',
+      'accordion_api_q11', 'accordion_api_q13', 'accordion_api_q16',
+      'accordion_db_q4', 'accordion_db_q5', 'accordion_db_q8',
+      'accordion_db_q9', 'accordion_db_q10', 'accordion_db_q16',
+      'accordion_devops_q1', 'accordion_devops_q2', 'accordion_devops_q3',
+      'accordion_devops_q5', 'accordion_devops_q6'
+    ]
+  };
+  let currentFilterMode = localStorage.getItem(FILTER_MODE_KEY) === 'companies' ? 'companies' : 'categories';
+  let selectedCompany = COMPANIES[localStorage.getItem(SELECTED_COMPANY_KEY)] ? localStorage.getItem(SELECTED_COMPANY_KEY) : 'yandex';
+  window.__questionsFilterMode = currentFilterMode;
 
   // Клонируем чипы в нижнюю панель
   if (categoryFiltersBottom) {
@@ -4580,17 +4700,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const allChips = [...filterChips, ...bottomChips];
 
-  // Модифицированная функция фильтрации
   function applyCategoryFilter(category) {
     const sections = document.querySelectorAll('#accordion-container .article');
     const wanted = normalizeCategoryKeyLocal(category);
 
+    document.body.classList.remove('questions-companies-mode');
     sections.forEach(section => {
+      section.querySelectorAll('.t-item').forEach(item => {
+        item.style.display = '';
+      });
       const sectionTitle = section.querySelector('.category-title')?.textContent || "";
       const sectionKey = section.dataset.categoryKey || normalizeCategoryKeyLocal(sectionTitle);
       section.style.display = (wanted === "ALL" || sectionKey === wanted) ? '' : 'none';
     });
   }
+
+  function getQuestionIdFromItem(item) {
+    return item.querySelector('.t849__content')?.id || '';
+  }
+
+  function setActiveCompany(companyKey) {
+    selectedCompany = COMPANIES[companyKey] ? companyKey : 'yandex';
+    localStorage.setItem(SELECTED_COMPANY_KEY, selectedCompany);
+    companyChips.forEach(chip => {
+      chip.classList.toggle('active', chip.dataset.company === selectedCompany);
+    });
+  }
+
+  function applyCompanyFilter(options = {}) {
+    const { preserveSearch = false } = options;
+    const ids = new Set(COMPANIES[selectedCompany] || []);
+    const sections = document.querySelectorAll('#accordion-container .article');
+
+    document.body.classList.add('questions-companies-mode');
+    sections.forEach(section => {
+      let anyVisible = false;
+      section.querySelectorAll('.t-item').forEach(item => {
+        const matchesCompany = ids.has(getQuestionIdFromItem(item));
+        const matchesSearch = !preserveSearch || item.style.display !== 'none';
+        const visible = matchesCompany && matchesSearch;
+        item.style.display = visible ? '' : 'none';
+        if (visible) anyVisible = true;
+      });
+      section.style.display = anyVisible ? '' : 'none';
+    });
+  }
+
+  window.__questionsApplyCompanyFilter = applyCompanyFilter;
+  window.__questionsApplyActiveFilter = () => {
+    if (currentFilterMode === 'companies') {
+      applyCompanyFilter();
+      return;
+    }
+    applyCategoryFilter(localStorage.getItem('selectedFilter') || 'Все');
+  };
 
   function scrollToCategory(category) {
     const sections = document.querySelectorAll('#accordion-container .article');
@@ -4629,10 +4792,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  function clearSearchInput() {
+    if (!searchInputEl || !searchInputEl.value) return;
+    searchInputEl.value = '';
+    searchInputEl.dispatchEvent(new Event('input'));
+  }
+
+  function updateBottomVisibility() {
+    if (!categoryFiltersBottom || !categoryFilters) return;
+    if (currentFilterMode === 'companies') {
+      categoryFiltersBottom.classList.remove('visible');
+      return;
+    }
+    const headerOffset = 120;
+    const rect = categoryFilters.getBoundingClientRect();
+    const fullyVisible =
+      rect.top >= headerOffset &&
+      rect.bottom <= window.innerHeight;
+    categoryFiltersBottom.classList.toggle('visible', !fullyVisible);
+  }
+
+  function setFilterMode(mode, options = {}) {
+    const animate = options.animate !== false;
+    if (!animate) {
+      document.body.classList.add('filters-no-transition');
+    }
+    currentFilterMode = mode === 'companies' ? 'companies' : 'categories';
+    window.__questionsFilterMode = currentFilterMode;
+    localStorage.setItem(FILTER_MODE_KEY, currentFilterMode);
+
+    const isCompanies = currentFilterMode === 'companies';
+    filterModeToggle?.setAttribute('aria-checked', isCompanies ? 'true' : 'false');
+    filterModeSwitcher?.classList.toggle('is-companies', isCompanies);
+    categoryFilters.classList.toggle('is-hidden', isCompanies);
+    categoryFilters.setAttribute('aria-hidden', isCompanies ? 'true' : 'false');
+    companyFilters?.classList.toggle('is-hidden', !isCompanies);
+    companyFilters?.setAttribute('aria-hidden', isCompanies ? 'false' : 'true');
+
+    clearSearchInput();
+    if (isCompanies) {
+      setActiveCompany(selectedCompany);
+      applyCompanyFilter();
+      categoryFiltersBottom?.classList.remove('visible');
+    } else {
+      document.body.classList.remove('questions-companies-mode');
+      restoreFilterState();
+    }
+    updateBottomVisibility();
+    if (!animate) {
+      requestAnimationFrame(() => {
+        document.body.classList.remove('filters-no-transition');
+      });
+    }
+  }
+
   categoryFilters.addEventListener('click', (event) => {
     const chip = event.target.closest('.filter-chip');
     if (!chip) return;
-    trackQuestionsGoal({
+    trackFilterGoal({
       action: 'category_filter',
       category: chip.dataset.category || ''
     });
@@ -4641,7 +4858,7 @@ document.addEventListener('DOMContentLoaded', () => {
   categoryFiltersBottom?.addEventListener('click', (event) => {
     const chip = event.target.closest('.filter-chip');
     if (!chip) return;
-    trackQuestionsGoal({
+    trackFilterGoal({
       action: 'category_filter',
       category: chip.dataset.category || '',
       placement: 'bottom'
@@ -4674,6 +4891,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Обработчики для чипов
   allChips.forEach(chip => {
     chip.addEventListener('click', () => {
+      if (currentFilterMode !== 'categories') return;
       setActive(chip.dataset.category);
 
       const category = chip.dataset.category;
@@ -4689,19 +4907,29 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Инициализация после полной загрузки
+  filterModeToggle?.addEventListener('click', () => {
+    setFilterMode(currentFilterMode === 'companies' ? 'categories' : 'companies');
+  });
+
+  companyFilters?.addEventListener('click', (event) => {
+    const chip = event.target.closest('.company-chip');
+    if (!chip || currentFilterMode !== 'companies') return;
+    setActiveCompany(chip.dataset.company);
+    trackFilterGoal({
+      action: 'company_filter',
+      company: chip.dataset.company || ''
+    });
+    clearSearchInput();
+    applyCompanyFilter();
+    window.scrollTo({ top: Math.max(0, categoryFilters.getBoundingClientRect().bottom + window.pageYOffset - 90), behavior: 'smooth' });
+  });
+
+  setActiveCompany(selectedCompany);
   restoreFilterState();
+  setFilterMode(currentFilterMode, { animate: false });
 
   // Показ нижней панели: скрываем только когда верхние чипы реально видны пользователю
   if (categoryFiltersBottom && categoryFilters) {
-    const headerOffset = 120; // высота фиксированного хедера
-    const updateBottomVisibility = () => {
-      const rect = categoryFilters.getBoundingClientRect();
-      const fullyVisible =
-        rect.top >= headerOffset &&
-        rect.bottom <= window.innerHeight;
-      categoryFiltersBottom.classList.toggle('visible', !fullyVisible);
-    };
     window.addEventListener('scroll', updateBottomVisibility, { passive: true });
     window.addEventListener('resize', updateBottomVisibility);
     updateBottomVisibility();
