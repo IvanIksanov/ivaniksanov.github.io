@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>QA Resume</title>
+    <script>
+        (function () {
+            const saved = localStorage.getItem("theme");
+            if (saved === "dark" || saved === "light") {
+                document.documentElement.setAttribute("data-theme", saved);
+            }
+        })();
+    </script>
+    <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
+    <link rel="stylesheet" href="header.css?v=8.9.8">
+    <link rel="stylesheet" href="styles.css?v=8.9.4">
+    <link rel="stylesheet" href="resume.css?v=8.9.47">
+    <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
+    <script src="metrika.shared.js"></script>
+</head>
+<body class="resume-builder-page">
+<noscript><div><img src="https://mc.yandex.ru/watch/99129194" style="position:absolute; left:-9999px;" alt=""></div></noscript>
+
+<div class="site-header">
+    <nav>
+        <ul>
+            <li style="position: relative;"><a href="hwois.html">Кто такой тестировщик?</a></li>
+            <li style="position: relative;"><a href="roadmap.html">Roadmap</a></li>
+            <li style="position: relative;"><a href="questions.html">Вопросы</a></li>
+            <li style="position: relative;"><a href="index.html">Резюме</a></li>
+            <li style="position: relative;"><a href="practice.html">Практика</a></li>
+        </ul>
+    </nav>
+
+    <header class="welcome">
+        <div class="header-container">
+            <div class="logo" style="cursor: pointer;" onclick="window.location.href='index.html'">
+                <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="Логотип">
+            </div>
+            <h3 class="site-title">QAtoDev!</h3>
+        </div>
+    </header>
+
+    <div class="theme-switcher">
+        <button
+            id="theme-toggle"
+            class="clean-btn toggleButton_gllP"
+            type="button"
+            title="Переключить тему"
+            aria-label="Переключить тему"
+            aria-live="polite"
+        >
+            <svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR">
+                <path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path>
+            </svg>
+            <svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR">
+                <path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<main class="resume-builder-main">
+    <div class="resume-builder-layout">
+        <aside class="resume-builder-sidebar">
+            <div class="resume-builder-sidebar__card">
+                <strong>Содержание</strong>
+                <nav class="resume-builder-sidebar__nav" aria-label="Навигация по разделам">
+                    <a href="#resume-section-profile" data-nav-section="profile">ФИО <span class="resume-builder-sidebar__badge" data-nav-badge="profile" hidden>!</span></a>
+                    <a href="#resume-section-skills" data-nav-section="skills">Навыки <span class="resume-builder-sidebar__badge" data-nav-badge="skills" hidden>!</span></a>
+                    <a href="#resume-section-experience" data-nav-section="experience">Опыт работы <span class="resume-builder-sidebar__badge" data-nav-badge="experience" hidden>!</span></a>
+                    <a href="#resume-section-suggestions" data-nav-section="suggestions">Список задач <span class="resume-builder-sidebar__badge" data-nav-badge="suggestions" hidden>!</span></a>
+                    <a href="#resume-section-preview" data-nav-section="preview">Скачать <span class="resume-builder-sidebar__badge" data-nav-badge="preview" hidden>!</span></a>
+                </nav>
+            </div>
+            <div class="resume-print-hint-card" aria-label="Подсказка перед печатью">
+                <strong>Настройка печати</strong>
+                <p>После нажатия на "PDF" отобразятся настройки. Ширину полей менять в параметрах «Поля». Подписи страниц убираются галочкой «Верхние и нижние колонтитулы».</p>
+            </div>
+            <div class="resume-education-hint-card" aria-label="Добавить образование" hidden>
+                <strong>Образование</strong>
+                <p>Можно добавить учебное заведение, специальность и период обучения.</p>
+                <button id="show-education-btn" class="builder-button builder-button--dark builder-button--small" type="button">Добавить</button>
+            </div>
+        </aside>
+
+        <section class="article resume-builder-article">
+            <div class="builder-topline">
+                <div>
+                    <h1>Соберите своё резюме</h1>
+                </div>
+            </div>
+
+        <div id="resume-section-profile" class="builder-section builder-panel">
+            <div class="builder-section__head">
+                <h2>ФИО</h2>
+                <div class="builder-inline-help">
+                    <button class="builder-inline-help__button" type="button" data-help-toggle="profile" aria-expanded="false" aria-label="Подсказка по разделу ФИО">!</button>
+                    <div class="info-popover builder-inline-help__popover" data-help-popover="profile">
+                        <strong>Что важно для ATS</strong>
+                        <p>Заполняйте должность и общий опыт так, как это ищут работодатели: `QA Engineer`, `Инженер по тестированию`, `QA Automation Engineer`.</p>
+                        <p>В шапке лучше избегать креативных названий роли и оставлять только понятные рынку формулировки.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="builder-profile">
+                <div class="builder-photo-column">
+                    <div class="builder-avatar-card">
+                        <div id="avatar-preview" class="builder-avatar-preview" aria-hidden="true"></div>
+                        <div class="builder-avatar-actions">
+                            <label class="builder-icon-button builder-icon-button--dark" for="photo-input" title="Загрузить фото" aria-label="Загрузить фото">+</label>
+                            <button id="remove-photo-btn" class="builder-icon-button builder-icon-button--ghost" type="button" title="Убрать фото" aria-label="Убрать фото">×</button>
+                        </div>
+                    </div>
+                    <input id="photo-input" type="file" accept="image/*" hidden>
+                    <button id="profile-extra-toggle" class="profile-extra-toggle" type="button" aria-expanded="false" aria-controls="profile-extra-fields">Еще</button>
+                    <div id="profile-extra-fields" class="profile-extra-fields" hidden>
+                        <label class="builder-field profile-extra-field">
+                            <span>Специализация</span>
+                            <select id="specialization">
+                                <option value="Тестировщик">Тестировщик</option>
+                                <option value="QA Engineer">QA Engineer</option>
+                                <option value="QA Automation Engineer">QA Automation Engineer</option>
+                                <option value="Инженер по тестированию">Инженер по тестированию</option>
+                            </select>
+                        </label>
+                        <label class="builder-field profile-extra-field">
+                            <span>Тип занятости</span>
+                            <select id="employment-type">
+                                <option value="полная занятость">полная занятость</option>
+                                <option value="частичная занятость">частичная занятость</option>
+                                <option value="проектная работа">проектная работа</option>
+                                <option value="стажировка">стажировка</option>
+                            </select>
+                        </label>
+                        <label class="builder-field profile-extra-field">
+                            <span>Формат</span>
+                            <select id="work-format">
+                                <option value="удалённо">удалённо</option>
+                                <option value="офис">офис</option>
+                                <option value="гибрид">гибрид</option>
+                            </select>
+                        </label>
+                        <label class="builder-field profile-extra-field">
+                            <span>Дорога</span>
+                            <select id="commute-time">
+                                <option value="не имеет значения">не имеет значения</option>
+                                <option value="до 30 минут">до 30 минут</option>
+                                <option value="до 1 часа">до 1 часа</option>
+                                <option value="до 1,5 часов">до 1,5 часов</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="builder-fields-grid">
+                    <label class="builder-field">
+                        <span>ФИО</span>
+                        <div class="builder-field-control">
+                            <input id="full-name" type="text" placeholder="Имя Фамилия">
+                            <button class="field-inline-action" type="button" data-field-action="full-name" aria-label="Очистить или редактировать поле"></button>
+                        </div>
+                    </label>
+                    <label class="builder-field">
+                        <span>Должность</span>
+                        <div class="builder-field-control">
+                            <input id="headline" type="text" placeholder="QA Engineer">
+                            <button class="field-inline-action" type="button" data-field-action="headline" aria-label="Очистить или редактировать поле"></button>
+                        </div>
+                    </label>
+                    <label class="builder-field">
+                        <span>Опыт</span>
+                        <div class="builder-field-control">
+                            <input id="experience-total" type="text" placeholder="3 года">
+                            <button id="experience-total-info-btn" class="field-inline-action field-inline-action--info" type="button" data-experience-total-toggle="true" aria-expanded="false" aria-label="Показать расхождение опыта" hidden>!</button>
+                            <div id="experience-total-popover" class="info-popover experience-total-popover" hidden></div>
+                        </div>
+                    </label>
+                    <label class="builder-field">
+                        <span>Город</span>
+                        <div class="builder-field-control">
+                            <input id="city" type="text" placeholder="Москва">
+                            <button class="field-inline-action" type="button" data-field-action="city" aria-label="Очистить или редактировать поле"></button>
+                        </div>
+                    </label>
+                    <label class="builder-field">
+                        <span>Телефон</span>
+                        <div class="builder-field-control">
+                            <input id="phone" type="text" placeholder="+7 (...)">
+                            <button class="field-inline-action" type="button" data-field-action="phone" aria-label="Очистить или редактировать поле"></button>
+                        </div>
+                    </label>
+                    <label class="builder-field">
+                        <span>Email</span>
+                        <div class="builder-field-control">
+                            <input id="email" type="email" placeholder="qa@example.com">
+                            <button class="field-inline-action" type="button" data-field-action="email" aria-label="Очистить или редактировать поле"></button>
+                        </div>
+                    </label>
+                    <label class="builder-field">
+                        <span>Telegram</span>
+                        <div class="builder-field-control">
+                            <input id="telegram" type="text" placeholder="@username">
+                            <button class="field-inline-action" type="button" data-field-action="telegram" aria-label="Очистить или редактировать поле"></button>
+                        </div>
+                    </label>
+                    <label class="builder-field builder-field--salary-inline">
+                        <span>Грейд и зарплата</span>
+                        <div class="builder-salary-grid">
+                            <div class="builder-field-control builder-field-control--select">
+                                <select id="grade">
+                                    <option value="junior" selected>Junior</option>
+                                    <option value="middle">Middle</option>
+                                    <option value="senior">Senior</option>
+                                </select>
+                            </div>
+                            <div class="builder-field-control builder-field-control--salary">
+                                <div class="builder-input-wrap">
+                                    <input id="salary" type="text" placeholder="от 220 000 ₽">
+                                </div>
+                                <div id="salary-market-note" class="salary-market-note"></div>
+                            </div>
+                            <label class="salary-visibility-toggle" for="show-salary">
+                                <input id="show-salary" type="checkbox" checked>
+                                <span class="salary-visibility-toggle__track" aria-hidden="true"></span>
+                                <span class="salary-visibility-toggle__label">Показать зп</span>
+                            </label>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+        <div id="resume-section-skills" class="builder-section builder-panel">
+            <div class="builder-section__head">
+                <h2>Навыки</h2>
+                <div class="builder-section__head-meta">
+                    <label class="salary-visibility-toggle skill-icons-toggle" for="show-skill-icons">
+                        <input id="show-skill-icons" type="checkbox">
+                        <span class="salary-visibility-toggle__track" aria-hidden="true"></span>
+                        <span class="salary-visibility-toggle__label">Иконки</span>
+                    </label>
+                    <span id="selected-skills-count" class="builder-counter">0</span>
+                    <div class="builder-inline-help">
+                        <button class="builder-inline-help__button" type="button" data-help-toggle="skills" aria-expanded="false" aria-label="Подсказка по разделу навыков">!</button>
+                        <div class="info-popover builder-inline-help__popover" data-help-popover="skills">
+                            <strong>Что важно для ATS</strong>
+                            <p>В навыках оставляйте только профессиональные инструменты и методы. Для QA чаще всего ищут `Postman`, `SQL`, `Jira`, `DevTools`, `CI/CD`, `Playwright`, `API testing`.</p>
+                            <div id="ats-inline-skills" class="builder-chip-list ats-card__chips"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="skills-library" class="builder-chip-list" aria-live="polite"></div>
+        </div>
+
+        <div id="resume-section-experience" class="builder-section builder-panel">
+            <div class="builder-section__head">
+                <h2>Опыт работы</h2>
+                <div class="builder-inline-help">
+                    <button class="builder-inline-help__button" type="button" data-help-toggle="experience" aria-expanded="false" aria-label="Подсказка по разделу опыта">!</button>
+                    <div class="info-popover builder-inline-help__popover" data-help-popover="experience">
+                        <strong>Как писать опыт</strong>
+                        <ul id="ats-inline-experience" class="ats-list"></ul>
+                    </div>
+                </div>
+            </div>
+            <p id="experience-coverage-warning" class="builder-hint" aria-live="polite"></p>
+            <div id="experience-list" class="experience-list"></div>
+        </div>
+
+        <div id="resume-section-suggestions" class="builder-section builder-panel">
+            <div class="experience-suggestion-hub">
+                <div class="builder-section__head experience-suggestion-hub__head">
+                    <h3><span class="suggestions-title-full">Список задач и достижений</span><span class="suggestions-title-short">Список задач</span></h3>
+                    <div class="builder-section__head-meta">
+                        <span id="experience-active-library-meta" class="builder-hint"></span>
+                        <div class="builder-inline-help">
+                            <button class="builder-inline-help__button" type="button" data-help-toggle="suggestions" aria-expanded="false" aria-label="Подсказка по формулировкам опыта">!</button>
+                            <div class="info-popover builder-inline-help__popover" data-help-popover="suggestions">
+                                <strong>ATS-friendly примеры</strong>
+                                <ul id="ats-inline-suggestions" class="ats-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="experience-suggestion-toolbar">
+                    <div id="experience-block-tabs" class="experience-block-tabs" aria-label="Выбор блока опыта"></div>
+                    <div class="gender-switch" role="group" aria-label="Пол для формулировок опыта">
+                        <button
+                            id="gender-male-btn"
+                            class="gender-switch__button"
+                            type="button"
+                            data-gender-switch="true"
+                            data-gender="male"
+                        >Муж</button>
+                        <button
+                            id="gender-female-btn"
+                            class="gender-switch__button"
+                            type="button"
+                            data-gender-switch="true"
+                            data-gender="female"
+                        >Жен</button>
+                    </div>
+                    <button id="add-experience-btn" class="builder-button builder-button--ghost builder-button--small" type="button">+</button>
+                </div>
+                <p class="builder-hint experience-suggestion-hub__hint">Переключайте блоки, выбирайте формулировки и редактируйте выбранные пункты ниже. Цветные маркеры на карточках показывают, в каких блоках уже использована эта формулировка.</p>
+                <div id="experience-suggestion-slider" class="experience-suggestion-groups" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <div id="resume-section-education" class="builder-section builder-panel" hidden>
+            <div class="builder-section__head">
+                <h2>Образование</h2>
+                <button id="add-education-btn" class="builder-button builder-button--ghost builder-button--small" type="button">+</button>
+            </div>
+            <div id="education-list" class="experience-list education-list"></div>
+        </div>
+
+        <div class="builder-section builder-panel">
+            <div class="builder-section__head">
+                <h2>О себе</h2>
+                <button id="generate-summary-btn" class="builder-button builder-button--dark builder-button--small" type="button">Сгенерировать описание</button>
+            </div>
+            <p id="summary-status" class="builder-hint" aria-live="polite">Описание собирается по выбранным навыкам и формулировкам из опыта.</p>
+            <div id="summary-ai-nav" class="summary-ai-nav" hidden>
+                <button id="summary-prev-btn" class="builder-button builder-button--ghost builder-button--small" type="button" aria-label="Предыдущий ответ">‹</button>
+                <span id="summary-ai-index" class="summary-ai-index">1 / 1</span>
+                <button id="summary-next-btn" class="builder-button builder-button--ghost builder-button--small" type="button" aria-label="Следующий ответ">›</button>
+                <span id="summary-ai-model" class="summary-ai-model"></span>
+            </div>
+            <label class="builder-field builder-field--stack">
+                <div class="builder-field-control builder-field-control--textarea">
+                    <textarea id="summary" rows="4" placeholder="Короткое описание профиля"></textarea>
+                    <button class="field-inline-action field-inline-action--textarea" type="button" data-field-action="summary" aria-label="Очистить или редактировать поле"></button>
+                </div>
+            </label>
+        </div>
+
+        <div id="resume-section-preview" class="builder-section builder-panel">
+            <div class="builder-section__head">
+                <h2>Предпросмотр</h2>
+                <div class="builder-section__head-meta">
+                    <div class="builder-inline-help">
+                        <button class="builder-inline-help__button" type="button" data-help-toggle="preview" aria-expanded="false" aria-label="Подсказка по предпросмотру">!</button>
+                        <div class="info-popover builder-inline-help__popover" data-help-popover="preview">
+                            <strong>Что важно для ATS</strong>
+                            <p>Лучше сохранять резюме в простом PDF без сложных колонок, декоративных иконок и нестандартных подписей разделов.</p>
+                            <p>Ключевые блоки должны читаться линейно: шапка, навыки, опыт, описание профиля.</p>
+                        </div>
+                    </div>
+                    <div class="builder-export-actions">
+                        <div class="preview-style-switch" aria-label="Выбор стиля предпросмотра">
+                            <button id="preview-style-prev-btn" class="builder-icon-button builder-icon-button--ghost" type="button" aria-label="Предыдущий стиль">‹</button>
+                            <div class="export-download-menu">
+                                <button id="download-resume-btn" class="builder-button builder-button--dark builder-button--small" type="button" aria-expanded="false" aria-controls="export-format-menu">Скачать</button>
+                                <div id="export-format-menu" class="export-format-menu" aria-hidden="true">
+                                    <button class="export-format-menu__item" type="button" data-export-format-option="pdf">PDF</button>
+                                    <button class="export-format-menu__item" type="button" data-export-format-option="txt">ATS</button>
+                                </div>
+                            </div>
+                            <button id="preview-style-next-btn" class="builder-icon-button builder-icon-button--ghost" type="button" aria-label="Следующий стиль">›</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p id="export-status" class="builder-hint" aria-live="polite">Выберите стиль предпросмотра и формат, затем нажмите «Скачать».</p>
+
+            <article id="resume-preview" class="resume-preview-sheet" aria-label="Предпросмотр резюме">
+                <div class="resume-preview-header">
+                    <div id="preview-photo" class="resume-preview-photo" aria-hidden="true"></div>
+                    <div class="resume-preview-heading">
+                        <h3 id="preview-name">Иванов Иван</h3>
+                        <p id="preview-headline" class="resume-preview-role">Middle QA Engineer</p>
+                        <div class="resume-preview-meta">
+                            <span id="preview-experience">3 года 8 месяцев</span>
+                            <span id="preview-city">Москва</span>
+                            <span id="preview-salary">от 220 000 ₽</span>
+                        </div>
+                        <div id="preview-contacts" class="resume-preview-contacts"></div>
+                    </div>
+                </div>
+
+                <section class="resume-preview-section resume-preview-section--target" data-section="target">
+                    <strong>Желаемая должность и зарплата</strong>
+                    <div class="resume-preview-target">
+                        <div class="resume-preview-target__main">
+                            <div id="preview-target-headline" class="resume-preview-target__headline">Middle QA Engineer</div>
+                            <div class="resume-preview-target__details">
+                                <span>Специализации:</span>
+                                <span id="preview-target-specialization" class="resume-preview-target__specialization">— Тестировщик</span>
+                                <span id="preview-target-employment">Тип занятости: полная занятость</span>
+                                <span id="preview-target-work-format">Формат работы: удалённо</span>
+                                <span id="preview-target-commute">Желательное время в пути до работы: не имеет значения</span>
+                            </div>
+                        </div>
+                        <div id="preview-target-salary" class="resume-preview-target__salary">80 000 — 120 000 ₽</div>
+                    </div>
+                </section>
+
+                <section class="resume-preview-section" data-section="skills">
+                    <strong>Навыки</strong>
+                    <div id="preview-skills" class="builder-chip-list resume-preview-skills"></div>
+                </section>
+
+                <section class="resume-preview-section" data-section="exp">
+                    <strong>Опыт</strong>
+                    <div id="preview-experience-list" class="resume-preview-experience-list"></div>
+                </section>
+
+                <section class="resume-preview-section" data-section="education" hidden>
+                    <strong>Образование</strong>
+                    <div id="preview-education-list" class="resume-preview-experience-list resume-preview-education-list"></div>
+                </section>
+
+                <section class="resume-preview-section" data-section="about">
+                    <strong>О себе</strong>
+                    <p id="preview-summary"></p>
+                </section>
+            </article>
+        </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    (function() {
+      const root = document.documentElement;
+      const btn  = document.getElementById('theme-toggle');
+
+      if (!btn) return;
+
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark' || saved === 'light') {
+        root.setAttribute('data-theme', saved);
+        btn.classList.toggle('active', saved === 'dark');
+      }
+
+      btn.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+        btn.classList.toggle('active', next === 'dark');
+      });
+    })();
+</script>
+
+<script src="logo-rotator.js"></script>
+<script src="header.js?v=8.9.5"></script>
+<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+<script src="model-preflight.shared.js?v=8.9.4"></script>
+<script src="resume.js?v=8.9.30"></script>
+</body>
+</html>

@@ -2,6 +2,17 @@
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
+  const RESUME_NEW_BADGE_VISITS_KEY = 'qa_resume_new_badge_visits_v1';
+  const RESUME_NEW_BADGE_MAX_VISITS = 3;
+  const RESUME_NEW_BADGE_PAGES = new Set([
+    '',
+    'index.html',
+    'hwois.html',
+    'roadmap.html',
+    'questions.html',
+    'resume.html',
+    'practice.html'
+  ]);
   const SHARED_ASSET_VERSION = '8.9.4';
   const AUTH_BUTTON_INNER_HTML = `
     <span class="auth-open-btn__icon" aria-hidden="true">
@@ -66,6 +77,48 @@
     window.setTimeout(() => {
       window.location.href = link.href;
     }, delay);
+  }
+
+  function getCurrentPageName() {
+    return decodeURIComponent(window.location.pathname.split('/').pop() || '');
+  }
+
+  function readResumeNewBadgeVisits() {
+    try {
+      const value = Number(localStorage.getItem(RESUME_NEW_BADGE_VISITS_KEY));
+      return Number.isInteger(value) && value > 0 ? value : 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  function writeResumeNewBadgeVisits(value) {
+    try {
+      localStorage.setItem(RESUME_NEW_BADGE_VISITS_KEY, String(value));
+    } catch {
+      // localStorage can be unavailable in private modes; the badge still renders for this session.
+    }
+  }
+
+  function updateResumeNewBadge() {
+    const pageName = getCurrentPageName();
+    if (!RESUME_NEW_BADGE_PAGES.has(pageName)) return;
+
+    const visits = Math.min(readResumeNewBadgeVisits() + 1, RESUME_NEW_BADGE_MAX_VISITS);
+    writeResumeNewBadgeVisits(visits);
+    if (visits >= RESUME_NEW_BADGE_MAX_VISITS) return;
+
+    const resumeLink = Array.from(document.querySelectorAll('.site-header nav a')).find((link) => {
+      const href = link.getAttribute('href') || '';
+      return href.includes('resume.html') || link.textContent.trim() === 'Резюме';
+    });
+    if (!resumeLink || resumeLink.querySelector('.header-nav-new-badge')) return;
+
+    const badge = document.createElement('span');
+    badge.className = 'header-nav-new-badge';
+    badge.textContent = 'new';
+    badge.setAttribute('aria-label', 'Новое');
+    resumeLink.append(badge);
   }
 
   let ticking = false;
@@ -324,6 +377,7 @@
     document.querySelectorAll('.site-header nav a').forEach((link) => {
       link.addEventListener('click', handleNavClick);
     });
+    updateResumeNewBadge();
     revealHeaderLogo();
     setupSiteTitleHomeLink();
     ensureAuthModalMarkup();
