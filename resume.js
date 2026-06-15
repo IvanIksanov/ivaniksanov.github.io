@@ -518,6 +518,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const educationHintCardEl = document.querySelector(".resume-education-hint-card");
   const suggestionsSectionEl = document.getElementById("resume-section-suggestions");
   const previewSectionEl = document.getElementById("resume-section-preview");
+  const previewViewportEl = document.getElementById("resume-preview-viewport");
+  const previewSheetEl = document.getElementById("resume-preview");
   const previewStylePrevBtn = document.getElementById("preview-style-prev-btn");
   const previewStyleNextBtn = document.getElementById("preview-style-next-btn");
   const downloadResumeBtn = document.getElementById("download-resume-btn");
@@ -1123,6 +1125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderExperienceCoverage();
     renderPreview();
     renderExportControls();
+    updatePreviewSheetScale();
     updateEducationHintPosition();
     updatePrintHintPosition();
     if (message) setExportStatus(message, "info");
@@ -1203,9 +1206,101 @@ document.addEventListener("DOMContentLoaded", () => {
       downloadAtsTextResume();
       return;
     }
+    const mobilePrintWindow = shouldUseMobilePdfWindow() ? window.open("", "_blank") : null;
     preparePrintTemplate(state.pdfStyle);
+    setExportStatus(
+      mobilePrintWindow
+        ? "Открыл мобильное окно PDF. Нажмите «Скачать PDF» в нём."
+        : `Открываю экспорт PDF: ${getCurrentPdfStyleOption().label}.`,
+      "info"
+    );
     await preparePdfAssetsForPrint();
+    if (mobilePrintWindow) {
+      writeMobilePdfWindow(mobilePrintWindow);
+      return;
+    }
     window.print();
+  }
+
+  function shouldUseMobilePdfWindow() {
+    return window.matchMedia("(max-width: 760px)").matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  }
+
+  function writeMobilePdfWindow(targetWindow) {
+    if (!targetWindow || targetWindow.closed) {
+      window.print();
+      return;
+    }
+    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .map((link) => `<link rel="stylesheet" href="${escapeHtml(link.href)}">`)
+      .join("\n");
+    const iconScript = '<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"><\\/script>';
+    const theme = document.documentElement.getAttribute("data-theme") || "light";
+    const sheetHtml = previewSheetEl?.outerHTML || "";
+    const title = getCurrentPdfStyleOption().label;
+    targetWindow.document.open();
+    targetWindow.document.write(`<!doctype html>
+<html lang="ru" data-theme="${escapeHtml(theme)}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Резюме PDF</title>
+  ${styles}
+  <style>
+    body.resume-builder-page { padding: 12px !important; background: #f3f4f6; }
+    .mobile-pdf-actions {
+      position: sticky;
+      top: 8px;
+      z-index: 20;
+      display: grid;
+      gap: 6px;
+      margin: 0 auto 12px;
+      max-width: 794px;
+      padding: 10px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .mobile-pdf-actions button {
+      min-height: 38px;
+      border: 0;
+      border-radius: 10px;
+      background: #111827;
+      color: #fff;
+      font: 700 14px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    #resume-preview {
+      width: 794px !important;
+      min-height: 1123px !important;
+      transform: none !important;
+      margin: 0 auto !important;
+    }
+    @media (max-width: 840px) {
+      #resume-preview {
+        width: 100% !important;
+        min-height: auto !important;
+      }
+    }
+    @media print {
+      body.resume-builder-page { padding: 0 !important; background: #fff !important; }
+      .mobile-pdf-actions { display: none !important; }
+      #resume-preview { width: 100% !important; margin: 0 !important; }
+    }
+  </style>
+</head>
+<body class="resume-builder-page" data-pdf-style="${escapeHtml(state.pdfStyle)}">
+  <div class="mobile-pdf-actions">
+    <strong>Экспорт PDF: ${escapeHtml(title)}</strong>
+    <span>Нажмите кнопку ниже и выберите сохранение в PDF или «Сохранить в файлы» в системном окне.</span>
+    <button type="button" onclick="window.print()">Скачать PDF</button>
+  </div>
+  ${sheetHtml}
+  ${iconScript}
+</body>
+</html>`);
+    targetWindow.document.close();
   }
 
   async function preparePdfAssetsForPrint() {
@@ -3472,6 +3567,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!skillsMedia.addEventListener) {
       skillsMedia.addListener?.(rerenderSkills);
     }
+    window.addEventListener("resize", updatePreviewSheetScale);
+    window.addEventListener("orientationchange", () => {
+      requestAnimationFrame(updatePreviewSheetScale);
+    });
   }
 
   function bindPrintHintPosition() {
@@ -3481,6 +3580,7 @@ document.addEventListener("DOMContentLoaded", () => {
       frame = requestAnimationFrame(() => {
         frame = 0;
 
+        updatePreviewSheetScale();
         // Сначала ставим образование, потом от него тормозим настройку печати.
         updateEducationHintPosition();
         updatePrintHintPosition();
@@ -3490,6 +3590,19 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     schedule();
+  }
+
+  function updatePreviewSheetScale() {
+    if (!previewViewportEl || !previewSheetEl) return;
+    const baseWidth = 794;
+    const availableWidth = Math.max(0, previewViewportEl.clientWidth);
+    const scale = Math.min(1, availableWidth / baseWidth);
+    const safeScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
+    const scaledWidth = baseWidth * safeScale;
+    const rawHeight = Math.max(previewSheetEl.scrollHeight, baseWidth * 1.4142);
+    previewViewportEl.style.setProperty("--resume-preview-scale", String(safeScale));
+    previewViewportEl.style.height = `${Math.ceil(rawHeight * safeScale)}px`;
+    previewSheetEl.style.marginLeft = `${Math.max(0, Math.floor((availableWidth - scaledWidth) / 2))}px`;
   }
 
   function isResumeSidebarVisible() {
