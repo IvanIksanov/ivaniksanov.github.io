@@ -2160,7 +2160,19 @@ html[data-theme="dark"] .gender-switch__button {
   font-size: 0.7rem;
 }
 
+.resume-preview-viewport {
+  --resume-preview-scale: 1;
+  --resume-preview-base-width: 794px;
+  width: 100%;
+  overflow: hidden;
+}
+
 .resume-preview-sheet {
+  width: var(--resume-preview-base-width);
+  min-height: calc(var(--resume-preview-base-width) * 1.4142);
+  box-sizing: border-box;
+  transform: scale(var(--resume-preview-scale));
+  transform-origin: top left;
   padding: 0.8rem;
   border: 1px solid #e6e1d8;
   border-radius: 12px;
@@ -2916,6 +2928,19 @@ html[data-theme="dark"] .resume-preview-job__meta {
     border: none !important;
     background: #ffffff !important;
     box-shadow: none !important;
+  }
+
+  .resume-preview-viewport {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .resume-preview-sheet {
+    width: 100% !important;
+    min-height: auto !important;
+    transform: none !important;
+    margin-left: 0 !important;
   }
 
   .builder-section {
@@ -3725,10 +3750,17 @@ body.resume-builder-page .article.resume-builder-article {
   body.resume-builder-page .builder-profile,
   body.resume-builder-page .builder-fields-grid,
   body.resume-builder-page .experience-card__meta,
-  body.resume-builder-page .resume-preview-header,
   body.resume-builder-page .ats-keywords-grid,
   body.resume-builder-page .ats-guidance-grid {
     grid-template-columns: 1fr;
+  }
+
+  body.resume-builder-page .resume-preview-header {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  body.resume-builder-page .resume-preview-header--no-photo {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   body.resume-builder-page .experience-card__grid {
@@ -3805,6 +3837,16 @@ body.resume-builder-page .article.resume-builder-article {
 }
 
 @media screen {
+  body.resume-builder-page .resume-preview-viewport {
+    --resume-preview-base-width: 794px;
+  }
+
+  body.resume-builder-page .resume-preview-viewport > .resume-preview-sheet {
+    width: var(--resume-preview-base-width) !important;
+    min-height: calc(var(--resume-preview-base-width) * 1.4142) !important;
+    max-width: none !important;
+  }
+
   html[data-theme="dark"] body.resume-builder-page[data-pdf-style="hh"] .resume-preview-skills .builder-chip,
   html[data-theme="dark"] body.resume-builder-page[data-pdf-style="hh"] .resume-preview-skills .builder-chip.is-selected,
   html[data-theme="dark"] body.resume-builder-page[data-pdf-style="hh"] .resume-preview-skills .builder-chip:hover,
