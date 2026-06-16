@@ -10,16 +10,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const prevBtn = document.getElementById('api-prev');
     const nextBtn = document.getElementById('api-next');
     const progressStripEl = document.getElementById('progress-strip');
+    const CURRENT_SLIDE_KEY = 'qa_magic_current_slide';
 
     let currentSlide = 0; // индекс текущего слайда
+    try {
+        const savedSlide = Number(localStorage.getItem(CURRENT_SLIDE_KEY));
+        if (Number.isInteger(savedSlide) && savedSlide >= 0 && savedSlide < slides.length) {
+            currentSlide = savedSlide;
+        }
+    } catch {}
+
+    function syncSelectedProgressCard(index) {
+        if (!progressStripEl) return;
+        progressStripEl.querySelectorAll('.progress-card').forEach((card, i) => {
+            const isSelected = i === index;
+            card.classList.toggle('is-selected', isSelected);
+            card.setAttribute('aria-current', isSelected ? 'step' : 'false');
+        });
+    }
 
     function showSlide(index) {
+        currentSlide = (index + slides.length) % slides.length;
+        try {
+            localStorage.setItem(CURRENT_SLIDE_KEY, String(currentSlide));
+        } catch {}
+
         slides.forEach((slide, i) => {
             const wasActive = slide.classList.contains('active');
-            slide.classList.toggle('active', i === index);
+            slide.classList.toggle('active', i === currentSlide);
 
             // Если слайд стал активным — ресайзим все Ace на нём
-            if (!wasActive && i === index) {
+            if (!wasActive && i === currentSlide) {
                 requestAnimationFrame(() => {
                     slide.querySelectorAll('.json-editor').forEach(div => {
                         if (div && editors[div.id]) {
@@ -30,10 +51,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
+        syncSelectedProgressCard(currentSlide);
     }
     function goToSlide(idx) {
-        currentSlide = (idx + slides.length) % slides.length;
-        showSlide(currentSlide);
+        showSlide(idx);
     }
     showSlide(currentSlide);
 
@@ -177,6 +198,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
         wrap.innerHTML = html;
+        syncSelectedProgressCard(currentSlide);
     }
 
     // При загрузке — отрисовать карточки
@@ -503,6 +525,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const stepRuntime = {};
     const feedbackEls = {};
+    const quickBuilderEls = {};
     const METHOD_INFO = {
         GET: {
             title: "GET",
@@ -607,6 +630,86 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function signalFirstQuickChip(editorId) {
+        const host = quickBuilderEls[editorId];
+        const chip = host?.querySelector('.quick-chip');
+        if (!chip) return;
+        chip.classList.remove('is-soft-nudged');
+        chip.classList.remove('is-nudged');
+        void chip.offsetWidth;
+        chip.classList.add('is-nudged');
+    }
+
+    function signalQuickChipElement(chip, className = 'is-nudged') {
+        if (!chip) return;
+        chip.classList.remove('is-nudged', 'is-soft-nudged');
+        void chip.offsetWidth;
+        chip.classList.add(className);
+    }
+
+    function signalQuickChipsByPaths(editorId, paths, className = 'is-nudged') {
+        const host = quickBuilderEls[editorId];
+        if (!host) return;
+        const pathSet = new Set((paths || []).map(String));
+        host.querySelectorAll('.quick-chip').forEach((chip) => {
+            if (pathSet.has(chip.dataset.path || '')) {
+                signalQuickChipElement(chip, className);
+            }
+        });
+    }
+
+    function signalAllQuickChips(editorId, className = 'is-nudged') {
+        const host = quickBuilderEls[editorId];
+        if (!host) return;
+        host.querySelectorAll('.quick-chip').forEach((chip) => signalQuickChipElement(chip, className));
+    }
+
+    function clearQuickChipSignal(editorId) {
+        quickBuilderEls[editorId]?.querySelectorAll('.quick-chip.is-nudged, .quick-chip.is-soft-nudged').forEach((chip) => {
+            chip.classList.remove('is-nudged', 'is-soft-nudged');
+        });
+    }
+
+    function flashAppliedChip(editorId, chipPath) {
+        const host = quickBuilderEls[editorId];
+        if (!host) return;
+        const chip = Array.from(host.querySelectorAll('.quick-chip')).find((item) => item.dataset.path === chipPath)
+            || host.querySelector('.quick-chip');
+        if (!chip) return;
+        chip.classList.remove('is-applied');
+        void chip.offsetWidth;
+        chip.classList.add('is-applied');
+        setTimeout(() => chip.classList.remove('is-applied'), 1600);
+    }
+
+    function flashEditorValue(editorId, value) {
+        const ed = editors[editorId];
+        const RangeCtor = window.ace?.require?.('ace/range')?.Range;
+        if (!ed || !RangeCtor) return;
+        const needle = JSON.stringify(value);
+        if (!needle) return;
+
+        const ranges = [];
+        ed.session.getDocument().getAllLines().forEach((line, row) => {
+            let from = 0;
+            while (from < line.length) {
+                const index = line.indexOf(needle, from);
+                if (index === -1) break;
+                ranges.push(new RangeCtor(row, index, row, index + needle.length));
+                from = index + needle.length;
+            }
+        });
+
+        if (!ranges.length) return;
+        const markerIds = ranges.map((range) => ed.session.addMarker(range, 'ace-value-flash', 'text', false));
+        const firstRange = ranges[0];
+        ed.scrollToLine(firstRange.start.row, true, true, function() {});
+
+        setTimeout(() => {
+            markerIds.forEach((id) => ed.session.removeMarker(id));
+        }, 1400);
+    }
+
     function setStepFeedback(editorId, type, message, addTroubleshoot = false) {
         const meta = stepMeta[editorId];
         const target = feedbackEls[editorId];
@@ -624,17 +727,35 @@ document.addEventListener('DOMContentLoaded', function() {
         stepRuntime[editorId].attempts += 1;
     }
 
-    function markFailure(editorId, message) {
+    function markFailure(editorId, message, options = {}) {
         if (!stepRuntime[editorId]) stepRuntime[editorId] = { attempts: 0, fails: 0 };
         stepRuntime[editorId].fails += 1;
         const showTroubleshoot = stepRuntime[editorId].fails >= 2;
         setStepFeedback(editorId, "error", message, showTroubleshoot);
+        if (options.quickChipPaths?.length) {
+            signalQuickChipsByPaths(editorId, options.quickChipPaths);
+            return;
+        }
+        if (options.allQuickChips) {
+            signalAllQuickChips(editorId);
+            return;
+        }
+        if (stepRuntime[editorId].fails === 1) {
+            signalFirstQuickChip(editorId);
+        }
     }
 
-    function markSuccess(editorId, message) {
+    function markSuccess(editorId, message, options = {}) {
         if (!stepRuntime[editorId]) stepRuntime[editorId] = { attempts: 0, fails: 0 };
         stepRuntime[editorId].fails = 0;
         setStepFeedback(editorId, "success", message, false);
+        clearQuickChipSignal(editorId);
+        if (options.softQuickChipPaths?.length) {
+            signalQuickChipsByPaths(editorId, options.softQuickChipPaths, 'is-soft-nudged');
+        } else if (options.softFirstQuickChip) {
+            const host = quickBuilderEls[editorId];
+            signalQuickChipElement(host?.querySelector('.quick-chip'), 'is-soft-nudged');
+        }
     }
 
     function applyQuickChip(editorId, chip) {
@@ -652,6 +773,9 @@ document.addEventListener('DOMContentLoaded', function() {
             refreshEditor(editorId, payload);
         }
 
+        clearQuickChipSignal(editorId);
+        flashAppliedChip(editorId, chip.path);
+        setTimeout(() => flashEditorValue(editorId, resolvedValue), 50);
         const keyView = chip.keyLabel || chip.path || "field";
         setStepFeedback(editorId, "info", `Подставлено поле: ${keyView}`, false);
     }
@@ -908,12 +1032,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 editorWrap.appendChild(panel);
                 feedbackEls[editorId] = panel.querySelector(`[data-feedback="${editorId}"]`);
+                quickBuilderEls[editorId] = panel;
 
                 const chipsHost = panel.querySelector('.quick-builder__chips');
                 (quickChips[editorId] || []).forEach((chip) => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'quick-chip';
+                    btn.dataset.path = chip.path || '';
                     btn.innerHTML = `<span class="quick-chip__key">${chip.keyLabel || chip.path}</span> <span class="quick-chip__eq">=</span> <span class="quick-chip__val">${chip.valueLabel || "(value)"}</span>`;
                     btn.addEventListener('click', () => applyQuickChip(editorId, chip));
                     chipsHost.appendChild(btn);
@@ -1056,6 +1182,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return keys.every(k => String(obj?.[k]) === String(ref?.[k]));
     }
 
+    function getFriendlyJsonError(editorId, error) {
+        const source = editors[editorId]?.getValue() || "";
+        const compact = source.replace(/\s+/g, ' ');
+
+        if (/(^|[\{\s,])path"\s*:/.test(compact)) {
+            return 'В ключе path пропущена открывающая кавычка. Должно быть так: "path": { ... }';
+        }
+
+        if (/"path\s*:/.test(compact)) {
+            return 'В ключе "path" пропущена закрывающая кавычка. Должно быть так: "path": { ... }';
+        }
+
+        if (/"path"\s+\{/.test(compact) || /path\s+\{/.test(compact)) {
+            return 'После "path" пропущено двоеточие. Должно быть так: "path": { ... }';
+        }
+
+        if (/(^|[\{\s,])[A-Za-z_]\w*"\s*:/.test(compact)) {
+            return 'У ключа пропущена открывающая кавычка. Проверь запись вида "key": value.';
+        }
+
+        if (/"[A-Za-z_]\w*\s*:/.test(compact)) {
+            return 'У ключа пропущена закрывающая кавычка. Проверь запись вида "key": value.';
+        }
+
+        if (/"\w+"\s+"\{/.test(compact)) {
+            return 'Похоже, после ключа пропущено двоеточие. Проверь запись вида "key": { ... }';
+        }
+
+        return `Ошибка JSON: ${error.message}`;
+    }
+
     // Хелпер: записать прогресс + глобальное изображение и перерисовать карточки
     function recordProgress(stepIndex, imgPath) {
         setProgress(stepIndex, imgPath);
@@ -1117,7 +1274,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 recordProgress(1, img);
             } else {
                 updateVisual(visualId, IMAGES.scenes.placeholder, 'Здесь точно что-то не так...Проверь тип персонажа (character) и повтори отправку.');
-                markFailure(editorId, "Шаг не пройден. Проверь обязательные поля и character.");
+                markFailure(editorId, "Шаг не пройден. Проверь обязательные поля и character.", {
+                    quickChipPaths: isAllowedCharacter ? undefined : ['character']
+                });
                 // Фиксируем placeholder в прогрессе
                 recordProgress(1, IMAGES.scenes.placeholder);
             }
@@ -1222,7 +1381,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!usernameValue || !passwordValue) {
             showError(preId, "Укажи \"query\": { \"username\": \"...\", \"password\": \"...\" }");
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Требуются username и password.');
-            markFailure(editorId, "Шаг не пройден. Заполни query.username и query.password.");
+            markFailure(editorId, "Шаг не пройден. Заполни query.username и query.password.", {
+                quickChipPaths: ['query.username', 'query.password']
+            });
             recordProgress(3, IMAGES.scenes.placeholder);
             return;
         }
@@ -1244,7 +1405,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Сначала создайте персонажа (шаг 1), затем входите в святилище.'
                 );
-                markFailure(editorId, "Шаг не пройден. Сначала заверши шаг 1.");
+                markFailure(editorId, "Шаг не пройден. Сначала заверши шаг 1.", {
+                    quickChipPaths: ['query.username', 'query.password']
+                });
                 recordProgress(3, IMAGES.scenes.placeholder);
                 return;
             }
@@ -1270,14 +1433,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Ваш логин и/или пароль отличаются от указанных при регистрации.'
                 );
-                markFailure(editorId, "Шаг не пройден. Логин/пароль не совпали с шагом 1.");
+                markFailure(editorId, "Шаг не пройден. Логин/пароль не совпали с шагом 1.", {
+                    quickChipPaths: ['query.username', 'query.password']
+                });
                 recordProgress(3, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
-            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.", {
+                quickChipPaths: ['query.username', 'query.password']
+            });
             recordProgress(3, IMAGES.scenes.placeholder);
         });
     };
@@ -1295,7 +1462,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (e) {
             showError(preId, e.message);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
-            markFailure(editorId, `Ошибка JSON: ${e.message}`);
+            markFailure(editorId, `Ошибка JSON: ${e.message}`, {
+                allQuickChips: true
+            });
             recordProgress(4, IMAGES.scenes.placeholder);
             return;
         }
@@ -1336,14 +1505,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     IMAGES.scenes.placeholder,
                     'Проверь выбор тотема в tags[0].name (catFire/catGreen/catPurple/catSnow).'
                 );
-                markFailure(editorId, "Шаг не пройден. Неверный tags[0].name или структура тела.");
+                markFailure(editorId, "Шаг не пройден. Неверный tags[0].name или структура тела.", {
+                    allQuickChips: true
+                });
                 recordProgress(4, IMAGES.scenes.placeholder);
             }
         })
         .catch(err => {
             document.getElementById(preId).textContent = "Ошибка: " + err;
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Произошла ошибка сети.');
-            markFailure(editorId, "Сетевая ошибка. Повтори запрос.");
+            markFailure(editorId, "Сетевая ошибка. Повтори запрос.", {
+                allQuickChips: true
+            });
             recordProgress(4, IMAGES.scenes.placeholder);
         });
     };
@@ -1445,6 +1618,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 gameState.order.id = data.id;
                 gameState.order.payload = data;
                 saveState();
+                const sameTotemId = String(bodyData?.petId) === String(gameState?.totem?.id);
 
                 // НОВОЕ: показываем бегущего тотема RunCat... по ранее выбранному тэгу
                 const runImg = getRunImageForTag(gameState?.totem?.type);
@@ -1456,7 +1630,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     runImg,
                     caption
                 );
-                markSuccess(editorId, "Шаг пройден. Заказ создан, тотем в пути.");
+                if (sameTotemId) {
+                    markSuccess(editorId, "Шаг пройден. Заказ создан. Перед шагом 7 быстро сверь первую плашку с petId тотема.", {
+                        softFirstQuickChip: true
+                    });
+                } else {
+                    setStepFeedback(editorId, "warn", "Заказ создался, но petId не совпал с тотемом из шага 5. На шаге 7 это даст ошибку, поэтому просто нажми первую плашку и сверь значение.", false);
+                    clearQuickChipSignal(editorId);
+                    signalFirstQuickChip(editorId);
+                }
 
                 // Прогресс: шаг 6
                 recordProgress(6, runImg);
@@ -1626,9 +1808,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             dataPath = JSON.parse(editors[editorId].getValue());
         } catch (e) {
-            showError(preId, e.message);
+            const friendlyMessage = getFriendlyJsonError(editorId, e);
+            showError(preId, friendlyMessage);
             updateVisual(visualId, IMAGES.scenes.placeholder, 'Невалидный JSON.');
-            markFailure(editorId, `Ошибка JSON: ${e.message}`);
+            markFailure(editorId, friendlyMessage);
             recordProgress(9, IMAGES.scenes.placeholder);
             return;
         }
