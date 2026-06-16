@@ -482,11 +482,24 @@ main {
 
 :root {
   --text-color: #333;
-  --border-color: #FFA001;
-  --focus-border-color: #007BFF;
+  --input-background: rgba(255, 255, 255, 0.42);
+  --input-text-color: #1f2933;
+  --input-placeholder-color: rgba(31, 41, 51, 0.36);
+  --border-color: rgba(17, 24, 39, 0.12);
+  --focus-border-color: rgba(255, 160, 1, 0.72);
+  --focus-ring-color: rgba(255, 160, 1, 0.11);
   --button-background-color: rgba(255, 255, 255, 0.7);
   --button-text-color: #fff;
   --justify-content: center;
+}
+
+html[data-theme="dark"] {
+  --input-background: rgba(255, 255, 255, 0.045);
+  --input-text-color: #f3f4f6;
+  --input-placeholder-color: rgba(243, 244, 246, 0.34);
+  --border-color: rgba(255, 255, 255, 0.13);
+  --focus-border-color: rgba(255, 160, 1, 0.72);
+  --focus-ring-color: rgba(255, 160, 1, 0.14);
 }
 
 h2 {
@@ -523,6 +536,7 @@ input[type="number"],
 input[type="email"],
 input[type="password"],
 input[type="tel"],
+select,
 textarea {
   padding: 7px;
   margin-top: 15px;
@@ -532,12 +546,29 @@ textarea {
   color: var(--input-text-color);
   width: 100%;
   box-sizing: border-box;
+  transition: background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
 }
 
-input:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="tel"]:focus,
+select:focus,
 textarea:focus {
   border-color: var(--focus-border-color);
+  box-shadow: 0 0 0 3px var(--focus-ring-color);
   outline: none;
+}
+
+input[type="text"]::placeholder,
+input[type="number"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="tel"]::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder-color);
+  opacity: 1;
 }
 
 button[type="submit"] {
@@ -564,6 +595,7 @@ button[type="submit"]:hover {
   input[type="email"],
   input[type="password"],
   input[type="tel"],
+  select,
   textarea {
     font-size: 14px;
     width: 100%;

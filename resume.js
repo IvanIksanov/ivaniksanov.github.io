@@ -1105,6 +1105,7 @@ document.addEventListener("DOMContentLoaded", () => {
     saveState();
     renderPreview();
     renderExportControls();
+    updateMobilePreviewSheetScale();
     updateEducationHintPosition();
     updatePrintHintPosition();
   }
@@ -1125,7 +1126,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderExperienceCoverage();
     renderPreview();
     renderExportControls();
-    updatePreviewSheetScale();
+    updateMobilePreviewSheetScale();
     updateEducationHintPosition();
     updatePrintHintPosition();
     if (message) setExportStatus(message, "info");
@@ -1206,101 +1207,10 @@ document.addEventListener("DOMContentLoaded", () => {
       downloadAtsTextResume();
       return;
     }
-    const mobilePrintWindow = shouldUseMobilePdfWindow() ? window.open("", "_blank") : null;
     preparePrintTemplate(state.pdfStyle);
-    setExportStatus(
-      mobilePrintWindow
-        ? "Открыл мобильное окно PDF. Нажмите «Скачать PDF» в нём."
-        : `Открываю экспорт PDF: ${getCurrentPdfStyleOption().label}.`,
-      "info"
-    );
+    setExportStatus(`Открываю экспорт PDF: ${getCurrentPdfStyleOption().label}.`, "info");
     await preparePdfAssetsForPrint();
-    if (mobilePrintWindow) {
-      writeMobilePdfWindow(mobilePrintWindow);
-      return;
-    }
     window.print();
-  }
-
-  function shouldUseMobilePdfWindow() {
-    return window.matchMedia("(max-width: 760px)").matches || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-  }
-
-  function writeMobilePdfWindow(targetWindow) {
-    if (!targetWindow || targetWindow.closed) {
-      window.print();
-      return;
-    }
-    const styles = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
-      .map((link) => `<link rel="stylesheet" href="${escapeHtml(link.href)}">`)
-      .join("\n");
-    const iconScript = '<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"><\\/script>';
-    const theme = document.documentElement.getAttribute("data-theme") || "light";
-    const sheetHtml = previewSheetEl?.outerHTML || "";
-    const title = getCurrentPdfStyleOption().label;
-    targetWindow.document.open();
-    targetWindow.document.write(`<!doctype html>
-<html lang="ru" data-theme="${escapeHtml(theme)}">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Резюме PDF</title>
-  ${styles}
-  <style>
-    body.resume-builder-page { padding: 12px !important; background: #f3f4f6; }
-    .mobile-pdf-actions {
-      position: sticky;
-      top: 8px;
-      z-index: 20;
-      display: grid;
-      gap: 6px;
-      margin: 0 auto 12px;
-      max-width: 794px;
-      padding: 10px;
-      border: 1px solid #dbeafe;
-      border-radius: 12px;
-      background: #eff6ff;
-      color: #1e3a8a;
-      font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    .mobile-pdf-actions button {
-      min-height: 38px;
-      border: 0;
-      border-radius: 10px;
-      background: #111827;
-      color: #fff;
-      font: 700 14px/1 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    #resume-preview {
-      width: 794px !important;
-      min-height: 1123px !important;
-      transform: none !important;
-      margin: 0 auto !important;
-    }
-    @media (max-width: 840px) {
-      #resume-preview {
-        width: 100% !important;
-        min-height: auto !important;
-      }
-    }
-    @media print {
-      body.resume-builder-page { padding: 0 !important; background: #fff !important; }
-      .mobile-pdf-actions { display: none !important; }
-      #resume-preview { width: 100% !important; margin: 0 !important; }
-    }
-  </style>
-</head>
-<body class="resume-builder-page" data-pdf-style="${escapeHtml(state.pdfStyle)}">
-  <div class="mobile-pdf-actions">
-    <strong>Экспорт PDF: ${escapeHtml(title)}</strong>
-    <span>Нажмите кнопку ниже и выберите сохранение в PDF или «Сохранить в файлы» в системном окне.</span>
-    <button type="button" onclick="window.print()">Скачать PDF</button>
-  </div>
-  ${sheetHtml}
-  ${iconScript}
-</body>
-</html>`);
-    targetWindow.document.close();
   }
 
   async function preparePdfAssetsForPrint() {
@@ -1315,12 +1225,41 @@ document.addEventListener("DOMContentLoaded", () => {
     if (document.fonts?.ready) waits.push(withTimeout(document.fonts.ready, 1200));
     if (window.customElements?.whenDefined) waits.push(withTimeout(customElements.whenDefined("iconify-icon"), 1200));
     await Promise.allSettled(waits);
-    for (let index = 0; index < 8; index += 1) {
+    await waitForIconifyIconsReady();
+    inlineRenderedIconifyIconsForPrint();
+    await nextFrame();
+    await nextFrame();
+  }
+
+  async function waitForIconifyIconsReady() {
+    const maxAttempts = 24;
+    for (let index = 0; index < maxAttempts; index += 1) {
       await nextFrame();
-      const icons = Array.from(document.querySelectorAll("iconify-icon"));
-      if (!icons.length || icons.every((icon) => icon.shadowRoot || icon.innerHTML.trim())) break;
-      await delay(80);
+      const icons = Array.from(document.querySelectorAll(".resume-preview-skills iconify-icon"));
+      if (!icons.length || icons.every(hasRenderedIconifySvg)) break;
+      await delay(index < 8 ? 80 : 140);
     }
+  }
+
+  function hasRenderedIconifySvg(icon) {
+    return Boolean(getRenderedIconifySvg(icon));
+  }
+
+  function getRenderedIconifySvg(icon) {
+    return icon?.shadowRoot?.querySelector("svg") || icon?.querySelector?.("svg") || null;
+  }
+
+  function inlineRenderedIconifyIconsForPrint() {
+    document.querySelectorAll(".resume-preview-skills iconify-icon").forEach((icon) => {
+      const sourceSvg = getRenderedIconifySvg(icon);
+      if (!sourceSvg) return;
+      const svg = sourceSvg.cloneNode(true);
+      svg.classList.add("builder-chip__svg-icon");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("focusable", "false");
+      svg.removeAttribute("id");
+      icon.replaceWith(svg);
+    });
   }
 
   function withTimeout(promise, timeoutMs) {
@@ -3567,10 +3506,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!skillsMedia.addEventListener) {
       skillsMedia.addListener?.(rerenderSkills);
     }
-    window.addEventListener("resize", updatePreviewSheetScale);
+    window.addEventListener("resize", updateMobilePreviewSheetScale);
     window.addEventListener("orientationchange", () => {
-      requestAnimationFrame(updatePreviewSheetScale);
+      requestAnimationFrame(updateMobilePreviewSheetScale);
     });
+    if (window.ResizeObserver && previewSheetEl) {
+      const previewObserver = new ResizeObserver(() => {
+        requestAnimationFrame(updateMobilePreviewSheetScale);
+      });
+      previewObserver.observe(previewSheetEl);
+    }
   }
 
   function bindPrintHintPosition() {
@@ -3580,8 +3525,8 @@ document.addEventListener("DOMContentLoaded", () => {
       frame = requestAnimationFrame(() => {
         frame = 0;
 
-        updatePreviewSheetScale();
         // Сначала ставим образование, потом от него тормозим настройку печати.
+        updateMobilePreviewSheetScale();
         updateEducationHintPosition();
         updatePrintHintPosition();
       });
@@ -3592,8 +3537,16 @@ document.addEventListener("DOMContentLoaded", () => {
     schedule();
   }
 
-  function updatePreviewSheetScale() {
+  function updateMobilePreviewSheetScale() {
     if (!previewViewportEl || !previewSheetEl) return;
+    const shouldScale = window.matchMedia("(max-width: 680px)").matches;
+    document.body.classList.toggle("is-mobile-a4-preview", shouldScale);
+    if (!shouldScale) {
+      previewViewportEl.style.removeProperty("--resume-preview-scale");
+      previewViewportEl.style.removeProperty("height");
+      previewSheetEl.style.removeProperty("margin-left");
+      return;
+    }
     const baseWidth = 794;
     const availableWidth = Math.max(0, previewViewportEl.clientWidth);
     const scale = Math.min(1, availableWidth / baseWidth);
