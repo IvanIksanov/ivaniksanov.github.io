@@ -340,21 +340,30 @@ body.roadmap-minimal-mode .roadmap-layout {
 }
 
 .roadmap-minimal-article {
+  position: sticky;
+  top: 96px;
   display: grid;
+  grid-template-rows: minmax(0, 1fr);
   align-self: start;
   justify-self: end;
   width: min(100%, 680px);
   max-width: 680px;
   min-width: 0;
+  max-height: calc(100dvh - 112px);
   margin: 0 0 1rem auto !important;
   padding: 1rem 1.15rem !important;
   color: var(--roadmap-text);
+  overflow: hidden;
 }
 
 .roadmap-minimal-article__inner {
   display: grid;
   align-content: start;
   gap: 0.72rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
 }
 
 .roadmap-minimal-sheet-handle {
@@ -384,6 +393,67 @@ body.roadmap-minimal-mode .roadmap-layout {
   font-size: 0.92rem;
   line-height: 1.62;
   overflow-wrap: anywhere;
+}
+
+.skill-article-content {
+  display: grid;
+  gap: 0.95rem;
+  color: var(--roadmap-text);
+}
+
+.skill-article-content section {
+  display: grid;
+  gap: 0.48rem;
+}
+
+.skill-article-content h3 {
+  margin: 0;
+  color: var(--roadmap-text);
+  font-size: 1rem;
+  line-height: 1.25;
+  text-align: left;
+}
+
+.skill-article-content p,
+.skill-article-content li {
+  margin: 0;
+  color: var(--roadmap-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.62;
+  overflow-wrap: anywhere;
+}
+
+.skill-article-content ul,
+.skill-article-content ol {
+  display: grid;
+  gap: 0.34rem;
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.skill-article-content code {
+  padding: 0.08rem 0.28rem;
+  border: 1px solid var(--roadmap-border);
+  border-radius: 6px;
+  background: var(--roadmap-surface-soft);
+  color: var(--roadmap-text);
+  font-size: 0.86em;
+}
+
+.skill-article-content pre {
+  margin: 0.2rem 0 0;
+  padding: 0.72rem;
+  border: 1px solid var(--roadmap-border);
+  border-radius: 12px;
+  background: var(--roadmap-surface-soft);
+  overflow: auto;
+}
+
+.skill-article-content pre code {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  white-space: pre;
 }
 
 .roadmap-card {
@@ -709,6 +779,24 @@ html[data-theme="dark"] .roadmap-minimal-chip.is-active:hover {
   .roadmap-minimal-resources .roadmap-resource-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+    .skill-article-content {
+      gap: 0.72rem;
+    }
+
+    .skill-article-content p,
+    .skill-article-content li {
+      font-size: 0.84rem;
+      line-height: 1.55;
+    }
+
+    .skill-article-content h3 {
+      font-size: 0.94rem;
+    }
+
+    .skill-article-content pre {
+      max-height: 220px;
+    }
 }
 
 @media (max-width: 760px) {
