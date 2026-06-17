@@ -15,20 +15,20 @@
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.8">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="roadmap.css">
+    <link rel="stylesheet" href="roadmap.css?v=8.9.55">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
     <script src="metrika.shared.js"></script>
 </head>
-<body>
+<body class="roadmap-page">
 <noscript><div><img src="https://mc.yandex.ru/watch/99129194" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <div class="site-header">
 <nav>
     <ul>
-        <li><a href="hwois.html">Кто такой тестировщик?</a></li>
+        <li style="position: relative;"><a href="hwois.html">Кто такой тестировщик?</a></li>
         <li><a href="index.html" style="background-color: #FFA001;">Roadmap</a></li>
-        <li><a href="questions.html">Вопросы</a></li>
-        <li><a href="resume.html">Резюме</a></li>
-        <li><a href="practice.html">Практика</a></li>
+        <li style="position: relative;"><a href="questions.html">Вопросы</a></li>
+        <li style="position: relative;"><a href="resume.html">Резюме</a></li>
+        <li style="position: relative;"><a href="practice.html">Практика</a></li>
     </ul>
 </nav>
 
@@ -39,11 +39,8 @@
              onclick="window.location.href='index.html'">
             <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="Логотип">
         </div>
-        <h3 class="site-title">На главную</h3>
+        <h3 class="site-title">QAtoDev!</h3>
     </div>
-
-    <!-- выносим кнопку -->
-    
 </header>
 <div class="theme-switcher">
         <button
@@ -66,48 +63,169 @@
     </div>
 </div>
 
-<div class="page-header">
-    <h2>Roadmap для QA</h2>
-    <p>План развития тестировщика: с нуля до автоматизации и CI/CD.</p>
-</div>
+<main class="roadmap-main">
+    <div class="roadmap-layout">
+        <aside class="roadmap-sidebar" aria-label="Содержание">
+            <div class="roadmap-sidebar__card">
+                <strong>Содержание</strong>
+                <nav class="roadmap-sidebar__nav">
+                    <a href="#sec-theory">Теория</a>
+                    <a href="#sec-api-tools">API и инструменты</a>
+                    <a href="#sec-sql-db">SQL и БД</a>
+                    <a href="#sec-project-tools">Проекты</a>
+                    <a href="#sec-languages-ide">Языки и IDE</a>
+                    <a href="#sec-auto-libs">Библиотеки</a>
+                    <a href="#sec-design-tools">Макеты</a>
+                    <a href="#sec-extra-skills">Дополнительно</a>
+                    <a href="#sec-sdlc">Методологии</a>
+                    <a href="#sec-test-design">Тест-дизайн <span class="roadmap-sidebar__badge">!</span></a>
+                    <a href="#sec-techniques">Техники тестирования</a>
+                    <a href="#sec-automation">Автоматизация</a>
+                    <a href="#sec-security">Безопасность</a>
+                    <a href="#sec-load">Нагрузка</a>
+                    <a href="#sec-monitoring">Мониторинг и логи</a>
+                    <a href="#sec-cicd">CI/CD</a>
+                </nav>
+            </div>
+        </aside>
 
-<!-- ====== НОВАЯ ОБЩАЯ РАЗМЕТКА ДЛЯ РЕСПОНСИВА ======
-     На ≥900px появляется левый сайдбар-оглавление (sticky).
-     На мобильных остаётся линейная лента со стрелками.
--->
-<div class="roadmap-layout">
-    <!-- Сайдбар-оглавление (доступно только на широких экранах) -->
-    <aside class="roadmap-aside" aria-label="Содержание (доступно на ≥900px)">
-        <div class="aside-inner">
-            <div class="aside-title">Содержание</div>
-            <ol class="toc">
-                <li><a href="#sec-theory">Теория тестирования</a></li>
-                <li><a href="#sec-sdlc">Методология разработки ПО</a></li>
-                <li><a href="#sec-test-design">Тест-дизайн</a></li>
-                <li><a href="#sec-techniques">Техники тестирования</a></li>
-                <li><a href="#sec-automation">Выбор технологий автоматизации</a></li>
-                <li><a href="#sec-security">Тестирование безопасности</a></li>
-                <li><a href="#sec-load">Нагрузочное и стресс тестирование</a></li>
-                <li><a href="#sec-monitoring">Мониторинг и логи</a></li>
-                <li><a href="#sec-cicd">CI/CD</a></li>
-            </ol>
-            <div class="aside-note">Раздел в разработке.</div>
-        </div>
-    </aside>
+        <section class="article roadmap-article">
+            <div class="roadmap-topline">
+                <div class="roadmap-title-row">
+                    <div>
+                        <h1>Roadmap для QA</h1>
+                    </div>
+                    <div class="filter-mode-switcher roadmap-minimal-switcher" aria-label="Режим roadmap">
+                        <span class="filter-mode-label" id="roadmap-minimal-label">Минимализм</span>
+                        <button
+                                type="button"
+                                id="roadmap-minimal-toggle"
+                                class="filter-mode-toggle"
+                                role="switch"
+                                aria-checked="true"
+                                aria-labelledby="roadmap-minimal-label"
+                        >
+                            <span class="filter-mode-toggle__track" aria-hidden="true">
+                                <span class="filter-mode-toggle__thumb"></span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
-    <!-- Основная колонка с карточками -->
-    <main class="roadmap-main">
+        <section class="roadmap-minimal-stage" id="roadmap-minimal-stage" hidden>
+            <div class="roadmap-minimal-skills" id="roadmap-minimal-skills" aria-label="Навыки roadmap"></div>
+            <article class="article roadmap-minimal-article" id="roadmap-minimal-article" aria-live="polite">
+                <div class="roadmap-minimal-sheet-handle" aria-hidden="true"></div>
+                <div class="roadmap-minimal-article__inner">
+                    <h2 id="roadmap-minimal-title">Выберите навык</h2>
+                    <div class="roadmap-minimal-copy" id="roadmap-minimal-copy">
+                        <p>Нажмите на чип слева, чтобы открыть материалы и короткое описание навыка.</p>
+                    </div>
+                    <div class="roadmap-minimal-resources" id="roadmap-minimal-resources"></div>
+                </div>
+            </article>
+        </section>
+
         <div class="roadmap-container">
             <div class="roadmap-card" id="sec-theory">
                 <h3>Теория тестирования</h3>
                 <p>Обеспечение качества, отличие тестировщика от QA, AQA, QC и Head of QA, методы тестирования (Белый, Серый, Черный ящик), приоритизация багов, виды и уровни тестирования.</p>
                 <div class="skill-links">
+                    <a data-skill-id="scrum" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/sdlc-i-stlc/scrum | https://stepik.org/course/172187/promo? | https://education.yandex.ru/journal/kak-perevesti-komandu-na-scrum | https://practicum.yandex.ru/blog/chto-takoe-scrum-metodologiya/ | https://thecode.media/scrum/ | https://blog.skillfactory.ru/kto-takoy-scrum-master-chem-zanimaetsya/ | https://doka.guide/tools/agile/ | https://blog.skedraw.ru/articles/urovni-razrabotki-programmnogo-obespecheniya">Scrum<span class="skill-counter"></span></a>
                     <a data-skill-id="web-mobile-testing" data-plan="https://selectel.ru/blog/testing-mobile-applications/ | https://sky.pro/media/kak-testirovat-igry/ | https://gist.github.com/Rende11/1db5dc9470c9659976eae6d6e4e1a271#file-mobile-md">Web/Mobile testing<span class="skill-counter"></span></a>
+                    <a data-skill-id="test-design" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
                     <a data-skill-id="quality-assurance" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/obshee/qa-qc-testing | https://skillbox.ru/media/code/bol-testirovshchika-s-kakimi-problemami-stalkivayutsya-qainzhenery/ | https://tproger.ru/articles/instrumenty-i-frejmvorki-qa--kotorye--ne--nuzhno-znat | https://thecode.media/qa-engineer-2023/">Обеспечение качества<span class="skill-counter"></span></a>
+                    <a data-skill-id="mindmap" data-plan="https://skillbox.ru/media/base/chto-takoe-intellektkarty | https://vc.ru/services/1553974-top-15-luchshih-servisov-dlya-sozdaniya-intellekt-kart? | https://fb2-book.com/book/152103-intellekt-karty-polnoe-rukovodstvo-po-moshchnomu | https://habr.com/ru/articles/857390/ | https://www.mindmeister.com/app/map/470194599?fullscreen=1&v=public">Составление MindMap<span class="skill-counter"></span></a>
                     <a data-skill-id="cross-browser" data-plan="https://vladislaveremeev.gitbook.io/qa_bible/vidy-metody-urovni-testirovaniya/krossbrauzernoe-testirovanie-cross-browser-testing | https://testengineer.ru/chto-takoe-kross-brauzernoe-testirovanie/ | https://serpstat.com/ru/blog/kak-proverit-otobrazhenie-sajta-vo-vseh-brauzerah/">Кроссбраузерное<span class="skill-counter"></span></a>
+                    <a data-skill-id="bdd-tdd" data-plan="https://testengineer.ru/guide-to-tdd-bdd-and-atdd/ | https://github.com/stankin/design-part-2/wiki/exam06-4 | https://blog.skedraw.ru/articles/chto-takoe-tdd-i-bdd-testirovanie/ | https://doka.guide/tools/tdd/ | https://thecode.media/tdd/">BDD/TDD<span class="skill-counter"></span></a>
                 </div>
             </div>
-            <div class="arrow">↓</div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-api-tools">
+                <h3>API и инструменты</h3>
+                <div class="skill-links">
+                    <a data-skill-id="rest-api" data-plan="https://quality-lab.ru/blog/rest-api-testing/ | https://vladislaveremeev.gitbook.io/qa_bible/seti-i-okolo-nikh/rest-soap-grpc | https://my-js.org/docs/cheatsheet/devops#http | https://thecode.media/kak-ustroeny-api-razbiraemsya-na-primere-rest-api/ | https://youtu.be/08-RlaLgWx4?si=zKtk6DpzpWXleScI | https://www.youtube.com/watch?v=XaTwnKLQi4A&t=71s | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#rest-api | https://doka.guide/tools/api/ | https://www.youtube.com/watch?v=mkpJIZWQlHY | https://thecode.media/kak-testiruyut-api-razbiraemsya-na-primere-rest-api/ | https://vvrozhkova.github.io/chek-list-proverok-api/ | https://getanalyst.ru/database/http-protocol | https://getanalyst.ru/podcast/voprosy-i-otvety-po-rest-api">REST-api<span class="skill-counter"></span></a>
+                    <a data-skill-id="postman" data-plan="https://stepik.org/course/198019/promo? | https://t.me/QAtoDev/108 | https://testengineer.ru/postman-sobesedovanie/ | https://t.me/ARI_Postman/8 | https://testengineer.ru/gajd-po-testirovaniyu-v-postman/ | https://www.youtube.com/playlist?list=PLZqgWWF4O-zhpYUPLjpe2yfg93s1olElm | https://stepik.org/course/198019/promo? | https://www.youtube.com/watch?v=rMdapWJ47lY | https://www.youtube.com/watch?v=B2TxMRFBm8I&list=PLKbJd47KcbjvLgn-ukTvfpaGoXAqybza0 | https://t.me/QAtoDev/47">Postman<span class="skill-counter"></span></a>
+                    <a data-skill-id="insomnia" data-plan="https://stepik.org/course/124947/promo? | https://t.me/QAtoDev/208 | https://habr.com/ru/articles/754154/ | https://www.youtube.com/live/dCXnUkRDuE0?si=8XzcX5IaRHymTYFk | https://docs.insomnia.rest/insomnia/get-started">Insomnia<span class="skill-counter"></span></a>
+                    <a data-skill-id="charles" data-plan="https://habr.com/ru/companies/redmadrobot/articles/269109/ | https://testengineer.ru/charles-proxy-quick-guide/?ysclid=m74b35zb1m763128858 | https://trofimovdigital.ru/blog/how-to-use-charles | https://habr.com/ru/articles/733834/ | https://dzen.ru/a/ZgukmoUpEg50yyHY?ysclid=m74b6fe84q391125108">Charles<span class="skill-counter"></span></a>
+                    <a data-skill-id="devtools" data-plan="https://thecode.media/vsyo-pro-devtools-i-instrumenty-razrabotchika-v-brauzere/ | https://testgrow.ru/lecture45 | https://selectel.ru/blog/devtools/ | https://ru.hexlet.io/blog/posts/devtools-dlya-testirovschikov | https://developer.chrome.com/docs/devtools/security?hl=ru | https://developer.chrome.com/docs/devtools/overview?hl=ru | https://testengineer.ru/chrome-developer-tools-dlya-testirovshchika/ | https://thecode.media/good-tester/">DevTools<span class="skill-counter"></span></a>
+                    <a data-skill-id="proxyman" data-plan="https://habr.com/ru/companies/inDrive/articles/591525/ | https://habr.com/ru/articles/737120/ | https://docs.proxyman.com/proxyman-ios/vpn-and-proxyman-certificate | https://habr.com/ru/companies/ozontech/articles/579392/">Proxyman<span class="skill-counter"></span></a>
+                </div>
+            </div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-sql-db">
+                <h3>SQL и База Данных</h3>
+                <div class="skill-links">
+                    <a data-skill-id="MySQL" data-plan="https://karpov.courses/simulator-sql | https://sql-academy.org/ru/guide | https://my-js.org/docs/cheatsheet/sql | https://github.com/enhorse/java-interview/blob/master/README.md#sql | https://www.youtube.com/watch?v=5sG9kmXYsKU | https://mystery.knightlab.com | https://thecode.media/mysql/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#базы-данных | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#sql | https://blog.skillfactory.ru/polnoe-rukovodstvo-po-zaprosam-sql/ | https://thecode.media/5-db-types/ | https://stepik.org/course/212435/promo?">MySQL<span class="skill-counter"></span></a>
+                    <a data-skill-id="postgresql" data-plan="https://stepik.org/course/182183/promo? | https://betacode.net/11335/postgresql | https://vc.ru/u/2263319-vladimir-lovcov/987584-stavim-postgresql-na-svoi-pk-praktika-sql-chast-1? | https://practicum.yandex.ru/blog/chto-takoe-subd-postgresql/ | https://skillbox.ru/media/code/postgresql-vsye-chto-nuzhno-znat-dlya-bystrogo-starta/ | https://pro-prof.com/forums/topic/практика-работы-с-postgresql? | https://tproger.ru/articles/osnovy-postgresql-dlya-nachinayushhih--ot-ustanovki-do-pervyh-zaprosov-250851 | https://gitverse.ru/blog/articles/open-source/496-postgresql-chto-eto-za-subd-i-kak-ej-polzovatsya">PostgreSQL<span class="skill-counter"></span></a>
+                    <a data-skill-id="oracle" data-plan="https://sky.pro/wiki/sql/besplatnye-bazy-dannykh-oracle-dlya-trenirovki-sql-zaprosov/ | https://skillbox.ru/media/code/baza-dannykh-oracle-db-kak-ona-ustroena-i-chem-khorosha/ | https://betacode.net/10233/sample-oracle-database-for-learning-sql">ORACLE<span class="skill-counter"></span></a>
+                    <a data-skill-id="mongodb" data-plan="https://timeweb.cloud/tutorials/mongodb/zaprosy-mongodb-optimizaciya-primery | https://itproger.com/course/mongodb/2 | https://habr.com/ru/articles/217393/ | https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#mongodb | https://andreyex.ru/programmirovanie/python/kak-sozdat-bazu-dannyh-v-mongodb-s-pomoshhyu-python/">MongoDB<span class="skill-counter"></span></a>
+                    <a data-skill-id="dbeaver" data-plan="https://practicum.yandex.ru/blog/menedzher-baz-dannyh-dbeaver/ | https://rutube.ru/video/617769980ef87b146171d070b3c5aa60/">DBeaver<span class="skill-counter"></span></a>
+                </div>
+            </div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-project-tools">
+                <h3>Управление проектами</h3>
+                <div class="skill-links">
+                    <a data-skill-id="github" data-plan="https://doka.guide/recipes/github-new-repo">GitHub<span class="skill-counter"></span></a>
+                    <a data-skill-id="jira" data-plan="https://stepik.org/course/10425/promo? | https://blog.skillfactory.ru/glossary/jira/ | https://practicum.yandex.ru/blog/chto-takoe-bug-report-kak-ego-sostavit/ | https://testengineer.ru/bag-trekingovye-sistemy-jira-i-alternativnye-varianty/">Jira<span class="skill-counter"></span></a>
+                    <a data-skill-id="bitbucket" data-plan="https://blog.skillfactory.ru/glossary/bitbucket/?ysclid=m72gaboxsz333521041">Bitbucket<span class="skill-counter"></span></a>
+                    <a data-skill-id="confluence" data-plan="https://stepik.org/course/220495/promo? | https://practicum.yandex.ru/blog/confluence-dlya-sovmestnoy-raboty-komand/">Confluence<span class="skill-counter"></span></a>
+                </div>
+            </div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-languages-ide">
+                <h3>Языки и IDE</h3>
+                <div class="skill-links">
+                    <a data-skill-id="OOP" data-plan="https://www.youtube.com/watch?v=f5vLvG-P73c&t=16s | https://github.com/enhorse/java-interview/blob/master/oop.md#Что-такое-ООП | https://www.youtube.com/watch?v=ChEdFh7Q-Vw&t=465s | https://www.youtube.com/watch?v=W2V1ZUceKBk | https://habr.com/ru/articles/463125/ | https://skillbox.ru/media/code/oop_chast_1_chto_takoe_klassy_i_obekty/ | https://gitverse.ru/blog/articles/development/172-obuektno-orientirovannoe-programmirovanie-oop-chto-eto-takoe-osnovnye-principy-i-struktura">ООП<span class="skill-counter"></span></a>
+                    <a data-skill-id="idea" data-plan="https://vvrozhkova.github.io/professionalno-rabotaem-s-intelli-j-idea/ | https://www.youtube.com/watch?v=yefmcX57Eyg | https://www.youtube.com/watch?v=XBf_XzXQQS8 | https://javaspecialists.teachable.com/p/intellij-wizardry | https://resources.jetbrains.com/storage/products/intellij-idea/docs/IntelliJIDEA_ReferenceCard.pdf | https://www.youtube.com/watch?v=5qrn-Z5Put4">IDEA<span class="skill-counter"></span></a>
+                    <a data-skill-id="java" data-plan="https://javarush.com/quests/QUEST_JAVA_25 | https://github.com/enhorse/java-interview | https://stepik.org/course/182389/promo? | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#java | https://trofimovdigital.ru/blog/how-to-start-writing-autotests-on-java#Курсы_по_Java | https://vvrozhkova.github.io/kurs-po-avtomatizaczii-testirovaniya-java/ | https://coursehunter.net/course/java-dzhava-dlya-nachinayushchih-s-nulya-do-sertifikata-oracle?lesson=1">Java<span class="skill-counter"></span></a>
+                    <a data-skill-id="pycharm" data-plan="https://skillbox.ru/media/code/pycharm-kak-eye-ustanovit-i-ispolzovat | https://github.com/tatyderb/python_myanmar/blob/ca17396b63168587419724b4a8d1a4b95bd7dfa8/lectures/git_pycharm.md#L1">PyCharm<span class="skill-counter"></span></a>
+                    <a data-skill-id="python" data-plan="https://karpov.courses/pythonzero | https://github.com/lauragift21/awesome-learning-resources?tab=readme-ov-file#python | https://stepik.org/course/575/promo? | https://betacode.net/11377/python | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#python">Python<span class="skill-counter"></span></a>
+                    <a data-skill-id="vscode" data-plan="https://htmlacademy.ru/blog/js/editors-for-the-coders | https://htmlacademy.ru/blog/soft/plagin-js | https://code.visualstudio.com/docs/java/java-tutorial | https://code.visualstudio.com/docs/languages/javascript | https://htmlacademy.ru/blog/git/git-in-vscode | https://htmlacademy.ru/blog/soft/hot-keys">VScode<span class="skill-counter"></span></a>
+                    <a data-skill-id="javascript" data-plan="https://youtu.be/jZ8Y-kD1pok | https://my-js.org/docs/other/js-questions | https://github.com/goldbergyoni/javascript-testing-best-practices/blob/master/readme-ru.md | https://learn.javascript.ru | https://stepik.org/course/2223/promo? | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#javascript | https://learn.javascript.ru/intro | https://doka.guide/js/ | https://doka.guide/tools/structure-data-in-js/ | https://my-js.org/docs/other/snippets-js">JavaScript<span class="skill-counter"></span></a>
+                    <a data-skill-id="android-studio" data-plan="https://skillbox.ru/media/code/chto-takoe-android-studio-i-kak-ey-polzovatsya/ | https://practicum.yandex.ru/blog/kak-polzovatsya-android-studio/">Android Studio<span class="skill-counter"></span></a>
+                    <a data-skill-id="kotlin" data-plan="https://stepik.org/course/131507/promo? | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#kotlin | https://example.com/plan/kotlin">Kotlin<span class="skill-counter"></span></a>
+                    <a data-skill-id="xcode" data-plan="https://skillbox.ru/media/code/xcode-gayd-po-ide-ot-apple-dlya-novichkov/ | https://practicum.yandex.ru/blog/sreda-razrabotki-xcode/">Xcode<span class="skill-counter"></span></a>
+                    <a data-skill-id="swift" data-plan="https://stepik.org/course/89377/promo? | https://betacode.net/11015/swift | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#swift">Swift<span class="skill-counter"></span></a>
+                    <a data-skill-id="git" data-plan="https://htmlacademy.ru/blog/git/git-and-github-glossary | https://stepik.org/course/4138/promo? | https://github.com/EbookFoundation/free-programming-books/blob/main/books/free-programming-books-ru.md#git | https://www.youtube.com/playlist?list=PLDyvV36pndZFHXjXuwA_NywNrVQO0aQqb | https://learngitbranching.js.org/?locale=ru_RU | https://ru.hexlet.io/courses/intro_to_git | https://git-scm.com/book/en/v2 | https://practicum.yandex.ru/blog/chto-takoe-git-i-dlya-chego-nuzhen/ | https://gitverse.ru/blog/articles/open-source/300-kak-otmenit-izmeneniya-v-git | https://gitverse.ru/blog/articles/open-source/42-chto-takoe-sistema-upravleniya-versiyami-git">Git<span class="skill-counter"></span></a>
+                    <a data-skill-id="docker" data-plan="https://mws.ru/courses/devops/structure/ | https://karpov.courses/docker | https://stepik.org/course/123300/promo? | https://rutube.ru/video/e2ee9fbaa95ba1fc563e548529bb83e1/ | https://www.youtube.com/watch?v=n9uCgUzfeRQ | https://javabegin.ru/#odinn">Docker<span class="skill-counter"></span></a>
+                </div>
+            </div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-auto-libs">
+                <h3>Автоматизация/Библиотеки</h3>
+                <div class="skill-links">
+                    <a data-skill-id="ci-cd" data-plan="https://github.com/cheatsnake/backend-cheats/blob/master/README_RUS.md#развертывание-cicd | https://doka.guide/tools/ci-cd/">CI CD<span class="skill-counter"></span></a>
+                    <a data-skill-id="jenkins" data-plan="https://www.youtube.com/watch?v=yTNQnSKqKis | https://habr.com/ru/companies/yoomoney/articles/538664/ | https://www.litres.ru/book/brent-laster-21051066/jenkins-2-pristupaem-k-rabote-48411335/">Jenkins<span class="skill-counter"></span></a>
+                    <a data-skill-id="cypress" data-plan="https://testengineer.ru/chto-takoe-cypress-vvedenie-i-arhitektura/ | https://testengineer.ru/playwright-vs-cypress-vs-selenium/ | https://ru.hexlet.io/blog/posts/avtomatizatsiya-testirovaniya-s-cypress-osnovy-dlya-junior-qa">Cypress<span class="skill-counter"></span></a>
+                    <a data-skill-id="jmeter" data-plan="https://testengineer.ru/jmeter-guide/?ysclid=m72g44bqot855676748 | https://habr.com/ru/companies/tochka/articles/741698/">JMeter<span class="skill-counter"></span></a>
+                    <a data-skill-id="selenium" data-plan="https://ru.hexlet.io/blog/posts/chto-takoe-selenium-webdriver | https://stepik.org/course/119495/promo? | https://stepik.org/course/188355/promo? | https://tproger.ru/articles/prakticheskoe-rukovodstvo-po-testirovaniyu-prilozhenij-s-ispolzovaniem-selenium | https://testengineer.ru/selenium-2024/ | https://vvrozhkova.github.io/chto-takoe-selenium/">Selenium<span class="skill-counter"></span></a>
+                    <a data-skill-id="selenide" data-plan="https://github.com/selenide-examples | https://github.com/angry-qa/Selenide-snippets-by-Vinoradoff/blob/main/snippets.java | https://github.com/selenide/selenide/wiki/Selenide-vs-Selenium">Selenide<span class="skill-counter"></span></a>
+                    <a data-skill-id="rest-assured" data-plan="https://www.youtube.com/watch?v=8nAgzJea1L8 | https://habr.com/ru/companies/ssp-soft/articles/772088/ | https://testengineer.ru/rest-assured-tutorial/?ysclid=m71ju1jfjk353497505 | https://qa.crtweb.ru/docs/testing/auto/api/pojo/ | https://github.com/angry-qa/first-java-autotests/blob/04-api-test/src/test/java/APITests.java | https://habr.com/ru/companies/alfa/articles/745854/ | https://automatenow.io/rest-assured-api-testing-tutorial/ | https://github.com/rest-assured/rest-assured/wiki/Spring | https://www.youtube.com/watch?v=Ob2mdng_dMI | https://otus.ru/nest/post/1271/">REST-assured<span class="skill-counter"></span></a>
+                    <a data-skill-id="appium" data-plan="https://testengineer.ru/appium-gaid/? | https://logrocon.ru/news/firsttest_appium">Appium<span class="skill-counter"></span></a>
+                    <a data-skill-id="allure" data-plan="https://allurereport.org/docs/#_java | https://dzen.ru/a/ZjhzjBFonwO037Ph?ysclid=m9emxi8dh8611781998">Allure<span class="skill-counter"></span></a>
+                    <a data-skill-id="junit" data-plan="https://proselyte.net/tutorials/junit/ | https://easyjava.ru/testirovanie/junit-2/">JUnit<span class="skill-counter"></span></a>
+                </div>
+            </div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-design-tools">
+                <h3>Макеты и Дизайн</h3>
+                <div class="skill-links">
+                    <a data-skill-id="figma" data-plan="https://stepik.org/course/129486/promo? | https://stepik.org/course/197812/promo? | https://htmlacademy.ru/blog/soft/figma | https://www.figma.com/design/ubB2SQZD1QJPKpgAvpdiDh/Figma-%D0%B4%D0%BB%D1%8F-%D1%82%D0%B5%D1%81%D1%82%D0%B8%D1%80%D0%BE%D0%B2%D1%89%D0%B8%D0%BA%D0%B0-QAtoDev?node-id=0-1&t=WzAR0Wa0r7TeGGQF-1 | https://www.youtube.com/watch?v=eSOM83Zwy4s | https://stepik.org/course/197502/promo?">Figma<span class="skill-counter"></span></a>
+                    <a data-skill-id="pixso" data-plan="https://skillbox.ru/media/design/chto-takoe-pixso | https://stepik.org/course/159475/promo?">Pixso<span class="skill-counter"></span></a>
+                </div>
+            </div>
+
+            <div class="roadmap-card roadmap-skill-card" id="sec-extra-skills">
+                <h3>Дополнительно</h3>
+                <div class="skill-links">
+                    <a data-skill-id="typing" data-plan="https://www.edclub.com/sportal/ | https://klava.org/delta/#rus_basic | https://www.keybr.com/#google_vignette">Скоропечатание<span class="skill-counter"></span></a>
+                    <a data-skill-id="sec-test" data-plan="https://stepik.org/course/123935/promo? | https://github.com/curiv/russian-offensive-security-questions | https://habr.com/ru/companies/redmadrobot/articles/544198/ | https://habr.com/ru/company/pentestit/blog/526878/ | https://tproger.ru/translations/webapp-security/ | https://youtube.com/playlist?list=PLp2kHCN7pLe1azEbJa5ucnLpD0nGex0tg | https://selectel.ru/blog/ddos-attacks/ | https://doka.guide/tools/web-security | https://github.com/BEPb/tryhackme?tab=readme-ov-file | https://hacksplaining.com/lessons">Тестирование безопасности<span class="skill-counter"></span></a>
+                    <a data-skill-id="eng" data-plan="https://puzzle-movies.com | https://www.duolingo.com/learn | https://puzzle-english.com">Английский<span class="skill-counter"></span></a>
+                </div>
+            </div>
 
             <div class="roadmap-card" id="sec-sdlc">
                 <h3>Методология разработки ПО</h3>
@@ -123,7 +241,6 @@
                     <a data-skill-id="confluence" data-plan="https://stepik.org/course/220495/promo? | https://practicum.yandex.ru/blog/confluence-dlya-sovmestnoy-raboty-komand/">Confluence<span class="skill-counter"></span></a>
                 </div>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card" id="sec-test-design">
                 <h3>Тест-дизайн</h3>
@@ -132,14 +249,12 @@
                     <a data-skill-id="test-design" data-plan="https://stepik.org/course/218257/promo? | https://vladislaveremeev.gitbook.io/qa_bible/test-dizain/test-dizain-i-tekhniki-test-dizaina-test-design-and-software-testing-techniques | https://software-testing.ru/library/testing/test-analysis?layout=default | https://www.youtube.com/watch?v=i7PkPzRU6EI | https://practicum.yandex.ru/blog/tehniki-test-dizayna/ | https://www.youtube.com/watch?v=tLS9Ar2Hypk | https://practicum.yandex.ru/blog/chto-takoe-tablica-prinyatiya-resheniy/ | https://testengineer.ru/tekhniki-test-dizajna-teoriya-i-primery/ | https://testengineer.ru/test-design-techniques-on-examples/ | https://habr.com/ru/articles/740026/">Тест-дизайн<span class="skill-counter"></span></a>
                 </div>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card" id="sec-techniques">
                 <h3>Техники тестирования</h3>
                 <p>Функциональное тестирование: UAT, регресс, интеграционное, смоук, санитарное, исследовательское.</p>
                 <p>Нефункциональное тестирование: нагрузочное, стресс, безопасность, доступность.</p>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card branch" id="sec-automation">
                 <h3>Выбор технологий автоматизации</h3>
@@ -149,7 +264,6 @@
                         <p>Инструменты: Cypress, Selenium, Playwright, Puppeteer.</p>
                         <div class="skill-links">
                             <a data-skill-id="cypress" data-plan="https://testengineer.ru/chto-takoe-cypress-vvedenie-i-arhitektura/ | https://testengineer.ru/playwright-vs-cypress-vs-selenium/ | https://ru.hexlet.io/blog/posts/avtomatizatsiya-testirovaniya-s-cypress-osnovy-dlya-junior-qa">Cypress<span class="skill-counter"></span></a>
-                            <a data-skill-id="jmeter" data-plan="https://testengineer.ru/jmeter-guide/?ysclid=m72g44bqot855676748 | https://habr.com/ru/companies/tochka/articles/741698/">JMeter<span class="skill-counter"></span></a>
                             <a data-skill-id="selenium" data-plan="https://ru.hexlet.io/blog/posts/chto-takoe-selenium-webdriver | https://stepik.org/course/119495/promo? | https://stepik.org/course/188355/promo? | https://tproger.ru/articles/prakticheskoe-rukovodstvo-po-testirovaniyu-prilozhenij-s-ispolzovaniem-selenium | https://testengineer.ru/selenium-2024/ | https://vvrozhkova.github.io/chto-takoe-selenium/">Selenium<span class="skill-counter"></span></a>
                             <a data-skill-id="selenide" data-plan="https://github.com/selenide-examples | https://github.com/angry-qa/Selenide-snippets-by-Vinoradoff/blob/main/snippets.java | https://github.com/selenide/selenide/wiki/Selenide-vs-Selenium">Selenide<span class="skill-counter"></span></a>
                         </div>
@@ -172,29 +286,28 @@
                     </div>
                 </div>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card" id="sec-security">
                 <h3>Тестирование безопасности</h3>
                 <p>Аутентификация, OSINT, сканирование уязвимостей, OWASP Top 10, вектор атак.</p>
-                <div class="skill-links" id="superpower-skills">
+                <div class="skill-links" id="security-skills">
                     <a data-skill-id="sec-test" data-plan="https://stepik.org/course/123935/promo? | https://github.com/curiv/russian-offensive-security-questions | https://habr.com/ru/companies/redmadrobot/articles/544198/ | https://habr.com/ru/company/pentestit/blog/526878/ | https://tproger.ru/translations/webapp-security/ | https://youtube.com/playlist?list=PLp2kHCN7pLe1azEbJa5ucnLpD0nGex0tg | https://selectel.ru/blog/ddos-attacks/ | https://doka.guide/tools/web-security | https://github.com/BEPb/tryhackme?tab=readme-ov-file | https://hacksplaining.com/lessons">Тестирование безопасности<span class="skill-counter"></span></a>
                     <a data-skill-id="sec-test" data-plan="osi_model.html">Модель OSI<span class="skill-counter"></span></a>
                 </div>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card" id="sec-load">
                 <h3>Нагрузочное и стресс тестирование</h3>
                 <p>JMeter, Gatling, K6, Locust, Vegeta, Artillery, Lighthouse.</p>
+                <div class="skill-links" id="load-skills">
+                    <a data-skill-id="jmeter" data-plan="https://testengineer.ru/jmeter-guide/?ysclid=m72g44bqot855676748 | https://habr.com/ru/companies/tochka/articles/741698/">JMeter<span class="skill-counter"></span></a>
+                </div>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card" id="sec-monitoring">
                 <h3>Мониторинг и логи</h3>
                 <p>New Relic, Kibana, Datadog, Grafana, Sentry, RunScope.</p>
             </div>
-            <div class="arrow">↓</div>
 
             <div class="roadmap-card" id="sec-cicd">
                 <h3>CI/CD</h3>
@@ -205,8 +318,9 @@
                 </div>
             </div>
         </div>
-    </main>
-</div>
+        </section>
+    </div>
+</main>
 
 <footer class="qatodev">
     <p><a href="https://t.me/QAtoDev" target="_blank"  style="background-color: #FFA001;">Telegram</a>
@@ -238,58 +352,734 @@
 <script src="logo-rotator.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function(){
-      // все ссылки навыков
-      const skillLinks = document.querySelectorAll('.skill-links a');
+      const RESOURCE_STATUSES = {
+        priority: { label: 'Приоритет', className: 'status-priority' },
+        opened: { label: 'Открыто', className: 'status-opened' },
+        studied: { label: 'Изучено', className: 'status-studied' },
+        verified: { label: 'Подтверждено', className: 'status-verified' }
+      };
+      const ROADMAP_RESOURCE_STATUS_KEY = 'studyPlanResourceStatuses';
+      const ROADMAP_MINIMAL_MODE_KEY = 'roadmapMinimalMode';
+      const ROADMAP_MINIMAL_SKILL_KEY = 'roadmapMinimalSkillId';
+      let roadmapOpenStatusMenu = null;
+      let roadmapStatusMenuTimer = null;
 
-      // создаём контейнер оверлея
-      const overlay = document.createElement('div');
-      overlay.id = 'skill-overlay';
-      overlay.className = 'overlay';
-      document.body.appendChild(overlay);
+      const roadmapSidebar = document.querySelector('.roadmap-sidebar');
+      const roadmapSidebarCard = document.querySelector('.roadmap-sidebar__card');
+      const roadmapFocusNote = document.querySelector('.roadmap-block-note');
+      const roadmapFocusSection = document.getElementById('sec-test-design');
+      const roadmapMinimalToggle = document.getElementById('roadmap-minimal-toggle');
+      const roadmapMinimalSwitcher = document.querySelector('.roadmap-minimal-switcher');
+      const roadmapMinimalStage = document.getElementById('roadmap-minimal-stage');
+      const roadmapMinimalSkills = document.getElementById('roadmap-minimal-skills');
+      const roadmapMinimalArticle = document.getElementById('roadmap-minimal-article');
+      const roadmapMinimalTitle = document.getElementById('roadmap-minimal-title');
+      const roadmapMinimalResources = document.getElementById('roadmap-minimal-resources');
+      const roadmapMinimalCopy = document.getElementById('roadmap-minimal-copy');
+
+      const ROADMAP_SKILL_COPY = {
+        scrum: 'Scrum помогает тестировщику понимать ритм команды, планирование спринта и ценность короткой обратной связи. Навык важен не только для церемоний, но и для правильной постановки вопросов к требованиям. Через Scrum проще видеть риски заранее и договариваться о качестве до того, как задача ушла в разработку. Для QA это база командного мышления, а не просто набор встреч.',
+        'web-mobile-testing': 'Web/Mobile testing учит смотреть на продукт глазами разных пользователей, устройств и сред. Здесь важны адаптивность, жесты, браузеры, сетевые состояния и ограничения платформы. Тестировщик прокачивает внимательность к деталям интерфейса и сценариям, которые легко пропустить на одном экране. Этот навык помогает быстрее находить дефекты, влияющие на реальный пользовательский опыт.',
+        'test-design': 'Тест-дизайн превращает хаотичную проверку в управляемую систему. Навык помогает выбирать минимальный, но сильный набор проверок через классы эквивалентности, границы, таблицы решений и другие техники. Хороший тест-дизайн экономит время команды и делает покрытие понятным для всех. Это один из главных навыков, который отличает зрелого QA от случайного клика по интерфейсу.',
+        'quality-assurance': 'Обеспечение качества шире, чем поиск багов в готовой сборке. QA думает о процессе, требованиях, рисках, коммуникации и предотвращении дефектов. Этот навык помогает замечать слабые места еще до тестирования и предлагать улучшения команде. Чем лучше вы понимаете QA, тем больше влияете на качество продукта системно.',
+        mindmap: 'MindMap помогает разложить сложную область на понятные ветки и быстро увидеть пробелы. Для QA это удобный способ исследовать требования, строить тестовое покрытие и объяснять логику проверки команде. Интеллект-карта особенно полезна, когда документации мало или продукт быстро меняется. Навык развивает структурное мышление и снижает риск забыть важный сценарий.',
+        'cross-browser': 'Кроссбраузерное тестирование проверяет, одинаково ли продукт работает в разных браузерах и окружениях. Здесь важны отличия рендеринга, поведения форм, CSS, JavaScript и особенностей устройств. Навык помогает ловить дефекты, которые не видны в основном браузере разработчика. Для пользовательских продуктов это обязательная часть уверенного релиза.',
+        'bdd-tdd': 'BDD/TDD помогает QA говорить с разработкой на языке поведения и проверяемых ожиданий. BDD делает требования понятнее через сценарии, а TDD показывает, как тесты могут вести разработку. Даже если тестировщик сам не пишет весь код, понимание подходов улучшает коммуникацию и качество критериев приемки. Это навык про ясность, дисциплину и раннюю обратную связь.',
+        'rest-api': 'REST-api нужен QA, чтобы проверять продукт глубже интерфейса. Навык помогает понимать методы, статусы, заголовки, тело запроса и контракт между клиентом и сервером. Через API можно быстрее локализовать дефекты и тестировать сценарии, которые сложно воспроизвести руками. Это один из самых практичных шагов от ручного тестирования к техническому QA.',
+        postman: 'Postman дает удобную среду для ручной и полуавтоматической проверки API. В нем можно собирать коллекции, переменные, окружения и простые проверки ответа. Навык помогает быстро исследовать сервисы и документировать запросы для команды. Для начинающего QA это один из самых быстрых способов стать технически сильнее.',
+        insomnia: 'Insomnia похожа на легкую и аккуратную среду для работы с API. Она удобна для REST, GraphQL, переменных окружения и быстрой проверки запросов. Навык полезен, когда хочется держать API-сценарии чистыми и понятными. Для QA это еще один инструмент, который расширяет свободу в диагностике проблем.',
+        charles: 'Charles помогает видеть и изменять сетевой трафик между приложением и сервером. Тестировщик может анализировать запросы, подменять ответы и проверять поведение продукта при нестандартных условиях. Это особенно полезно в мобильном тестировании и при поиске сложных клиент-серверных дефектов. Навык делает QA заметно сильнее в расследовании причин багов.',
+        devtools: 'DevTools открывает внутреннюю сторону веб-страницы прямо в браузере. С его помощью QA проверяет DOM, стили, консольные ошибки, сеть, производительность и состояние приложения. Навык ускоряет локализацию дефектов и помогает формулировать баг-репорты точнее. Это базовый инструмент внимательного технического тестировщика.',
+        proxyman: 'Proxyman помогает анализировать HTTP/HTTPS-трафик в удобном интерфейсе, особенно на macOS и мобильных устройствах. Через него можно смотреть запросы, ответы, заголовки и подменять данные для проверки сложных сценариев. Навык полезен для тестирования мобильных приложений, API и интеграций. Он делает диагностику сетевых проблем быстрее и нагляднее.',
+        MySQL: 'MySQL помогает QA проверять данные напрямую, а не только через интерфейс. Навык SQL нужен для поиска тестовых данных, проверки записей после действий пользователя и анализа состояния системы. Понимание баз данных повышает точность расследования дефектов. Это важный шаг к уверенной работе с backend и интеграционными сценариями.',
+        postgresql: 'PostgreSQL часто встречается в продуктовой разработке и требует уверенного SQL-мышления. QA полезно понимать таблицы, связи, индексы, фильтрацию и агрегации. Навык помогает проверять бизнес-логику на уровне данных и быстрее готовить тестовые состояния. Чем спокойнее вы работаете с БД, тем меньше зависите от готовых интерфейсных сценариев.',
+        oracle: 'Oracle встречается в крупных корпоративных системах, где данные и надежность особенно важны. QA полезно понимать базовые запросы, схемы и особенности работы с такой СУБД. Навык помогает проверять сложные интеграции и legacy-системы. Даже базовое знакомство с Oracle расширяет диапазон проектов, где тестировщик чувствует себя уверенно.',
+        mongodb: 'MongoDB учит работать с документной моделью данных, где структура отличается от классических таблиц. QA полезно понимать коллекции, документы, фильтры и вложенные поля. Навык помогает проверять сервисы, которые хранят гибкие или быстро меняющиеся данные. Это хороший способ расширить мышление за пределы обычного SQL.',
+        dbeaver: 'DBeaver дает удобный интерфейс для работы с разными базами данных. QA может подключаться к окружениям, смотреть таблицы, писать запросы и сохранять полезные выборки. Навык снижает страх перед БД и делает проверку данных более регулярной. Это практичный инструмент для ежедневной работы тестировщика.',
+        github: 'GitHub помогает QA понимать, как живет код, задачи и изменения в проекте. Навык полезен для чтения pull request, просмотра истории, работы с репозиториями и техническими артефактами. Даже без роли разработчика QA становится ближе к процессу поставки изменений. Это улучшает коммуникацию и помогает быстрее находить источник регрессий.',
+        jira: 'Jira нужна для прозрачной работы с задачами, дефектами и процессом команды. QA важно уметь писать понятные баг-репорты, связывать их с требованиями и отслеживать статусы. Навык помогает не терять контекст и поддерживать качество коммуникации. Хорошая работа в Jira делает тестирование видимым и управляемым.',
+        bitbucket: 'Bitbucket часто используется вместе с Jira и корпоративными процессами разработки. QA полезно понимать репозитории, ветки, pull request и связь изменений с задачами. Навык помогает смотреть, какие изменения попали в сборку и где мог появиться дефект. Это делает тестирование более точным и технически осознанным.',
+        confluence: 'Confluence помогает работать с документацией, требованиями и командными договоренностями. QA важно не только читать страницы, но и улучшать их: фиксировать проверки, риски и решения. Навык помогает сохранять знания команды и быстрее онбордить новых участников. Хорошая документация снижает количество спорных трактовок в тестировании.',
+        OOP: 'ООП помогает понимать, как разработчики моделируют систему через классы, объекты и связи. Для QA это важно при чтении автотестов, обсуждении архитектуры и поиске причин дефектов. Навык делает код менее чужим и помогает увереннее переходить к автоматизации. Даже базовое понимание ООП сильно упрощает технические разговоры.',
+        idea: 'IntelliJ IDEA удобна для Java, автотестов и навигации по большому проекту. QA полезно освоить запуск тестов, поиск по коду, отладку и работу с зависимостями. Навык помогает быстрее понимать структуру автотестового проекта. Хорошее владение IDE снижает трение при переходе в AQA.',
+        java: 'Java остается одним из основных языков для автоматизации тестирования. QA важно понимать синтаксис, коллекции, исключения, ООП и работу с библиотеками. Навык открывает путь к Selenium, Selenide, REST-assured и JUnit. Java требует дисциплины, зато дает крепкую базу для серьезных автотестов.',
+        pycharm: 'PyCharm помогает комфортно писать и запускать Python-код. QA полезно освоить проекты, виртуальные окружения, отладчик и работу с пакетами. Навык подходит для скриптов, автотестов и быстрой автоматизации рутинных задач. Хорошая IDE делает обучение Python спокойнее и продуктивнее.',
+        python: 'Python удобен для быстрого старта в программировании и автоматизации. QA может использовать его для API-тестов, скриптов, обработки данных и вспомогательных инструментов. Навык развивает алгоритмическое мышление без лишнего синтаксического шума. Это хороший язык, чтобы уверенно войти в техническую сторону тестирования.',
+        vscode: 'VSCode полезен как легкий редактор для кода, конфигов, markdown и небольших проектов. QA может работать с расширениями, терминалом, Git и разными языками в одном месте. Навык помогает быстрее ориентироваться в технических файлах проекта. Это универсальный инструмент, который часто оказывается под рукой.',
+        javascript: 'JavaScript важен для понимания веб-приложений и frontend-автоматизации. QA полезно знать DOM, события, асинхронность, промисы и основы работы браузера. Навык помогает лучше пользоваться DevTools и понимать причины UI-дефектов. Для Cypress и Playwright JavaScript становится особенно практичной базой.',
+        'android-studio': 'Android Studio нужна для работы с Android-приложениями, эмуляторами и логами. QA может запускать сборки, смотреть Logcat, проверять разрешения и состояние устройства. Навык помогает глубже диагностировать мобильные дефекты. Это важный инструмент для тех, кто хочет уверенно тестировать Android.',
+        kotlin: 'Kotlin часто используется в Android-разработке и современных backend-проектах. QA полезно понимать базовый синтаксис, null-safety и структуру кода. Навык помогает читать тесты и лучше общаться с Android-разработчиками. Даже начальный уровень Kotlin делает мобильное тестирование более осознанным.',
+        xcode: 'Xcode нужен для тестирования iOS-приложений, симуляторов и сборок. QA полезно понимать запуск приложения, логи, подписи и базовую структуру проекта. Навык помогает быстрее разбираться с мобильными проблемами на стороне Apple-экосистемы. Для iOS-тестирования это практически обязательная рабочая среда.',
+        swift: 'Swift помогает понимать код iOS-приложений и автотестов. QA полезно знать базовый синтаксис, типы, опционалы и принципы работы с проектом. Навык облегчает общение с iOS-разработчиками и чтение технических деталей дефектов. Это хороший шаг для тестировщика, который хочет углубиться в мобильное направление.',
+        git: 'Git помогает контролировать изменения, ветки и историю проекта. QA полезно понимать checkout, pull, commit, merge и работу с конфликтами хотя бы на базовом уровне. Навык позволяет запускать нужную версию проекта и понимать, какие изменения проверяются. Git делает тестировщика самостоятельнее в технической среде.',
+        docker: 'Docker помогает запускать приложения и зависимости в предсказуемом окружении. QA может поднимать сервисы, базы данных и тестовые стенды без долгой ручной настройки. Навык полезен для локальной проверки, интеграционных тестов и понимания инфраструктуры. Docker снижает зависимость от чужих стендов и ускоряет эксперименты.',
+        'ci-cd': 'CI/CD показывает, как изменения проходят путь от кода до релиза. QA важно понимать пайплайны, проверки, сборки, деплой и причины падений. Навык помогает быстрее реагировать на регрессии и видеть качество как часть поставки. Это мост между тестированием, разработкой и DevOps-практиками.',
+        jenkins: 'Jenkins часто используется для сборок, запусков автотестов и деплоя. QA полезно уметь запускать job, читать логи, понимать параметры и причины падений. Навык помогает контролировать автоматические проверки и быстрее находить проблемные этапы. Для AQA Jenkins остается одним из частых инструментов в проектах.',
+        cypress: 'Cypress удобен для frontend-автотестов и быстрых проверок пользовательских сценариев. QA получает наглядный раннер, удобную отладку и простой старт на JavaScript. Навык помогает автоматизировать регресс и критичные UI-пути. Cypress особенно хорош там, где нужна быстрая обратная связь по веб-интерфейсу.',
+        jmeter: 'JMeter помогает проводить нагрузочные проверки и смотреть, как система ведет себя под давлением. QA может моделировать запросы, группы пользователей, задержки и базовые метрики. Навык полезен для поиска узких мест и подготовки вопросов к производительности. Это хороший вход в нагрузочное тестирование без тяжелой инфраструктуры.',
+        selenium: 'Selenium остается классической базой для UI-автоматизации в браузере. QA учится работать с локаторами, ожиданиями, драйверами и стабильностью тестов. Навык помогает понимать многие другие инструменты автоматизации, которые выросли вокруг браузерных проверок. Selenium требует аккуратности, но дает сильный фундамент.',
+        selenide: 'Selenide упрощает Selenium и делает Java UI-тесты компактнее. QA получает удобные ожидания, понятные проверки и меньше технического шума. Навык помогает писать стабильные автотесты быстрее и поддерживать их спокойнее. Это хороший выбор для Java-проектов, где Selenium в чистом виде слишком многословен.',
+        'rest-assured': 'REST-assured помогает писать API-автотесты на Java выразительно и компактно. QA может проверять статусы, тела ответов, схемы и бизнес-условия сервисов. Навык хорошо сочетается с JUnit, Allure и CI. Это один из самых полезных инструментов для перехода в backend-автоматизацию.',
+        appium: 'Appium используется для автоматизации мобильных приложений на Android и iOS. QA работает с локаторами, жестами, устройствами, ожиданиями и особенностями платформ. Навык требует терпения, но открывает полноценное мобильное AQA-направление. Он особенно ценен там, где ручной регресс на устройствах занимает много времени.',
+        allure: 'Allure помогает превращать результаты автотестов в понятные отчеты. QA может видеть шаги, статусы, вложения, историю и причины падений. Навык важен для прозрачности автоматизации перед командой и менеджментом. Хороший отчет экономит время на разборе проблем и повышает доверие к тестам.',
+        junit: 'JUnit дает базовую структуру для Java-тестов: запуск, проверки, фикстуры и группировку. QA через него понимает, как автотесты организуются и выполняются. Навык полезен почти в любом Java AQA-проекте. Это фундамент, на который удобно ставить REST-assured, Selenide и другие библиотеки.',
+        figma: 'Figma помогает QA сверять интерфейс с макетом и замечать визуальные расхождения. Навык включает работу с размерами, цветами, отступами, состояниями компонентов и дизайн-системой. Тестировщик становится точнее в UI-багрепортах и лучше понимает намерение дизайнера. Это особенно полезно для продуктовых интерфейсов.',
+        pixso: 'Pixso похож на Figma по логике работы с макетами и совместной проверкой дизайна. QA может изучать размеры, слои, компоненты и состояния интерфейса. Навык помогает не зависеть от одного инструмента и быстрее адаптироваться к команде. Для визуального тестирования это хорошее дополнение к основной практике.',
+        typing: 'Скоропечатание кажется второстепенным навыком, но сильно влияет на ежедневную скорость QA. Чем быстрее вы печатаете, тем легче писать баги, чек-листы, SQL-запросы и заметки во время исследования. Навык снижает усталость и помогает не терять мысль при фиксации деталей. Это маленькая инвестиция, которая постоянно возвращает время.',
+        'sec-test': 'Тестирование безопасности помогает видеть продукт через риски доступа, данных и уязвимостей. QA изучает авторизацию, инъекции, OWASP Top 10, сетевые угрозы и базовые практики защиты. Навык не делает тестировщика пентестером сразу, но резко повышает внимательность к опасным сценариям. Для современных продуктов это важная зона ответственности.',
+        eng: 'Английский нужен QA для документации, логов, инструментов, курсов и коммуникации в международной среде. Навык помогает быстрее разбираться с ошибками и не ждать перевода каждого термина. Даже постепенное развитие чтения уже дает большой эффект в техническом росте. Чем лучше английский, тем шире доступ к качественным материалам.'
+      };
+
+      function isRoadmapSidebarVisible() {
+        return roadmapSidebar && getComputedStyle(roadmapSidebar).display !== 'none';
+      }
+
+      function resetRoadmapFocusNotePosition() {
+        if (!roadmapFocusNote) return;
+        roadmapFocusNote.style.removeProperty('top');
+        roadmapFocusNote.style.removeProperty('left');
+        roadmapFocusNote.style.removeProperty('width');
+      }
+
+      function updateRoadmapFocusNotePosition() {
+        if (!roadmapSidebar || !roadmapSidebarCard || !roadmapFocusNote || !roadmapFocusSection) return;
+
+        if (document.body.classList.contains('roadmap-minimal-mode')) {
+          resetRoadmapFocusNotePosition();
+          return;
+        }
+
+        if (!isRoadmapSidebarVisible()) {
+          resetRoadmapFocusNotePosition();
+          return;
+        }
+
+        const contentRect = roadmapSidebarCard.getBoundingClientRect();
+        const sectionRect = roadmapFocusSection.getBoundingClientRect();
+        const noteRect = roadmapFocusNote.getBoundingClientRect();
+        const gap = 12;
+        const minTop = contentRect.bottom + gap;
+        const attachedTop = sectionRect.bottom - noteRect.height;
+        const top = Math.max(minTop, attachedTop);
+
+        roadmapFocusNote.style.top = `${Math.round(top)}px`;
+        roadmapFocusNote.style.left = `${Math.round(contentRect.left)}px`;
+        roadmapFocusNote.style.width = `${Math.round(contentRect.width)}px`;
+      }
+
+      function bindRoadmapFocusNotePosition() {
+        let frame = 0;
+        const schedule = () => {
+          if (frame) return;
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            updateRoadmapFocusNotePosition();
+          });
+        };
+
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule);
+        window.addEventListener('orientationchange', schedule);
+        schedule();
+      }
+
+      bindRoadmapFocusNotePosition();
+
+      const skillLinks = document.querySelectorAll('.skill-links a');
 
       skillLinks.forEach(link => {
         link.addEventListener('click', function(e){
           e.preventDefault();
-          overlay.innerHTML = '';  // очищаем предыдущее
-          // создаём окно
-          const article = document.createElement('div');
-          article.className = 'article';
-          // кнопка закрыть
-          const closeBtn = document.createElement('button');
-          closeBtn.className = 'overlay-close';
-          closeBtn.innerHTML = '&times;';
-          closeBtn.addEventListener('click', () => overlay.classList.remove('active'));
-          article.appendChild(closeBtn);
-          // заголовок навыка
-          const title = document.createElement('h3');
-          title.textContent = link.textContent.trim();
-          article.appendChild(title);
-        // контейнер, чтобы унаследовать стили из #plan-list
-        const planDiv = document.createElement('div');
-        planDiv.id = 'plan-list';
-
-        const ul = document.createElement('ul');
-        link.getAttribute('data-plan').split('|').forEach(url => {
-          const li = document.createElement('li');
-          const a  = document.createElement('a');
-          a.href        = url.trim();
-          a.textContent = url.trim();
-          a.target      = '_blank';
-          li.appendChild(a);
-          ul.appendChild(li);
-        });
-        planDiv.appendChild(ul);
-        article.appendChild(planDiv);
-
-          overlay.appendChild(article);
-          overlay.classList.add('active');
+          toggleRoadmapResourceFrame(link);
         });
       });
 
-      // закрыть при клике вне окна
-      overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('active');
+      initRoadmapMinimalMode();
+
+      document.addEventListener('click', function(event) {
+        if (!roadmapOpenStatusMenu) return;
+        if (event.target.closest('.resource-status-wrap')) return;
+        closeRoadmapStatusMenu(roadmapOpenStatusMenu.card, roadmapOpenStatusMenu.button);
       });
+
+      function initRoadmapMinimalMode() {
+        if (!roadmapMinimalToggle || !roadmapMinimalStage || !roadmapMinimalSkills || !roadmapMinimalArticle) return;
+
+        const skills = getRoadmapMinimalSkills();
+        roadmapMinimalSkills.replaceChildren(...skills.map(createRoadmapMinimalChip));
+        bindRoadmapMinimalSheet();
+        resetRoadmapOpenResourceFrames();
+
+        const savedMinimalMode = localStorage.getItem(ROADMAP_MINIMAL_MODE_KEY);
+        const savedMode = savedMinimalMode === null ? true : savedMinimalMode === 'true';
+        setRoadmapMinimalMode(savedMode);
+
+        roadmapMinimalToggle.addEventListener('click', function() {
+          setRoadmapMinimalMode(roadmapMinimalToggle.getAttribute('aria-checked') !== 'true');
+        });
+
+        window.addEventListener('pageshow', function() {
+          resetRoadmapOpenResourceFrames();
+          if (document.body.classList.contains('roadmap-minimal-mode')) {
+            restoreRoadmapMinimalSkill();
+          }
+        });
+      }
+
+      function getRoadmapMinimalSkills() {
+        const unique = new Map();
+        document.querySelectorAll('.roadmap-container .skill-links a[data-skill-id]').forEach(function(link) {
+          const skillId = link.dataset.skillId || getRoadmapSkillLabel(link);
+          if (unique.has(skillId)) return;
+          unique.set(skillId, {
+            id: skillId,
+            label: getRoadmapSkillLabel(link),
+            plan: link.getAttribute('data-plan') || ''
+          });
+        });
+        return Array.from(unique.values());
+      }
+
+      function createRoadmapMinimalChip(skill) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'roadmap-minimal-chip';
+        chip.dataset.skillId = skill.id;
+        chip.dataset.plan = skill.plan;
+        chip.textContent = skill.label;
+        chip.addEventListener('click', function() {
+          selectRoadmapMinimalSkill(chip);
+        });
+        return chip;
+      }
+
+      function resetRoadmapOpenResourceFrames() {
+        document.querySelectorAll('.roadmap-resource-frame.is-open').forEach(function(frame) {
+          frame.classList.remove('is-open');
+          frame.setAttribute('aria-hidden', 'true');
+          frame.dataset.activeSkillId = '';
+        });
+        document.querySelectorAll('.skill-links a.is-active').forEach(function(item) {
+          item.classList.remove('is-active');
+        });
+      }
+
+      function resetRoadmapMinimalSkillView() {
+        document.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
+          item.classList.remove('is-active');
+        });
+        if (roadmapMinimalTitle) roadmapMinimalTitle.textContent = 'Выберите навык';
+        if (roadmapMinimalResources) roadmapMinimalResources.replaceChildren();
+        if (roadmapMinimalCopy) {
+          const paragraph = document.createElement('p');
+          paragraph.textContent = 'Нажмите на чип слева, чтобы открыть материалы и короткое описание навыка.';
+          roadmapMinimalCopy.replaceChildren(paragraph);
+        }
+        roadmapMinimalArticle?.classList.remove('has-selection');
+        document.body.classList.remove('roadmap-minimal-sheet-expanded', 'roadmap-minimal-skill-selected');
+      }
+
+      function restoreRoadmapMinimalSkill() {
+        const savedSkillId = localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY);
+        if (!savedSkillId || !roadmapMinimalSkills) {
+          resetRoadmapMinimalSkillView();
+          return;
+        }
+
+        const chip = roadmapMinimalSkills.querySelector(`[data-skill-id="${CSS.escape(savedSkillId)}"]`);
+        if (!chip) {
+          localStorage.removeItem(ROADMAP_MINIMAL_SKILL_KEY);
+          resetRoadmapMinimalSkillView();
+          return;
+        }
+
+        selectRoadmapMinimalSkill(chip, { persist: false, collapseSheet: false });
+      }
+
+      function setRoadmapMinimalMode(enabled) {
+        document.body.classList.toggle('roadmap-minimal-mode', enabled);
+        roadmapMinimalStage.hidden = !enabled;
+        roadmapMinimalToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
+        roadmapMinimalSwitcher?.classList.toggle('is-companies', enabled);
+        localStorage.setItem(ROADMAP_MINIMAL_MODE_KEY, enabled ? 'true' : 'false');
+        if (!enabled) {
+          document.body.classList.remove('roadmap-minimal-sheet-expanded', 'roadmap-minimal-skill-selected');
+        } else {
+          restoreRoadmapMinimalSkill();
+        }
+        requestAnimationFrame(updateRoadmapFocusNotePosition);
+      }
+
+      function selectRoadmapMinimalSkill(chip, options) {
+        const settings = options || {};
+        roadmapMinimalSkills.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
+          item.classList.remove('is-active');
+        });
+        chip.classList.add('is-active');
+
+        const skillName = chip.textContent.trim();
+        const skillId = chip.dataset.skillId || skillName;
+        if (settings.persist !== false) {
+          localStorage.setItem(ROADMAP_MINIMAL_SKILL_KEY, skillId);
+        }
+        roadmapMinimalTitle.textContent = skillName;
+        roadmapMinimalResources.replaceChildren();
+        renderRoadmapResources(roadmapMinimalResources, chip);
+        roadmapMinimalCopy.replaceChildren(...getRoadmapMinimalCopy(skillId, skillName).map(function(text) {
+          const paragraph = document.createElement('p');
+          paragraph.textContent = text;
+          return paragraph;
+        }));
+        roadmapMinimalArticle.classList.add('has-selection');
+        document.body.classList.add('roadmap-minimal-skill-selected');
+        if (settings.collapseSheet !== false) {
+          document.body.classList.remove('roadmap-minimal-sheet-expanded');
+        }
+      }
+
+      function getRoadmapMinimalCopy(skillId, skillName) {
+        const text = ROADMAP_SKILL_COPY[skillId] || `${skillName} помогает QA расширять технический кругозор и увереннее разбирать продуктовые сценарии. Навык стоит изучать через практику: сначала понять назначение, затем применить на маленькой задаче и только потом закреплять в реальном проекте. Для roadmap это отдельная точка роста, которая усиливает качество проверок и коммуникацию с командой.`;
+        return text.split(/(?<=[.!?])\s+/).reduce(function(groups, sentence, index) {
+          const groupIndex = Math.floor(index / 2);
+          groups[groupIndex] = groups[groupIndex] ? groups[groupIndex] + ' ' + sentence : sentence;
+          return groups;
+        }, []);
+      }
+
+      function bindRoadmapMinimalSheet() {
+        let startY = 0;
+        roadmapMinimalArticle.addEventListener('touchstart', function(event) {
+          if (!document.body.classList.contains('roadmap-minimal-mode')) return;
+          startY = event.touches[0]?.clientY || 0;
+        }, { passive: true });
+
+        roadmapMinimalArticle.addEventListener('touchend', function(event) {
+          if (!document.body.classList.contains('roadmap-minimal-mode') || !startY) return;
+          const endY = event.changedTouches[0]?.clientY || startY;
+          const shift = endY - startY;
+          if (shift < -42) {
+            document.body.classList.add('roadmap-minimal-sheet-expanded');
+          } else if (shift > 42) {
+            document.body.classList.remove('roadmap-minimal-sheet-expanded');
+          }
+          startY = 0;
+        }, { passive: true });
+      }
+
+      function toggleRoadmapResourceFrame(link) {
+        const skillGroup = link.closest('.skill-links');
+        if (!skillGroup) return;
+
+        const activeScope = getRoadmapResourceFrameScope(skillGroup);
+        const frame = getRoadmapResourceFrame(skillGroup);
+        const isSameOpen = frame.classList.contains('is-open') && frame.dataset.activeSkillId === (link.dataset.skillId || '');
+
+        if (isSameOpen) {
+          frame.classList.remove('is-open');
+          frame.setAttribute('aria-hidden', 'true');
+          frame.dataset.activeSkillId = '';
+          activeScope.querySelectorAll('a.is-active').forEach((item) => item.classList.remove('is-active'));
+          return;
+        }
+
+        activeScope.querySelectorAll('a.is-active').forEach((item) => item.classList.remove('is-active'));
+        link.classList.add('is-active');
+        renderRoadmapResources(frame, link);
+
+        frame.dataset.activeSkillId = link.dataset.skillId || '';
+        frame.setAttribute('aria-hidden', 'false');
+        if (!frame.classList.contains('is-open')) {
+          requestAnimationFrame(() => frame.classList.add('is-open'));
+        }
+      }
+
+      function getRoadmapResourceFrameScope(skillGroup) {
+        const branchCard = skillGroup.closest('.branch-card');
+        const roadmapCard = skillGroup.closest('.roadmap-card');
+        if (branchCard && roadmapCard?.classList.contains('branch')) {
+          return roadmapCard;
+        }
+        return skillGroup;
+      }
+
+      function getRoadmapResourceFrame(skillGroup) {
+        const branchCard = skillGroup.closest('.branch-card');
+        const roadmapCard = skillGroup.closest('.roadmap-card');
+        const shouldUseCardFrame = branchCard && roadmapCard?.classList.contains('branch');
+
+        if (shouldUseCardFrame) {
+          let frame = Array.from(roadmapCard.children).find((child) => child.classList?.contains('roadmap-resource-frame'));
+          if (!frame) {
+            frame = document.createElement('div');
+            frame.className = 'roadmap-resource-frame';
+            frame.setAttribute('aria-hidden', 'true');
+            const branchContainer = roadmapCard.querySelector('.branch-container');
+            branchContainer.insertAdjacentElement('afterend', frame);
+          }
+          return frame;
+        }
+
+        let frame = skillGroup.nextElementSibling;
+        if (!frame || !frame.classList.contains('roadmap-resource-frame')) {
+          frame = document.createElement('div');
+          frame.className = 'roadmap-resource-frame';
+          frame.setAttribute('aria-hidden', 'true');
+          skillGroup.insertAdjacentElement('afterend', frame);
+        }
+        return frame;
+      }
+
+      function renderRoadmapResources(frame, link) {
+        const skillName = getRoadmapSkillLabel(link);
+        const skillId = link.dataset.skillId || '';
+        const links = (link.getAttribute('data-plan') || '')
+          .split('|')
+          .map((url) => url.trim())
+          .filter(Boolean);
+
+        const statusMap = loadRoadmapResourceStatuses();
+        const grid = document.createElement('div');
+        grid.className = 'plan-grid roadmap-resource-grid';
+
+        links.forEach((url, index) => {
+          grid.appendChild(createRoadmapResourceCard({
+            url,
+            index,
+            skillId,
+            skillName,
+            statusMap
+          }));
+        });
+
+        frame.replaceChildren(grid);
+      }
+
+      function createRoadmapResourceCard(options) {
+        const { url, index, skillId, skillName, statusMap } = options;
+        const parsed = parseRoadmapResourceUrl(url);
+        const typeLabel = getRoadmapResourceType(parsed);
+        const card = document.createElement('article');
+        card.className = 'resource-card';
+        card.dataset.url = url;
+        card.dataset.type = typeLabel;
+        card.dataset.priority = index === 0 ? 'true' : 'false';
+        card.setAttribute('role', 'link');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', 'Открыть материал в новой вкладке');
+
+        const top = document.createElement('div');
+        top.className = 'resource-top';
+
+        const number = document.createElement('span');
+        number.className = 'resource-number';
+        number.textContent = index + 1;
+
+        const type = document.createElement('span');
+        type.className = 'resource-type';
+        type.textContent = typeLabel;
+
+        const statusWrap = document.createElement('div');
+        statusWrap.className = 'resource-status-wrap';
+
+        const statusButton = document.createElement('button');
+        statusButton.type = 'button';
+        statusButton.className = 'resource-status-button';
+        statusButton.setAttribute('aria-haspopup', 'menu');
+        statusButton.setAttribute('aria-expanded', 'false');
+
+        const statusText = document.createElement('span');
+        statusText.className = 'resource-status-text';
+        statusButton.appendChild(statusText);
+
+        const statusMenu = document.createElement('div');
+        statusMenu.className = 'resource-status-menu';
+        statusMenu.setAttribute('role', 'menu');
+        statusMenu.innerHTML = [
+          '<button type="button" class="resource-status-option" data-status="opened" role="menuitem">Открыто</button>',
+          '<button type="button" class="resource-status-option" data-status="studied" role="menuitem">Изучено</button>',
+          '<button type="button" class="resource-status-option resource-status-option-disabled" disabled aria-disabled="true">Тест скоро</button>'
+        ].join('');
+
+        statusWrap.append(statusButton, statusMenu);
+        top.append(number, type, statusWrap);
+
+        const title = document.createElement('div');
+        title.className = 'resource-title';
+        title.textContent = parsed.displayHost || parsed.fallback;
+
+        const mainLink = document.createElement('div');
+        mainLink.className = 'resource-main-link';
+        mainLink.append(top, title);
+        card.appendChild(mainLink);
+
+        const currentStatus = getRoadmapResourceStatus(statusMap[url]);
+        syncRoadmapCardIndicator(card, statusButton, currentStatus);
+
+        function openResource() {
+          const nextMap = loadRoadmapResourceStatuses();
+          const savedStatus = getRoadmapResourceStatus(nextMap[url]);
+          if (!savedStatus) {
+            const entry = setRoadmapResourceStatusEntry(nextMap, url, 'opened', { skillId, resourceType: typeLabel });
+            syncRoadmapCardIndicator(card, statusButton, getRoadmapResourceStatus(entry));
+          }
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        card.addEventListener('click', function(event) {
+          if (event.target.closest('.resource-status-wrap')) return;
+          openResource();
+        });
+
+        card.addEventListener('keydown', function(event) {
+          if (event.target.closest('.resource-status-wrap')) return;
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          openResource();
+        });
+
+        statusButton.addEventListener('click', function(event) {
+          if (statusButton.dataset.readonly === 'true') {
+            event.preventDefault();
+            event.stopPropagation();
+            openResource();
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          toggleRoadmapStatusMenu(card, statusButton);
+        });
+
+        statusButton.addEventListener('mouseenter', function() {
+          if (statusButton.dataset.readonly === 'true') return;
+          if (window.matchMedia('(hover: hover)').matches) {
+            clearRoadmapScheduledStatusMenuClose();
+            openRoadmapStatusMenu(card, statusButton);
+          }
+        });
+
+        statusWrap.addEventListener('mouseenter', function() {
+          if (window.matchMedia('(hover: hover)').matches) {
+            clearRoadmapScheduledStatusMenuClose();
+          }
+        });
+
+        statusWrap.addEventListener('mouseleave', function() {
+          if (window.matchMedia('(hover: hover)').matches) {
+            scheduleRoadmapStatusMenuClose(card, statusButton);
+          }
+        });
+
+        card.addEventListener('mouseleave', function() {
+          if (window.matchMedia('(hover: hover)').matches) {
+            clearRoadmapScheduledStatusMenuClose();
+            closeRoadmapStatusMenu(card, statusButton);
+          }
+        });
+
+        statusMenu.querySelectorAll('.resource-status-option[data-status]').forEach(function(option) {
+          option.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            const nextMap = loadRoadmapResourceStatuses();
+            const entry = setRoadmapResourceStatusEntry(nextMap, url, option.dataset.status, { skillId, resourceType: typeLabel });
+            syncRoadmapCardIndicator(card, statusButton, getRoadmapResourceStatus(entry));
+            closeRoadmapStatusMenu(card, statusButton);
+          });
+        });
+
+        return card;
+      }
+
+      function getRoadmapSkillLabel(skill) {
+        return skill?.childNodes?.[0]?.textContent?.trim() || skill?.textContent?.trim() || '';
+      }
+
+      function parseRoadmapResourceUrl(url) {
+        try {
+          const parsed = new URL(url, window.location.href);
+          const isLocal = !/^https?:/i.test(url) && !/^\/\//.test(url);
+          const host = isLocal ? window.location.hostname || 'qatodev.local' : parsed.hostname.replace(/^www\./, '');
+          const path = parsed.pathname.replace(/\/$/, '');
+          return {
+            hostname: host,
+            pathname: parsed.pathname || '',
+            displayHost: isLocal ? url : host,
+            displayPath: path ? host + path : host,
+            fallback: url
+          };
+        } catch (e) {
+          return { hostname: '', pathname: '', displayHost: url, displayPath: url, fallback: url };
+        }
+      }
+
+      function getRoadmapResourceType(resource) {
+        const host = (resource.hostname || '').toLowerCase();
+        const path = (resource.pathname || '').toLowerCase();
+        const matchesHost = (items) => items.some((item) => host === item || host.endsWith('.' + item));
+        const videoHosts = ['youtube.com', 'youtu.be', 'rutube.ru', 'vk.com', 'vimeo.com', 'live.dzen.ru'];
+        const trainerHosts = ['stepik.org', 'karpov.courses', 'sql-academy.org', 'mystery.knightlab.com', 'edclub.com', 'keybr.com', 'klava.org', 'duolingo.com', 'puzzle-english.com', 'puzzle-movies.com', 'learngitbranching.js.org', 'hacksplaining.com'];
+        const postHosts = ['t.me', 'telegram.me', 'set.ki'];
+        const courseHosts = ['stepik.org', 'karpov.courses', 'javarush.com'];
+
+        if (matchesHost(videoHosts)) return 'Видео';
+        if (matchesHost(postHosts)) return 'Пост';
+        if (matchesHost(courseHosts) || host.endsWith('.teachable.com') || host.includes('course') || path.includes('course')) return 'Курс';
+        if (matchesHost(trainerHosts)) return 'Тренажер';
+        return 'Статья';
+      }
+
+      function loadRoadmapResourceStatuses() {
+        try {
+          const saved = localStorage.getItem(ROADMAP_RESOURCE_STATUS_KEY);
+          return saved ? JSON.parse(saved) : {};
+        } catch (e) {
+          return {};
+        }
+      }
+
+      function saveRoadmapResourceStatuses(map) {
+        localStorage.setItem(ROADMAP_RESOURCE_STATUS_KEY, JSON.stringify(map));
+      }
+
+      function getRoadmapResourceStatus(value) {
+        if (typeof value === 'string' && RESOURCE_STATUSES[value]) return value;
+        if (value && typeof value === 'object' && RESOURCE_STATUSES[value.status]) return value.status;
+        return null;
+      }
+
+      function buildRoadmapResourceStatusEntry(status, options) {
+        if (!RESOURCE_STATUSES[status]) return null;
+        const nextOptions = options || {};
+        return {
+          status,
+          updatedAt: new Date().toISOString(),
+          skillId: nextOptions.skillId || null,
+          resourceType: nextOptions.resourceType || null
+        };
+      }
+
+      function setRoadmapResourceStatusEntry(map, url, status, options) {
+        const entry = buildRoadmapResourceStatusEntry(status, options);
+        if (!entry) return null;
+        map[url] = entry;
+        saveRoadmapResourceStatuses(map);
+        return entry;
+      }
+
+      function setRoadmapCardStatus(card, status) {
+        const normalizedStatus = getRoadmapResourceStatus(status);
+        card.dataset.status = normalizedStatus || '';
+        card.classList.remove('has-status', 'status-priority', 'status-opened', 'status-studied', 'status-verified');
+        if (normalizedStatus) {
+          card.classList.add('has-status', RESOURCE_STATUSES[normalizedStatus].className);
+          return;
+        }
+        if (card.dataset.priority === 'true') {
+          card.classList.add('has-status', 'status-priority');
+        }
+      }
+
+      function updateRoadmapStatusButton(button, status, card) {
+        const normalizedStatus = getRoadmapResourceStatus(status);
+        button.classList.remove('status-priority', 'status-opened', 'status-studied', 'status-verified');
+        if (!normalizedStatus && card?.dataset.priority === 'true') {
+          const meta = RESOURCE_STATUSES.priority;
+          button.dataset.status = 'priority';
+          button.dataset.readonly = 'true';
+          button.classList.add(meta.className);
+          button.querySelector('.resource-status-text').textContent = meta.label;
+          button.setAttribute('aria-label', 'Приоритетный материал.');
+          return;
+        }
+        if (!normalizedStatus) {
+          button.dataset.status = '';
+          button.dataset.readonly = 'false';
+          button.querySelector('.resource-status-text').textContent = '';
+          button.setAttribute('aria-label', 'Открыть меню статуса');
+          return;
+        }
+        const meta = RESOURCE_STATUSES[normalizedStatus];
+        button.dataset.status = normalizedStatus;
+        button.dataset.readonly = 'false';
+        button.classList.add(meta.className);
+        button.querySelector('.resource-status-text').textContent = meta.label;
+        button.setAttribute('aria-label', 'Статус: ' + meta.label + '. Нажмите, чтобы изменить.');
+      }
+
+      function syncRoadmapCardIndicator(card, button, status) {
+        setRoadmapCardStatus(card, status);
+        updateRoadmapStatusButton(button, status, card);
+      }
+
+      function openRoadmapStatusMenu(card, button) {
+        clearRoadmapScheduledStatusMenuClose();
+        if (roadmapOpenStatusMenu && roadmapOpenStatusMenu.card !== card) {
+          closeRoadmapStatusMenu(roadmapOpenStatusMenu.card, roadmapOpenStatusMenu.button);
+        }
+        card.classList.add('status-menu-open');
+        button.setAttribute('aria-expanded', 'true');
+        updateRoadmapStatusMenuViewport(card);
+        roadmapOpenStatusMenu = { card, button };
+      }
+
+      function closeRoadmapStatusMenu(card, button) {
+        clearRoadmapScheduledStatusMenuClose();
+        card.classList.remove('status-menu-open');
+        button.setAttribute('aria-expanded', 'false');
+        const wrap = card.querySelector('.resource-status-wrap');
+        if (wrap) {
+          wrap.classList.remove('menu-open-up', 'menu-open-left');
+          wrap.style.removeProperty('--status-menu-shift-x');
+        }
+        if (roadmapOpenStatusMenu && roadmapOpenStatusMenu.card === card) {
+          roadmapOpenStatusMenu = null;
+        }
+      }
+
+      function toggleRoadmapStatusMenu(card, button) {
+        if (card.classList.contains('status-menu-open')) {
+          closeRoadmapStatusMenu(card, button);
+          return;
+        }
+        openRoadmapStatusMenu(card, button);
+      }
+
+      function scheduleRoadmapStatusMenuClose(card, button) {
+        clearRoadmapScheduledStatusMenuClose();
+        roadmapStatusMenuTimer = setTimeout(function() {
+          closeRoadmapStatusMenu(card, button);
+        }, 120);
+      }
+
+      function clearRoadmapScheduledStatusMenuClose() {
+        if (!roadmapStatusMenuTimer) return;
+        clearTimeout(roadmapStatusMenuTimer);
+        roadmapStatusMenuTimer = null;
+      }
+
+      function updateRoadmapStatusMenuViewport(card) {
+        const wrap = card.querySelector('.resource-status-wrap');
+        const menu = card.querySelector('.resource-status-menu');
+        if (!wrap || !menu) return;
+
+        wrap.classList.remove('menu-open-up', 'menu-open-left');
+        wrap.style.removeProperty('--status-menu-shift-x');
+
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth - 8) wrap.classList.add('menu-open-left');
+        if (rect.bottom > window.innerHeight - 8) wrap.classList.add('menu-open-up');
+
+        const nextRect = menu.getBoundingClientRect();
+        let shiftX = 0;
+        if (nextRect.left < 8) {
+          shiftX = 8 - nextRect.left;
+        } else if (nextRect.right > window.innerWidth - 8) {
+          shiftX = (window.innerWidth - 8) - nextRect.right;
+        }
+        if (shiftX !== 0) {
+          wrap.style.setProperty('--status-menu-shift-x', shiftX + 'px');
+        }
+      }
     });
 </script>
   <script src="header.js?v=8.9.5"></script>
