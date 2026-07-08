@@ -15,7 +15,7 @@
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.8">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="roadmap.css?v=8.9.55">
+    <link rel="stylesheet" href="roadmap.css?v=8.9.67">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
     <script src="metrika.shared.js"></script>
 </head>
@@ -95,29 +95,35 @@
                     <div>
                         <h1>Roadmap для QA</h1>
                     </div>
-                    <div class="filter-mode-switcher roadmap-minimal-switcher" aria-label="Режим roadmap">
-                        <span class="filter-mode-label" id="roadmap-minimal-label">Минимализм</span>
-                        <button
-                                type="button"
-                                id="roadmap-minimal-toggle"
-                                class="filter-mode-toggle"
-                                role="switch"
-                                aria-checked="true"
-                                aria-labelledby="roadmap-minimal-label"
-                        >
-                            <span class="filter-mode-toggle__track" aria-hidden="true">
-                                <span class="filter-mode-toggle__thumb"></span>
+                    <div class="roadmap-view-switcher roadmap-minimal-switcher" id="roadmap-view-switcher" role="group" aria-label="Режим roadmap">
+                        <span class="filter-mode-label" id="roadmap-view-label">Маршрут</span>
+                        <div class="roadmap-view-switcher__control" aria-labelledby="roadmap-view-label">
+                            <span class="roadmap-view-switcher__track" aria-hidden="true">
+                                <span class="roadmap-view-switcher__dot roadmap-view-switcher__dot--details"></span>
+                                <span class="roadmap-view-switcher__dot roadmap-view-switcher__dot--skills"></span>
+                                <span class="roadmap-view-switcher__dot roadmap-view-switcher__dot--route"></span>
+                                <span class="roadmap-view-switcher__thumb"></span>
                             </span>
-                        </button>
+                            <button type="button" class="roadmap-view-switcher__button" data-roadmap-mode="details" aria-label="Подробно" title="Подробно"></button>
+                            <button type="button" class="roadmap-view-switcher__button" data-roadmap-mode="skills" aria-label="Минимализм" title="Минимализм"></button>
+                            <button type="button" class="roadmap-view-switcher__button" data-roadmap-mode="route" aria-label="Маршрут" title="Маршрут"></button>
+                        </div>
                     </div>
                 </div>
             </div>
 
         <section class="roadmap-minimal-stage" id="roadmap-minimal-stage" hidden>
             <div class="roadmap-minimal-skills" id="roadmap-minimal-skills" aria-label="Навыки roadmap"></div>
+            <div class="roadmap-route" id="roadmap-route" aria-label="Карта направлений" hidden>
+                <svg class="roadmap-route__line" id="roadmap-route-line" aria-hidden="true">
+                    <path id="roadmap-route-path"></path>
+                </svg>
+                <div class="roadmap-route__stops" id="roadmap-route-stops"></div>
+            </div>
             <article class="article roadmap-minimal-article" id="roadmap-minimal-article" aria-live="polite">
                 <div class="roadmap-minimal-sheet-handle" aria-hidden="true"></div>
                 <div class="roadmap-minimal-article__inner">
+                    <div class="roadmap-minimal-title-art" id="roadmap-minimal-title-art" aria-hidden="true" hidden></div>
                     <h2 id="roadmap-minimal-title">Выберите навык</h2>
                     <div class="roadmap-minimal-copy" id="roadmap-minimal-copy">
                         <p>Нажмите на чип слева, чтобы открыть материалы и короткое описание навыка.</p>
@@ -221,9 +227,7 @@
             <div class="roadmap-card roadmap-skill-card" id="sec-extra-skills">
                 <h3>Дополнительно</h3>
                 <div class="skill-links">
-                    <a data-skill-id="typing" data-plan="https://www.edclub.com/sportal/ | https://klava.org/delta/#rus_basic | https://www.keybr.com/#google_vignette">Скоропечатание<span class="skill-counter"></span></a>
                     <a data-skill-id="sec-test" data-plan="https://stepik.org/course/123935/promo? | https://github.com/curiv/russian-offensive-security-questions | https://habr.com/ru/companies/redmadrobot/articles/544198/ | https://habr.com/ru/company/pentestit/blog/526878/ | https://tproger.ru/translations/webapp-security/ | https://youtube.com/playlist?list=PLp2kHCN7pLe1azEbJa5ucnLpD0nGex0tg | https://selectel.ru/blog/ddos-attacks/ | https://doka.guide/tools/web-security | https://github.com/BEPb/tryhackme?tab=readme-ov-file | https://hacksplaining.com/lessons">Тестирование безопасности<span class="skill-counter"></span></a>
-                    <a data-skill-id="eng" data-plan="https://puzzle-movies.com | https://www.duolingo.com/learn | https://puzzle-english.com">Английский<span class="skill-counter"></span></a>
                 </div>
             </div>
 
@@ -322,11 +326,6 @@
     </div>
 </main>
 
-<footer class="qatodev">
-    <p><a href="https://t.me/QAtoDev" target="_blank"  style="background-color: #FFA001;">Telegram</a>
-        <a href="https://set.ki/channel/PJnPK69" target="_blank"  style="background-color: #FFA001;">Сетка</a></p>
-</footer>
-
 <script>
     (function() {
       const root = document.documentElement;
@@ -360,19 +359,119 @@
       };
       const ROADMAP_RESOURCE_STATUS_KEY = 'studyPlanResourceStatuses';
       const ROADMAP_MINIMAL_MODE_KEY = 'roadmapMinimalMode';
+      const ROADMAP_VIEW_MODE_KEY = 'roadmapViewMode';
       const ROADMAP_MINIMAL_SKILL_KEY = 'roadmapMinimalSkillId';
+      const ROADMAP_ROUTE_GROUP_KEY = 'roadmapRouteGroupId';
+      const ROADMAP_VIEW_MODES = ['details', 'skills', 'route'];
+      const ROADMAP_VIEW_LABELS = {
+        details: 'Подробно',
+        skills: 'Минимализм',
+        route: 'Маршрут'
+      };
+
+      const ROADMAP_TRACKS = {
+        manual: { title: 'Manual QA', blocks: ['qa-base', 'analysis-test-design', 'team-work', 'web-diagnostics', 'api', 'databases'] },
+        api: { title: 'API QA', blocks: ['qa-base', 'api', 'databases', 'automation', 'devops'] },
+        java: { title: 'Java AQA', blocks: ['qa-base', 'git-repositories', 'languages-ide', 'automation', 'api', 'devops'] },
+        javascript: { title: 'JavaScript AQA', blocks: ['qa-base', 'web-diagnostics', 'git-repositories', 'languages-ide', 'automation', 'devops'] },
+        mobile: { title: 'Mobile QA', blocks: ['qa-base', 'web-diagnostics', 'mobile-qa', 'api', 'git-repositories', 'devops'] },
+        performance: { title: 'Performance QA', blocks: ['qa-base', 'api', 'non-functional', 'devops'] },
+        security: { title: 'Security QA', blocks: ['qa-base', 'web-diagnostics', 'api', 'non-functional', 'devops'] }
+      };
+
+      const ROADMAP_BLOCKS = [
+        { id: 'qa-base', title: 'База QA', skills: ['quality-assurance', 'scrum', 'web-mobile-testing'], offset: -54 },
+        { id: 'analysis-test-design', title: 'Анализ и тест-дизайн', skills: ['test-design', 'mindmap', 'bdd-tdd', 'figma', 'pixso'], offset: 42 },
+        { id: 'team-work', title: 'Командная работа', skills: ['jira', 'confluence'], offset: -25 },
+        { id: 'web-diagnostics', title: 'Web и диагностика', skills: ['devtools', 'cross-browser', 'charles', 'proxyman'], offset: 56 },
+        { id: 'api', title: 'API', skills: ['rest-api', 'postman', 'insomnia'], offset: -42 },
+        { id: 'databases', title: 'Базы данных', skills: ['dbeaver', 'MySQL', 'postgresql', 'oracle', 'mongodb'], offset: 30 },
+        { id: 'git-repositories', title: 'Git и репозитории', skills: ['git', 'github', 'bitbucket'], offset: -58 },
+        { id: 'languages-ide', title: 'Языки и IDE', skills: ['OOP', 'java', 'python', 'javascript', 'idea', 'pycharm', 'vscode'], offset: 45 },
+        { id: 'automation', title: 'Автоматизация', skills: ['selenium', 'selenide', 'cypress', 'rest-assured', 'junit', 'allure'], offset: -30 },
+        { id: 'mobile-qa', title: 'Mobile QA', skills: ['android-studio', 'kotlin', 'xcode', 'swift', 'appium'], offset: 58 },
+        { id: 'devops', title: 'DevOps для QA', skills: ['docker', 'ci-cd', 'jenkins'], offset: -46 },
+        { id: 'non-functional', title: 'Нефункциональное тестирование', skills: ['jmeter', 'sec-test'], offset: 24 }
+      ].map(function(block) {
+        return Object.assign({}, block, {
+          trackIds: Object.keys(ROADMAP_TRACKS).filter(function(trackId) {
+            return ROADMAP_TRACKS[trackId].blocks.includes(block.id);
+          })
+        });
+      });
+
+      const ROADMAP_BLOCK_CONTENT = {
+        'qa-base': { description: 'Фундамент профессии: роль QA, командный процесс, особенности web и mobile, рабочий английский и скорость ежедневной работы.', questionQuery: 'QA Scrum Web Mobile testing' },
+        'analysis-test-design': { description: 'Инструменты анализа требований и проектирования проверок: от тест-дизайна и MindMap до работы с макетами.', questionQuery: 'тест-дизайн MindMap BDD TDD Figma Pixso', links: [{ label: 'Практика тест-дизайна', href: 'test-design.html' }] },
+        'team-work': { description: 'Навыки прозрачной работы с задачами, дефектами, документацией и договоренностями внутри команды.', questionQuery: 'Jira Confluence команда' },
+        'web-diagnostics': { description: 'Проверка web-продуктов и диагностика проблем через браузерные инструменты, трафик и разные окружения.', questionQuery: 'Web DevTools Charles Proxyman браузер', links: [{ label: 'Практика Login Sandbox', href: 'loginSandbox.html' }] },
+        api: { description: 'Проверка клиент-серверного взаимодействия: устройство REST API, отправка запросов и анализ ответов.', questionQuery: 'API REST Postman Insomnia', links: [{ label: 'Swagger тренажер', href: 'swagger_api.html' }] },
+        databases: { description: 'Проверка данных напрямую в реляционных и документных базах, подготовка тестовых состояний и диагностика дефектов.', questionQuery: 'базы данных SQL MySQL PostgreSQL Oracle MongoDB' },
+        'git-repositories': { description: 'Работа с историей изменений, ветками, репозиториями и связью кода с проверяемыми задачами.', questionQuery: 'Git GitHub Bitbucket' },
+        'languages-ide': { description: 'База программирования и рабочие среды, необходимые для чтения кода, скриптов и перехода к автоматизации.', questionQuery: 'ООП Java Python JavaScript IDE' },
+        automation: { description: 'Инструменты и библиотеки для автоматизации UI и API-проверок, запуска тестов и подготовки отчетов.', questionQuery: 'автоматизация Selenium Selenide Cypress REST-assured JUnit Allure', links: [{ label: 'Практика Login Sandbox', href: 'loginSandbox.html' }] },
+        'mobile-qa': { description: 'Тестирование и автоматизация Android и iOS-приложений с учетом инструментов и особенностей мобильных платформ.', questionQuery: 'Mobile Android iOS Appium Kotlin Swift' },
+        devops: { description: 'Окружения, контейнеры и пайплайны, через которые изменения проходят путь от кода до тестового стенда и релиза.', questionQuery: 'DevOps Docker CI CD Jenkins' },
+        'non-functional': { description: 'Проверки производительности и безопасности, которые показывают устойчивость продукта за пределами функциональных сценариев.', questionQuery: 'JMeter безопасность нагрузочное тестирование' }
+      };
+
+      const ROADMAP_SKILL_LINKS = {
+        selenium: [
+          { label: 'Вопросы по Selenium', href: 'questions.html?q=Selenium', type: 'questions' },
+          { label: 'Практика Login Sandbox', href: 'loginSandbox.html' }
+        ],
+        'rest-api': [
+          { label: 'Вопросы по REST API', href: 'questions.html?q=REST%20API', type: 'questions' },
+          { label: 'Swagger тренажер', href: 'swagger_api.html' }
+        ],
+        postman: [
+          { label: 'Вопросы по Postman', href: 'questions.html?q=Postman', type: 'questions' },
+          { label: 'Swagger тренажер', href: 'swagger_api.html' }
+        ],
+        'test-design': [
+          { label: 'Вопросы по тест-дизайну', href: 'questions.html?q=тест-дизайн', type: 'questions' },
+          { label: 'Практика тест-дизайна', href: 'test-design.html' }
+        ]
+      };
+
+      const ROADMAP_SKILL_TESTS = {
+        'rest-api': {
+          title: 'Проверка знаний REST API',
+          questions: [
+            { text: 'Какой HTTP-метод обычно используют для получения данных?', options: ['GET', 'POST', 'DELETE'], answer: 'GET' },
+            { text: 'Какой status code чаще всего означает успешное создание ресурса?', options: ['200 OK', '201 Created', '204 No Content'], answer: '201 Created' },
+            { text: 'Где обычно передают bearer token?', options: ['Authorization header', 'Response body', 'URL fragment'], answer: 'Authorization header' }
+          ]
+        },
+        selenium: {
+          title: 'Проверка знаний Selenium',
+          questions: [
+            { text: 'Для чего используется Selenium?', options: ['Для автоматизации действий в браузере', 'Для работы с базами данных', 'Для нагрузочного тестирования'], answer: 'Для автоматизации действий в браузере' },
+            { text: 'Что делает явное ожидание?', options: ['Ждет конкретное состояние элемента или условия', 'Всегда останавливает тест на 10 секунд', 'Перезапускает браузер'], answer: 'Ждет конкретное состояние элемента или условия' },
+            { text: 'Почему плох полный XPath от html до кнопки?', options: ['Он хрупкий и ломается при изменении верстки', 'Он работает только в Firefox', 'Он не поддерживает клики'], answer: 'Он хрупкий и ломается при изменении верстки' }
+          ]
+        }
+      };
       let roadmapOpenStatusMenu = null;
       let roadmapStatusMenuTimer = null;
+      let roadmapRoutePathFrame = 0;
+      let roadmapRouteAnimationFrame = 0;
+      let roadmapRouteSkillsById = new Map();
 
       const roadmapSidebar = document.querySelector('.roadmap-sidebar');
       const roadmapSidebarCard = document.querySelector('.roadmap-sidebar__card');
       const roadmapFocusNote = document.querySelector('.roadmap-block-note');
       const roadmapFocusSection = document.getElementById('sec-test-design');
-      const roadmapMinimalToggle = document.getElementById('roadmap-minimal-toggle');
-      const roadmapMinimalSwitcher = document.querySelector('.roadmap-minimal-switcher');
+      const roadmapViewSwitcher = document.getElementById('roadmap-view-switcher');
+      const roadmapViewLabel = document.getElementById('roadmap-view-label');
       const roadmapMinimalStage = document.getElementById('roadmap-minimal-stage');
       const roadmapMinimalSkills = document.getElementById('roadmap-minimal-skills');
+      const roadmapRoute = document.getElementById('roadmap-route');
+      const roadmapRouteStops = document.getElementById('roadmap-route-stops');
+      const roadmapRouteLine = document.getElementById('roadmap-route-line');
+      const roadmapRoutePath = document.getElementById('roadmap-route-path');
       const roadmapMinimalArticle = document.getElementById('roadmap-minimal-article');
+      const roadmapMinimalTitleArt = document.getElementById('roadmap-minimal-title-art');
       const roadmapMinimalTitle = document.getElementById('roadmap-minimal-title');
       const roadmapMinimalResources = document.getElementById('roadmap-minimal-resources');
       const roadmapMinimalCopy = document.getElementById('roadmap-minimal-copy');
@@ -3357,7 +3456,405 @@ pm.test("Ответ является массивом", function () {
     </section>
   </div>
 `,
-};
+      };
+
+      function roadmapGlyph(rawGlyph) {
+        return rawGlyph.replace(/^\n/, '').replace(/\n\s*$/, '');
+      }
+
+      const ROADMAP_SKILL_GLYPHS = {
+        'scrum': roadmapGlyph(String.raw`
+  ___  ___ _ __ _   _ _ __ ___
+ / __|/ __| '__| | | | '_ \' _ \
+ \__ \ (__| |  | |_| | | | | | |
+ |___/\___|_|   \__,_|_| |_| |_|
+`),
+        'web-mobile-testing': roadmapGlyph(String.raw`
+ __        __   _           __  __       _     _ _
+ \ \      / /__| |__    _  |  \/  | ___ | |__ (_) | ___
+  \ \ /\ / / _ \ '_ \  (_) | |\/| |/ _ \| '_ \| | |/ _ \
+   \ V  V /  __/ |_) |  _  | |  | | (_) | |_) | | |  __/
+    \_/\_/ \___|_.__/  (_) |_|  |_|\___/|_.__/|_|_|\___|
+
+`),
+        'test-design': roadmapGlyph(String.raw`
+  _            _            _           _
+ | |_ ___  ___| |_       __| | ___  ___(_) __ _ _ __
+ | __/ _ \/ __| __|____ / _' |/ _ \/ __| |/ _' | '_ \
+ | ||  __/\__ \ ||_____| (_| |  __/\__ \ | (_| | | | |
+  \__\___||___/\__|     \__,_|\___||___/_|\__, |_| |_|
+                                          |___/
+`),
+        'quality-assurance': roadmapGlyph(String.raw`
+                    _ _ _
+   __ _ _   _  __ _| (_) |_ _   _
+  / _' | | | |/ _' | | | __| | | |
+ | (_| | |_| | (_| | | | |_| |_| |
+  \__, |\__,_|\__,_|_|_|\__|\__, |
+     |_|                    |___/
+`),
+        'mindmap': roadmapGlyph(String.raw`
+  __  __ _           _ __  __
+ |  \/  (_)_ __   __| |  \/  | __ _ _ __
+ | |\/| | | '_ \ / _' | |\/| |/ _' | '_ \
+ | |  | | | | | | (_| | |  | | (_| | |_) |
+ |_|  |_|_|_| |_|\__,_|_|  |_|\__,_| .__/
+                                   |_|
+`),
+        'cross-browser': roadmapGlyph(String.raw`
+                            _
+   ___ _ __ ___  ___ ___   | |__  _ __ _____      _____  ___ _ __
+  / __| '__/ _ \/ __/ __|  | '_ \| '__/ _ \ \ /\ / / __|/ _ \ '__|
+ | (__| | | (_) \__ \__ \  | |_) | | | (_) \ V  V /\__ \  __/ |
+  \___|_|  \___/|___/___/  |_.__/|_|  \___/ \_/\_/ |___/\___|_|
+
+`),
+        'bdd-tdd': roadmapGlyph(String.raw`
+  _         _     _       _      _     _
+ | |__   __| | __| |     | |_ __| | __| |
+ | '_ \ / _' |/ _' |     | __/ _' |/ _' |
+ | |_) | (_| | (_| |     | || (_| | (_| |
+ |_.__/ \__,_|\__,_|      \__\__,_|\__,_|
+`),
+        'rest-api': roadmapGlyph(String.raw`
+                _
+  _ __ ___  ___| |_
+ | '__/ _ \/ __| __|
+ | | |  __/\__ \ |_
+ |_|  \___||___/\__|
+`),
+        'postman': roadmapGlyph(String.raw`
+                  _
+  _ __   ___  ___| |_ _ __ ___   __ _ _ __
+ | '_ \ / _ \/ __| __| '_ ' _ \ / _' | '_ \
+ | |_) | (_) \__ \ |_| | | | | | (_| | | | |
+ | .__/ \___/|___/\__|_| |_| |_|\__,_|_| |_|
+ |_|
+`),
+        'insomnia': roadmapGlyph(String.raw`
+  _                                 _
+ (_)_ __  ___  ___  _ __ ___  _ __ (_) __ _
+ | | '_ \/ __|/ _ \| '_ ' _ \| '_ \| |/ _' |
+ | | | | \__ \ (_) | | | | | | | | | | (_| |
+ |_|_| |_|___/\___/|_| |_| |_|_| |_|_|\__,_|
+
+`),
+        'charles': roadmapGlyph(String.raw`
+       _                _
+   ___| |__   __ _ _ __| | ___  ___
+  / __| '_ \ / _' | '__| |/ _ \/ __|
+ | (__| | | | (_| | |  | |  __/\__ \
+  \___|_| |_|\__,_|_|  |_|\___||___/
+
+`),
+        'devtools': roadmapGlyph(String.raw`
+      _            _              _
+   __| | _____   _| |_ ___   ___ | |___
+  / _' |/ _ \ \ / / __/ _ \ / _ \| / __|
+ | (_| |  __/\ V /| || (_) | (_) | \__ \
+  \__,_|\___| \_/  \__\___/ \___/|_|___/
+
+`),
+        'proxyman': roadmapGlyph(String.raw`
+  _ __  _ __ _____  ___   _ _ __ ___   __ _ _ __
+ | '_ \| '__/ _ \ \/ / | | | '_ ' _ \ / _' | '_ \
+ | |_) | | | (_) >  <| |_| | | | | | | (_| | | | |
+ | .__/|_|  \___/_/\_\\__, |_| |_| |_|\__,_|_| |_|
+ |_|                  |___/
+`),
+        'MySQL': roadmapGlyph(String.raw`
+  __  __       ____   ___  _
+ |  \/  |_   _/ ___| / _ \| |
+ | |\/| | | | \___ \| | | | |
+ | |  | | |_| |___) | |_| | |___
+ |_|  |_|\__, |____/ \__\_\_____|
+         |___/
+`),
+        'postgresql': roadmapGlyph(String.raw`
+                  _                            _
+  _ __   ___  ___| |_ __ _ _ __ ___  ___  __ _| |
+ | '_ \ / _ \/ __| __/ _' | '__/ _ \/ __|/ _' | |
+ | |_) | (_) \__ \ || (_| | | |  __/\__ \ (_| | |
+ | .__/ \___/|___/\__\__, |_|  \___||___/\__, |_|
+ |_|                 |___/                  |_|
+`),
+        'oracle': roadmapGlyph(String.raw`
+                       _
+   ___  _ __ __ _  ___| | ___
+  / _ \| '__/ _' |/ __| |/ _ \
+ | (_) | | | (_| | (__| |  __/
+  \___/|_|  \__,_|\___|_|\___|
+
+`),
+        'mongodb': roadmapGlyph(String.raw`
+                                        _ _
+  _ __ ___   ___  _ __   __ _  ___   __| | |__
+ | '_ ' _ \ / _ \| '_ \ / _' |/ _ \ / _' | '_ \
+ | | | | | | (_) | | | | (_| | (_) | (_| | |_) |
+ |_| |_| |_|\___/|_| |_|\__, |\___/ \__,_|_.__/
+                        |___/
+`),
+        'dbeaver': roadmapGlyph(String.raw`
+      _ _
+   __| | |__   ___  __ ___   _____ _ __
+  / _' | '_ \ / _ \/ _' \ \ / / _ \ '__|
+ | (_| | |_) |  __/ (_| |\ V /  __/ |
+  \__,_|_.__/ \___|\__,_| \_/ \___|_|
+
+`),
+        'github': roadmapGlyph(String.raw`
+        _ _   _           _
+   __ _(_) |_| |__  _   _| |__
+  / _' | | __| '_ \| | | | '_ \
+ | (_| | | |_| | | | |_| | |_) |
+  \__, |_|\__|_| |_|\__,_|_.__/
+  |___/
+`),
+        'jira': roadmapGlyph(String.raw`
+    _ _
+   (_|_)_ __ __ _
+   | | | '__/ _' |
+   | | | | | (_| |
+  _/ |_|_|  \__,_|
+ |__/
+`),
+        'bitbucket': roadmapGlyph(String.raw`
+  _     _ _   _                _        _
+ | |__ (_) |_| |__  _   _  ___| | _____| |_
+ | '_ \| | __| '_ \| | | |/ __| |/ / _ \ __|
+ | |_) | | |_| |_) | |_| | (__|   <  __/ |_
+ |_.__/|_|\__|_.__/ \__,_|\___|_|\_\___|\__|
+
+`),
+        'confluence': roadmapGlyph(String.raw`
+                   __ _
+   ___ ___  _ __  / _| |_   _  ___ _ __   ___ ___
+  / __/ _ \| '_ \| |_| | | | |/ _ \ '_ \ / __/ _ \
+ | (_| (_) | | | |  _| | |_| |  __/ | | | (_|  __/
+  \___\___/|_| |_|_| |_|\__,_|\___|_| |_|\___\___|
+
+`),
+        'OOP': roadmapGlyph(String.raw`
+                                    _
+   ___   ___  _ __     ___ ___   __| | ___
+  / _ \ / _ \| '_ \   / __/ _ \ / _' |/ _ \
+ | (_) | (_) | |_) | | (_| (_) | (_| |  __/
+  \___/ \___/| .__/   \___\___/ \__,_|\___|
+             |_|
+`),
+        'idea': roadmapGlyph(String.raw`
+  _     _
+ (_) __| | ___  __ _
+ | |/ _' |/ _ \/ _' |
+ | | (_| |  __/ (_| |
+ |_|\__,_|\___|\__,_|
+
+`),
+        'java': roadmapGlyph(String.raw`
+    _
+   (_) __ ___   ____ _
+   | |/ _' \ \ / / _' |
+   | | (_| |\ V / (_| |
+  _/ |\__,_| \_/ \__,_|
+ |__/
+`),
+        'pycharm': roadmapGlyph(String.raw`
+                   _
+  _ __  _   _  ___| |__   __ _ _ __ _ __ ___
+ | '_ \| | | |/ __| '_ \ / _' | '__| '_ ' _ \
+ | |_) | |_| | (__| | | | (_| | |  | | | | | |
+ | .__/ \__, |\___|_| |_|\__,_|_|  |_| |_| |_|
+ |_|    |___/
+`),
+        'python': roadmapGlyph(String.raw`
+              _   _
+  _ __  _   _| |_| |__   ___  _ __
+ | '_ \| | | | __| '_ \ / _ \| '_ \
+ | |_) | |_| | |_| | | | (_) | | | |
+ | .__/ \__, |\__|_| |_|\___/|_| |_|
+ |_|    |___/
+`),
+        'vscode': roadmapGlyph(String.raw`
+                          _
+ __   _____  ___ ___   __| | ___
+ \ \ / / __|/ __/ _ \ / _' |/ _ \
+  \ V /\__ \ (_| (_) | (_| |  __/
+   \_/ |___/\___\___/ \__,_|\___|
+
+`),
+        'javascript': roadmapGlyph(String.raw`
+    _                                _       _
+   (_) __ ___   ____ _ ___  ___ _ __(_)_ __ | |_
+   | |/ _' \ \ / / _' / __|/ __| '__| | '_ \| __|
+   | | (_| |\ V / (_| \__ \ (__| |  | | |_) | |_
+  _/ |\__,_| \_/ \__,_|___/\___|_|  |_| .__/ \__|
+ |__/                                 |_|
+`),
+        'android-studio': roadmapGlyph(String.raw`
+                 _           _     _       _             _ _
+  __ _ _ __   __| |_ __ ___ (_) __| |  ___| |_ _   _  __| (_) ___
+ / _' | '_ \ / _' | '__/ _ \| |/ _' | / __| __| | | |/ _' | |/ _ \
+| (_| | | | | (_| | | | (_) | | (_| | \__ \ |_| |_| | (_| | | (_) |
+ \__,_|_| |_|\__,_|_|  \___/|_|\__,_| |___/\__|\__,_|\__,_|_|\___/
+
+`),
+        'kotlin': roadmapGlyph(String.raw`
+  _         _   _ _
+ | | _____ | |_| (_)_ __
+ | |/ / _ \| __| | | '_ \
+ |   < (_) | |_| | | | | |
+ |_|\_\___/ \__|_|_|_| |_|
+
+`),
+        'xcode': roadmapGlyph(String.raw`
+                    _
+ __  _____ ___   __| | ___
+ \ \/ / __/ _ \ / _' |/ _ \
+  >  < (_| (_) | (_| |  __/
+ /_/\_\___\___/ \__,_|\___|
+
+`),
+        'swift': roadmapGlyph(String.raw`
+               _  __ _
+  _____      _(_)/ _| |_
+ / __\ \ /\ / / | |_| __|
+ \__ \\ V  V /| |  _| |_
+ |___/ \_/\_/ |_|_|  \__|
+
+`),
+        'git': roadmapGlyph(String.raw`
+        _ _
+   __ _(_) |_
+  / _' | | __|
+ | (_| | | |_
+  \__, |_|\__|
+  |___/
+`),
+        'docker': roadmapGlyph(String.raw`
+      _            _
+   __| | ___   ___| | _____ _ __
+  / _' |/ _ \ / __| |/ / _ \ '__|
+ | (_| | (_) | (__|   <  __/ |
+  \__,_|\___/ \___|_|\_\___|_|
+
+`),
+        'ci-cd': roadmapGlyph(String.raw`
+       _           _
+   ___(_)   ___ __| |
+  / __| |  / __/ _' |
+ | (__| | | (_| (_| |
+  \___|_|  \___\__,_|
+
+`),
+        'jenkins': roadmapGlyph(String.raw`
+    _            _    _
+   (_) ___ _ __ | | _(_)_ __  ___
+   | |/ _ \ '_ \| |/ / | '_ \/ __|
+   | |  __/ | | |   <| | | | \__ \
+  _/ |\___|_| |_|_|\_\_|_| |_|___/
+ |__/
+`),
+        'cypress': roadmapGlyph(String.raw`
+   ___ _   _ _ __  _ __ ___  ___ ___
+  / __| | | | '_ \| '__/ _ \/ __/ __|
+ | (__| |_| | |_) | | |  __/\__ \__ \
+  \___|\__, | .__/|_|  \___||___/___/
+       |___/|_|
+`),
+        'jmeter': roadmapGlyph(String.raw`
+    _                _
+   (_)_ __ ___   ___| |_ ___ _ __
+   | | '_ ' _ \ / _ \ __/ _ \ '__|
+   | | | | | | |  __/ ||  __/ |
+  _/ |_| |_| |_|\___|\__\___|_|
+ |__/
+`),
+        'selenium': roadmapGlyph(String.raw`
+           _            _
+  ___  ___| | ___ _ __ (_)_   _ _ __ ___
+ / __|/ _ \ |/ _ \ '_ \| | | | | '_ ' _ \
+ \__ \  __/ |  __/ | | | | |_| | | | | | |
+ |___/\___|_|\___|_| |_|_|\__,_|_| |_| |_|
+
+`),
+        'selenide': roadmapGlyph(String.raw`
+           _            _     _
+  ___  ___| | ___ _ __ (_) __| | ___
+ / __|/ _ \ |/ _ \ '_ \| |/ _' |/ _ \
+ \__ \  __/ |  __/ | | | | (_| |  __/
+ |___/\___|_|\___|_| |_|_|\__,_|\___|
+`),
+        'rest-assured': roadmapGlyph(String.raw`
+                _                                         _
+  _ __ ___  ___| |_       __ _ ___ ___ _   _ _ __ ___  __| |
+ | '__/ _ \/ __| __|____ / _' / __/ __| | | | '__/ _ \/ _' |
+ | | |  __/\__ \ ||_____| (_| \__ \__ \ |_| | | |  __/ (_| |
+ |_|  \___||___/\__|     \__,_|___/___/\__,_|_|  \___|\__,_|
+`),
+        'appium': roadmapGlyph(String.raw`
+                    _
+   __ _ _ __  _ __ (_)_   _ _ __ ___
+  / _' | '_ \| '_ \| | | | | '_ ' _ \
+ | (_| | |_) | |_) | | |_| | | | | | |
+  \__,_| .__/| .__/|_|\__,_|_| |_| |_|
+       |_|   |_|
+`),
+        'allure': roadmapGlyph(String.raw`
+        _ _
+   __ _| | |_   _ _ __ ___
+  / _' | | | | | | '__/ _ \
+ | (_| | | | |_| | | |  __/
+  \__,_|_|_|\__,_|_|  \___|
+
+`),
+        'junit': roadmapGlyph(String.raw`
+    _             _ _
+   (_)_   _ _ __ (_) |_
+   | | | | | '_ \| | __|
+   | | |_| | | | | | |_
+  _/ |\__,_|_| |_|_|\__|
+ |__/
+`),
+        'figma': roadmapGlyph(String.raw`
+   __ _
+  / _(_) __ _ _ __ ___   __ _
+ | |_| |/ _' | '_ ' _ \ / _' |
+ |  _| | (_| | | | | | | (_| |
+ |_| |_|\__, |_| |_| |_|\__,_|
+        |___/
+`),
+        'pixso': roadmapGlyph(String.raw`
+        _
+  _ __ (_)_  _____  ___
+ | '_ \| \ \/ / __|/ _ \
+ | |_) | |>  <\__ \ (_) |
+ | .__/|_/_/\_\___/\___/
+ |_|
+`),
+        'typing': roadmapGlyph(String.raw`
+  _               _
+ | |_ _   _ _ __ (_)_ __   __ _
+ | __| | | | '_ \| | '_ \ / _' |
+ | |_| |_| | |_) | | | | | (_| |
+  \__|\__, | .__/|_|_| |_|\__, |
+      |___/|_|            |___/
+`),
+        'sec-test': roadmapGlyph(String.raw`
+                     _            _
+  ___  ___  ___     | |_ ___  ___| |_
+ / __|/ _ \/ __|____| __/ _ \/ __| __|
+ \__ \  __/ (_|_____| ||  __/\__ \ |_
+ |___/\___|\___|     \__\___||___/\__|
+
+`),
+        'eng': roadmapGlyph(String.raw`
+   ___ _ __   __ _
+  / _ \ '_ \ / _' |
+ |  __/ | | | (_| |
+  \___|_| |_|\__, |
+             |___/
+`)
+      };
 
       function isRoadmapSidebarVisible() {
         return roadmapSidebar && getComputedStyle(roadmapSidebar).display !== 'none';
@@ -3432,25 +3929,54 @@ pm.test("Ответ является массивом", function () {
       });
 
       function initRoadmapMinimalMode() {
-        if (!roadmapMinimalToggle || !roadmapMinimalStage || !roadmapMinimalSkills || !roadmapMinimalArticle) return;
+        if (!roadmapViewSwitcher || !roadmapMinimalStage || !roadmapMinimalSkills || !roadmapMinimalArticle) return;
 
         const skills = getRoadmapMinimalSkills();
         roadmapMinimalSkills.replaceChildren(...skills.map(createRoadmapMinimalChip));
+        renderRoadmapRoute(skills);
         bindRoadmapMinimalSheet();
         resetRoadmapOpenResourceFrames();
 
-        const savedMinimalMode = localStorage.getItem(ROADMAP_MINIMAL_MODE_KEY);
-        const savedMode = savedMinimalMode === null ? true : savedMinimalMode === 'true';
-        setRoadmapMinimalMode(savedMode);
-
-        roadmapMinimalToggle.addEventListener('click', function() {
-          setRoadmapMinimalMode(roadmapMinimalToggle.getAttribute('aria-checked') !== 'true');
+        roadmapViewSwitcher.querySelectorAll('[data-roadmap-mode]').forEach(function(button) {
+          button.addEventListener('click', function(event) {
+            event.preventDefault();
+            setRoadmapViewMode(button.dataset.roadmapMode);
+          });
         });
+
+        setRoadmapViewMode(getSavedRoadmapViewMode());
 
         window.addEventListener('pageshow', function() {
           resetRoadmapOpenResourceFrames();
-          if (document.body.classList.contains('roadmap-minimal-mode')) {
+          const savedMode = localStorage.getItem(ROADMAP_VIEW_MODE_KEY);
+          if (savedMode === 'route') {
+            setRoadmapViewMode('route', { preserveRoute: true });
+            restoreRoadmapRoutePath();
+          } else if (savedMode === 'skills' || document.body.classList.contains('roadmap-skills-mode')) {
+            setRoadmapViewMode('skills');
             restoreRoadmapMinimalSkill();
+          } else if (savedMode === 'details') {
+            setRoadmapViewMode('details');
+          }
+        });
+
+        window.addEventListener('resize', scheduleRoadmapRoutePath, { passive: true });
+        document.addEventListener('visibilitychange', function() {
+          if (!document.hidden && document.body.classList.contains('roadmap-route-mode')) {
+            restoreRoadmapRoutePath();
+          }
+        });
+        if ('ResizeObserver' in window) {
+          const routeResizeObserver = new ResizeObserver(function() {
+            if (document.body.classList.contains('roadmap-route-mode')) {
+              scheduleRoadmapRoutePath();
+            }
+          });
+          routeResizeObserver.observe(roadmapRoute);
+        }
+        document.fonts?.ready?.then(function() {
+          if (document.body.classList.contains('roadmap-route-mode')) {
+            restoreRoadmapRoutePath();
           }
         });
       }
@@ -3497,7 +4023,7 @@ pm.test("Ответ является массивом", function () {
         document.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
           item.classList.remove('is-active');
         });
-        if (roadmapMinimalTitle) roadmapMinimalTitle.textContent = 'Выберите навык';
+        setRoadmapMinimalTitle('Выберите навык');
         if (roadmapMinimalResources) roadmapMinimalResources.replaceChildren();
         if (roadmapMinimalCopy) {
           const paragraph = document.createElement('p');
@@ -3506,6 +4032,20 @@ pm.test("Ответ является массивом", function () {
         }
         roadmapMinimalArticle?.classList.remove('has-selection');
         document.body.classList.remove('roadmap-minimal-sheet-expanded', 'roadmap-minimal-skill-selected');
+      }
+
+      function getRoadmapBlockBySkillId(skillId) {
+        if (!skillId) return null;
+        return ROADMAP_BLOCKS.find(function(block) {
+          return block.skills.includes(skillId);
+        }) || null;
+      }
+
+      function persistRoadmapSelectedSkill(skillId) {
+        if (!skillId) return;
+        localStorage.setItem(ROADMAP_MINIMAL_SKILL_KEY, skillId);
+        const block = getRoadmapBlockBySkillId(skillId);
+        if (block) localStorage.setItem(ROADMAP_ROUTE_GROUP_KEY, block.id);
       }
 
       function restoreRoadmapMinimalSkill() {
@@ -3525,49 +4065,359 @@ pm.test("Ответ является массивом", function () {
         selectRoadmapMinimalSkill(chip, { persist: false, collapseSheet: false });
       }
 
-      function setRoadmapMinimalMode(enabled) {
-        document.body.classList.toggle('roadmap-minimal-mode', enabled);
-        roadmapMinimalStage.hidden = !enabled;
-        roadmapMinimalToggle.setAttribute('aria-checked', enabled ? 'true' : 'false');
-        roadmapMinimalSwitcher?.classList.toggle('is-companies', enabled);
-        localStorage.setItem(ROADMAP_MINIMAL_MODE_KEY, enabled ? 'true' : 'false');
-        if (!enabled) {
+      function getSavedRoadmapViewMode() {
+        const savedMode = localStorage.getItem(ROADMAP_VIEW_MODE_KEY);
+        if (ROADMAP_VIEW_MODES.includes(savedMode)) return savedMode;
+        return 'route';
+      }
+
+      function setRoadmapViewMode(mode, options) {
+        const settings = options || {};
+        const nextMode = ROADMAP_VIEW_MODES.includes(mode) ? mode : 'skills';
+        const isWorkspaceMode = nextMode !== 'details';
+        document.body.dataset.roadmapView = nextMode;
+        roadmapViewSwitcher.dataset.roadmapMode = nextMode;
+        if (roadmapViewLabel) roadmapViewLabel.textContent = ROADMAP_VIEW_LABELS[nextMode] || nextMode;
+        document.body.classList.toggle('roadmap-minimal-mode', isWorkspaceMode);
+        document.body.classList.toggle('roadmap-skills-mode', nextMode === 'skills');
+        document.body.classList.toggle('roadmap-route-mode', nextMode === 'route');
+        roadmapMinimalStage.hidden = !isWorkspaceMode;
+        roadmapMinimalSkills.hidden = nextMode !== 'skills';
+        roadmapRoute.hidden = nextMode !== 'route';
+        roadmapMinimalStage.style.display = isWorkspaceMode ? 'grid' : 'none';
+        roadmapMinimalSkills.style.display = nextMode === 'skills' ? 'flex' : 'none';
+        roadmapRoute.style.display = nextMode === 'route' ? 'block' : 'none';
+        roadmapViewSwitcher.querySelectorAll('[data-roadmap-mode]').forEach(function(button) {
+          const isActive = button.dataset.roadmapMode === nextMode;
+          button.classList.toggle('is-active', isActive);
+          button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        localStorage.setItem(ROADMAP_VIEW_MODE_KEY, nextMode);
+        localStorage.setItem(ROADMAP_MINIMAL_MODE_KEY, isWorkspaceMode ? 'true' : 'false');
+        if (!isWorkspaceMode) {
           document.body.classList.remove('roadmap-minimal-sheet-expanded', 'roadmap-minimal-skill-selected');
+          restoreRoadmapDetailedSkill();
+        } else if (nextMode === 'skills') {
+          requestAnimationFrame(restoreRoadmapMinimalSkill);
         } else {
-          restoreRoadmapMinimalSkill();
+          if (!settings.preserveRoute) restoreRoadmapRouteSelection();
+          restoreRoadmapRoutePath();
         }
         requestAnimationFrame(updateRoadmapFocusNotePosition);
       }
 
+      function renderRoadmapRoute(skills) {
+        if (!roadmapRouteStops) return;
+        const skillsById = new Map(skills.map(function(skill) { return [skill.id, skill]; }));
+        roadmapRouteSkillsById = skillsById;
+        const fragment = document.createDocumentFragment();
+
+        ROADMAP_BLOCKS.forEach(function(block) {
+          const stop = document.createElement('section');
+          stop.className = 'roadmap-route__stop';
+          stop.dataset.blockId = block.id;
+          stop.dataset.trackIds = block.trackIds.join(' ');
+          stop.style.setProperty('--route-offset', block.offset + 'px');
+          stop.style.setProperty('--route-offset-tablet', Math.round(block.offset * 0.42) + 'px');
+          stop.style.setProperty('--route-offset-mobile', Math.round(block.offset * 0.28) + 'px');
+          stop.style.setProperty('--route-cloud-offset', Math.round(block.offset * -0.42) + 'px');
+          stop.style.setProperty('--route-cloud-offset-tablet', Math.round(block.offset * -0.2) + 'px');
+
+          const direction = document.createElement('button');
+          direction.type = 'button';
+          direction.className = 'roadmap-route__direction';
+          direction.textContent = block.title;
+          direction.setAttribute('aria-expanded', 'false');
+          direction.addEventListener('click', function() {
+            selectRoadmapRouteGroup(stop, block, skillsById);
+          });
+
+          const skillCloud = document.createElement('div');
+          skillCloud.className = 'roadmap-route__skills';
+          skillCloud.setAttribute('aria-label', 'Навыки направления «' + block.title + '»');
+          skillCloud.hidden = true;
+
+          stop.append(direction, skillCloud);
+          fragment.append(stop);
+        });
+
+        roadmapRouteStops.replaceChildren(fragment);
+      }
+
+      function restoreRoadmapRouteSelection() {
+        resetRoadmapRouteGroup();
+        const savedSkillId = localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY);
+        const savedSkillBlock = getRoadmapBlockBySkillId(savedSkillId);
+        const savedGroupId = savedSkillBlock?.id || localStorage.getItem(ROADMAP_ROUTE_GROUP_KEY);
+        if (!savedGroupId) {
+          resetRoadmapMinimalSkillView();
+          return;
+        }
+
+        const block = ROADMAP_BLOCKS.find(function(item) { return item.id === savedGroupId; });
+        const stop = roadmapRouteStops.querySelector('[data-block-id="' + CSS.escape(savedGroupId) + '"]');
+        if (!block || !stop) {
+          localStorage.removeItem(ROADMAP_ROUTE_GROUP_KEY);
+          resetRoadmapMinimalSkillView();
+          return;
+        }
+
+        selectRoadmapRouteGroup(stop, block, roadmapRouteSkillsById, { forceOpen: true });
+        if (!savedSkillId || !block.skills.includes(savedSkillId)) return;
+        const skillChip = stop.querySelector('[data-skill-id="' + CSS.escape(savedSkillId) + '"]');
+        if (skillChip) selectRoadmapRouteSkill(skillChip);
+      }
+
+      function selectRoadmapRouteGroup(activeStop, block, skillsById, options) {
+        const settings = options || {};
+        renderRoadmapBlockArticle(block);
+
+        if (activeStop.classList.contains('is-active') && !settings.forceOpen) {
+          resetRoadmapRouteGroup();
+          localStorage.removeItem(ROADMAP_ROUTE_GROUP_KEY);
+          animateRoadmapRoutePath(300);
+          return;
+        }
+
+        roadmapRouteStops.querySelectorAll('.roadmap-route__stop').forEach(function(stop) {
+          const isActive = stop === activeStop;
+          stop.classList.toggle('is-active', isActive);
+          stop.querySelector('.roadmap-route__direction')?.setAttribute('aria-expanded', isActive ? 'true' : 'false');
+          const cloud = stop.querySelector('.roadmap-route__skills');
+          if (!cloud) return;
+          if (!isActive) {
+            cloud.hidden = true;
+            cloud.replaceChildren();
+          }
+        });
+
+        const skillCloud = activeStop.querySelector('.roadmap-route__skills');
+        const chips = block.skills.map(function(skillId) {
+          const skill = skillsById.get(skillId);
+          if (!skill) return null;
+          const chip = createRoadmapRouteSkillChip(skill);
+          return chip;
+        }).filter(Boolean);
+        skillCloud.replaceChildren(...chips);
+        skillCloud.hidden = false;
+        localStorage.setItem(ROADMAP_ROUTE_GROUP_KEY, block.id);
+        requestAnimationFrame(function() {
+          activeStop.classList.add('is-revealed');
+          animateRoadmapRoutePath(300);
+        });
+      }
+
+      function renderRoadmapBlockArticle(block) {
+        const content = ROADMAP_BLOCK_CONTENT[block.id] || {};
+        const article = document.createElement('div');
+        article.className = 'skill-article-content roadmap-block-article';
+
+        const progress = createRoadmapBlockProgress(block);
+        if (progress) article.appendChild(progress);
+
+        const intro = document.createElement('section');
+        const introTitle = document.createElement('h3');
+        introTitle.textContent = 'О направлении';
+        const introText = document.createElement('p');
+        introText.textContent = content.description || 'Набор связанных навыков, которые помогают последовательно развиваться в выбранном направлении QA.';
+        intro.append(introTitle, introText);
+        article.appendChild(intro);
+
+        setRoadmapMinimalTitle(block.title);
+        roadmapMinimalResources.replaceChildren();
+        roadmapMinimalCopy.replaceChildren(article);
+        roadmapMinimalArticle.classList.add('has-selection');
+        document.body.classList.add('roadmap-minimal-skill-selected');
+        document.body.classList.remove('roadmap-minimal-sheet-expanded');
+      }
+
+      function createRoadmapBlockProgress(block) {
+        const testedSkills = block.skills.filter(function(skillId) {
+          return Boolean(ROADMAP_SKILL_TESTS[skillId]);
+        });
+        const wrap = document.createElement('section');
+        wrap.className = 'roadmap-block-progress';
+
+        if (!testedSkills.length) {
+          const neutral = document.createElement('p');
+          neutral.className = 'roadmap-block-progress__neutral';
+          neutral.textContent = 'Тесты для этого направления скоро появятся';
+          wrap.appendChild(neutral);
+          return wrap;
+        }
+
+        const passed = testedSkills.filter(function(skillId) {
+          return readRoadmapSkillTestResult(skillId)?.passed === true;
+        }).length;
+        const percent = Math.round((passed / testedSkills.length) * 100);
+        const value = document.createElement('strong');
+        value.className = 'roadmap-block-progress__value';
+        value.textContent = percent + '%';
+        const caption = document.createElement('span');
+        caption.className = 'roadmap-block-progress__caption';
+        caption.textContent = 'Пройдено тестов: ' + passed + ' из ' + testedSkills.length;
+        const bar = document.createElement('div');
+        bar.className = 'roadmap-block-progress__bar';
+        bar.setAttribute('role', 'progressbar');
+        bar.setAttribute('aria-valuemin', '0');
+        bar.setAttribute('aria-valuemax', '100');
+        bar.setAttribute('aria-valuenow', String(percent));
+        const fill = document.createElement('span');
+        fill.style.width = percent + '%';
+        bar.appendChild(fill);
+        wrap.append(value, caption, bar);
+        return wrap;
+      }
+
+      function createRoadmapRouteSkillChip(skill) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'roadmap-minimal-chip roadmap-route__skill';
+        chip.dataset.skillId = skill.id;
+        chip.dataset.plan = skill.plan;
+        chip.textContent = skill.label;
+        if (localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY) === skill.id) chip.classList.add('is-active');
+        chip.addEventListener('click', function() {
+          selectRoadmapRouteSkill(chip);
+        });
+        return chip;
+      }
+
+      function selectRoadmapRouteSkill(chip) {
+        document.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
+          item.classList.remove('is-active');
+        });
+        chip.classList.add('is-active');
+        const skillName = chip.textContent.trim();
+        const skillId = chip.dataset.skillId || skillName;
+        persistRoadmapSelectedSkill(skillId);
+        setRoadmapMinimalTitle(skillName, skillId);
+        roadmapMinimalResources.replaceChildren();
+        renderRoadmapResources(roadmapMinimalResources, chip);
+        renderRoadmapSkillArticle(roadmapMinimalCopy, skillId, skillName);
+        roadmapMinimalArticle.classList.add('has-selection');
+        document.body.classList.add('roadmap-minimal-skill-selected');
+        document.body.classList.remove('roadmap-minimal-sheet-expanded');
+      }
+
+      function resetRoadmapRouteGroup() {
+        if (!roadmapRouteStops) return;
+        roadmapRouteStops.querySelectorAll('.roadmap-route__stop').forEach(function(stop) {
+          stop.classList.remove('is-active', 'is-revealed');
+          stop.querySelector('.roadmap-route__direction')?.setAttribute('aria-expanded', 'false');
+          const cloud = stop.querySelector('.roadmap-route__skills');
+          if (cloud) {
+            cloud.hidden = true;
+            cloud.replaceChildren();
+          }
+        });
+      }
+
+      function scheduleRoadmapRoutePath() {
+        if (roadmapRoutePathFrame) return;
+        roadmapRoutePathFrame = requestAnimationFrame(function() {
+          roadmapRoutePathFrame = 0;
+          drawRoadmapRoutePath();
+        });
+      }
+
+      function animateRoadmapRoutePath(duration) {
+        cancelAnimationFrame(roadmapRouteAnimationFrame);
+        const startedAt = performance.now();
+        const tick = function(now) {
+          drawRoadmapRoutePath();
+          if (now - startedAt < duration) {
+            roadmapRouteAnimationFrame = requestAnimationFrame(tick);
+          } else {
+            roadmapRouteAnimationFrame = 0;
+            drawRoadmapRoutePath();
+          }
+        };
+        roadmapRouteAnimationFrame = requestAnimationFrame(tick);
+      }
+
+      function restoreRoadmapRoutePath() {
+        if (!roadmapRoute || !roadmapRoutePath || !roadmapRouteLine) return;
+        cancelAnimationFrame(roadmapRouteAnimationFrame);
+        cancelAnimationFrame(roadmapRoutePathFrame);
+        roadmapRouteAnimationFrame = 0;
+        roadmapRoutePathFrame = 0;
+
+        requestAnimationFrame(function() {
+          requestAnimationFrame(function() {
+            drawRoadmapRoutePath();
+            animateRoadmapRoutePath(360);
+          });
+        });
+        [80, 240, 600].forEach(function(delay) {
+          window.setTimeout(function() {
+            if (document.body.classList.contains('roadmap-route-mode')) {
+              drawRoadmapRoutePath();
+            }
+          }, delay);
+        });
+      }
+
+      function drawRoadmapRoutePath() {
+        if (!roadmapRoute || roadmapRoute.hidden || !roadmapRouteLine || !roadmapRoutePath) return;
+        const routeRect = roadmapRoute.getBoundingClientRect();
+        const directions = Array.from(roadmapRouteStops.querySelectorAll('.roadmap-route__direction'));
+        if (directions.length < 2 || routeRect.width <= 0 || routeRect.height <= 0) return;
+        const routeScrollTop = roadmapRoute.scrollTop || 0;
+        const points = directions.map(function(direction) {
+          const rect = direction.getBoundingClientRect();
+          return {
+            x: rect.left - routeRect.left + rect.width / 2,
+            y: rect.top - routeRect.top + routeScrollTop + rect.height / 2
+          };
+        });
+        const routePathHeight = Math.max(
+          routeRect.height,
+          roadmapRoute.scrollHeight,
+          points.reduce(function(max, point) { return Math.max(max, point.y + 32); }, 0)
+        );
+        const pathData = points.reduce(function(path, point, index) {
+          if (index === 0) return 'M ' + point.x + ' ' + point.y;
+          const previous = points[index - 1];
+          const middleY = previous.y + (point.y - previous.y) / 2;
+          return path + ' C ' + previous.x + ' ' + middleY + ', ' + point.x + ' ' + middleY + ', ' + point.x + ' ' + point.y;
+        }, '');
+        roadmapRouteLine.setAttribute('viewBox', '0 0 ' + routeRect.width + ' ' + routePathHeight);
+        roadmapRouteLine.setAttribute('width', routeRect.width);
+        roadmapRouteLine.setAttribute('height', routePathHeight);
+        roadmapRouteLine.style.height = routePathHeight + 'px';
+        roadmapRoutePath.setAttribute('d', pathData);
+      }
+
       function selectRoadmapMinimalSkill(chip, options) {
-  const settings = options || {};
+        const settings = options || {};
 
-  roadmapMinimalSkills.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
-    item.classList.remove('is-active');
-  });
+        roadmapMinimalSkills.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
+          item.classList.remove('is-active');
+        });
 
-  chip.classList.add('is-active');
+        chip.classList.add('is-active');
 
-  const skillName = chip.textContent.trim();
-  const skillId = chip.dataset.skillId || skillName;
+        const skillName = chip.textContent.trim();
+        const skillId = chip.dataset.skillId || skillName;
 
-  if (settings.persist !== false) {
-    localStorage.setItem(ROADMAP_MINIMAL_SKILL_KEY, skillId);
-  }
+        if (settings.persist !== false) {
+          persistRoadmapSelectedSkill(skillId);
+        }
 
-  roadmapMinimalTitle.textContent = skillName;
-  roadmapMinimalResources.replaceChildren();
+        setRoadmapMinimalTitle(skillName, skillId);
+        roadmapMinimalResources.replaceChildren();
 
-  renderRoadmapResources(roadmapMinimalResources, chip);
-  renderRoadmapSkillArticle(roadmapMinimalCopy, skillId, skillName);
+        renderRoadmapResources(roadmapMinimalResources, chip);
+        renderRoadmapSkillArticle(roadmapMinimalCopy, skillId, skillName);
 
-  roadmapMinimalArticle.classList.add('has-selection');
-  document.body.classList.add('roadmap-minimal-skill-selected');
+        roadmapMinimalArticle.classList.add('has-selection');
+        document.body.classList.add('roadmap-minimal-skill-selected');
 
-  if (settings.collapseSheet !== false) {
-    document.body.classList.remove('roadmap-minimal-sheet-expanded');
-  }
-}
+        if (settings.collapseSheet !== false) {
+          document.body.classList.remove('roadmap-minimal-sheet-expanded');
+        }
+      }
 
 function getRoadmapMinimalCopy(skillId, skillName) {
   const text = ROADMAP_SKILL_COPY[skillId] || `${skillName} помогает QA расширять технический кругозор и увереннее разбирать продуктовые сценарии. Навык стоит изучать через практику: сначала понять назначение, затем применить на маленькой задаче и только потом закреплять в реальном проекте. Для roadmap это отдельная точка роста, которая усиливает качество проверок и коммуникацию с командой.`;
@@ -3584,14 +4434,234 @@ function renderRoadmapSkillArticle(container, skillId, skillName) {
 
   if (articleHtml) {
     container.innerHTML = articleHtml;
+  } else {
+    container.replaceChildren(...getRoadmapMinimalCopy(skillId, skillName).map(function(text) {
+      const paragraph = document.createElement('p');
+      paragraph.textContent = text;
+      return paragraph;
+    }));
+  }
+
+  const skillTest = createRoadmapSkillTest(skillId);
+  if (skillTest) container.appendChild(skillTest);
+}
+
+function getRoadmapSkillGlyphText(skillId) {
+  const glyphSource = ROADMAP_SKILL_GLYPHS[skillId];
+  if (!glyphSource) return '';
+  return Array.isArray(glyphSource) ? glyphSource.join('\n') : glyphSource;
+}
+
+function createRoadmapSkillGlyph(skillId, skillName) {
+  const glyphText = getRoadmapSkillGlyphText(skillId);
+  if (!glyphText) return null;
+  const glyph = document.createElement('pre');
+  glyph.className = 'skill-glyph';
+  glyph.classList.add('skill-glyph--' + String(skillId).replace(/[^a-z0-9-]/gi, '-').toLowerCase());
+  glyph.setAttribute('aria-label', 'Минималистичный символ навыка ' + skillName);
+  glyph.dataset.noCopy = 'true';
+  let visibleIndex = 0;
+  glyphText.split('').forEach(function(character) {
+    if (character === '\n' || character === ' ') {
+      glyph.appendChild(document.createTextNode(character));
+      return;
+    }
+
+    const symbol = document.createElement('span');
+    symbol.className = 'skill-glyph__symbol';
+    const chaos = getRoadmapGlyphChaos(skillId, visibleIndex);
+    symbol.style.setProperty('--glyph-delay', chaos.delay + 'ms');
+    symbol.style.setProperty('--glyph-x', chaos.x + 'em');
+    symbol.style.setProperty('--glyph-y', chaos.y + 'em');
+    symbol.style.setProperty('--glyph-rotate', chaos.rotate + 'deg');
+    symbol.textContent = character;
+    visibleIndex += 1;
+    glyph.appendChild(symbol);
+  });
+  return glyph;
+}
+
+function getRoadmapGlyphChaos(skillId, index) {
+  const seed = String(skillId) + ':' + index;
+  let hash = 2166136261;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash ^= seed.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  const a = ((hash >>> 0) % 1000) / 1000;
+  const b = (((hash >>> 8) % 1000) / 1000);
+  const c = (((hash >>> 16) % 1000) / 1000);
+  const d = (((hash >>> 24) % 1000) / 1000);
+
+  return {
+    delay: Math.round(a * 360),
+    x: ((b - 0.5) * 1.2).toFixed(2),
+    y: ((c - 0.5) * 1.1).toFixed(2),
+    rotate: Math.round((d - 0.5) * 18)
+  };
+}
+
+function setRoadmapMinimalTitle(title, skillId) {
+  if (!roadmapMinimalTitle) return;
+
+  const glyph = skillId ? createRoadmapSkillGlyph(skillId, title) : null;
+  roadmapMinimalTitle.classList.toggle('is-visually-hidden', Boolean(glyph));
+  roadmapMinimalTitle.textContent = title;
+
+  if (glyph) {
+    if (roadmapMinimalTitleArt) {
+      roadmapMinimalTitleArt.replaceChildren(glyph);
+      roadmapMinimalTitleArt.hidden = false;
+    }
     return;
   }
 
-  container.replaceChildren(...getRoadmapMinimalCopy(skillId, skillName).map(function(text) {
-    const paragraph = document.createElement('p');
-    paragraph.textContent = text;
-    return paragraph;
-  }));
+  if (roadmapMinimalTitleArt) {
+    roadmapMinimalTitleArt.replaceChildren();
+    roadmapMinimalTitleArt.hidden = true;
+  }
+}
+
+function getRoadmapSkillLinks(skillId, skillName) {
+  const links = (ROADMAP_SKILL_LINKS[skillId] || []).map(function(link) {
+    return Object.assign({}, link);
+  });
+  if (!links.some(function(link) { return link.type === 'questions'; })) {
+    links.unshift({
+      label: 'Вопросы по ' + skillName,
+      href: 'questions.html?q=' + encodeURIComponent(skillName),
+      type: 'questions'
+    });
+  }
+  return links;
+}
+
+function createRoadmapRelatedLinks(links) {
+  const section = document.createElement('section');
+  section.className = 'roadmap-related';
+  const title = document.createElement('h3');
+  title.textContent = 'Связанные разделы';
+  const list = document.createElement('div');
+  list.className = 'plan-grid roadmap-resource-grid roadmap-related-links';
+  links.forEach(function(link, index) {
+    const anchor = document.createElement('a');
+    anchor.className = 'resource-card roadmap-related-resource';
+    anchor.href = link.href;
+    const top = document.createElement('div');
+    top.className = 'resource-top';
+    const number = document.createElement('span');
+    number.className = 'resource-number';
+    number.textContent = index + 1;
+    const type = document.createElement('span');
+    type.className = 'resource-type';
+    type.textContent = link.type === 'questions' ? 'Вопросы' : 'Практика';
+    top.append(number, type);
+    const resourceTitle = document.createElement('div');
+    resourceTitle.className = 'resource-title';
+    resourceTitle.textContent = link.label;
+    const main = document.createElement('div');
+    main.className = 'resource-main-link';
+    main.append(top, resourceTitle);
+    anchor.appendChild(main);
+    list.appendChild(anchor);
+  });
+  section.append(title, list);
+  return section;
+}
+
+function getRoadmapSkillTestKey(skillId) {
+  return 'qatodev:roadmap:skill-test:' + skillId;
+}
+
+function readRoadmapSkillTestResult(skillId) {
+  try {
+    const saved = localStorage.getItem(getRoadmapSkillTestKey(skillId));
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function createRoadmapSkillTest(skillId) {
+  const test = ROADMAP_SKILL_TESTS[skillId];
+  if (!test) return null;
+
+  const section = document.createElement('section');
+  section.className = 'roadmap-skill-test';
+  const title = document.createElement('h3');
+  title.textContent = test.title;
+  section.appendChild(title);
+
+  const savedResult = readRoadmapSkillTestResult(skillId);
+  if (savedResult?.passed) {
+    const completed = document.createElement('p');
+    completed.className = 'roadmap-skill-test__completed';
+    completed.textContent = 'Тест пройден: ' + savedResult.score + ' из ' + savedResult.total;
+    section.appendChild(completed);
+    return section;
+  }
+
+  const form = document.createElement('form');
+  form.className = 'roadmap-skill-test__form';
+  test.questions.forEach(function(question, questionIndex) {
+    const fieldset = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    legend.textContent = (questionIndex + 1) + '. ' + question.text;
+    fieldset.appendChild(legend);
+    question.options.forEach(function(option, optionIndex) {
+      const label = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.name = 'roadmap-test-' + skillId + '-' + questionIndex;
+      input.value = option;
+      input.required = true;
+      const text = document.createElement('span');
+      text.textContent = option;
+      label.append(input, text);
+      fieldset.appendChild(label);
+    });
+    form.appendChild(fieldset);
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'roadmap-skill-test__actions';
+  const submit = document.createElement('button');
+  submit.type = 'submit';
+  submit.className = 'roadmap-skill-test__submit';
+  submit.textContent = 'Проверить ответы';
+  const result = document.createElement('p');
+  result.className = 'roadmap-skill-test__result';
+  result.setAttribute('aria-live', 'polite');
+  actions.append(submit, result);
+  form.appendChild(actions);
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault();
+    let score = 0;
+    test.questions.forEach(function(question, questionIndex) {
+      const selected = form.querySelector('input[name="roadmap-test-' + CSS.escape(skillId) + '-' + questionIndex + '"]:checked');
+      if (selected?.value === question.answer) score += 1;
+    });
+    const total = test.questions.length;
+    const passed = score === total;
+    localStorage.setItem(getRoadmapSkillTestKey(skillId), JSON.stringify({
+      passed,
+      score,
+      total,
+      passedAt: passed ? new Date().toISOString() : null
+    }));
+    result.textContent = passed
+      ? 'Готово: тест пройден, ' + score + ' из ' + total
+      : 'Правильных ответов: ' + score + ' из ' + total + '. Попробуйте еще раз.';
+    result.classList.toggle('is-passed', passed);
+    if (passed) {
+      form.querySelectorAll('input, button').forEach(function(control) { control.disabled = true; });
+    }
+  });
+
+  section.appendChild(form);
+  return section;
 }
 
       function bindRoadmapMinimalSheet() {
@@ -3630,15 +4700,36 @@ function renderRoadmapSkillArticle(container, skillId, skillName) {
           return;
         }
 
+        openRoadmapResourceFrame(link);
+      }
+
+      function openRoadmapResourceFrame(link, options) {
+        const settings = options || {};
+        const skillGroup = link.closest('.skill-links');
+        if (!skillGroup) return;
+
+        const activeScope = getRoadmapResourceFrameScope(skillGroup);
+        const frame = getRoadmapResourceFrame(skillGroup);
+        const skillId = link.dataset.skillId || '';
+
         activeScope.querySelectorAll('a.is-active').forEach((item) => item.classList.remove('is-active'));
         link.classList.add('is-active');
         renderRoadmapResources(frame, link);
 
-        frame.dataset.activeSkillId = link.dataset.skillId || '';
+        frame.dataset.activeSkillId = skillId;
         frame.setAttribute('aria-hidden', 'false');
+        if (settings.persist !== false) persistRoadmapSelectedSkill(skillId);
         if (!frame.classList.contains('is-open')) {
           requestAnimationFrame(() => frame.classList.add('is-open'));
         }
+      }
+
+      function restoreRoadmapDetailedSkill() {
+        const savedSkillId = localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY);
+        if (!savedSkillId) return;
+        const link = document.querySelector('.skill-links a[data-skill-id="' + CSS.escape(savedSkillId) + '"]');
+        if (!link) return;
+        openRoadmapResourceFrame(link, { persist: false });
       }
 
       function getRoadmapResourceFrameScope(skillGroup) {
@@ -3699,7 +4790,39 @@ function renderRoadmapSkillArticle(container, skillId, skillName) {
           }));
         });
 
-        frame.replaceChildren(grid);
+        const article = frame.classList.contains('roadmap-resource-frame')
+          ? createRoadmapDetailsSkillArticle(skillId, skillName)
+          : null;
+        frame.replaceChildren(...[article, grid].filter(Boolean));
+      }
+
+      function createRoadmapDetailsSkillArticle(skillId, skillName) {
+        const articleHtml = ROADMAP_SKILL_ARTICLES && ROADMAP_SKILL_ARTICLES[skillId];
+        const article = document.createElement('article');
+        article.className = 'roadmap-details-skill-article';
+        article.setAttribute('aria-label', 'Описание навыка ' + skillName);
+
+        if (articleHtml) {
+          const source = document.createElement('div');
+          source.innerHTML = articleHtml;
+          const content = source.querySelector('.skill-article-content');
+          if (content) {
+            article.append(...Array.from(content.children).map(function(child) {
+              return child.cloneNode(true);
+            }));
+          }
+        } else {
+          const title = document.createElement('h3');
+          title.textContent = skillName;
+          article.appendChild(title);
+          getRoadmapMinimalCopy(skillId, skillName).forEach(function(text) {
+            const paragraph = document.createElement('p');
+            paragraph.textContent = text;
+            article.appendChild(paragraph);
+          });
+        }
+
+        return article.childNodes.length ? article : null;
       }
 
       function createRoadmapResourceCard(options) {
@@ -4028,6 +5151,24 @@ function renderRoadmapSkillArticle(container, skillId, skillName) {
           wrap.style.setProperty('--status-menu-shift-x', shiftX + 'px');
         }
       }
+
+      document.addEventListener('copy', function(event) {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed) return;
+
+        const selectedText = Array.from(selection.getRangeAt(0).cloneContents().childNodes)
+          .map(function getCopyableText(node) {
+            if (node.nodeType === Node.TEXT_NODE) return node.textContent || '';
+            if (node.nodeType !== Node.ELEMENT_NODE) return '';
+            if (node.matches?.('.skill-glyph, [data-no-copy="true"]')) return '';
+            return Array.from(node.childNodes).map(getCopyableText).join('');
+          })
+          .join('');
+
+        if (selectedText === selection.toString()) return;
+        event.preventDefault();
+        event.clipboardData?.setData('text/plain', selectedText);
+      });
     });
 </script>
   <script src="header.js?v=8.9.5"></script>
