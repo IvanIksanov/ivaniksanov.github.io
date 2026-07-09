@@ -362,6 +362,8 @@
       const ROADMAP_VIEW_MODE_KEY = 'roadmapViewMode';
       const ROADMAP_MINIMAL_SKILL_KEY = 'roadmapMinimalSkillId';
       const ROADMAP_ROUTE_GROUP_KEY = 'roadmapRouteGroupId';
+      const ROADMAP_ROUTE_SELECTION_TYPE_KEY = 'roadmapRouteSelectionType';
+      const ROADMAP_OPEN_TEST_KEY = 'roadmapOpenTestSkillId';
       const ROADMAP_VIEW_MODES = ['details', 'skills', 'route'];
       const ROADMAP_VIEW_LABELS = {
         details: 'Подробно',
@@ -435,20 +437,124 @@
       };
 
       const ROADMAP_SKILL_TESTS = {
-        'rest-api': {
-          title: 'Проверка знаний REST API',
+        'quality-assurance': {
+          title: 'Тест по базе QA и обеспечению качества',
           questions: [
-            { text: 'Какой HTTP-метод обычно используют для получения данных?', options: ['GET', 'POST', 'DELETE'], answer: 'GET' },
-            { text: 'Какой status code чаще всего означает успешное создание ресурса?', options: ['200 OK', '201 Created', '204 No Content'], answer: '201 Created' },
-            { text: 'Где обычно передают bearer token?', options: ['Authorization header', 'Response body', 'URL fragment'], answer: 'Authorization header' }
+            { text: 'Что лучше всего описывает QA?', options: [{ text: 'Предотвращение дефектов через процесс, требования и риски', explanation: 'QA шире тестирования: он помогает встроить качество в процесс до релиза.' }, { text: 'Только ручной поиск багов в готовой сборке', explanation: 'Это ближе к тестированию, но не покрывает работу с процессом и рисками.' }, { text: 'Только написание автотестов', explanation: 'Автотесты полезны, но это лишь один инструмент обеспечения качества.' }], answer: 'Предотвращение дефектов через процесс, требования и риски' },
+            { text: 'Чем QA отличается от QC?', options: [{ text: 'QA предупреждает проблемы в процессе, QC контролирует результат', explanation: 'QA работает превентивно, QC проверяет соответствие готового продукта ожиданиям.' }, { text: 'QA всегда пишет код, QC всегда тестирует руками', explanation: 'Разница не в коде, а в фокусе: процесс против контроля результата.' }, { text: 'QC управляет командой, QA только заводит баги', explanation: 'Это неверное разделение ролей и ответственности.' }], answer: 'QA предупреждает проблемы в процессе, QC контролирует результат' },
+            { text: 'Что стоит сделать QA при неясном требовании?', options: [{ text: 'Зафиксировать вопрос и уточнить ожидаемое поведение', explanation: 'Неясность лучше превратить в явное решение команды, иначе тестирование будет гаданием.' }, { text: 'Проверять только счастливый путь', explanation: 'Happy path не закрывает риски и не проясняет спорные сценарии.' }, { text: 'Сразу заводить дефект', explanation: 'Пока нет ожидаемого поведения, дефект может быть преждевременным.' }], answer: 'Зафиксировать вопрос и уточнить ожидаемое поведение' },
+            { text: 'Что такое severity?', options: [{ text: 'Влияние дефекта на продукт или пользователя', explanation: 'Severity показывает техническую и пользовательскую серьёзность проблемы.' }, { text: 'Срочность исправления для бизнеса', explanation: 'Это ближе к priority, а не severity.' }, { text: 'Количество шагов в баг-репорте', explanation: 'Количество шагов не определяет серьёзность дефекта.' }], answer: 'Влияние дефекта на продукт или пользователя' },
+            { text: 'Какой артефакт помогает быстро проверить критичный функционал перед релизом?', options: [{ text: 'Smoke-набор', explanation: 'Smoke проверяет, что основные функции живы и сборку можно тестировать глубже.' }, { text: 'Только полный регресс', explanation: 'Полный регресс полезен, но он дольше и не заменяет быстрый входной фильтр.' }, { text: 'Любой случайный чек-лист', explanation: 'Случайный набор не гарантирует покрытие критичных пользовательских путей.' }], answer: 'Smoke-набор' }
+          ]
+        },
+        'test-design': {
+          title: 'Тест по тест-дизайну',
+          questions: [
+            { text: 'Для чего используют классы эквивалентности?', options: [{ text: 'Чтобы сократить набор проверок без потери смысла покрытия', explanation: 'Класс объединяет значения, которые система должна обрабатывать одинаково.' }, { text: 'Чтобы проверить каждое возможное значение', explanation: 'Это обычно избыточно и дорого.' }, { text: 'Чтобы заменить требования макетом', explanation: 'Техника помогает проектировать проверки, но не заменяет требования.' }], answer: 'Чтобы сократить набор проверок без потери смысла покрытия' },
+            { text: 'Где особенно полезен анализ граничных значений?', options: [{ text: 'В полях с диапазонами: возраст, сумма, длина строки', explanation: 'Ошибки часто возникают на границах допустимого диапазона и рядом с ними.' }, { text: 'Только в визуальном тестировании', explanation: 'Визуальные проверки могут иметь границы, но техника шире.' }, { text: 'Только при тестировании API без UI', explanation: 'Границы важны и в UI, и в API, и в бизнес-логике.' }], answer: 'В полях с диапазонами: возраст, сумма, длина строки' },
+            { text: 'Что проверяет таблица принятия решений?', options: [{ text: 'Комбинации условий и ожидаемых действий', explanation: 'Она помогает не потерять сценарии, где результат зависит от нескольких условий.' }, { text: 'Скорость загрузки страницы', explanation: 'Это относится к производительности, а не к decision table.' }, { text: 'Красоту интерфейса', explanation: 'Для визуальной оценки нужны другие критерии и проверки.' }], answer: 'Комбинации условий и ожидаемых действий' },
+            { text: 'Когда полезно состояние-переходное тестирование?', options: [{ text: 'Когда объект проходит статусы: черновик, опубликовано, архив', explanation: 'Техника проверяет разрешенные и запрещенные переходы между состояниями.' }, { text: 'Когда нужно выбрать цвет кнопки', explanation: 'Цвет кнопки обычно не является состоянием бизнес-объекта.' }, { text: 'Когда нет ни одного правила поведения', explanation: 'Без правил переходов технику применить сложно.' }], answer: 'Когда объект проходит статусы: черновик, опубликовано, архив' },
+            { text: 'Что является хорошим результатом тест-дизайна?', options: [{ text: 'Понятный минимальный набор сильных проверок', explanation: 'Цель в осознанном покрытии рисков, а не в бесконечном количестве тестов.' }, { text: 'Максимум тест-кейсов любой ценой', explanation: 'Количество без приоритизации делает проверку дорогой и шумной.' }, { text: 'Отказ от негативных сценариев', explanation: 'Негативные сценарии часто находят важные дефекты валидации и прав.' }], answer: 'Понятный минимальный набор сильных проверок' }
+          ]
+        },
+        jira: {
+          title: 'Тест по Jira и командной работе',
+          questions: [
+            { text: 'Что делает баг-репорт полезным для команды?', options: [{ text: 'Шаги, фактический результат, ожидаемый результат и окружение', explanation: 'Эти данные помогают воспроизвести проблему и быстрее принять решение.' }, { text: 'Только скриншот без описания', explanation: 'Скриншот полезен, но без контекста часто недостаточен.' }, { text: 'Максимально эмоциональное описание', explanation: 'Эмоции не помогают локализовать и исправить дефект.' }], answer: 'Шаги, фактический результат, ожидаемый результат и окружение' },
+            { text: 'Что обычно означает статус In Progress?', options: [{ text: 'Задача взята в работу', explanation: 'Статус показывает текущий этап движения задачи по workflow.' }, { text: 'Задача уже выпущена в production', explanation: 'Для выпуска обычно используют Done, Released или похожий статус.' }, { text: 'Задача удалена из спринта', explanation: 'Удаление из спринта не равно работе над задачей.' }], answer: 'Задача взята в работу' },
+            { text: 'Зачем QA связывает баг с user story?', options: [{ text: 'Чтобы показать, какое требование или сценарий затронут', explanation: 'Связь помогает команде понять контекст дефекта и влияние на поставку.' }, { text: 'Чтобы скрыть дефект от команды', explanation: 'Связи делают работу прозрачнее, а не скрывают ее.' }, { text: 'Чтобы Jira автоматически исправила баг', explanation: 'Трекер не исправляет код, он помогает управлять работой.' }], answer: 'Чтобы показать, какое требование или сценарий затронут' },
+            { text: 'Что лучше сделать, если дефект не воспроизводится у разработчика?', options: [{ text: 'Добавить окружение, данные, логи и видео/скриншот', explanation: 'Дополнительный контекст повышает шанс воспроизведения и исправления.' }, { text: 'Закрыть баг без обсуждения', explanation: 'Если риск сохраняется, нужно уточнять условия, а не молча закрывать.' }, { text: 'Создать дубликат с тем же текстом', explanation: 'Дубликат без новых данных не поможет.' }], answer: 'Добавить окружение, данные, логи и видео/скриншот' },
+            { text: 'Что такое Definition of Done?', options: [{ text: 'Общие критерии, по которым команда считает задачу завершенной', explanation: 'DoD снижает разночтения: код, тесты, документация и приемка могут быть частью критериев.' }, { text: 'Личный список дел тестировщика', explanation: 'DoD обычно командное соглашение, а не персональная заметка.' }, { text: 'Название финального бага в релизе', explanation: 'Это не тип дефекта, а критерии завершенности.' }], answer: 'Общие критерии, по которым команда считает задачу завершенной' }
+          ]
+        },
+        devtools: {
+          title: 'Тест по DevTools и web-диагностике',
+          questions: [
+            { text: 'Где в DevTools смотреть HTTP-запросы страницы?', options: [{ text: 'Network', explanation: 'Network показывает запросы, ответы, статусы, headers, timing и payload.' }, { text: 'Elements', explanation: 'Elements нужен для DOM и CSS, но не для списка сетевых запросов.' }, { text: 'Application только', explanation: 'Application полезен для storage, cookies и cache, но не основной список запросов.' }], answer: 'Network' },
+            { text: 'Что означает status code 404?', options: [{ text: 'Ресурс не найден', explanation: 'Сервер доступен, но конкретный URL или ресурс отсутствует.' }, { text: 'Нет прав доступа', explanation: 'Для прав доступа чаще используются 401 или 403.' }, { text: 'Ошибка JavaScript в браузере', explanation: 'JS-ошибки видны в Console, а 404 относится к HTTP.' }], answer: 'Ресурс не найден' },
+            { text: 'Зачем QA смотрит Console?', options: [{ text: 'Чтобы увидеть ошибки JavaScript и предупреждения', explanation: 'Console помогает связать поломку UI с ошибками клиентского кода.' }, { text: 'Чтобы редактировать базу данных', explanation: 'Браузерная консоль не является DB-клиентом.' }, { text: 'Чтобы увидеть все задачи Jira', explanation: 'Jira не отображается в Console сама по себе.' }], answer: 'Чтобы увидеть ошибки JavaScript и предупреждения' },
+            { text: 'Что помогает проверить throttling сети?', options: [{ text: 'Поведение продукта при медленном соединении', explanation: 'Ограничение сети показывает loader, таймауты и обработку нестабильного интернета.' }, { text: 'Компиляцию backend-кода', explanation: 'DevTools не компилирует backend.' }, { text: 'Права пользователя в Jira', explanation: 'Это не задача network throttling.' }], answer: 'Поведение продукта при медленном соединении' },
+            { text: 'Где посмотреть cookies и localStorage?', options: [{ text: 'Application', explanation: 'Application хранит данные о storage, cookies, cache и service workers.' }, { text: 'Performance', explanation: 'Performance нужен для профилирования загрузки и выполнения.' }, { text: 'Sources только', explanation: 'Sources нужен для исходников и отладки JS.' }], answer: 'Application' }
+          ]
+        },
+        'rest-api': {
+          title: 'Тест по REST API, Postman и архитектуре',
+          questions: [
+            { text: 'Какой HTTP-метод обычно используют для получения данных?', options: [{ text: 'GET', explanation: 'GET предназначен для чтения ресурса без изменения состояния на сервере.' }, { text: 'POST', explanation: 'POST чаще используют для создания ресурса или запуска действия.' }, { text: 'DELETE', explanation: 'DELETE обычно удаляет ресурс.' }], answer: 'GET' },
+            { text: 'Какой status code чаще всего означает успешное создание ресурса?', options: [{ text: '200 OK', explanation: '200 означает успешный запрос, но создание ресурса обычно точнее обозначает 201.' }, { text: '201 Created', explanation: '201 Created явно говорит, что ресурс создан.' }, { text: '204 No Content', explanation: '204 означает успех без тела ответа, часто при удалении или обновлении.' }], answer: '201 Created' },
+            { text: 'Где обычно передают bearer token?', options: [{ text: 'Authorization header', explanation: 'Bearer token передают в заголовке Authorization, чтобы сервер проверил доступ.' }, { text: 'Response body', explanation: 'Response body возвращает данные сервера, но не является местом передачи токена клиентом.' }, { text: 'URL fragment', explanation: 'Fragment не отправляется на сервер в HTTP-запросе.' }], answer: 'Authorization header' },
+            { text: 'Что QA должен проверить кроме status code?', options: [{ text: 'Тело ответа, headers, схему и бизнес-значения', explanation: 'Статус 200 не гарантирует корректные данные и контракт ответа.' }, { text: 'Только цвет кнопки в Postman', explanation: 'Интерфейс инструмента не подтверждает корректность API.' }, { text: 'Только размер монитора', explanation: 'Размер экрана не относится к проверке API-контракта.' }], answer: 'Тело ответа, headers, схему и бизнес-значения' },
+            { text: 'Что такое идемпотентность в REST?', options: [{ text: 'Повтор одинакового запроса дает тот же эффект на состояние ресурса', explanation: 'Например, несколько одинаковых PUT должны привести ресурс к одному состоянию.' }, { text: 'Любой запрос всегда создает новый ресурс', explanation: 'Это противоположно идее идемпотентности.' }, { text: 'Ответ всегда приходит быстрее 1 секунды', explanation: 'Скорость ответа не определяет идемпотентность.' }], answer: 'Повтор одинакового запроса дает тот же эффект на состояние ресурса' }
+          ]
+        },
+        MySQL: {
+          title: 'Тест по SQL и базам данных',
+          questions: [
+            { text: 'Какая команда выбирает данные из таблицы?', options: [{ text: 'SELECT', explanation: 'SELECT читает строки и столбцы из таблиц или представлений.' }, { text: 'INSERT', explanation: 'INSERT добавляет новые строки.' }, { text: 'DROP', explanation: 'DROP удаляет объект базы данных.' }], answer: 'SELECT' },
+            { text: 'Для чего нужен WHERE?', options: [{ text: 'Чтобы отфильтровать строки по условию', explanation: 'WHERE ограничивает выборку нужными записями.' }, { text: 'Чтобы отсортировать результат', explanation: 'Для сортировки используется ORDER BY.' }, { text: 'Чтобы переименовать таблицу', explanation: 'Переименование выполняется отдельными командами DDL.' }], answer: 'Чтобы отфильтровать строки по условию' },
+            { text: 'Что делает JOIN?', options: [{ text: 'Объединяет данные из связанных таблиц', explanation: 'JOIN помогает проверить связи, например заказ и пользователя.' }, { text: 'Удаляет дубликаты в одном столбце', explanation: 'Для уникальности используют DISTINCT или ограничения.' }, { text: 'Создает новую базу данных', explanation: 'Создание базы выполняется CREATE DATABASE.' }], answer: 'Объединяет данные из связанных таблиц' },
+            { text: 'Почему QA важно проверять данные в БД после API-операции?', options: [{ text: 'Чтобы убедиться, что состояние сохранилось корректно', explanation: 'API может вернуть успех, но данные в БД могут записаться неверно.' }, { text: 'Чтобы заменить все UI-тесты', explanation: 'Проверка БД дополняет UI/API, но не заменяет все уровни.' }, { text: 'Чтобы вручную править production-данные', explanation: 'Изменения в production без процедуры опасны и обычно запрещены.' }], answer: 'Чтобы убедиться, что состояние сохранилось корректно' },
+            { text: 'Что означает PRIMARY KEY?', options: [{ text: 'Уникальный идентификатор строки', explanation: 'Primary key помогает однозначно найти запись и связывать таблицы.' }, { text: 'Пароль администратора базы', explanation: 'Ключ таблицы не связан с паролем.' }, { text: 'Самый быстрый SQL-запрос', explanation: 'Это ограничение/индекс, а не запрос.' }], answer: 'Уникальный идентификатор строки' }
+          ]
+        },
+        git: {
+          title: 'Тест по Git и репозиториям',
+          questions: [
+            { text: 'Что делает git commit?', options: [{ text: 'Сохраняет снимок изменений в локальной истории', explanation: 'Commit фиксирует подготовленные изменения и сообщение к ним.' }, { text: 'Сразу выкладывает изменения на сервер', explanation: 'Для отправки на сервер используется push.' }, { text: 'Удаляет ветку', explanation: 'Удаление ветки выполняется отдельной командой.' }], answer: 'Сохраняет снимок изменений в локальной истории' },
+            { text: 'Что делает git push?', options: [{ text: 'Отправляет локальные коммиты в удаленный репозиторий', explanation: 'Push публикует изменения в remote, например GitHub.' }, { text: 'Создает тест-кейс', explanation: 'Git не управляет тест-кейсами напрямую.' }, { text: 'Показывает HTTP-запросы', explanation: 'Это задача браузерных или сетевых инструментов.' }], answer: 'Отправляет локальные коммиты в удаленный репозиторий' },
+            { text: 'Зачем используют ветки?', options: [{ text: 'Чтобы изолировать работу над задачами', explanation: 'Ветка позволяет разрабатывать изменение отдельно от основной линии.' }, { text: 'Чтобы ускорить интернет', explanation: 'Ветки не влияют на скорость сети.' }, { text: 'Чтобы хранить пароли в коде', explanation: 'Секреты нельзя хранить в репозитории.' }], answer: 'Чтобы изолировать работу над задачами' },
+            { text: 'Что такое pull request?', options: [{ text: 'Запрос на проверку и слияние изменений', explanation: 'PR помогает обсудить код, прогнать проверки и принять изменение.' }, { text: 'Команда для удаления базы', explanation: 'PR относится к репозиторию, не к БД.' }, { text: 'Тип HTTP-метода', explanation: 'Pull request не является HTTP-методом.' }], answer: 'Запрос на проверку и слияние изменений' },
+            { text: 'Что QA может смотреть в diff?', options: [{ text: 'Какие файлы и логика изменились перед тестированием', explanation: 'Diff помогает понять область риска и точнее выбрать проверки.' }, { text: 'Только цвет аватарки автора', explanation: 'Это не помогает оценить изменение продукта.' }, { text: 'Температуру сервера', explanation: 'Diff показывает изменения кода, а не метрики инфраструктуры.' }], answer: 'Какие файлы и логика изменились перед тестированием' }
+          ]
+        },
+        OOP: {
+          title: 'Тест по ООП и языковой базе',
+          questions: [
+            { text: 'Что такое класс?', options: [{ text: 'Шаблон для создания объектов с данными и поведением', explanation: 'Класс описывает свойства и методы будущих объектов.' }, { text: 'Только комментарий в коде', explanation: 'Комментарий не создает структуру программы.' }, { text: 'Любая папка проекта', explanation: 'Папка организует файлы, но не является классом.' }], answer: 'Шаблон для создания объектов с данными и поведением' },
+            { text: 'Что такое инкапсуляция?', options: [{ text: 'Сокрытие деталей реализации за понятным интерфейсом', explanation: 'Инкапсуляция помогает менять внутренности без поломки внешнего использования.' }, { text: 'Копирование кода между файлами', explanation: 'Копирование создает дублирование, а не инкапсуляцию.' }, { text: 'Запуск тестов в CI', explanation: 'CI не является принципом ООП.' }], answer: 'Сокрытие деталей реализации за понятным интерфейсом' },
+            { text: 'Что такое полиморфизм?', options: [{ text: 'Единый интерфейс с разным поведением реализаций', explanation: 'Разные классы могут отвечать на один метод по-своему.' }, { text: 'Один файл без методов', explanation: 'Это не описывает полиморфизм.' }, { text: 'Случайное изменение типа данных', explanation: 'Полиморфизм не означает хаотичное изменение типов.' }], answer: 'Единый интерфейс с разным поведением реализаций' },
+            { text: 'Зачем QA понимать ООП?', options: [{ text: 'Чтобы читать автотесты, Page Object и структуру проекта', explanation: 'ОПП часто лежит в основе UI/API автотестов и тестовых фреймворков.' }, { text: 'Чтобы отказаться от требований', explanation: 'Понимание кода не отменяет работу с требованиями.' }, { text: 'Чтобы тестировать только Java', explanation: 'Принципы ООП встречаются в разных языках.' }], answer: 'Чтобы читать автотесты, Page Object и структуру проекта' },
+            { text: 'Что обычно хранит Page Object?', options: [{ text: 'Локаторы и действия конкретной страницы или компонента', explanation: 'Page Object изолирует детали UI и делает тесты читаемее.' }, { text: 'Пароли всех пользователей', explanation: 'Секреты нельзя хранить в page object.' }, { text: 'Список всех задач Jira', explanation: 'Это не ответственность page object.' }], answer: 'Локаторы и действия конкретной страницы или компонента' }
           ]
         },
         selenium: {
-          title: 'Проверка знаний Selenium',
+          title: 'Тест по Selenium и UI-автоматизации',
           questions: [
-            { text: 'Для чего используется Selenium?', options: ['Для автоматизации действий в браузере', 'Для работы с базами данных', 'Для нагрузочного тестирования'], answer: 'Для автоматизации действий в браузере' },
-            { text: 'Что делает явное ожидание?', options: ['Ждет конкретное состояние элемента или условия', 'Всегда останавливает тест на 10 секунд', 'Перезапускает браузер'], answer: 'Ждет конкретное состояние элемента или условия' },
-            { text: 'Почему плох полный XPath от html до кнопки?', options: ['Он хрупкий и ломается при изменении верстки', 'Он работает только в Firefox', 'Он не поддерживает клики'], answer: 'Он хрупкий и ломается при изменении верстки' }
+            { text: 'Для чего используется Selenium?', options: [{ text: 'Для автоматизации действий в браузере', explanation: 'Selenium управляет браузером через WebDriver и проверяет UI-сценарии.' }, { text: 'Для работы с базами данных', explanation: 'Для БД используют SQL-клиенты и драйверы.' }, { text: 'Для нагрузочного тестирования', explanation: 'Для нагрузки чаще берут JMeter, k6 или Gatling.' }], answer: 'Для автоматизации действий в браузере' },
+            { text: 'Что делает явное ожидание?', options: [{ text: 'Ждет конкретное состояние элемента или условия', explanation: 'Явное ожидание делает тест стабильнее на динамических страницах.' }, { text: 'Всегда останавливает тест на 10 секунд', explanation: 'Фиксированный sleep хуже: он либо медленный, либо нестабильный.' }, { text: 'Перезапускает браузер', explanation: 'Ожидание не управляет жизненным циклом браузера.' }], answer: 'Ждет конкретное состояние элемента или условия' },
+            { text: 'Почему плох полный XPath от html до кнопки?', options: [{ text: 'Он хрупкий и ломается при изменении верстки', explanation: 'Лучше использовать стабильные id, data-testid или короткие осмысленные селекторы.' }, { text: 'Он работает только в Firefox', explanation: 'XPath поддерживается разными браузерами, проблема в хрупкости.' }, { text: 'Он не поддерживает клики', explanation: 'Клик возможен, но локатор может часто ломаться.' }], answer: 'Он хрупкий и ломается при изменении верстки' },
+            { text: 'Зачем нужен Page Object?', options: [{ text: 'Чтобы отделить действия страницы от сценариев тестов', explanation: 'Это уменьшает дублирование локаторов и упрощает поддержку.' }, { text: 'Чтобы ускорить серверную БД', explanation: 'Page Object относится к организации UI-тестов.' }, { text: 'Чтобы удалить все ручные проверки', explanation: 'Автоматизация дополняет ручные проверки, но не заменяет их полностью.' }], answer: 'Чтобы отделить действия страницы от сценариев тестов' },
+            { text: 'Что лучше проверить после клика Submit?', options: [{ text: 'Наблюдаемый результат: сообщение, переход, изменение данных', explanation: 'Тест должен подтверждать пользовательский или системный результат действия.' }, { text: 'Только что клик не выбросил исключение', explanation: 'Отсутствие исключения не доказывает корректное поведение продукта.' }, { text: 'Только размер окна браузера', explanation: 'Размер окна может быть условием, но не результатом отправки формы.' }], answer: 'Наблюдаемый результат: сообщение, переход, изменение данных' }
+          ]
+        },
+        appium: {
+          title: 'Тест по Mobile QA и Appium',
+          questions: [
+            { text: 'Для чего используют Appium?', options: [{ text: 'Для автоматизации mobile UI на Android и iOS', explanation: 'Appium управляет мобильными приложениями через WebDriver-подход.' }, { text: 'Для проектирования SQL-схем', explanation: 'SQL-схемы не относятся к Appium.' }, { text: 'Для создания задач в Jira', explanation: 'Jira управляет задачами, Appium автоматизирует мобильные сценарии.' }], answer: 'Для автоматизации mobile UI на Android и iOS' },
+            { text: 'Какой локатор часто устойчивее для mobile?', options: [{ text: 'accessibility id', explanation: 'Accessibility id обычно стабильнее и полезен также для доступности.' }, { text: 'Полный XPath по иерархии', explanation: 'Полный XPath хрупкий и часто медленный в mobile.' }, { text: 'Случайный текст с экрана', explanation: 'Текст может меняться из-за локализации и контекста.' }], answer: 'accessibility id' },
+            { text: 'Что важно проверять на мобильных устройствах?', options: [{ text: 'Разные ОС, размеры экранов, сеть и разрешения', explanation: 'Мобильная среда сильно зависит от устройства и системных условий.' }, { text: 'Только desktop Chrome', explanation: 'Desktop Chrome не покрывает особенности native mobile.' }, { text: 'Только SQL-запросы', explanation: 'SQL может быть полезен, но не закрывает mobile UX.' }], answer: 'Разные ОС, размеры экранов, сеть и разрешения' },
+            { text: 'Что такое hybrid app?', options: [{ text: 'Приложение с native-частью и webview', explanation: 'Hybrid требует понимать переключение контекстов native/web.' }, { text: 'Приложение только для базы данных', explanation: 'Это не связано с типом мобильного UI.' }, { text: 'Любой сайт в desktop-браузере', explanation: 'Hybrid app относится к мобильным приложениям.' }], answer: 'Приложение с native-частью и webview' },
+            { text: 'Почему не стоит готовить все данные через mobile UI?', options: [{ text: 'Это медленно и делает тесты нестабильными', explanation: 'Данные часто быстрее и надежнее готовить через API или фикстуры.' }, { text: 'Потому что UI никогда не ломается', explanation: 'UI как раз может ломаться и не должен быть лишней зависимостью подготовки.' }, { text: 'Потому что Appium не умеет нажимать кнопки', explanation: 'Appium умеет взаимодействовать с UI, но это не всегда лучший путь подготовки.' }], answer: 'Это медленно и делает тесты нестабильными' }
+          ]
+        },
+        docker: {
+          title: 'Тест по Docker и DevOps для QA',
+          questions: [
+            { text: 'Что такое Docker-контейнер?', options: [{ text: 'Изолированный запуск приложения с его окружением', explanation: 'Контейнер помогает запускать сервис предсказуемо на разных машинах.' }, { text: 'Полная виртуальная машина с отдельным ядром', explanation: 'Контейнер легче VM и использует ядро хост-системы.' }, { text: 'Только архив со скриншотами', explanation: 'Скриншоты не имеют отношения к контейнеризации.' }], answer: 'Изолированный запуск приложения с его окружением' },
+            { text: 'Зачем QA docker-compose?', options: [{ text: 'Чтобы поднимать несколько сервисов для тестового окружения', explanation: 'Compose удобен для связки app, db, cache и зависимостей.' }, { text: 'Чтобы рисовать макеты', explanation: 'Для макетов используют Figma, Pixso и похожие инструменты.' }, { text: 'Чтобы писать баг-репорты', explanation: 'Баг-репорты пишут в трекере, а compose управляет окружением.' }], answer: 'Чтобы поднимать несколько сервисов для тестового окружения' },
+            { text: 'Что описывает Dockerfile?', options: [{ text: 'Как собрать образ приложения', explanation: 'Dockerfile содержит шаги сборки image: base image, команды, файлы и запуск.' }, { text: 'Список задач спринта', explanation: 'Список задач хранится в трекере.' }, { text: 'Таблицу тест-дизайна', explanation: 'Это отдельный тестовый артефакт, не Dockerfile.' }], answer: 'Как собрать образ приложения' },
+            { text: 'Что такое image?', options: [{ text: 'Шаблон, из которого запускают контейнеры', explanation: 'Image неизменяемо описывает файловую систему и настройки запуска.' }, { text: 'Открытый браузер', explanation: 'Браузер может быть внутри контейнера, но image не равен браузеру.' }, { text: 'Ссылка на статью', explanation: 'Image в Docker не является учебной ссылкой.' }], answer: 'Шаблон, из которого запускают контейнеры' },
+            { text: 'Почему QA полезно читать логи контейнера?', options: [{ text: 'Чтобы быстрее понять причину ошибки сервиса', explanation: 'Логи показывают исключения, конфигурационные ошибки и проблемы интеграций.' }, { text: 'Чтобы поменять дизайн кнопок', explanation: 'Дизайн меняется в коде/макетах, не через чтение логов.' }, { text: 'Чтобы заменить все тесты', explanation: 'Логи помогают диагностике, но не заменяют проверки.' }], answer: 'Чтобы быстрее понять причину ошибки сервиса' }
+          ]
+        },
+        jmeter: {
+          title: 'Тест по JMeter и нефункциональным проверкам',
+          questions: [
+            { text: 'Для чего используют JMeter?', options: [{ text: 'Для нагрузочного и производительного тестирования', explanation: 'JMeter генерирует запросы и помогает смотреть response time, throughput и errors.' }, { text: 'Для ручной верстки макетов', explanation: 'Макеты делают в дизайн-инструментах.' }, { text: 'Для управления задачами команды', explanation: 'Для задач используют Jira и аналоги.' }], answer: 'Для нагрузочного и производительного тестирования' },
+            { text: 'Что показывает p95?', options: [{ text: '95% запросов были не медленнее этого значения', explanation: 'Перцентиль лучше среднего показывает хвост медленных ответов.' }, { text: 'Всегда среднее время ответа', explanation: 'Среднее и p95 — разные метрики.' }, { text: 'Количество пользователей в Jira', explanation: 'p95 относится к метрикам производительности.' }], answer: '95% запросов были не медленнее этого значения' },
+            { text: 'Что такое Thread Group?', options: [{ text: 'Настройка виртуальных пользователей и сценария нагрузки', explanation: 'Thread Group задает количество потоков, ramp-up и циклы.' }, { text: 'Группа задач в Confluence', explanation: 'Confluence не связан с JMeter Thread Group.' }, { text: 'Тип SQL JOIN', explanation: 'Thread Group не относится к SQL.' }], answer: 'Настройка виртуальных пользователей и сценария нагрузки' },
+            { text: 'Почему нельзя запускать нагрузку без согласования?', options: [{ text: 'Можно нарушить работу стенда или production', explanation: 'Нагрузка потребляет ресурсы и должна запускаться в согласованных условиях.' }, { text: 'JMeter не отправляет запросы', explanation: 'JMeter как раз может отправлять много запросов.' }, { text: 'Так нельзя увидеть отчеты', explanation: 'Отчеты доступны, но риск в влиянии на окружение.' }], answer: 'Можно нарушить работу стенда или production' },
+            { text: 'Что лучше определить до нагрузочного теста?', options: [{ text: 'Цель, профиль нагрузки и критерии приемки', explanation: 'Без критериев непонятно, успешен тест или нет.' }, { text: 'Только цвет графика', explanation: 'Визуальный цвет отчета не определяет качество проверки.' }, { text: 'Только название браузера', explanation: 'Для API-нагрузки браузер может вообще не использоваться.' }], answer: 'Цель, профиль нагрузки и критерии приемки' }
           ]
         }
       };
@@ -4046,6 +4152,14 @@ pm.test("Ответ является массивом", function () {
         localStorage.setItem(ROADMAP_MINIMAL_SKILL_KEY, skillId);
         const block = getRoadmapBlockBySkillId(skillId);
         if (block) localStorage.setItem(ROADMAP_ROUTE_GROUP_KEY, block.id);
+        localStorage.setItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY, 'skill');
+      }
+
+      function persistRoadmapSelectedBlock(block) {
+        if (!block) return;
+        localStorage.setItem(ROADMAP_ROUTE_GROUP_KEY, block.id);
+        if (block.skills[0]) localStorage.setItem(ROADMAP_MINIMAL_SKILL_KEY, block.skills[0]);
+        localStorage.setItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY, 'group');
       }
 
       function restoreRoadmapMinimalSkill() {
@@ -4147,8 +4261,9 @@ pm.test("Ответ является массивом", function () {
       function restoreRoadmapRouteSelection() {
         resetRoadmapRouteGroup();
         const savedSkillId = localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY);
+        const savedSelectionType = localStorage.getItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY);
         const savedSkillBlock = getRoadmapBlockBySkillId(savedSkillId);
-        const savedGroupId = savedSkillBlock?.id || localStorage.getItem(ROADMAP_ROUTE_GROUP_KEY);
+        const savedGroupId = localStorage.getItem(ROADMAP_ROUTE_GROUP_KEY) || savedSkillBlock?.id;
         if (!savedGroupId) {
           resetRoadmapMinimalSkillView();
           return;
@@ -4163,7 +4278,7 @@ pm.test("Ответ является массивом", function () {
         }
 
         selectRoadmapRouteGroup(stop, block, roadmapRouteSkillsById, { forceOpen: true });
-        if (!savedSkillId || !block.skills.includes(savedSkillId)) return;
+        if (savedSelectionType !== 'skill' || !savedSkillId || !block.skills.includes(savedSkillId)) return;
         const skillChip = stop.querySelector('[data-skill-id="' + CSS.escape(savedSkillId) + '"]');
         if (skillChip) selectRoadmapRouteSkill(skillChip);
       }
@@ -4175,6 +4290,7 @@ pm.test("Ответ является массивом", function () {
         if (activeStop.classList.contains('is-active') && !settings.forceOpen) {
           resetRoadmapRouteGroup();
           localStorage.removeItem(ROADMAP_ROUTE_GROUP_KEY);
+          localStorage.removeItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY);
           animateRoadmapRoutePath(300);
           return;
         }
@@ -4200,7 +4316,7 @@ pm.test("Ответ является массивом", function () {
         }).filter(Boolean);
         skillCloud.replaceChildren(...chips);
         skillCloud.hidden = false;
-        localStorage.setItem(ROADMAP_ROUTE_GROUP_KEY, block.id);
+        if (settings.persist !== false) persistRoadmapSelectedBlock(block);
         requestAnimationFrame(function() {
           activeStop.classList.add('is-revealed');
           animateRoadmapRoutePath(300);
@@ -4222,6 +4338,9 @@ pm.test("Ответ является массивом", function () {
         introText.textContent = content.description || 'Набор связанных навыков, которые помогают последовательно развиваться в выбранном направлении QA.';
         intro.append(introTitle, introText);
         article.appendChild(intro);
+
+        const tests = createRoadmapBlockTests(block);
+        if (tests) article.appendChild(tests);
 
         setRoadmapMinimalTitle(block.title);
         roadmapMinimalResources.replaceChildren();
@@ -4246,27 +4365,164 @@ pm.test("Ответ является массивом", function () {
           return wrap;
         }
 
-        const passed = testedSkills.filter(function(skillId) {
-          return readRoadmapSkillTestResult(skillId)?.passed === true;
+        const results = testedSkills.map(function(skillId) {
+          return readRoadmapSkillTestResult(skillId);
+        });
+        const passed = results.filter(function(result) {
+          return result?.passed === true;
         }).length;
-        const percent = Math.round((passed / testedSkills.length) * 100);
-        const value = document.createElement('strong');
-        value.className = 'roadmap-block-progress__value';
-        value.textContent = percent + '%';
+        const dots = document.createElement('div');
+        dots.className = 'roadmap-block-progress__dots';
+        dots.setAttribute('aria-label', 'Статус тестов направления');
+        testedSkills.forEach(function(skillId, index) {
+          const result = results[index];
+          const dot = document.createElement('span');
+          dot.className = 'roadmap-block-progress__dot';
+          if (result?.passed === true) {
+            dot.classList.add('is-passed');
+            dot.setAttribute('title', 'Тест пройден');
+          } else if (result) {
+            dot.classList.add('is-failed');
+            dot.setAttribute('title', 'Тест завершен с ошибками');
+          } else {
+            dot.setAttribute('title', 'Тест не завершен');
+          }
+          dots.appendChild(dot);
+        });
         const caption = document.createElement('span');
         caption.className = 'roadmap-block-progress__caption';
         caption.textContent = 'Пройдено тестов: ' + passed + ' из ' + testedSkills.length;
-        const bar = document.createElement('div');
-        bar.className = 'roadmap-block-progress__bar';
-        bar.setAttribute('role', 'progressbar');
-        bar.setAttribute('aria-valuemin', '0');
-        bar.setAttribute('aria-valuemax', '100');
-        bar.setAttribute('aria-valuenow', String(percent));
-        const fill = document.createElement('span');
-        fill.style.width = percent + '%';
-        bar.appendChild(fill);
-        wrap.append(value, caption, bar);
+        wrap.append(dots, caption);
         return wrap;
+      }
+
+      function refreshRoadmapBlockProgressBySkill(skillId) {
+        const block = getRoadmapBlockBySkillId(skillId);
+        if (!block || !roadmapMinimalCopy) return;
+        const currentProgress = roadmapMinimalCopy.querySelector('.roadmap-block-progress');
+        const nextProgress = createRoadmapBlockProgress(block);
+        if (currentProgress && nextProgress) currentProgress.replaceWith(nextProgress);
+      }
+
+      function createRoadmapBlockTests(block) {
+        const testedSkills = block.skills.filter(function(skillId) {
+          return Boolean(ROADMAP_SKILL_TESTS[skillId]);
+        });
+        if (!testedSkills.length) return null;
+
+        const section = document.createElement('section');
+        section.className = 'roadmap-block-tests';
+        const grid = document.createElement('div');
+        grid.className = 'plan-grid roadmap-resource-grid roadmap-block-test-links';
+
+        testedSkills.forEach(function(skillId, index) {
+          const test = ROADMAP_SKILL_TESTS[skillId];
+          grid.appendChild(createRoadmapBlockTestCard({
+            skillId,
+            index,
+            title: test.title
+          }));
+        });
+
+        const frame = document.createElement('div');
+        frame.className = 'roadmap-block-test-frame';
+        frame.setAttribute('aria-live', 'polite');
+        section.append(grid, frame);
+
+        const savedOpenTestSkillId = localStorage.getItem(ROADMAP_OPEN_TEST_KEY);
+        if (savedOpenTestSkillId && testedSkills.includes(savedOpenTestSkillId)) {
+          const savedCard = grid.querySelector('[data-skill-id="' + CSS.escape(savedOpenTestSkillId) + '"]');
+          if (savedCard) openRoadmapBlockTest(savedCard, frame, savedOpenTestSkillId, { persist: false });
+        }
+        return section;
+      }
+
+      function openRoadmapBlockTest(card, frame, skillId, options) {
+        const settings = options || {};
+        const section = card.closest('.roadmap-block-tests');
+        if (!section || !frame) return;
+
+        section.querySelectorAll('.roadmap-block-test-card.is-active').forEach(function(item) {
+          item.classList.remove('is-active');
+          item.setAttribute('aria-pressed', 'false');
+        });
+        card.classList.add('is-active');
+        card.setAttribute('aria-pressed', 'true');
+        frame.replaceChildren(createRoadmapSkillTest(skillId));
+        frame.classList.add('is-open');
+        if (settings.persist !== false) localStorage.setItem(ROADMAP_OPEN_TEST_KEY, skillId);
+        document.body.classList.add('roadmap-minimal-sheet-expanded');
+      }
+
+      function syncRoadmapBlockTestCardStatus(card, skillId) {
+        const result = readRoadmapSkillTestResult(skillId);
+        card.classList.remove('is-passed', 'is-failed');
+        if (result?.passed === true) {
+          card.classList.add('is-passed');
+          card.setAttribute('aria-label', 'Открыть пройденный тест ' + (ROADMAP_SKILL_TESTS[skillId]?.title || ''));
+        } else if (result) {
+          card.classList.add('is-failed');
+          card.setAttribute('aria-label', 'Открыть тест с ошибками ' + (ROADMAP_SKILL_TESTS[skillId]?.title || ''));
+        }
+      }
+
+      function refreshRoadmapBlockTestCardBySkill(skillId) {
+        document.querySelectorAll('.roadmap-block-test-card[data-skill-id="' + CSS.escape(skillId) + '"]').forEach(function(card) {
+          syncRoadmapBlockTestCardStatus(card, skillId);
+        });
+      }
+
+      function createRoadmapBlockTestCard(options) {
+        const { skillId, index, title } = options;
+        const card = document.createElement('article');
+        card.className = 'resource-card roadmap-block-test-card';
+        card.dataset.skillId = skillId;
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', 'Открыть тест ' + title);
+
+        const top = document.createElement('div');
+        top.className = 'resource-top';
+        const number = document.createElement('span');
+        number.className = 'resource-number';
+        number.textContent = index + 1;
+        const type = document.createElement('span');
+        type.className = 'resource-type';
+        type.textContent = 'Тест';
+        top.append(number, type);
+
+        const resourceTitle = document.createElement('div');
+        resourceTitle.className = 'resource-title';
+        resourceTitle.textContent = title;
+        const main = document.createElement('div');
+        main.className = 'resource-main-link';
+        main.append(top, resourceTitle);
+        card.appendChild(main);
+        syncRoadmapBlockTestCardStatus(card, skillId);
+
+        function openTest() {
+          const section = card.closest('.roadmap-block-tests');
+          const frame = section?.querySelector('.roadmap-block-test-frame');
+          if (!frame) return;
+          const isSameOpen = card.classList.contains('is-active') && frame.classList.contains('is-open');
+          if (isSameOpen) {
+            card.classList.remove('is-active');
+            card.setAttribute('aria-pressed', 'false');
+            frame.classList.remove('is-open');
+            frame.replaceChildren();
+            localStorage.removeItem(ROADMAP_OPEN_TEST_KEY);
+            return;
+          }
+          openRoadmapBlockTest(card, frame, skillId);
+        }
+
+        card.addEventListener('click', openTest);
+        card.addEventListener('keydown', function(event) {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          openTest();
+        });
+        return card;
       }
 
       function createRoadmapRouteSkillChip(skill) {
@@ -4276,7 +4532,7 @@ pm.test("Ответ является массивом", function () {
         chip.dataset.skillId = skill.id;
         chip.dataset.plan = skill.plan;
         chip.textContent = skill.label;
-        if (localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY) === skill.id) chip.classList.add('is-active');
+        if (localStorage.getItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY) === 'skill' && localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY) === skill.id) chip.classList.add('is-active');
         chip.addEventListener('click', function() {
           selectRoadmapRouteSkill(chip);
         });
@@ -4441,9 +4697,6 @@ function renderRoadmapSkillArticle(container, skillId, skillName) {
       return paragraph;
     }));
   }
-
-  const skillTest = createRoadmapSkillTest(skillId);
-  if (skillTest) container.appendChild(skillTest);
 }
 
 function getRoadmapSkillGlyphText(skillId) {
@@ -4574,6 +4827,10 @@ function getRoadmapSkillTestKey(skillId) {
   return 'qatodev:roadmap:skill-test:' + skillId;
 }
 
+function getRoadmapSkillTestDraftKey(skillId) {
+  return 'qatodev:roadmap:skill-test-draft:' + skillId;
+}
+
 function readRoadmapSkillTestResult(skillId) {
   try {
     const saved = localStorage.getItem(getRoadmapSkillTestKey(skillId));
@@ -4583,42 +4840,163 @@ function readRoadmapSkillTestResult(skillId) {
   }
 }
 
+function readRoadmapSkillTestDraft(skillId) {
+  try {
+    const saved = localStorage.getItem(getRoadmapSkillTestDraftKey(skillId));
+    return saved ? JSON.parse(saved) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function saveRoadmapSkillTestDraft(skillId, form, total) {
+  const answers = [];
+  for (let index = 0; index < total; index += 1) {
+    const selected = form.querySelector('input[name="roadmap-test-' + CSS.escape(skillId) + '-' + index + '"]:checked');
+    answers[index] = selected?.value || '';
+  }
+  localStorage.setItem(getRoadmapSkillTestDraftKey(skillId), JSON.stringify({
+    answers,
+    updatedAt: new Date().toISOString()
+  }));
+}
+
+function getRoadmapShuffledOptions(options, skillId, questionIndex) {
+  const normalized = options.map(function(option) {
+    return typeof option === 'string' ? { text: option, explanation: '' } : option;
+  });
+  for (let index = normalized.length - 1; index > 0; index -= 1) {
+    const nextIndex = Math.floor(Math.random() * (index + 1));
+    const current = normalized[index];
+    normalized[index] = normalized[nextIndex];
+    normalized[nextIndex] = current;
+  }
+  return normalized;
+}
+
+function applyRoadmapSkillTestResultState(form, test, skillId) {
+  form.classList.add('is-completed');
+  test.questions.forEach(function(question, questionIndex) {
+    const fieldset = form.querySelectorAll('.roadmap-skill-test__question')[questionIndex];
+    const selected = form.querySelector('input[name="roadmap-test-' + CSS.escape(skillId) + '-' + questionIndex + '"]:checked');
+    const isQuestionWrong = selected?.value !== question.answer;
+      fieldset?.querySelectorAll('.roadmap-skill-test__option').forEach(function(optionLabel) {
+        const optionInput = optionLabel.querySelector('input');
+        const isAnswer = optionInput?.value === question.answer;
+        const isSelected = optionInput?.checked;
+        optionLabel.classList.toggle('is-correct', Boolean(isSelected && isAnswer));
+        optionLabel.classList.toggle('is-wrong', Boolean(isSelected && !isAnswer));
+        optionLabel.classList.toggle('has-explanation', Boolean(isQuestionWrong && isSelected && !isAnswer));
+      });
+  });
+}
+
 function createRoadmapSkillTest(skillId) {
   const test = ROADMAP_SKILL_TESTS[skillId];
   if (!test) return null;
 
   const section = document.createElement('section');
   section.className = 'roadmap-skill-test';
+  section.addEventListener('click', function(event) {
+    if (event.target.closest('.roadmap-skill-test__explanation')) return;
+    section.querySelectorAll('.roadmap-skill-test__explanation.is-open').forEach(function(explanation) {
+      explanation.classList.remove('is-open');
+      explanation.querySelector('.roadmap-skill-test__explanation-toggle')?.setAttribute('aria-expanded', 'false');
+    });
+  });
   const title = document.createElement('h3');
   title.textContent = test.title;
   section.appendChild(title);
 
-  const savedResult = readRoadmapSkillTestResult(skillId);
-  if (savedResult?.passed) {
-    const completed = document.createElement('p');
-    completed.className = 'roadmap-skill-test__completed';
-    completed.textContent = 'Тест пройден: ' + savedResult.score + ' из ' + savedResult.total;
-    section.appendChild(completed);
-    return section;
-  }
-
   const form = document.createElement('form');
   form.className = 'roadmap-skill-test__form';
+  form.noValidate = true;
+  form.addEventListener('click', function(event) {
+    if (event.target.closest('.roadmap-skill-test__explanation')) return;
+    form.querySelectorAll('.roadmap-skill-test__explanation.is-open').forEach(function(explanation) {
+      explanation.classList.remove('is-open');
+      explanation.querySelector('.roadmap-skill-test__explanation-toggle')?.setAttribute('aria-expanded', 'false');
+    });
+  });
+  const savedDraft = readRoadmapSkillTestDraft(skillId);
+  const savedAnswers = Array.isArray(savedDraft?.answers) ? savedDraft.answers : [];
+  const savedResult = readRoadmapSkillTestResult(skillId);
   test.questions.forEach(function(question, questionIndex) {
     const fieldset = document.createElement('fieldset');
+    fieldset.className = 'roadmap-skill-test__question';
     const legend = document.createElement('legend');
     legend.textContent = (questionIndex + 1) + '. ' + question.text;
     fieldset.appendChild(legend);
-    question.options.forEach(function(option, optionIndex) {
+    getRoadmapShuffledOptions(question.options, skillId, questionIndex).forEach(function(normalizedOption, optionIndex) {
       const label = document.createElement('label');
+      label.className = 'roadmap-skill-test__option';
       const input = document.createElement('input');
       input.type = 'radio';
       input.name = 'roadmap-test-' + skillId + '-' + questionIndex;
-      input.value = option;
+      input.value = normalizedOption.text;
       input.required = true;
+      if (savedAnswers[questionIndex] === normalizedOption.text) input.checked = true;
       const text = document.createElement('span');
-      text.textContent = option;
-      label.append(input, text);
+      text.className = 'roadmap-skill-test__option-text';
+      text.textContent = normalizedOption.text;
+      const explanation = document.createElement('span');
+      explanation.className = 'roadmap-skill-test__explanation';
+      const explanationToggle = document.createElement('button');
+      explanationToggle.type = 'button';
+      explanationToggle.className = 'roadmap-skill-test__explanation-toggle';
+      explanationToggle.textContent = '!';
+      explanationToggle.setAttribute('aria-label', 'Показать пояснение');
+      explanationToggle.setAttribute('aria-expanded', 'false');
+      const explanationText = document.createElement('span');
+      explanationText.className = 'roadmap-skill-test__explanation-text';
+      explanationText.textContent = normalizedOption.explanation || (normalizedOption.text === question.answer ? 'Этот вариант соответствует ожидаемому ответу.' : 'Этот вариант не закрывает условие вопроса.');
+      explanation.append(explanationToggle, explanationText);
+      explanationToggle.addEventListener('click', function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const isOpen = explanation.classList.toggle('is-open');
+        explanationToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+      });
+      input.addEventListener('change', function() {
+        fieldset.classList.remove('is-missing');
+        fieldset.querySelectorAll('.roadmap-skill-test__option').forEach(function(optionLabel) {
+          const checked = optionLabel.querySelector('input')?.checked;
+          optionLabel.classList.toggle('is-selected', Boolean(checked));
+          optionLabel.classList.remove('is-correct', 'is-wrong');
+          optionLabel.classList.remove('has-explanation');
+          optionLabel.querySelector('.roadmap-skill-test__explanation')?.classList.remove('is-open');
+          optionLabel.querySelector('.roadmap-skill-test__explanation-toggle')?.setAttribute('aria-expanded', 'false');
+        });
+        form.classList.remove('is-completed');
+        result.textContent = '';
+        result.classList.remove('is-passed');
+        saveRoadmapSkillTestDraft(skillId, form, test.questions.length);
+      });
+      input.addEventListener('pointerdown', function(event) {
+        event.stopPropagation();
+        input.dataset.wasChecked = input.checked ? 'true' : 'false';
+      });
+      input.addEventListener('click', function(event) {
+        event.stopPropagation();
+        const wasChecked = input.dataset.wasChecked === 'true';
+        input.checked = !wasChecked;
+        input.dataset.wasChecked = '';
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      label.addEventListener('pointerdown', function() {
+        label.dataset.wasChecked = input.checked ? 'true' : 'false';
+      });
+      label.addEventListener('click', function(event) {
+        if (event.target.closest('.roadmap-skill-test__explanation-toggle')) return;
+        if (event.target === input) return;
+        event.preventDefault();
+        const wasChecked = label.dataset.wasChecked === 'true';
+        input.checked = !wasChecked;
+        label.dataset.wasChecked = '';
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      label.append(input, text, explanation);
+      label.classList.toggle('is-selected', input.checked);
       fieldset.appendChild(label);
     });
     form.appendChild(fieldset);
@@ -4629,7 +5007,7 @@ function createRoadmapSkillTest(skillId) {
   const submit = document.createElement('button');
   submit.type = 'submit';
   submit.className = 'roadmap-skill-test__submit';
-  submit.textContent = 'Проверить ответы';
+  submit.textContent = 'Завершить';
   const result = document.createElement('p');
   result.className = 'roadmap-skill-test__result';
   result.setAttribute('aria-live', 'polite');
@@ -4638,6 +5016,19 @@ function createRoadmapSkillTest(skillId) {
 
   form.addEventListener('submit', function(event) {
     event.preventDefault();
+    let firstMissing = null;
+    test.questions.forEach(function(question, questionIndex) {
+      const fieldset = form.querySelectorAll('.roadmap-skill-test__question')[questionIndex];
+      const selected = form.querySelector('input[name="roadmap-test-' + CSS.escape(skillId) + '-' + questionIndex + '"]:checked');
+      const isMissing = !selected;
+      fieldset?.classList.toggle('is-missing', isMissing);
+      if (isMissing && !firstMissing) firstMissing = fieldset;
+    });
+    if (firstMissing) {
+      firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
     let score = 0;
     test.questions.forEach(function(question, questionIndex) {
       const selected = form.querySelector('input[name="roadmap-test-' + CSS.escape(skillId) + '-' + questionIndex + '"]:checked');
@@ -4652,13 +5043,17 @@ function createRoadmapSkillTest(skillId) {
       passedAt: passed ? new Date().toISOString() : null
     }));
     result.textContent = passed
-      ? 'Готово: тест пройден, ' + score + ' из ' + total
-      : 'Правильных ответов: ' + score + ' из ' + total + '. Попробуйте еще раз.';
+      ? 'Готово: ' + score + ' из ' + total
+      : 'Правильно: ' + score + ' из ' + total + '.';
     result.classList.toggle('is-passed', passed);
-    if (passed) {
-      form.querySelectorAll('input, button').forEach(function(control) { control.disabled = true; });
-    }
+    applyRoadmapSkillTestResultState(form, test, skillId);
+    refreshRoadmapBlockProgressBySkill(skillId);
+    refreshRoadmapBlockTestCardBySkill(skillId);
   });
+
+  if (savedResult) {
+    applyRoadmapSkillTestResultState(form, test, skillId);
+  }
 
   section.appendChild(form);
   return section;
