@@ -116,6 +116,7 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   // --- UI elements: поиск, AI, переключатель модели ---
   const searchInput    = document.getElementById("search-input");
+  const initialQuestionsSearchQuery = new URLSearchParams(window.location.search).get("q")?.trim() || "";
   const modelsListEl   = document.getElementById("ai-models-list");
   const clearBtn       = document.getElementById("search-clear-btn");
   const resultsTitle   = document.getElementById("search-results-title");
@@ -4378,13 +4379,29 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   // --- Поиск/фильтрация ---
   let searchMetricsTimer = null;
+  const normalizeQuestionsSearchText = (value) => String(value || "")
+    .toLowerCase()
+    .replace(/ё/g, "е")
+    .replace(/[^a-zа-я0-9+#]+/gi, " ")
+    .trim();
+
   searchInput.addEventListener("input", () => {
-    const term = searchInput.value.trim().toLowerCase();
+    const term = normalizeQuestionsSearchText(searchInput.value);
+    const terms = term.split(/\s+/).filter(Boolean);
+    const requireEveryTerm = terms.length <= 2;
     const has  = term.length > 0;
     document.querySelectorAll("#accordion-container .t-item").forEach(item => {
-      const q = item.querySelector(".t849__title").textContent.toLowerCase();
-      const a = item.querySelector(".t849__text").textContent.toLowerCase();
-      const match = !term || q.includes(term) || a.includes(term);
+      const section = item.closest(".article");
+      const searchableText = normalizeQuestionsSearchText([
+        item.querySelector(".t849__title")?.textContent,
+        item.querySelector(".t849__text")?.textContent,
+        section?.querySelector(".category-title")?.textContent,
+        item.dataset.tags,
+        item.dataset.category
+      ].filter(Boolean).join(" "));
+      const match = !has || (requireEveryTerm
+        ? terms.every(searchTerm => searchableText.includes(searchTerm))
+        : terms.some(searchTerm => searchableText.includes(searchTerm)));
       item.style.display = match ? "" : "none";
     });
     document.querySelectorAll("#accordion-container .article").forEach(section => {
@@ -4421,6 +4438,11 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       });
     }, 500);
   });
+
+  if (initialQuestionsSearchQuery) {
+    searchInput.value = initialQuestionsSearchQuery;
+    searchInput.dispatchEvent(new Event("input", { bubbles: true }));
+  }
 
   clearBtn.addEventListener("click", () => {
     searchInput.value = "";
@@ -4829,7 +4851,7 @@ document.addEventListener('DOMContentLoaded', () => {
     companyFilters?.classList.toggle('is-hidden', !isCompanies);
     companyFilters?.setAttribute('aria-hidden', isCompanies ? 'false' : 'true');
 
-    clearSearchInput();
+    if (!options.preserveSearch) clearSearchInput();
     if (isCompanies) {
       setActiveCompany(selectedCompany);
       applyCompanyFilter();
@@ -4926,7 +4948,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setActiveCompany(selectedCompany);
   restoreFilterState();
-  setFilterMode(currentFilterMode, { animate: false });
+  setFilterMode(currentFilterMode, {
+    animate: false,
+    preserveSearch: Boolean(new URLSearchParams(window.location.search).get('q'))
+  });
 
   // Показ нижней панели: скрываем только когда верхние чипы реально видны пользователю
   if (categoryFiltersBottom && categoryFilters) {

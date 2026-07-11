@@ -22,6 +22,18 @@
     </span>
     <span class="auth-open-btn__label">Войти</span>
   `;
+  // Header ASCII logo: replace only the art between String.raw` and `.
+  // If an art generator gives you ` characters, replace them with . or ' before pasting.
+  const SITE_TITLE_ASCII = siteTitleArt(String.raw`
+                            _
+               _           | |
+  ____ _____ _| |_ ___   __| |_____ _   _
+ / _  (____ (_   _) _ \ / _  | ___ | | | |
+| |_| / ___ | | || |_| ( (_| | ____|\ V /
+ \__  \_____|  \__)___/ \____|_____) \_/
+    |_|
+`);
+  const SITE_TITLE_ANIMATION_KEY = 'qa_site_title_animate_once';
   let headerScrolled = false;
 
   function withVersion(src) {
@@ -149,6 +161,34 @@
     logoImg.addEventListener('error', markReady, { once: true });
   }
 
+  function siteTitleArt(source) {
+    const lines = String(source).replace(/\r/g, '').split('\n');
+    while (lines.length && lines[0].trim() === '') lines.shift();
+    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+    return lines;
+  }
+
+  function getSiteTitleChaos(index) {
+    let hash = 2166136261;
+    const seed = `site-title:${index}`;
+    for (let i = 0; i < seed.length; i += 1) {
+      hash ^= seed.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+
+    const a = ((hash >>> 0) % 1000) / 1000;
+    const b = (((hash >>> 8) % 1000) / 1000);
+    const c = (((hash >>> 16) % 1000) / 1000);
+    const d = (((hash >>> 24) % 1000) / 1000);
+
+    return {
+      delay: Math.round(a * 360),
+      x: ((b - 0.5) * 1.2).toFixed(2),
+      y: ((c - 0.5) * 1.1).toFixed(2),
+      rotate: Math.round((d - 0.5) * 18)
+    };
+  }
+
   function setupSiteTitleHomeLink() {
     const title = document.querySelector('.site-title');
     if (!title) return;
@@ -156,19 +196,90 @@
     // If title is already wrapped into a link on some page, do not override it.
     if (title.closest('a')) return;
 
-    const goHome = () => {
+    const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isHomePage = () => window.location.pathname.endsWith('/') || window.location.pathname.endsWith('/index.html');
+    const restartLogoAnimation = () => {
+      if (prefersReducedMotion()) return;
+      title.classList.remove('is-assembling');
+      void title.offsetWidth;
+      title.classList.add('is-assembling');
+    };
+    const activateHomeLink = () => {
+      if (title.dataset.siteTitleNavigating === 'true') return;
+
+      if (isHomePage()) {
+        restartLogoAnimation();
+        if (window.scrollY > 0) {
+          window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+        }
+        return;
+      }
+
+      title.dataset.siteTitleNavigating = 'true';
+      try {
+        sessionStorage.setItem(SITE_TITLE_ANIMATION_KEY, '1');
+      } catch {
+        // Ignore storage access errors; navigation should still work.
+      }
       window.location.href = 'index.html';
     };
+
+    if (title.dataset.siteTitleReady !== 'true') {
+      title.textContent = '';
+      const ascii = document.createElement('span');
+      ascii.className = 'site-title-ascii';
+      ascii.setAttribute('aria-hidden', 'true');
+      let visibleIndex = 0;
+
+      SITE_TITLE_ASCII.forEach((line) => {
+        const row = document.createElement('span');
+        row.className = 'site-title-ascii__line';
+
+        Array.from(line).forEach((char) => {
+          if (char === ' ') {
+            row.appendChild(document.createTextNode(char));
+            return;
+          }
+
+          const symbol = document.createElement('span');
+          symbol.className = 'site-title-ascii__char';
+          const chaos = getSiteTitleChaos(visibleIndex);
+          symbol.textContent = char;
+          symbol.style.setProperty('--site-title-delay', `${chaos.delay}ms`);
+          symbol.style.setProperty('--site-title-x', `${chaos.x}em`);
+          symbol.style.setProperty('--site-title-y', `${chaos.y}em`);
+          symbol.style.setProperty('--site-title-r', `${chaos.rotate}deg`);
+          row.appendChild(symbol);
+          visibleIndex += 1;
+        });
+
+        ascii.appendChild(row);
+      });
+
+      title.appendChild(ascii);
+      title.setAttribute('data-site-title-ready', 'true');
+    }
+
+    if (isHomePage()) {
+      try {
+        if (sessionStorage.getItem(SITE_TITLE_ANIMATION_KEY) === '1') {
+          sessionStorage.removeItem(SITE_TITLE_ANIMATION_KEY);
+          window.requestAnimationFrame(restartLogoAnimation);
+        }
+      } catch {
+        // Ignore storage access errors.
+      }
+    }
 
     title.setAttribute('role', 'link');
     title.setAttribute('tabindex', '0');
     title.setAttribute('aria-label', 'Перейти на главную');
 
-    title.addEventListener('click', goHome);
+    title.addEventListener('click', activateHomeLink);
     title.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
-      goHome();
+      activateHomeLink();
     });
   }
 
