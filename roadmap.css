@@ -2134,6 +2134,11 @@ html[data-theme="dark"] .roadmap-chat__topic { background: rgba(148, 163, 184, 0
 .roadmap-chat__answer li { margin: 3px 0; }
 .roadmap-chat__answer pre { overflow-x: auto; padding: 9px; margin: 8px 0; border-radius: 7px; background: rgba(0, 0, 0, 0.07); }
 .roadmap-chat__answer code { font-family: monospace; }
+.roadmap-chat__table-wrap { max-width: 100%; margin: 9px 0; overflow-x: auto; scrollbar-width: thin; }
+.roadmap-chat__table { width: 100%; min-width: max-content; border-collapse: collapse; font-size: 12px; line-height: 1.45; }
+.roadmap-chat__table th, .roadmap-chat__table td { padding: 7px 9px; border: 1px solid var(--roadmap-border-strong); text-align: left; vertical-align: top; white-space: normal; overflow-wrap: anywhere; }
+.roadmap-chat__table th { background: color-mix(in srgb, var(--roadmap-text) 7%, var(--roadmap-surface-soft)); font-weight: 700; }
+.roadmap-chat__table tbody tr:nth-child(even) { background: color-mix(in srgb, var(--roadmap-text) 3%, var(--roadmap-surface-soft)); }
 .roadmap-chat__answer-text { white-space: normal; }
 html[data-theme="dark"] .roadmap-chat__question { background: #302719; border-color: #70501e; color: #f7e4be; }
 html[data-theme="dark"] .roadmap-chat__answer { background: #1d2b39; border-color: #3b5670; color: #e3eef9; }

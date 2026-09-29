@@ -133,19 +133,54 @@
             if (match[3]) parent.append(document.createTextNode(match[3].slice(rawUrl.length)));
           } else {
             const marked = document.createElement(match[4] ? 'strong' : match[5] ? 'code' : 'em');
-            marked.textContent = match[4] || match[5] || match[6];
+            if (match[5]) marked.textContent = match[5];
+            else inline(marked, match[4] || match[6]);
             parent.append(marked);
           }
           cursor = match.index + match[0].length;
         }
         parent.append(document.createTextNode(value.slice(cursor)));
       }
+      function tableCells(line) {
+        const trimmed = line.trim();
+        if (!trimmed.includes('|')) return null;
+        const cells = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+        return cells.length >= 2 ? cells : null;
+      }
+      function isTableDivider(line, columns) {
+        const cells = tableCells(line || '');
+        return cells?.length === columns && cells.every(cell => /^:?-{3,}:?$/.test(cell));
+      }
+      function expandCompactTable(line) {
+        const parts = line.split('||');
+        if (parts.length < 3) return [line];
+        const firstPipe = parts[0].indexOf('|');
+        if (firstPipe < 0) return [line];
+        const headers = tableCells(parts[0].slice(firstPipe));
+        const divider = parts[1].trim().replace(/^\|/, '').replace(/\|$/, '');
+        if (!headers || !isTableDivider(`|${divider}|`, headers.length)) return [line];
+        const expanded = [];
+        const precedingText = parts[0].slice(0, firstPipe).trim();
+        if (precedingText) expanded.push(precedingText);
+        expanded.push(`| ${headers.join(' | ')} |`, `| ${divider} |`);
+        for (const part of parts.slice(2)) {
+          const cells = part.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+          if (cells.length < headers.length) return [line];
+          expanded.push(`| ${cells.slice(0, headers.length).join(' | ')} |`);
+          const followingText = cells.slice(headers.length).join('|').trim();
+          if (followingText) expanded.push(followingText);
+        }
+        return expanded;
+      }
       let paragraph = null;
       let list = null;
       let code = null;
       const normalized = text.replace(/\r\n?/g, '\n').replace(/\]\s*\(\s*(https?:\/\/[^\s)]+)\s*\)/g, ']($1)');
       const hasSources = /https?:\/\//.test(normalized);
-      for (const rawLine of normalized.split('\n')) {
+      const lines = normalized.split('\n');
+      for (let index = 0; index < lines.length; index += 1) {
+        if (!code && lines[index].includes('||')) lines.splice(index, 1, ...expandCompactTable(lines[index]));
+        const rawLine = lines[index];
         const line = rawLine.replace(/^(\s*)\*\*(\d+[.)]\s+.+)\*\*\s*$/, '$1$2');
         if (/^\s*```/.test(line)) {
           if (code) code = null;
@@ -159,6 +194,26 @@
         }
         if (code) { code.textContent += `${line}\n`; continue; }
         if (!line.trim()) { paragraph = null; list = null; continue; }
+        const headers = tableCells(line);
+        if (headers && isTableDivider(lines[index + 1], headers.length)) {
+          const wrapper = document.createElement('div'); wrapper.className = 'roadmap-chat__table-wrap';
+          const table = document.createElement('table'); table.className = 'roadmap-chat__table';
+          const thead = document.createElement('thead'); const headerRow = document.createElement('tr');
+          headers.forEach(value => { const th = document.createElement('th'); inline(th, value); headerRow.append(th); });
+          thead.append(headerRow); table.append(thead);
+          const tbody = document.createElement('tbody');
+          index += 1;
+          while (index + 1 < lines.length) {
+            const cells = tableCells(lines[index + 1]);
+            if (!cells || cells.length !== headers.length || isTableDivider(lines[index + 1], headers.length)) break;
+            const row = document.createElement('tr');
+            cells.forEach(value => { const td = document.createElement('td'); inline(td, value); row.append(td); });
+            tbody.append(row); index += 1;
+          }
+          table.append(tbody); wrapper.append(table); container.append(wrapper);
+          paragraph = null; list = null;
+          continue;
+        }
         if (hasSources && /^\s*(?:#{1,4}\s*)?(?:источники|ссылки|материалы)\s*:?\s*$/i.test(line)) continue;
         const linkOnly = line.match(/^\s*(?:[-*•]|\d+[.)])?\s*(?:\[(?:источник(?:\s*\d+)?|ссылка(?:\s*\d+)?|https?:\/\/[^\]]+)\]\(https?:\/\/[^\s)]+\)|https?:\/\/\S+)\s*$/i);
         if (linkOnly) {

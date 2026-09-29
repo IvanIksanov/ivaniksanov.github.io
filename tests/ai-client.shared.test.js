@@ -307,3 +307,39 @@ test('failed cloud save queues an AI answer and retries it when the connection r
   assert.equal(controller.readPendingMutations().length, 0);
   assert.equal(attempts, 2);
 });
+
+test('Roadmap renders Markdown tables without flattening text or code blocks', () => {
+  class Element {
+    constructor(tag, value = '') { this.tagName = tag.toUpperCase(); this.value = value; this.children = []; this.className = ''; }
+    append(...nodes) { this.children.push(...nodes); }
+    set textContent(value) { this.value = String(value); this.children = []; }
+    get textContent() { return this.value + this.children.map(child => child.textContent).join(''); }
+    setAttribute() {}
+  }
+  const document = {
+    createElement: tag => new Element(tag),
+    createTextNode: value => new Element('#text', value),
+    createDocumentFragment: () => new Element('#fragment')
+  };
+  const source = fs.readFileSync(path.join(__dirname, '../roadmap-chat.js'), 'utf8');
+  const start = source.indexOf('function renderAnswer(');
+  const end = source.indexOf('function modelFamily(', start);
+  const renderAnswer = vm.runInNewContext(`${source.slice(start, end)}; renderAnswer`, { document, URL });
+  const nodes = (parent, tag) => [parent, ...parent.children.flatMap(child => nodes(child, tag))]
+    .filter(child => child.tagName === tag.toUpperCase());
+
+  const standard = new Element('div');
+  renderAnswer(standard, '## Шаги\n```sql\nBEGIN;\n```\n| Шаг | Что делается | Как работает |\n|-----|--------------|--------------|\n| **1. `BEGIN;`** | Открываем. | Пока ждём. |\n| 2 | Записываем. | Готово. |\nДальше текст.');
+  assert.equal(nodes(standard, 'table').length, 1);
+  assert.equal(nodes(standard, 'tr').length, 3);
+  assert.equal(nodes(standard, 'pre').length, 1);
+  assert.equal(nodes(standard, 'strong').length, 1);
+  assert.equal(nodes(standard, 'code').length, 2);
+  assert.ok(standard.textContent.includes('Дальше текст.'));
+
+  const compact = new Element('div');
+  renderAnswer(compact, 'Пример: база пользователей| id | name | email ||----|------|-------|| 1 | Иван | ivan@mail.ru || 2 | Марина | marina@mail.ru |Транзакции сохраняют данные.');
+  assert.equal(nodes(compact, 'table').length, 1);
+  assert.equal(nodes(compact, 'tr').length, 3);
+  assert.ok(compact.textContent.includes('Транзакции сохраняют данные.'));
+});
