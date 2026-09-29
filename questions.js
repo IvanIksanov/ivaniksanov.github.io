@@ -1553,6 +1553,7 @@ const refineSystemPrompt =
       return progressMap.get(row.question_id) !== row.status;
     }),
     getLocalAiRows,
+    includeLocalAiInPendingCheck: true,
     getReloadPlan: ({ progressRowsToUpload, localAiRows, pendingMutationsAtStart }) => {
       const hasPendingProgressMutations = pendingMutationsAtStart.some((mutation) => mutation?.type === "saveProgress");
       const hasPendingAiMutations = pendingMutationsAtStart.some((mutation) => (

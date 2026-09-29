@@ -318,14 +318,24 @@
         content: response.answer
       };
 
-      const data = await withTimeout(restRequest(config.answersTable, {
-        method: "POST",
-        body: payload,
-        prefer: "return=representation"
-      }), config.cloudOpTimeoutMs, "save ai answer");
+      try {
+        const data = await withTimeout(restRequest(config.answersTable, {
+          method: "POST",
+          body: payload,
+          prefer: "return=representation"
+        }), config.cloudOpTimeoutMs, "save ai answer");
 
-      const row = Array.isArray(data) ? data[0] : data;
-      return row?.id || null;
+        const row = Array.isArray(data) ? data[0] : data;
+        return row?.id || null;
+      } catch (error) {
+        if (!enqueueOnFail) throw error;
+        enqueueMutation("saveAiAnswer", { questionId, answerType, response });
+        debugLog?.warn("sync", "ai-answer-save-queued", {
+          questionId,
+          message: String(error?.message || error || "")
+        });
+        return null;
+      }
     }
 
     async function deleteAiAnswer(answerId, deleteOptions = {}) {

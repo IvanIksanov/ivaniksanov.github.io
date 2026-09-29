@@ -273,3 +273,37 @@ test('all models without credits produce a distinct key-replacement error', asyn
     return true;
   });
 });
+
+test('failed cloud save queues an AI answer and retries it when the connection returns', async () => {
+  const stored = new Map();
+  const storage = {
+    getItem: key => stored.get(key) ?? null,
+    setItem: (key, value) => stored.set(key, value)
+  };
+  let attempts = 0;
+  const sandbox = {
+    console, AbortController, setTimeout, clearTimeout, localStorage: storage,
+    fetch: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new Error('offline');
+      return new Response(JSON.stringify([{ id: 'saved-answer-id' }]), { status: 201 });
+    }
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../questions-cloud-sync.shared.js'), 'utf8'), sandbox);
+  const controller = sandbox.QuestionsCloudSyncShared.create({
+    localStorage: storage,
+    getSupabaseStore: () => ({ url: 'https://example.supabase.co', anonKey: 'publishable-test' }),
+    getAuthUser: () => ({ id: 'user-id' }),
+    getActiveSession: async () => ({ access_token: 'session-token' }),
+    ensureAuthContext: async () => true,
+    cloudOpTimeoutMs: 100,
+    restTimeoutMs: 100
+  });
+  const response = { answer: 'Сохранённый ответ', model: 'openai/gpt-oss-20b' };
+  assert.equal(await controller.saveAiAnswer('question-id', 'append', response), null);
+  assert.equal(controller.hasPendingCloudWork(), true);
+  assert.equal(controller.readPendingMutations()[0].type, 'saveAiAnswer');
+  await controller.flushPendingMutations();
+  assert.equal(controller.readPendingMutations().length, 0);
+  assert.equal(attempts, 2);
+});
