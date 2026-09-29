@@ -5,10 +5,13 @@ create table if not exists public.user_api_keys (
   api_key text not null,
   created_at timestamptz not null default timezone('utc', now()),
   updated_at timestamptz not null default timezone('utc', now()),
-  constraint user_api_keys_service_check check (service in ('io_net')),
+  constraint user_api_keys_service_check check (service in ('io_net', 'groq')),
   constraint user_api_keys_api_key_check check (char_length(trim(api_key)) >= 20),
   constraint user_api_keys_user_service_unique unique (user_id, service)
 );
+
+alter table public.user_api_keys drop constraint if exists user_api_keys_service_check;
+alter table public.user_api_keys add constraint user_api_keys_service_check check (service in ('io_net', 'groq'));
 
 create index if not exists user_api_keys_user_id_idx
   on public.user_api_keys (user_id);

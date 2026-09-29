@@ -24,20 +24,18 @@ document.addEventListener("DOMContentLoaded", () => {
     "Компьютерные сети",
     "Разработка программного обеспечения"
   ];
-  const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
+  const OVERRIDE_API_KEY_STORAGE = "groq_api_key_override";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
   const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
   const FAST_MODEL_HINTS = [
     "openai/gpt-oss-20b",
-    "mistralai/Mistral-Nemo-Instruct-2407",
-    "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
-    "moonshotai/Kimi-K2-Instruct-0905",
-    "deepseek-ai/DeepSeek-V3.2"
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-120b"
   ];
-  const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
-  const MODEL_CHAT_VALIDATED_CACHE_KEY = "model_chat_validated_cache_v1";
+  const MODEL_LIST_CACHE_KEY = "model_list_cache_groq_v1";
+  const MODEL_CHAT_VALIDATED_CACHE_KEY = "model_chat_validated_cache_groq_v1";
   const MODEL_LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
   const AI_PROXY_TIMEOUT_MS = 30000;
   const EXPERIENCE_MISMATCH_TOLERANCE_MONTHS = 1;
@@ -3236,7 +3234,7 @@ document.addEventListener("DOMContentLoaded", () => {
             apikey: SUPABASE_ANON_KEY_DIRECT,
             "Content-Type": "application/json"
           },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, provider: "groq" }),
           cache: "no-store",
           signal: controller.signal
         });
@@ -3277,7 +3275,7 @@ document.addEventListener("DOMContentLoaded", () => {
       let detail = "";
       try {
         const errJson = await res.json();
-        detail = errJson?.detail || "";
+        detail = errJson?.detail || errJson?.error?.message || "";
       } catch {}
       const availableModels = parseAvailableModelsFromDetail(detail);
       if (res.status === 400 && availableModels.length) {

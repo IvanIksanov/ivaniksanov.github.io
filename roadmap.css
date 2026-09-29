@@ -684,8 +684,9 @@ body.roadmap-route-mode .roadmap-route {
     min-height: 0;
     height: 100%;
     max-height: 100%;
-    align-content: center;
-    overflow: hidden;
+    align-content: safe center;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   body.roadmap-route-mode .roadmap-route {
@@ -2044,3 +2045,151 @@ html[data-theme="dark"] .roadmap-block-test-card.is-active .resource-title {
     filter: none;
   }
 }
+
+/* Both Roadmap views share one assistant beneath their left-hand content. */
+.roadmap-left-workspace { display: none; min-width: 0; min-height: 0; }
+body.roadmap-minimal-mode .roadmap-left-workspace {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+body.roadmap-route-mode .roadmap-left-workspace .roadmap-route { min-height: 0; height: 100%; }
+.roadmap-chat {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--roadmap-border-strong);
+  border-radius: 16px;
+  background: var(--roadmap-surface-soft);
+  color: var(--roadmap-text);
+  padding: 14px 16px 10px;
+  overflow: hidden;
+  max-height: 68dvh;
+  scrollbar-width: none;
+}
+.roadmap-chat button, .roadmap-chat input, .roadmap-chat textarea, .roadmap-chat select { font: inherit; }
+.roadmap-chat__header, .roadmap-chat__status, .roadmap-chat__form, .roadmap-chat__footer { flex-shrink: 0; }
+.roadmap-chat button { cursor: pointer; color: inherit; background: transparent; border: 0; }
+.roadmap-chat button:disabled { opacity: .5; cursor: wait; }
+.roadmap-chat button:focus-visible, .roadmap-chat input:focus-visible, .roadmap-chat select:focus-visible { outline: 2px solid var(--roadmap-accent); outline-offset: 3px; }
+.roadmap-chat__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.roadmap-chat__header strong { font-size: 16px; }
+.roadmap-chat__header button { font-size: 12px; color: var(--roadmap-text-muted); }
+.roadmap-chat #roadmap-chat-toggle { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 28px; line-height: 1; white-space: nowrap; }
+.roadmap-chat #roadmap-chat-toggle svg { display: block; flex: 0 0 auto; transform: rotate(0deg); transition: transform .3s ease; }
+.roadmap-chat.is-collapsed #roadmap-chat-toggle svg { transform: rotate(180deg); }
+#roadmap-chat-body { display: grid; flex: 0 1 auto; min-height: 0; grid-template-rows: minmax(0, 1fr); transition: grid-template-rows .32s cubic-bezier(.22, 1, .36, 1), opacity .24s ease; }
+#roadmap-chat-body .roadmap-chat__body-inner { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.roadmap-chat.is-collapsed #roadmap-chat-body { grid-template-rows: minmax(0, 0fr); opacity: 0; }
+.roadmap-chat__identity { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; min-width: 0; }
+.roadmap-chat__topic { max-width: 100%; padding: 5px 8px; border-radius: 999px; background: rgba(100, 116, 139, 0.14); color: #475569; font-size: 11px; font-weight: 600; line-height: 1; user-select: none; -webkit-user-select: none; }
+html[data-theme="dark"] .roadmap-chat__topic { background: rgba(148, 163, 184, 0.16); color: #e2e8f0; }
+.roadmap-chat__prompt { color: var(--roadmap-accent); font: 600 23px monospace; margin-right: 8px; }
+.roadmap-chat__identity .roadmap-chat__prompt { margin-right: 0; }
+.roadmap-chat__prompt, .roadmap-chat__chip { user-select: none; -webkit-user-select: none; }
+.roadmap-chat__actions { display: flex; flex: 0 0 auto; flex-wrap: nowrap; gap: 8px; margin: 12px 0; overflow-x: auto; scrollbar-width: none; }
+.roadmap-chat__actions button { flex: 0 0 auto; white-space: nowrap; border: 1px solid var(--roadmap-border-strong); border-radius: 999px; padding: 6px 12px; font-size: 12px; }
+.roadmap-chat__actions button:hover { background: var(--roadmap-hover); }
+.roadmap-chat__history { flex: 1 1 auto; min-height: 0; max-height: 320px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; border-top: 1px solid var(--roadmap-border); padding-top: 8px; }
+.roadmap-chat__turn { padding: 0 0 12px; border-bottom: 1px solid var(--roadmap-border); margin-bottom: 12px; }
+.roadmap-chat__question, .roadmap-chat__answer { border-radius: 12px; overflow-wrap: anywhere; }
+.roadmap-chat__question { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 7px; width: fit-content; max-width: 100%; padding: 6px 9px; margin: 5px 0 7px auto; background: #fff3df; border: 1px solid #edcf97; color: #3e2b0c; }
+.roadmap-chat__question p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; font-size: 12px; line-height: 1.35; }
+.roadmap-chat__question .roadmap-chat__chip { margin: 0; }
+.roadmap-chat__answer { padding: 10px 12px; background: #edf4fc; border: 1px solid #c7d9ef; color: #1d3653; line-height: 1.55; font-size: 14px; }
+.roadmap-chat__limit-notice { margin-top: 8px; background: #fff7e4; border-color: #e2ad45; color: #5c420f; }
+.roadmap-chat__limit-notice > strong { display: block; margin: 2px 0 6px; }
+.roadmap-chat__limit-notice > a { color: #8b5800; text-decoration: underline; text-underline-offset: 2px; }
+.roadmap-chat__limit-notice > a:hover { color: #b36b00; }
+.roadmap-chat__limit-notice ol { margin: 8px 0; padding-left: 20px; }
+.roadmap-chat .roadmap-chat__limit-action { margin-top: 4px; padding: 6px 9px; border: 1px solid currentColor; border-radius: 7px; color: inherit; font-size: 12px; }
+.roadmap-chat .roadmap-chat__limit-action:hover { background: rgba(176, 112, 0, .1); }
+.roadmap-chat .roadmap-chat__limit-notice .roadmap-chat__chip { background: #ffe4a6; color: #65420c; }
+.roadmap-chat__answer-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 6px; }
+.roadmap-chat__answer-identity { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.roadmap-chat__answer-actions { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 5px; margin-left: auto; }
+.roadmap-chat__answer--comparison { margin-top: 8px; }
+.roadmap-chat .roadmap-chat__compare { padding: 3px 0 3px 5px; color: #688099; font-size: 11px; font-weight: 400; line-height: 1.2; white-space: nowrap; }
+.roadmap-chat .roadmap-chat__compare:hover { color: var(--roadmap-accent); }
+.roadmap-chat__answer-head .roadmap-chat__chip { margin-bottom: 0; }
+.roadmap-chat__model-family { color: #688099; font-size: 11px; font-weight: 400; line-height: 1; white-space: nowrap; }
+.roadmap-chat__answer-nav { display: inline-flex; align-items: center; gap: 4px; color: inherit; font-size: 12px; white-space: nowrap; user-select: none; -webkit-user-select: none; }
+.roadmap-chat__answer-nav button { width: 22px; height: 22px; padding: 0; line-height: 1; font-size: 20px; }
+.roadmap-chat__answer-nav button:hover { color: var(--roadmap-accent); }
+.roadmap-chat__chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+.roadmap-chat__question .roadmap-chat__chip { background: #ffe0a7; color: #573708; }
+.roadmap-chat__answer .roadmap-chat__chip { background: #d1e5fa; color: #163b62; }
+.roadmap-chat__question p, .roadmap-chat__answer p { margin: 0 0 7px; }
+.roadmap-chat__question p:last-child, .roadmap-chat__answer p:last-child { margin-bottom: 0; }
+.roadmap-chat__answer h3, .roadmap-chat__answer h4 { color: inherit; margin: 12px 0 6px; line-height: 1.3; }
+.roadmap-chat__answer h3 { font-size: 1.05em; }
+.roadmap-chat__answer h4 { font-size: 1em; }
+.roadmap-chat__answer ul, .roadmap-chat__answer ol { margin: 6px 0 9px; padding-left: 22px; }
+.roadmap-chat__answer li { margin: 3px 0; }
+.roadmap-chat__answer pre { overflow-x: auto; padding: 9px; margin: 8px 0; border-radius: 7px; background: rgba(0, 0, 0, 0.07); }
+.roadmap-chat__answer code { font-family: monospace; }
+.roadmap-chat__answer-text { white-space: normal; }
+html[data-theme="dark"] .roadmap-chat__question { background: #302719; border-color: #70501e; color: #f7e4be; }
+html[data-theme="dark"] .roadmap-chat__answer { background: #1d2b39; border-color: #3b5670; color: #e3eef9; }
+html[data-theme="dark"] .roadmap-chat__limit-notice { background: #332713; border-color: #a87522; color: #ffe4ae; }
+html[data-theme="dark"] .roadmap-chat__limit-notice > a { color: #ffca67; }
+html[data-theme="dark"] .roadmap-chat__limit-notice > a:hover { color: #ffe0a0; }
+html[data-theme="dark"] .roadmap-chat .roadmap-chat__limit-notice .roadmap-chat__chip { background: #654519; color: #ffe2aa; }
+html[data-theme="dark"] .roadmap-chat__question .roadmap-chat__chip { background: #654519; color: #ffe2aa; }
+html[data-theme="dark"] .roadmap-chat__answer .roadmap-chat__chip { background: #304f6e; color: #d9edff; }
+html[data-theme="dark"] .roadmap-chat__model-family { color: #9aafc4; }
+html[data-theme="dark"] .roadmap-chat .roadmap-chat__compare { color: #9aafc4; }
+html[data-theme="dark"] .roadmap-chat .roadmap-chat__compare:hover { color: var(--roadmap-accent); }
+.roadmap-chat__sources { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 7px; margin-top: 9px; font-size: 12px; line-height: 1.5; }
+.roadmap-chat__source { display: inline-flex; align-items: center; gap: 1px; white-space: nowrap; }
+.roadmap-chat__source a { display: inline-flex; align-items: center; gap: 5px; color: inherit; text-decoration: none; transition: color .15s ease; }
+.roadmap-chat__source a:hover, .roadmap-chat__source a:focus-visible { color: var(--roadmap-accent); }
+.roadmap-chat__source-visual { position: relative; display: inline-block; width: 16px; height: 16px; flex: 0 0 16px; }
+.roadmap-chat__source-icon, .roadmap-chat__source-globe { position: absolute; inset: 0; width: 16px; height: 16px; transition: opacity .22s ease; }
+.roadmap-chat__source-globe { color: var(--roadmap-text-muted); opacity: 1; }
+.roadmap-chat__source-icon { object-fit: contain; border-radius: 3px; opacity: 0; }
+.roadmap-chat__source-visual.is-loaded .roadmap-chat__source-globe { opacity: 0; }
+.roadmap-chat__source-visual.is-loaded .roadmap-chat__source-icon { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .roadmap-chat__source-icon, .roadmap-chat__source-globe { transition: none; } }
+.roadmap-chat__empty { color: var(--roadmap-text-muted); font-size: 13px; line-height: 1.5; margin: 8px 0 14px; }
+.roadmap-chat__status { font-size: 12px; color: var(--roadmap-text-muted); margin: 8px 0; overflow-wrap: anywhere; }
+.roadmap-chat__status:not([hidden])::before { content: ''; display: inline-block; width: 9px; height: 9px; margin-right: 7px; border: 2px solid var(--roadmap-border-strong); border-top-color: var(--roadmap-accent); border-radius: 50%; animation: roadmap-chat-spin .9s linear infinite; }
+@keyframes roadmap-chat-spin { to { transform: rotate(360deg); } }
+.roadmap-chat__form { display: flex; flex-direction: row; align-items: center; gap: 7px; margin-top: 8px; padding: 3px 4px 3px 9px; border: 1px solid var(--roadmap-border-strong); border-radius: 10px; }
+.roadmap-chat__form textarea { margin: 0; flex: 1; width: 0; min-width: 0; min-height: 26px; max-height: 90px; resize: none; overflow-y: hidden; border: 0; background: transparent; color: var(--roadmap-text); padding: 4px 0; font-size: 13px; line-height: 18px; }
+.roadmap-chat #roadmap-chat-input:focus, .roadmap-chat #roadmap-chat-input:focus-visible { border: 0; box-shadow: none; outline: none; }
+.roadmap-chat .roadmap-chat__form button { display: inline-flex; flex: 0 0 32px; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; background: color-mix(in srgb, var(--roadmap-text) 8%, var(--roadmap-surface-soft)); color: var(--roadmap-text); border: 1px solid var(--roadmap-border); border-radius: 9px; transition: background-color .15s ease, border-color .15s ease; }
+.roadmap-chat .roadmap-chat__form button:hover { background: color-mix(in srgb, var(--roadmap-text) 14%, var(--roadmap-surface-soft)); border-color: var(--roadmap-border-strong); }
+.roadmap-chat .roadmap-chat__form button:focus-visible { outline-color: var(--roadmap-text-muted); }
+.roadmap-chat__footer { display: flex; justify-content: space-between; gap: 8px; max-height: 40px; margin-top: 8px; overflow: hidden; color: var(--roadmap-text-muted); font-size: 10px; transition: max-height .3s ease, margin-top .3s ease, opacity .2s ease; }
+.roadmap-chat__footer button { white-space: nowrap; text-decoration: underline; }
+.roadmap-chat.is-collapsed .roadmap-chat__footer { max-height: 0; margin-top: 0; opacity: 0; pointer-events: none; }
+.roadmap-chat.is-collapsed .roadmap-chat__settings { display: none; }
+.roadmap-chat__settings { min-height: 0; overflow-y: auto; scrollbar-width: none; border-top: 1px solid var(--roadmap-border); margin-top: 10px; padding-top: 10px; font-size: 12px; }
+.roadmap-chat__settings label { text-align: left; display: grid; gap: 5px; }
+.roadmap-chat__settings input, .roadmap-chat__settings select { margin: 0; width: 100%; min-width: 0; box-sizing: border-box; background: var(--roadmap-surface); color: var(--roadmap-text); border: 1px solid var(--roadmap-border); border-radius: 7px; padding: 7px; }
+.roadmap-chat #roadmap-chat-key:focus, .roadmap-chat #roadmap-chat-key:focus-visible { outline: none; box-shadow: none; border-color: var(--roadmap-border-strong); }
+.roadmap-chat__settings form { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-top: 8px; }
+.roadmap-chat__settings form button { padding: 8px; border: 1px solid var(--roadmap-border-strong); border-radius: 7px; }
+.roadmap-chat__error { color: var(--roadmap-text-muted); font-size: 13px; }
+.roadmap-chat [hidden] { display: none !important; }
+.roadmap-chat::-webkit-scrollbar, .roadmap-chat__history::-webkit-scrollbar, .roadmap-chat__actions::-webkit-scrollbar, .roadmap-chat__settings::-webkit-scrollbar, .roadmap-chat__answer pre::-webkit-scrollbar { display: none; }
+.roadmap-chat__answer pre { scrollbar-width: none; }
+@media (prefers-reduced-motion: reduce) {
+  #roadmap-chat-body, .roadmap-chat__footer, .roadmap-chat #roadmap-chat-toggle svg { transition: none; }
+}
+@media (min-width: 1081px) and (max-width: 1220px) {
+  .roadmap-chat__actions { gap: 5px; }
+  .roadmap-chat__actions button { padding: 5px 6px; font-size: 11px; }
+}
+@media (max-width: 1080px) {
+  body.roadmap-minimal-mode .roadmap-left-workspace { display: contents; }
+  body.roadmap-minimal-mode .roadmap-chat { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .roadmap-chat__status::before { animation: none !important; } }

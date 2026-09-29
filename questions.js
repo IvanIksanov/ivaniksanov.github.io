@@ -1,5 +1,23 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const debugLog = window.DebugLog || null;
+  let questionsAiClient;
+  function getQuestionsAiClient() {
+    if (!questionsAiClient) questionsAiClient = window.QAtoDevAiClient.create({
+      get supabaseStore() { return supabaseStore; },
+      get lastKnownAccessToken() { return lastKnownAccessToken; },
+      get authUser() { return authUser; },
+      get currentModels() { return currentModels; },
+      get systemPrompt() { return systemPrompt; },
+      getAuthKey,
+      saveStorage: safeSetItemWithAiEviction,
+      refreshAuth: refreshAuthUserInBackground,
+      refreshRanking: refreshRuntimeModelRanking,
+      replaceSlow: markModelAsSlowAndReplace,
+      applyModelHint: applyAvailableModelsHint
+    });
+    return questionsAiClient;
+  }
+
   const metrics = window.QAtoDevMetrics || null;
   function logUserAction(event, details = {}) {
     debugLog?.info("user", event, details);
@@ -62,34 +80,22 @@ const refineSystemPrompt =
   "Дай более детальное пояснение, практичный пример и возможные ошибки/риски в рамках темы. " +
   "Без таблиц, графиков, диаграмм и лишнего оформления. " +
   "Ответ в пределах 1000 токенов.";
-const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST API и как тестировать его на собеседовании QA?";
   let runtimeQuestionsData = [];
   window.questionsData = runtimeQuestionsData; // активный источник для рендера
-  const OVERRIDE_API_KEY_STORAGE = "io_api_key_override";
-  const OVERRIDE_API_KEY_META_STORAGE = "io_api_key_override_meta_v1";
-  const USER_API_KEY_SERVICE = "io_net";
-  const USER_API_KEY_SYNC_TS_KEY = "user_api_key_sync_ts_v1";
+  const OVERRIDE_API_KEY_STORAGE = "groq_api_key_override";
+  const OVERRIDE_API_KEY_META_STORAGE = "groq_api_key_override_meta_v1";
+  const USER_API_KEY_SERVICE = "groq";
+  const USER_API_KEY_SYNC_TS_KEY = "user_api_key_sync_ts_groq_v1";
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
-  const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const AUTH_VISUAL_STATE_KEY = "auth_visual_state_v1";
-  const DEFAULT_MODEL = "openai/gpt-oss-20b";
-  const FAST_MODEL_HINTS = [
-    "openai/gpt-oss-20b",
-    "mistralai/Mistral-Nemo-Instruct-2407",
-    "meta-llama/Llama-4-Maverick-17B-128E-Instruct-FP8",
-    "moonshotai/Kimi-K2-Instruct-0905",
-    "deepseek-ai/DeepSeek-V3.2"
-  ];
+  const FAST_MODEL_HINTS = window.QAtoDevAiClient.models;
   const AI_LOADER_HTML = '<span class="ai-loader"><span class="ai-spinner"></span><span class="ai-loader-text">Сейчас модель вернет ответ</span></span>';
-  let currentModels = FAST_MODEL_HINTS.slice(0, 5);
-  const MODEL_TIMINGS_KEY = "model_timings_v1";
-  const MODEL_FAILURES_KEY = "model_failures_v1";
-  const MODEL_WARMUP_KEY = "model_warmup_ts_v1";
-  const MODEL_LIST_CACHE_KEY = "model_list_cache_v1";
-  const MODEL_CHAT_VALIDATED_CACHE_KEY = "model_chat_validated_cache_v1";
-  const MODEL_LIST_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
-  const MODEL_SLOW_RESPONSE_MS = 30 * 1000;
+  let currentModels = FAST_MODEL_HINTS.slice();
+  let modelDiscoveryPromise = null;
+  let modelDiscoveryAt = 0;
+  let modelDiscoveryScope = '';
+  const MODEL_LIST_CACHE_TTL_MS = 15 * 60 * 1000;
   const MODEL_RUNTIME_REBALANCE_COOLDOWN_MS = 2 * 60 * 1000;
   const QUESTIONS_CACHE_KEY = "questions_db_cache_v1";
   const QUESTIONS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -106,8 +112,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   const AI_GUEST_AUTH_BYPASS_KEY = "ai_guest_auth_bypass_v1";
   const AI_NOTCH_FIRST_APPEND_HINT_DONE_KEY = "ai_notch_first_append_hint_done_v1";
   const AI_SUPPLEMENT_MAX = 4;
-  let modelListFromCache = false;
-  let modelPreflightPromise = null;
   let modelRuntimeRebalancePromise = null;
   let modelLastRuntimeRebalanceTs = 0;
   let pendingRetry = null;
@@ -422,30 +426,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (headerAiNotchPendingCount <= 0) hideHeaderAiNotch();
   }
 
-  function readModelListCache() {
-    try {
-      const raw = localStorage.getItem(MODEL_LIST_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.models) || !parsed.ts) return null;
-      if ((Date.now() - parsed.ts) > MODEL_LIST_CACHE_TTL_MS) return null;
-      return parsed.models;
-    } catch {
-      return null;
-    }
-  }
-
-  function readValidatedChatModelsCache() {
-    try {
-      const raw = localStorage.getItem(MODEL_CHAT_VALIDATED_CACHE_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.models) || !parsed.ts) return null;
-      if ((Date.now() - parsed.ts) > MODEL_LIST_CACHE_TTL_MS) return null;
-      return parsed.models.filter(Boolean);
-    } catch {
-      return null;
-    }
+  function modelCacheScope() {
+    return window.QAtoDevAiClient.modelCacheScope(getAuthKey());
   }
 
   function readQuestionsCache(options = {}) {
@@ -486,24 +468,6 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       } else {
         localStorage.removeItem(AI_GUEST_AUTH_BYPASS_KEY);
       }
-    } catch {}
-  }
-
-  function writeModelListCache(models) {
-    try {
-      safeSetItemWithAiEviction(MODEL_LIST_CACHE_KEY, JSON.stringify({
-        ts: Date.now(),
-        models
-      }));
-    } catch {}
-  }
-
-  function writeValidatedChatModelsCache(models) {
-    try {
-      safeSetItemWithAiEviction(MODEL_CHAT_VALIDATED_CACHE_KEY, JSON.stringify({
-        ts: Date.now(),
-        models: (Array.isArray(models) ? models : []).filter(Boolean).slice(0, 5)
-      }));
     } catch {}
   }
 
@@ -656,33 +620,28 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return Number.isFinite(ts) ? ts : 0;
   }
 
-  function isApiKeyQuotaDetail(detail) {
-    return /quota exceeded|insufficient credits|rate limit exceeded/i.test(String(detail || ""));
+  function isApiKeyQuotaDetail(...args) {
+    return getQuestionsAiClient().isApiKeyQuotaDetail(...args);
   }
 
-  function isApiKeyCredentialDetail(detail) {
-    return /invalid api key|api key.*invalid|api key.*expired|unauthorized/i.test(String(detail || ""));
+  function isApiKeyCredentialDetail(...args) {
+    return getQuestionsAiClient().isApiKeyCredentialDetail(...args);
   }
 
-  function isRecoverableApiKeyError(err) {
-    return !!err && (
-      err.code === "INVALID_API_KEY" ||
-      err.code === "API_KEY_QUOTA_EXCEEDED"
-    );
+  function isRecoverableApiKeyError(...args) {
+    return getQuestionsAiClient().isRecoverableApiKeyError(...args);
   }
 
-  function isAiRegionAvailabilityError(err) {
-    const message = String(err?.message || "");
-    const detail = String(err?.detail || "");
-    return !!err && (
-      err.code === "AI_REGION_UNAVAILABLE" ||
-      /ERR_TIMED_OUT|Failed to fetch|Load failed|NetworkError/i.test(message) ||
-      /ERR_TIMED_OUT|Failed to fetch|Load failed|NetworkError/i.test(detail)
-    );
+  function isAllModelsCreditsExhaustedError(...args) {
+    return getQuestionsAiClient().isAllModelsCreditsExhaustedError(...args);
   }
 
-  function getAiRegionUnavailableMessage() {
-    return "Модель не смогла ответить в вашем регионе. Попробуйте другой регион сети.";
+  function isAiRegionAvailabilityError(...args) {
+    return getQuestionsAiClient().isAiRegionAvailabilityError(...args);
+  }
+
+  function getAiRegionUnavailableMessage(...args) {
+    return getQuestionsAiClient().getAiRegionUnavailableMessage(...args);
   }
 
   function setApiKeyStatus(message, type = "") {
@@ -695,11 +654,14 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   function getApiKeyModalDescription(options = {}) {
     const authMode = options.authMode || getCurrentApiKeyMode();
+    if (options.reason === "model_credits_exhausted") {
+      return "Groq сообщил о недостатке доступной квоты. Проверьте лимиты аккаунта и попробуйте позже; при необходимости укажите другой ключ Groq.";
+    }
     const quotaExceeded = options.reason === "quota_exceeded";
     if (quotaExceeded && authMode === "primary") {
       return authUser
-        ? "Суточная квота основного ключа исчерпана. Вставьте ваш API-ключ IO: мы начнем использовать его сразу и сохраним в аккаунт для других устройств."
-        : "Суточная квота основного ключа исчерпана. Вставьте ваш API-ключ IO, и новые ответы пойдут уже через него.";
+        ? "Квота основного ключа исчерпана. Вставьте ваш API-ключ Groq: мы начнем использовать его сразу и сохраним в аккаунт для других устройств."
+        : "Квота основного ключа исчерпана. Вставьте ваш API-ключ Groq, и новые ответы пойдут уже через него.";
     }
     if (quotaExceeded && authMode === "user") {
       return authUser
@@ -707,12 +669,14 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
         : "Сохраненный пользовательский ключ тоже уперся в лимит или больше не подходит. Вставьте новый ключ, чтобы продолжить.";
     }
     return authUser
-      ? "Похоже, текущий ключ не работает. Получите новый ключ в кабинете IO, вставьте его ниже, и мы сохраним его локально и в аккаунт."
-      : "Похоже, текущий ключ не работает. Получите новый ключ в кабинете IO и вставьте его ниже.";
+      ? "Похоже, текущий ключ не работает. Получите новый ключ в кабинете Groq, вставьте его ниже, и мы сохраним его локально и в аккаунт."
+      : "Похоже, текущий ключ не работает. Получите новый ключ в кабинете Groq и вставьте его ниже.";
   }
 
   function showApiKeyModal(options = {}) {
     if (!apiKeyModal) return;
+    const title = document.getElementById("api-key-title");
+    if (title) title.textContent = options.reason === "model_credits_exhausted" ? "Модели временно недоступны" : "Нужен новый API-ключ";
     if (apiKeyDescription) {
       apiKeyDescription.textContent = getApiKeyModalDescription(options);
     }
@@ -1195,97 +1159,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     return `${base}/rest/v1/${path}${q}`;
   }
 
-  function buildFunctionUrlCandidates(functionName, query = "") {
-    const q = query ? (query.startsWith("?") ? query : `?${query}`) : "";
-    const candidates = [];
-    const directFunctionsBase = SUPABASE_FUNCTIONS_BASE_DIRECT;
-    const restBase = supabaseStore?.url || SUPABASE_URL_DIRECT;
-    if (directFunctionsBase) {
-      candidates.push(`${directFunctionsBase}/${functionName}${q}`);
-    }
-    if (restBase) {
-      candidates.push(`${restBase}/functions/v1/${functionName}${q}`);
-    }
-    return Array.from(new Set(candidates.filter(Boolean)));
+  function buildFunctionUrlCandidates(...args) {
+    return getQuestionsAiClient().buildFunctionUrlCandidates(...args);
   }
 
-  async function callAiProxy({ method = "POST", query = "", body = null } = {}) {
-    const key = supabaseStore?.anonKey || SUPABASE_ANON_KEY_DIRECT;
-    const accessToken = lastKnownAccessToken || null;
-    if (!accessToken && authUser?.id) {
-      refreshAuthUserInBackground().catch((e) => console.warn("Background auth refresh failed for AI proxy", e));
-    }
-    const headers = {
-      apikey: key
-    };
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-    if (body !== null) {
-      headers["Content-Type"] = "application/json";
-    }
-    const urls = buildFunctionUrlCandidates("ai-chat", query);
-    debugLog?.info("ai", "proxy-start", {
-      method,
-      urlCount: urls.length,
-      hasAccessToken: !!accessToken,
-      authUserId: authUser?.id || "",
-      model: body?.model || "",
-      hasUserApiKey: !!body?.userApiKey
-    });
-    let lastError = null;
-    for (let i = 0; i < urls.length; i += 1) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), REST_TIMEOUT_MS + 23000);
-      const startedAt = Date.now();
-      try {
-        debugLog?.debug("ai", "proxy-attempt", {
-          attempt: i + 1,
-          url: urls[i],
-          method,
-          model: body?.model || ""
-        });
-        const response = await fetch(urls[i], {
-          method,
-          headers,
-          body: body !== null ? JSON.stringify(body) : undefined,
-          cache: "no-store",
-          signal: controller.signal
-        });
-        debugLog?.info("ai", "proxy-response", {
-          attempt: i + 1,
-          url: urls[i],
-          method,
-          model: body?.model || "",
-          status: response.status,
-          ok: response.ok,
-          durationMs: Date.now() - startedAt
-        });
-        return response;
-      } catch (e) {
-        lastError = e;
-        if (e?.name === "AbortError") {
-          const err = new Error("AI_PROXY_TIMEOUT");
-          err.code = "AI_PROXY_TIMEOUT";
-          lastError = err;
-        }
-        debugLog?.warn("ai", "proxy-error", {
-          attempt: i + 1,
-          url: urls[i],
-          method,
-          model: body?.model || "",
-          durationMs: Date.now() - startedAt,
-          message: String(lastError?.message || lastError || ""),
-          code: String(lastError?.code || "")
-        });
-        if (i === urls.length - 1) {
-          throw lastError;
-        }
-      } finally {
-        clearTimeout(timer);
-      }
-    }
-    throw lastError || new Error("AI proxy request failed");
+  function callAiProxy(...args) {
+    return getQuestionsAiClient().callAiProxy(...args);
   }
 
   async function restRequest(path, { method = "GET", query = "", body = null, prefer = "return=representation" } = {}) {
@@ -2339,48 +2218,23 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   }
 
   function getPreferredModel(models) {
-    const savedModel = localStorage.getItem("selectedModel");
-    if (savedModel && models.includes(savedModel)) return savedModel;
-    if (models.includes(DEFAULT_MODEL)) return DEFAULT_MODEL;
-    return models[0] || DEFAULT_MODEL;
-  }
-
-  function applyModelSelection(models) {
-    const preferred = getPreferredModel(models);
-    safeSetItemWithAiEviction("selectedModel", preferred);
+    return getModelOrder().find(model => models.includes(model)) || models[0] || FAST_MODEL_HINTS[0];
   }
 
   function setCurrentModels(models) {
-    currentModels = Array.isArray(models) && models.length ? models.slice(0, 5) : FAST_MODEL_HINTS.slice(0, 5);
+    currentModels = Array.isArray(models) ? models.slice() : FAST_MODEL_HINTS.slice();
   }
 
-  function readModelTimings() {
-    try {
-      return JSON.parse(localStorage.getItem(MODEL_TIMINGS_KEY) || "{}");
-    } catch {
-      return {};
-    }
+  function readModelTimings(...args) {
+    return getQuestionsAiClient().readModelTimings(...args);
   }
 
-  function writeModelTimings(map) {
-    safeSetItemWithAiEviction(MODEL_TIMINGS_KEY, JSON.stringify(map));
+  function writeModelTimings(...args) {
+    return getQuestionsAiClient().writeModelTimings(...args);
   }
 
-  function recordModelTiming(model, ms) {
-    const map = readModelTimings();
-    const prev = map[model];
-    if (!prev) {
-      map[model] = { avg: ms, count: 1 };
-    } else {
-      const nextCount = prev.count + 1;
-      const nextAvg = (prev.avg * prev.count + ms) / nextCount;
-      map[model] = { avg: nextAvg, count: nextCount };
-    }
-    writeModelTimings(map);
-    refreshRuntimeModelRanking();
-    if (ms >= MODEL_SLOW_RESPONSE_MS) {
-      markModelAsSlowAndReplace(model, ms);
-    }
+  function recordModelTiming(...args) {
+    return getQuestionsAiClient().recordModelTiming(...args);
   }
 
   function rankModelsByTimings(models) {
@@ -2397,17 +2251,13 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   function refreshRuntimeModelRanking() {
     if (!Array.isArray(currentModels) || !currentModels.length) return;
-    const ranked = rankModelsByTimings(currentModels).slice(0, 5);
+    const ranked = rankModelsByTimings(currentModels);
     if (!ranked.length) return;
-    const prev = currentModels.slice(0, 5);
+    const prev = currentModels.slice();
     const changed = ranked.length !== prev.length || ranked.some((m, i) => m !== prev[i]);
     if (!changed) return;
     setCurrentModels(ranked);
-    applyModelSelection(ranked);
     renderModelsList(ranked);
-    writeModelListCache(ranked);
-    writeValidatedChatModelsCache(ranked);
-    modelListFromCache = false;
     console.info("Runtime model ranking updated by real response timings", ranked);
   }
 
@@ -2415,13 +2265,9 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     if (!model) return;
     const filteredCurrent = (currentModels || []).filter((m) => m && m !== model);
     if (!filteredCurrent.length) return;
-    const rankedCurrent = rankModelsByTimings(filteredCurrent).slice(0, 5);
+    const rankedCurrent = rankModelsByTimings(filteredCurrent);
     setCurrentModels(rankedCurrent);
-    applyModelSelection(rankedCurrent);
     renderModelsList(rankedCurrent);
-    writeModelListCache(rankedCurrent);
-    writeValidatedChatModelsCache(rankedCurrent);
-    modelListFromCache = false;
     recordModelFailure(model, "slow_response_over_30s");
     console.warn(`Model removed from fast pool due to slow response (${ms} ms): ${model}`);
 
@@ -2432,16 +2278,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     modelRuntimeRebalancePromise = (async () => {
       try {
         const exclude = Array.from(new Set([...rankedCurrent, model]));
-        const fresh = await loadModels({ force: true, exclude });
-        const merged = Array.from(new Set([...(rankedCurrent || []), ...(fresh || [])])).filter(Boolean).slice(0, 5);
+        const fresh = await loadModels({ exclude });
+        const merged = Array.from(new Set([...(rankedCurrent || []), ...(fresh || [])])).filter(Boolean);
         if (!merged.length) return;
         const rankedMerged = rankModelsByTimings(merged);
         setCurrentModels(rankedMerged);
-        applyModelSelection(rankedMerged);
         renderModelsList(rankedMerged);
-        writeModelListCache(rankedMerged);
-        writeValidatedChatModelsCache(rankedMerged);
-        modelListFromCache = false;
         console.info("Model pool rebalanced after slow response", rankedMerged);
       } catch (e) {
         console.warn("Failed to rebalance model pool after slow response", e);
@@ -2451,67 +2293,24 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     })();
   }
 
-  function readModelFailures() {
-    try {
-      return JSON.parse(localStorage.getItem(MODEL_FAILURES_KEY) || "{}");
-    } catch {
-      return {};
-    }
+  function readModelFailures(...args) {
+    return getQuestionsAiClient().readModelFailures(...args);
   }
 
-  function writeModelFailures(map) {
-    safeSetItemWithAiEviction(MODEL_FAILURES_KEY, JSON.stringify(map));
+  function writeModelFailures(...args) {
+    return getQuestionsAiClient().writeModelFailures(...args);
   }
 
-  function recordModelFailure(model, reason) {
-    const map = readModelFailures();
-    const now = Date.now();
-    const prev = map[model] || { count: 0, last: 0, reasons: {} };
-    const next = {
-      count: prev.count + 1,
-      last: now,
-      reasons: { ...prev.reasons, [reason]: (prev.reasons[reason] || 0) + 1 }
-    };
-    map[model] = next;
-    writeModelFailures(map);
+  function recordModelFailure(...args) {
+    return getQuestionsAiClient().recordModelFailure(...args);
   }
 
-  function parseAvailableModelsFromDetail(detail) {
-    const text = String(detail || "");
-    if (!/available models\s*:/i.test(text)) return [];
-    const bracketMatch = text.match(/available models\s*:\s*\[([\s\S]*?)\]/i);
-    const source = bracketMatch ? bracketMatch[1] : text;
-    const result = [];
-    const rx = /'([^']+)'|"([^"]+)"/g;
-    let m;
-    while ((m = rx.exec(source))) {
-      const model = String(m[1] || m[2] || "").trim();
-      if (model && !result.includes(model)) result.push(model);
-    }
-    return result;
+  function parseAvailableModelsFromDetail(...args) {
+    return getQuestionsAiClient().parseAvailableModelsFromDetail(...args);
   }
 
-  function normalizeAvailableChatModels(apiModels, exclude = []) {
-    const list = Array.isArray(apiModels) ? apiModels.filter(Boolean) : [];
-    const excluded = new Set(Array.isArray(exclude) ? exclude : []);
-    const filtered = list.filter(m => !excluded.has(m));
-    const noReasoning = filtered.filter(name => {
-      const n = String(name).toLowerCase();
-      return !(
-        n.includes("thinking") ||
-        n.includes("reasoning") ||
-        n.includes("deepseek-r1") ||
-        n.includes("/r1") ||
-        n.endsWith("-r1") ||
-        n.includes("o1") ||
-        n.includes("o3") ||
-        n.includes("vl") ||
-        n.includes("vision")
-      );
-    });
-    const hinted = FAST_MODEL_HINTS.filter(m => noReasoning.includes(m) && !excluded.has(m));
-    const pool = hinted.length ? hinted : (noReasoning.length ? noReasoning : filtered);
-    return (pool.length ? pool : filtered).slice(0, 5);
+  function normalizeAvailableChatModels(...args) {
+    return getQuestionsAiClient().normalizeAvailableChatModels(...args);
   }
 
   function applyAvailableModelsHint(apiModels, options = {}) {
@@ -2519,77 +2318,20 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     const nextModels = normalizeAvailableChatModels(apiModels, exclude);
     if (!nextModels.length) return [];
     setCurrentModels(nextModels);
-    applyModelSelection(nextModels);
     renderModelsList(nextModels);
-    writeModelListCache(nextModels);
-    writeValidatedChatModelsCache(nextModels);
-    modelListFromCache = false;
     return nextModels;
   }
 
   function getRequestOrder(preferredModel) {
-    const validated = readValidatedChatModelsCache();
-    if (Array.isArray(validated) && validated.length) {
-      const nextModels = normalizeAvailableChatModels(validated);
-      if (nextModels.length) {
-        setCurrentModels(nextModels);
-        applyModelSelection(nextModels);
-        renderModelsList(nextModels);
-        return getModelOrder(preferredModel && nextModels.includes(preferredModel) ? preferredModel : getPreferredModel(nextModels));
-      }
-    }
-    const cached = readModelListCache();
-    if (Array.isArray(cached) && cached.length) {
-      const cachedSet = new Set(cached);
-      const currentHasUnknown = currentModels.some(m => !cachedSet.has(m));
-      if (currentHasUnknown) {
-        const nextModels = normalizeAvailableChatModels(cached);
-        if (nextModels.length) {
-          setCurrentModels(nextModels);
-          applyModelSelection(nextModels);
-          renderModelsList(nextModels);
-        }
-      }
-      const orderFromCurrent = getModelOrder(preferredModel);
-      const filteredOrder = orderFromCurrent.filter(m => cachedSet.has(m));
-      if (filteredOrder.length) return filteredOrder;
-      const nextModels = normalizeAvailableChatModels(cached);
-      if (nextModels.length) {
-        setCurrentModels(nextModels);
-        applyModelSelection(nextModels);
-        renderModelsList(nextModels);
-        return getModelOrder(getPreferredModel(nextModels));
-      }
-    }
-    return getModelOrder(preferredModel);
+    return getModelOrder(preferredModel && currentModels.includes(preferredModel) ? preferredModel : getPreferredModel(currentModels));
   }
 
-  function isModelBlocked(model) {
-    const map = readModelFailures();
-    const info = map[model];
-    if (!info) return false;
-    const hours6 = 6 * 60 * 60 * 1000;
-    const isRecent = (Date.now() - info.last) < hours6;
-    return isRecent && info.count >= 2;
+  function isModelBlocked(...args) {
+    return getQuestionsAiClient().isModelBlocked(...args);
   }
 
-  function getModelOrder(preferred) {
-    const base = currentModels.length ? currentModels : FAST_MODEL_HINTS.slice(0, 5);
-    const timings = readModelTimings();
-    const filtered = base.filter(m => !isModelBlocked(m));
-    const pool = filtered.length ? filtered : base;
-    const sorted = pool.slice().sort((a, b) => {
-      const ta = timings[a]?.avg ?? Number.POSITIVE_INFINITY;
-      const tb = timings[b]?.avg ?? Number.POSITIVE_INFINITY;
-      if (ta === tb) return 0;
-      return ta - tb;
-    });
-    const ordered = [];
-    if (preferred && base.includes(preferred)) ordered.push(preferred);
-    sorted.forEach(m => {
-      if (!ordered.includes(m)) ordered.push(m);
-    });
-    return ordered;
+  function getModelOrder(...args) {
+    return getQuestionsAiClient().getModelOrder(...args);
   }
 
   function showLoader(el) {
@@ -2599,442 +2341,48 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
     el.classList.add("show");
   }
 
-  function updateLoaderText(el, text) {
-    if (!el) return;
-    const label = el.querySelector(".ai-loader-text");
-    if (label) label.textContent = text;
+  function updateLoaderText(...args) {
+    return getQuestionsAiClient().updateLoaderText(...args);
   }
 
-  function getModelDisplayLabel(model) {
-    const raw = String(model || "").trim();
-    if (!raw) return "";
-    const vendor = raw.split("/")[0]?.trim();
-    return vendor || raw;
+  function getModelDisplayLabel(...args) {
+    return getQuestionsAiClient().getModelDisplayLabel(...args);
   }
 
-  function startLoaderPhases(el) {
-    if (!el) return null;
-    updateLoaderText(el, "Жду ответ");
-    const timers = [
-      setTimeout(() => updateLoaderText(el, "Еще чуть-чуть…"), 3000),
-      setTimeout(() => updateLoaderText(el, "Обрабатываю ответ модели"), 6000),
-      setTimeout(() => updateLoaderText(el, "Я обязательно верну ответ"), 9000),
-      setTimeout(() => {
-        const modelName = el.dataset.waitingModel;
-        updateLoaderText(el, modelName ? `Жду ответ от ${modelName}` : "Жду ответ");
-      }, 12000)
-    ];
-    return timers;
+  function startLoaderPhases(...args) {
+    return getQuestionsAiClient().startLoaderPhases(...args);
   }
 
-  function stopLoaderPhases(timer) {
-    if (!timer) return;
-    if (Array.isArray(timer)) {
-      timer.forEach(t => clearTimeout(t));
-    } else {
-      clearInterval(timer);
-    }
+  function stopLoaderPhases(...args) {
+    return getQuestionsAiClient().stopLoaderPhases(...args);
   }
 
-  async function fetchAnswerOnce(userQ, model, options = {}) {
-    const { system = systemPrompt } = options;
-    const startedAt = Date.now();
-    const authMode = getCurrentApiKeyMode();
-    let res;
-    debugLog?.info("ai", "answer-start", {
-      model,
-      authMode,
-      questionLength: String(userQ || "").length,
-      hasAuthUser: !!authUser?.id
-    });
-    try {
-      res = await callAiProxy({
-        method: "POST",
-        body: {
-          model,
-          messages: [
-            { role: "system", content: system },
-            { role: "user",   content: userQ }
-          ],
-          temperature: 0.7,
-          reasoning_content: false,
-          max_completion_tokens: 1000,
-          stream: false,
-          userApiKey: getAuthKey() || null
-        }
-      });
-    } catch (e) {
-      debugLog?.warn("ai", "answer-proxy-failed", {
-        model,
-        authMode,
-        durationMs: Date.now() - startedAt,
-        message: String(e?.message || e || ""),
-        code: String(e?.code || "")
-      });
-      const err = new Error("AI_REGION_UNAVAILABLE");
-      err.code = "AI_REGION_UNAVAILABLE";
-      err.detail = String(e?.message || e || "");
-      err.authMode = authMode;
-      err.model = model;
-      throw err;
-    }
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const errJson = await res.json();
-        detail = errJson?.detail || "";
-      } catch {}
-      if (detail && isApiKeyCredentialDetail(detail)) {
-        const err = new Error("INVALID_API_KEY");
-        err.code = "INVALID_API_KEY";
-        err.status = res.status;
-        err.detail = detail;
-        err.authMode = authMode;
-        throw err;
-      }
-      if (detail && isApiKeyQuotaDetail(detail)) {
-        const err = new Error("API_KEY_QUOTA_EXCEEDED");
-        err.code = "API_KEY_QUOTA_EXCEEDED";
-        err.status = res.status;
-        err.detail = detail;
-        err.authMode = authMode;
-        throw err;
-      }
-      const availableModels = parseAvailableModelsFromDetail(detail);
-      if (res.status === 400 && availableModels.length) {
-        const err = new Error(`MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS:${res.status}`);
-        err.code = "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS";
-        err.status = res.status;
-        err.detail = detail;
-        err.availableModels = availableModels;
-        throw err;
-      }
-      const err = new Error(`AI request failed: ${res.status}`);
-      err.status = res.status;
-      err.detail = detail;
-      debugLog?.warn("ai", "answer-http-failed", {
-        model,
-        authMode,
-        status: res.status,
-        durationMs: Date.now() - startedAt,
-        detail: detail || ""
-      });
-      throw err;
-    }
-    const json = await res.json();
-    const msg = json.choices?.[0]?.message;
-    const answer = msg?.content?.trim();
-    if (!answer) {
-      const hasReasoning = Array.isArray(msg?.reasoning_details) && msg.reasoning_details.length > 0;
-      recordModelFailure(model, hasReasoning ? "reasoning_only" : "empty_content");
-      debugLog?.warn("ai", "answer-empty", {
-        model,
-        authMode,
-        durationMs: Date.now() - startedAt,
-        hasReasoning
-      });
-      throw new Error("Empty AI answer");
-    }
-    const elapsedMs = Date.now() - startedAt;
-    recordModelTiming(model, elapsedMs);
-    debugLog?.info("ai", "answer-success", {
-      model,
-      authMode,
-      durationMs: elapsedMs,
-      answerLength: answer.length
-    });
-    return {
-      answer,
-      elapsedMs,
-      arrivedAt: Date.now()
-    };
+  function fetchAnswerOnce(...args) {
+    return getQuestionsAiClient().fetchAnswerOnce(...args);
   }
 
-  async function warmupModelOnce(model) {
-    const startedAt = Date.now();
-    const authMode = getCurrentApiKeyMode();
-    let res;
-    try {
-      res = await callAiProxy({
-        method: "POST",
-        body: {
-          model,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: warmupUserPrompt }
-          ],
-          temperature: 0.7,
-          reasoning_content: false,
-          max_completion_tokens: 1000,
-          stream: false,
-          userApiKey: getAuthKey() || null
-        }
-      });
-    } catch (e) {
-      const err = new Error("AI_REGION_UNAVAILABLE");
-      err.code = "AI_REGION_UNAVAILABLE";
-      err.detail = String(e?.message || e || "");
-      err.authMode = authMode;
-      err.model = model;
-      throw err;
-    }
-    if (!res.ok) {
-      let detail = "";
-      try {
-        const errJson = await res.json();
-        detail = errJson?.detail || "";
-      } catch {}
-      if (detail && isApiKeyCredentialDetail(detail)) {
-        const err = new Error("INVALID_API_KEY");
-        err.code = "INVALID_API_KEY";
-        err.status = res.status;
-        err.detail = detail;
-        err.authMode = authMode;
-        throw err;
-      }
-      if (detail && isApiKeyQuotaDetail(detail)) {
-        const err = new Error("API_KEY_QUOTA_EXCEEDED");
-        err.code = "API_KEY_QUOTA_EXCEEDED";
-        err.status = res.status;
-        err.detail = detail;
-        err.authMode = authMode;
-        throw err;
-      }
-      const availableModels = parseAvailableModelsFromDetail(detail);
-      if (res.status === 400 && availableModels.length) {
-        const err = new Error(`MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS:${res.status}`);
-        err.code = "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS";
-        err.status = res.status;
-        err.detail = detail;
-        err.availableModels = availableModels;
-        throw err;
-      }
-      recordModelFailure(model, `warmup_${res.status}`);
-      throw new Error(`Warmup failed: ${res.status}`);
-    }
-    const json = await res.json();
-    const msg = json.choices?.[0]?.message;
-    const answer = msg?.content?.trim();
-    if (!answer) {
-      const hasReasoning = Array.isArray(msg?.reasoning_details) && msg.reasoning_details.length > 0;
-      recordModelFailure(model, hasReasoning ? "warmup_reasoning_only" : "warmup_empty_content");
-      throw new Error("Warmup empty");
-    }
-    recordModelTiming(model, Date.now() - startedAt);
-    return answer;
-  }
-
-  function shouldWarmup() {
-    const last = Number(localStorage.getItem(MODEL_WARMUP_KEY) || 0);
-    const hours6 = 6 * 60 * 60 * 1000;
-    return !last || (Date.now() - last) > hours6;
-  }
-
-  function markWarmup() {
-    safeSetItemWithAiEviction(MODEL_WARMUP_KEY, String(Date.now()));
-  }
-
-  async function warmupModels(models) {
-    const list = (models && models.length ? models : currentModels).slice(0, 5);
-    const valid = [];
-    let availableHint = [];
-    let warmupPool = list.slice();
-    const probeModel = warmupPool[0];
-    if (probeModel) {
-      try {
-        const started = Date.now();
-        await warmupModelOnce(probeModel);
-        valid.push({ model: probeModel, ms: Date.now() - started });
-      } catch (err) {
-        if (err?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(err.availableModels) && err.availableModels.length) {
-          availableHint = err.availableModels;
-          recordModelFailure(probeModel, "chat_completions_unavailable");
-          const hinted = applyAvailableModelsHint(availableHint);
-          if (hinted.length) warmupPool = hinted.slice(0, 5);
-        } else {
-          recordModelFailure(probeModel, "warmup_failed");
-        }
-      }
-    }
-
-    const remainingModels = warmupPool
-      .filter((m) => !valid.some((x) => x.model === m))
-      .slice(0, Math.max(0, 5 - valid.length));
-
-    if (remainingModels.length) {
-      const settled = await Promise.allSettled(remainingModels.map(async (m) => {
-        const started = Date.now();
-        await warmupModelOnce(m);
-        return { model: m, ms: Date.now() - started };
-      }));
-      settled.forEach((entry, idx) => {
-        const model = remainingModels[idx];
-        if (entry.status === "fulfilled") {
-          valid.push(entry.value);
-          return;
-        }
-        const err = entry.reason;
-        if (!availableHint.length && err?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(err.availableModels) && err.availableModels.length) {
-          availableHint = err.availableModels;
-          applyAvailableModelsHint(availableHint);
-          recordModelFailure(model, "chat_completions_unavailable");
-          return;
-        }
-        recordModelFailure(model, "warmup_failed");
-      });
-    }
-
-    if (!valid.length && availableHint.length) {
-      const hinted = applyAvailableModelsHint(availableHint);
-      if (hinted.length) {
-        const retryModels = hinted.slice(0, 5);
-        const retrySettled = await Promise.allSettled(retryModels.map(async (m) => {
-          const started = Date.now();
-          await warmupModelOnce(m);
-          return { model: m, ms: Date.now() - started };
-        }));
-        retrySettled.forEach((entry, idx) => {
-          const model = retryModels[idx];
-          if (entry.status === "fulfilled") valid.push(entry.value);
-          else recordModelFailure(model, "warmup_failed");
-        });
-      }
-    }
-    markWarmup();
-    if (valid.length) {
-      valid.sort((a, b) => a.ms - b.ms);
-      const validatedModels = valid.map(x => x.model).slice(0, 5);
-      setCurrentModels(validatedModels);
-      applyModelSelection(validatedModels);
-      renderModelsList(validatedModels);
-      writeModelListCache(validatedModels);
-      writeValidatedChatModelsCache(validatedModels);
-      modelListFromCache = false;
-      return validatedModels;
-    }
-    const ordered = getRequestOrder(getPreferredModel(list));
-    setCurrentModels(ordered);
-    applyModelSelection(ordered);
-    renderModelsList(ordered);
-    return ordered;
-  }
-
-  function ensureModelPreflightInBackground() {
-    if (modelPreflightPromise) return modelPreflightPromise;
-    const needsPreflight = shouldWarmup() || !readValidatedChatModelsCache();
-    if (!needsPreflight) return Promise.resolve(currentModels);
-    modelPreflightPromise = warmupModels(currentModels)
-      .catch((e) => {
-        console.warn("Model preflight warmup failed", e);
-        return currentModels;
-      })
-      .finally(() => {
-        modelPreflightPromise = null;
-      });
-    return modelPreflightPromise;
-  }
-
-  function requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options = {}) {
-    const ATTEMPT_DELAY_MS = 5000;
-    return new Promise((resolve, reject) => {
-      let completed = 0;
-      let apiKeyFailureCount = 0;
-      let lastApiKeyError = null;
-      let regionFailureCount = 0;
-      let lastRegionError = null;
-      let lastErr = null;
-      let firstResolved = false;
-      let availableSet = null;
-
-      order.forEach((model, idx) => {
-        setTimeout(async () => {
-          // Если первый ответ уже получен, новые запросы к моделям не запускаем.
-          if (firstResolved) {
-            completed += 1;
-            return;
-          }
-          if (availableSet && !availableSet.has(model)) {
-            completed += 1;
-            if (completed === order.length && !firstResolved) {
-              reject({
-                error: lastErr || new Error("No AI answer"),
-                apiKeyFailureCount,
-                apiKeyError: lastApiKeyError,
-                regionFailureCount,
-                regionError: lastRegionError,
-                total: order.length,
-                tried: order.slice(),
-                availableModelsHint: availableSet ? Array.from(availableSet) : null
-              });
-            }
-            return;
-          }
-          try {
-            if (typeof onAttempt === "function") onAttempt(model, idx + 1, order.length);
-            const result = await fetchAnswerOnce(userQ, model, options);
-            const payload = {
-              answer: result.answer,
-              model,
-              arrivedAt: result.arrivedAt || Date.now(),
-              elapsedMs: Math.max(1, Number(result.elapsedMs) || 0)
-            };
-            if (!firstResolved) {
-              firstResolved = true;
-              resolve(payload);
-            } else if (typeof onAdditional === "function") {
-              onAdditional(payload);
-            }
-          } catch (e) {
-            lastErr = e;
-            if (isRecoverableApiKeyError(e)) {
-              apiKeyFailureCount += 1;
-              lastApiKeyError = e;
-            }
-            if (isAiRegionAvailabilityError(e)) {
-              regionFailureCount += 1;
-              lastRegionError = e;
-            }
-            if (e?.code === "MODEL_NOT_AVAILABLE_FOR_CHAT_COMPLETIONS" && Array.isArray(e.availableModels) && e.availableModels.length) {
-              availableSet = new Set(e.availableModels);
-              applyAvailableModelsHint(e.availableModels);
-              recordModelFailure(model, "chat_completions_unavailable");
-            }
-            console.warn(`Model failed: ${model}`, e);
-          } finally {
-            completed += 1;
-            if (completed === order.length && !firstResolved) {
-              reject({
-                error: lastErr || new Error("No AI answer"),
-                apiKeyFailureCount,
-                apiKeyError: lastApiKeyError,
-                regionFailureCount,
-                regionError: lastRegionError,
-                total: order.length,
-                tried: order.slice(),
-                availableModelsHint: availableSet ? Array.from(availableSet) : null
-              });
-            }
-          }
-        }, idx * ATTEMPT_DELAY_MS);
-      });
-    });
+  function requestBatchWithTimeout(...args) {
+    return getQuestionsAiClient().requestBatchWithTimeout(...args);
   }
 
   async function requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, options = {}) {
     const { skipCloudUserKeyRecovery = false } = options;
-    if (!readValidatedChatModelsCache()) {
-      ensureModelPreflightInBackground();
+    if (modelDiscoveryPromise) await modelDiscoveryPromise;
+    if (modelDiscoveryScope !== modelCacheScope() || Date.now() - modelDiscoveryAt > MODEL_LIST_CACHE_TTL_MS) {
+      modelDiscoveryPromise = loadModels();
+      await modelDiscoveryPromise;
     }
-    if (modelPreflightPromise) {
-      await Promise.race([
-        modelPreflightPromise.catch(() => null),
-        new Promise(resolve => setTimeout(resolve, readValidatedChatModelsCache() ? 1800 : 4000))
-      ]);
-    }
-    const order = getRequestOrder(preferredModel);
+    const requestedOrder = typeof options.modelOrder === "function" ? options.modelOrder() : options.modelOrder;
+    const order = Array.isArray(requestedOrder)
+      ? requestedOrder.filter(model => currentModels.includes(model))
+      : getRequestOrder(preferredModel);
     try {
       return await requestBatchWithTimeout(userQ, order, onAttempt, onAdditional, options);
     } catch (batchErr) {
+      if (isAllModelsCreditsExhaustedError(batchErr?.error)) {
+        showApiKeyModal({ reason: "model_credits_exhausted" });
+        throw batchErr.error;
+      }
       if (batchErr?.apiKeyFailureCount === batchErr?.total) {
         if (!skipCloudUserKeyRecovery && await tryHydrateUserApiKeyFromCloud()) {
           return requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, {
@@ -3060,6 +2408,10 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
             try {
               return await requestBatchWithTimeout(userQ, retryOrderFromHint, onAttempt, onAdditional, options);
             } catch (retryErrFromHint) {
+              if (isAllModelsCreditsExhaustedError(retryErrFromHint?.error)) {
+                showApiKeyModal({ reason: "model_credits_exhausted" });
+                throw retryErrFromHint.error;
+              }
               if (retryErrFromHint?.apiKeyFailureCount === retryErrFromHint?.total) {
                 if (!skipCloudUserKeyRecovery && await tryHydrateUserApiKeyFromCloud()) {
                   return requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, {
@@ -3082,51 +2434,12 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           }
         }
       }
-      if (modelListFromCache) {
-        const refreshed = await loadModels({ force: true, exclude: batchErr?.tried || order });
-        const retryOrder = getModelOrder(getPreferredModel(refreshed));
-        try {
-          return await requestBatchWithTimeout(userQ, retryOrder, onAttempt, onAdditional, options);
-        } catch (retryErr) {
-          if (retryErr?.apiKeyFailureCount === retryErr?.total) {
-            if (!skipCloudUserKeyRecovery && await tryHydrateUserApiKeyFromCloud()) {
-              return requestWithFallback(userQ, preferredModel, onAttempt, onAdditional, {
-                ...options,
-                skipCloudUserKeyRecovery: true
-              });
-            }
-            showApiKeyModal({
-              reason: retryErr?.apiKeyError?.code === "API_KEY_QUOTA_EXCEEDED" ? "quota_exceeded" : "invalid_key",
-              detail: retryErr?.apiKeyError?.detail || "",
-              authMode: retryErr?.apiKeyError?.authMode || getCurrentApiKeyMode()
-            });
-            throw retryErr.error || new Error(retryErr?.apiKeyError?.code || "INVALID_API_KEY");
-          }
-          if (retryErr?.regionFailureCount === retryErr?.total) {
-            throw retryErr.regionError || new Error("AI_REGION_UNAVAILABLE");
-          }
-          throw retryErr.error || new Error("No AI answer");
-        }
-      }
       throw batchErr.error || new Error("No AI answer");
     }
   }
 
   async function loadModels(options = {}) {
-    const { force = false, exclude = [] } = options;
-    const fallback = FAST_MODEL_HINTS.slice(0, 5).filter(m => !exclude.includes(m));
-    if (!force) {
-      const cached = readModelListCache();
-      if (cached && cached.length) {
-        const filtered = cached.filter(m => !exclude.includes(m)).slice(0, 5);
-        const useList = filtered.length ? filtered : cached.slice(0, 5);
-        setCurrentModels(useList);
-        applyModelSelection(useList);
-        renderModelsList(useList);
-        modelListFromCache = true;
-        return useList;
-      }
-    }
+    const { exclude = [] } = options;
     try {
       const res = await callAiProxy({
         method: "POST",
@@ -3137,44 +2450,22 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       });
       if (!res.ok) throw new Error(`Models list failed: ${res.status}`);
       const json = await res.json();
-      const apiModels = (json?.data || [])
-        .filter(m => {
-          const status = (m?.status || "").toLowerCase();
-          if (status && status !== "active") return false;
-          const enable = m?.metadata?.enable_api_chat_completions;
-          if (enable === false) return false;
-          return true;
-        })
-        .map(m => m?.name || m?.id)
-        .filter(Boolean);
-      const noReasoning = apiModels.filter(name => {
-        const n = name.toLowerCase();
-        return !(
-          n.includes("thinking") ||
-          n.includes("reasoning") ||
-          n.includes("deepseek-r1") ||
-          n.includes("r1") ||
-          n.includes("o1") ||
-          n.includes("o3") ||
-          n.includes("vl") ||
-          n.includes("vision")
-        );
-      });
-      const hinted = FAST_MODEL_HINTS.filter(m => noReasoning.includes(m) && !exclude.includes(m));
-      const pool = hinted.length ? hinted : (noReasoning.length ? noReasoning : apiModels);
-      const finalModels = (pool.length ? pool : fallback).filter(m => !exclude.includes(m)).slice(0, 5);
+      const finalModels = normalizeAvailableChatModels(json?.data, exclude);
+      if (!finalModels.length) throw new Error("No accessible text models in /models response");
       setCurrentModels(finalModels);
-      applyModelSelection(finalModels);
       renderModelsList(finalModels);
-      writeModelListCache(finalModels);
-      modelListFromCache = false;
+      modelDiscoveryAt = Date.now();
+      modelDiscoveryScope = modelCacheScope();
       return finalModels;
     } catch (e) {
       console.warn("Using fallback model list", e);
-      setCurrentModels(fallback);
-      applyModelSelection(fallback);
-      renderModelsList(fallback);
-      modelListFromCache = false;
+      const fallback = FAST_MODEL_HINTS.filter(m => !exclude.includes(m));
+      if (fallback.length) {
+        setCurrentModels(fallback);
+        renderModelsList(fallback);
+      }
+      modelDiscoveryAt = Date.now();
+      modelDiscoveryScope = modelCacheScope();
       return fallback;
     }
   }
@@ -3213,6 +2504,15 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
 
   function getAppendInlineStatusText() {
     return window.innerWidth <= 600 ? "Дополняю..." : "Дополняю ответ у ИИ";
+  }
+
+  function shortModelLabel(model) {
+    const [provider = "", id = ""] = String(model || "").split("/");
+    const family = id.split("-")[0].toLowerCase();
+    const label = provider === "openai" ? "OpenAI" : ({ llama: "LLaMA", gemma: "Gemma", glm: "GLM", deepseek: "DeepSeek", nemotron: "Nemotron" })[family] || id.split("-")[0] || provider;
+    const duplicate = currentModels.filter(item => item !== model && item.split("/").pop()?.split("-")[0].toLowerCase() === family).length > 0;
+    const size = id.match(/(?:^|-)(\d+(?:\.\d+)?)b(?:-|$)/i)?.[1];
+    return duplicate && size ? `${label} ${size}B` : label;
   }
 
   function normalizeCategoryKey(category) {
@@ -3519,14 +2819,14 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
       return true;
     } catch (e) {
       stopLoaderPhases(timer);
-      if (isRecoverableApiKeyError(e) || String(e?.message || "").includes("INVALID_API_KEY")) {
+      if (isRecoverableApiKeyError(e) || isAllModelsCreditsExhaustedError(e) || String(e?.message || "").includes("INVALID_API_KEY")) {
         pendingRetry = () => runRefineRequest(context, userFollowup);
         return false;
       }
       failHeaderAiNotchRequest();
       renderAiSupplement(
         itemState.aiSupplementEl,
-        isAiRegionAvailabilityError(e) ? getAiRegionUnavailableMessage() : "Не удалось получить ответ от моделей. Попробуйте позже."
+        e?.code === "AI_RATE_LIMITED" ? "Лимит Groq временно достигнут. Попробуйте позже." : isAiRegionAvailabilityError(e) ? getAiRegionUnavailableMessage() : "Не удалось получить ответ от моделей. Попробуйте позже."
       );
       return false;
     }
@@ -4335,14 +3635,14 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
           try {
             await executeRequest();
           } catch (e) {
-            if (isRecoverableApiKeyError(e) || String(e?.message || "").includes("INVALID_API_KEY")) {
+            if (isRecoverableApiKeyError(e) || isAllModelsCreditsExhaustedError(e) || String(e?.message || "").includes("INVALID_API_KEY")) {
               pendingRetry = executeRequest;
               return;
             }
             failHeaderAiNotchRequest();
             renderAiSupplement(
               aiSupplementEl,
-              isAiRegionAvailabilityError(e) ? getAiRegionUnavailableMessage() : "Не удалось получить ответ от моделей. Попробуйте позже."
+              e?.code === "AI_RATE_LIMITED" ? "Лимит Groq временно достигнут. Попробуйте позже." : isAiRegionAvailabilityError(e) ? getAiRegionUnavailableMessage() : "Не удалось получить ответ от моделей. Попробуйте позже."
             );
           } finally {
             aiAppendBtn.disabled = false;
@@ -4461,40 +3761,8 @@ const warmupUserPrompt = "Тема: API. Вопрос: Что такое REST AP
   requestAnimationFrame(restoreScrollPosition);
   setTimeout(restoreScrollPosition, 120);
 
-    loadModels().then(() => {
-      ensureModelPreflightInBackground();
-      if (!shouldWarmup()) return;
-      let hasClicked = false;
-      let hasScrolledToFirst = false;
-      const firstQuestion = document.querySelector("#accordion-container .t-item");
-
-      const checkScroll = () => {
-        if (!firstQuestion) return;
-        const rect = firstQuestion.getBoundingClientRect();
-        if (rect.top <= window.innerHeight * 0.85) {
-          hasScrolledToFirst = true;
-          tryStartWarmup();
-        }
-      };
-
-      const tryStartWarmup = () => {
-        if (hasClicked && hasScrolledToFirst && shouldWarmup()) {
-          ensureModelPreflightInBackground();
-          window.removeEventListener("scroll", checkScroll);
-          window.removeEventListener("resize", checkScroll);
-        }
-      };
-
-      document.addEventListener("click", () => {
-        hasClicked = true;
-        tryStartWarmup();
-      }, { once: true });
-
-      window.addEventListener("scroll", checkScroll, { passive: true });
-      window.addEventListener("resize", checkScroll);
-      checkScroll();
-      restoreScrollPosition();
-    });
+    modelDiscoveryPromise = loadModels();
+    modelDiscoveryPromise.then(restoreScrollPosition);
     });  // — конец DOMContentLoaded
 
 // --- Theme toggle ---

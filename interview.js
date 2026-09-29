@@ -601,6 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function requestAiAppend(item) {
     const startedAt = Date.now();
     const body = {
+      provider: "groq",
       model: DEFAULT_MODEL,
       messages: [
         { role: "system", content: "Ты ИИ-помощник для подготовки к собеседованию QA. Отвечай на русском языке, кратко, структурно, без лишней воды. Без markdown таблиц." },

@@ -6,7 +6,12 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-const USER_API_KEY_SERVICE = "io_net";
+const GROQ_API_BASE = "https://api.groq.com/openai/v1";
+const CHAT_MODELS = new Set([
+  "openai/gpt-oss-20b",
+  "qwen/qwen3.8-27b",
+  "openai/gpt-oss-120b",
+]);
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -16,6 +21,46 @@ function jsonResponse(body: unknown, status = 200) {
       "Content-Type": "application/json",
     },
   });
+}
+
+function shouldTryNextKey(status: number, responseBody: string) {
+  return [401, 402, 403, 429].includes(status) || status >= 500 ||
+    /insufficient credits|quota exceeded|rate limit exceeded|invalid api key/i.test(responseBody);
+}
+
+function validGroqMessages(messages: unknown[]) {
+  if (messages.length > 4) return false;
+  let totalChars = 0;
+  for (const item of messages) {
+    const message = item as { role?: string; content?: string } | null;
+    if (!message || !["system", "user", "assistant"].includes(message.role || "") || typeof message.content !== "string") return false;
+    totalChars += message.content.length;
+    if (totalChars > 24000) return false;
+  }
+  return true;
+}
+
+async function requestUpstream(url: string, init: RequestInit, keys: string[]) {
+  for (const [index, key] of keys.entries()) {
+    try {
+      const upstreamRes = await fetch(url, {
+        ...init,
+        headers: { ...init.headers, Authorization: `Bearer ${key}` },
+      });
+      const text = await upstreamRes.text();
+      if (!upstreamRes.ok && index < keys.length - 1 && shouldTryNextKey(upstreamRes.status, text)) continue;
+      return new Response(text, {
+        status: upstreamRes.status,
+        headers: {
+          ...corsHeaders,
+          "Content-Type": upstreamRes.headers.get("content-type") || "application/json",
+        },
+      });
+    } catch (error) {
+      if (index === keys.length - 1) throw error;
+    }
+  }
+  return jsonResponse({ error: "api_key_missing", detail: "No API key is available for upstream requests." }, 500);
 }
 
 Deno.serve(async (req) => {
@@ -29,9 +74,12 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const ioApiBase = Deno.env.get("IO_API_BASE") || "";
     const defaultIoApiKey = Deno.env.get("IO_API_KEY") || "";
+    const primaryIoApiKey = Deno.env.get("IO_API_KEY_PRIMARY") || "";
+    const defaultGroqApiKey = Deno.env.get("GROQ_API_KEY") || "";
+    const primaryGroqApiKey = Deno.env.get("GROQ_API_KEY_PRIMARY") || "";
     const authHeader = req.headers.get("Authorization") || "";
 
-    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey || !ioApiBase || !defaultIoApiKey) {
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
       return jsonResponse({
         error: "edge_function_config_missing",
         detail: "Required Supabase or AI secrets are not configured.",
@@ -52,6 +100,7 @@ Deno.serve(async (req) => {
     const isModelsRequest =
       (req.method === "GET" && reqUrl.searchParams.get("action") === "models") ||
       String(body?.action || "") === "models";
+    const provider = String(body?.provider || reqUrl.searchParams.get("provider") || "") === "groq" ? "groq" : "io_net";
 
     let userId: string | null = null;
     if (authHeader.startsWith("Bearer ")) {
@@ -69,76 +118,78 @@ Deno.serve(async (req) => {
         .from("user_api_keys")
         .select("api_key")
         .eq("user_id", userId)
-        .eq("service", USER_API_KEY_SERVICE)
+        .eq("service", provider)
         .maybeSingle();
       persistedUserApiKey = String(keyRow?.api_key || "").trim() || null;
     }
 
     const localOverrideKey = String(body?.userApiKey || "").trim() || null;
-    const finalApiKey = localOverrideKey || persistedUserApiKey || defaultIoApiKey;
+    const userApiKey = localOverrideKey || persistedUserApiKey;
+    if (userApiKey && (!/^[\x21-\x7e]+$/.test(userApiKey) || /[<>]/.test(userApiKey))) {
+      return jsonResponse({ error: "invalid_api_key", detail: "API key contains invalid characters." }, 400);
+    }
+    const defaultKeys = provider === "groq" ? [primaryGroqApiKey, defaultGroqApiKey] : [primaryIoApiKey, defaultIoApiKey];
+    const apiKeys = userApiKey ? [userApiKey] : [...new Set(defaultKeys.filter(Boolean))];
 
-    if (!finalApiKey) {
+    if (!apiKeys.length) {
       return jsonResponse({
         error: "api_key_missing",
         detail: "No API key is available for upstream requests.",
       }, 500);
     }
+    if (provider === "io_net" && !ioApiBase) {
+      return jsonResponse({ error: "edge_function_config_missing", detail: "IO_API_BASE is not configured." }, 500);
+    }
 
     if (isModelsRequest) {
-      const upstreamRes = await fetch(`${ioApiBase}/models?page_size=100`, {
+      const modelsUrl = provider === "groq" ? `${GROQ_API_BASE}/models` : `${ioApiBase}/models?page_size=100`;
+      const response = await requestUpstream(modelsUrl, {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${finalApiKey}`,
-        },
-      });
-      const text = await upstreamRes.text();
-      return new Response(text, {
-        status: upstreamRes.status,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": upstreamRes.headers.get("content-type") || "application/json",
-        },
-      });
+      }, apiKeys);
+      if (!response.ok || provider === "io_net") return response;
+      const catalog = await response.json();
+      return jsonResponse({ ...catalog, data: (Array.isArray(catalog.data) ? catalog.data : []).filter((model: { id?: string; active?: boolean }) => CHAT_MODELS.has(model.id || "") && model.active !== false) });
     }
 
     const model = String(body?.model || "").trim();
     const messages = Array.isArray(body?.messages) ? body.messages : [];
-    const temperature = Number(body?.temperature ?? 0.7);
-    const reasoning_content = !!body?.reasoning_content;
-    const max_completion_tokens = Number(body?.max_completion_tokens ?? 1000);
-    const stream = !!body?.stream;
+    const requestedTemperature = Number(body?.temperature ?? 0.7);
+    const temperature = Number.isFinite(requestedTemperature) ? Math.min(2, Math.max(0.01, requestedTemperature)) : 0.7;
+    const requestedMaxTokens = Number(body?.max_completion_tokens ?? 1000);
+    const max_completion_tokens = Number.isFinite(requestedMaxTokens) ? Math.min(1000, Math.max(1, Math.floor(requestedMaxTokens))) : 1000;
 
-    if (!model || !messages.length) {
+    if (!model || !messages.length || (provider === "groq" && (!CHAT_MODELS.has(model) || !validGroqMessages(messages)))) {
       return jsonResponse({
         error: "bad_request",
-        detail: "model and messages are required.",
+        detail: "Unsupported model or invalid messages.",
       }, 400);
     }
 
-    const upstreamRes = await fetch(`${ioApiBase}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${finalApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
+    const requestBody = provider === "groq"
+      ? {
         model,
         messages,
         temperature,
-        reasoning_content,
         max_completion_tokens,
-        stream,
-      }),
-    });
-
-    const text = await upstreamRes.text();
-    return new Response(text, {
-      status: upstreamRes.status,
+        stream: false,
+        ...(model.startsWith("openai/gpt-oss-") ? { reasoning_effort: "low" } : {}),
+      }
+      : {
+        model,
+        messages,
+        temperature: Number(body?.temperature ?? 0.7),
+        reasoning_content: !!body?.reasoning_content,
+        max_completion_tokens: Number(body?.max_completion_tokens ?? 1000),
+        stream: !!body?.stream,
+      };
+    const chatUrl = provider === "groq" ? `${GROQ_API_BASE}/chat/completions` : `${ioApiBase}/chat/completions`;
+    return await requestUpstream(chatUrl, {
+      method: "POST",
       headers: {
-        ...corsHeaders,
-        "Content-Type": upstreamRes.headers.get("content-type") || "application/json",
+        "Content-Type": "application/json",
       },
-    });
+      body: JSON.stringify(requestBody),
+    }, apiKeys);
   } catch (e) {
     return jsonResponse({
       error: "edge_function_failed",

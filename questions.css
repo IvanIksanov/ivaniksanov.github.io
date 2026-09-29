@@ -888,11 +888,11 @@ html[data-theme="dark"] .questions-load-status {
 .ai-supplement-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.4rem;
 }
-
 .ai-supplement-nav {
   display: inline-flex;
   align-items: center;
