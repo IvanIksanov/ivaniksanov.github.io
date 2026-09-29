@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
     const ioApiBase = Deno.env.get("IO_API_BASE") || "";
     const defaultIoApiKey = Deno.env.get("IO_API_KEY") || "";
     const primaryIoApiKey = Deno.env.get("IO_API_KEY_PRIMARY") || "";
-    const defaultGroqApiKey = Deno.env.get("GROQ_API_KEY") || "";
-    const primaryGroqApiKey = Deno.env.get("GROQ_API_KEY_PRIMARY") || "";
+    const defaultGroqApiKey = Deno.env.get("GROQ_API_KEY") || Deno.env.get("GROQ_API_KEY_PRIMARY") || "";
+    const backupGroqApiKey = Deno.env.get("GROQ_API_KEY_BACKUP") || "";
     const authHeader = req.headers.get("Authorization") || "";
 
     if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
     if (userApiKey && (!/^[\x21-\x7e]+$/.test(userApiKey) || /[<>]/.test(userApiKey))) {
       return jsonResponse({ error: "invalid_api_key", detail: "API key contains invalid characters." }, 400);
     }
-    const defaultKeys = provider === "groq" ? [primaryGroqApiKey, defaultGroqApiKey] : [primaryIoApiKey, defaultIoApiKey];
+    const defaultKeys = provider === "groq" ? [defaultGroqApiKey, backupGroqApiKey] : [primaryIoApiKey, defaultIoApiKey];
     const apiKeys = userApiKey ? [userApiKey] : [...new Set(defaultKeys.filter(Boolean))];
 
     if (!apiKeys.length) {

@@ -29,6 +29,7 @@ function edgeFixture(fetch) {
     ['SUPABASE_ANON_KEY', 'publishable-test'],
     ['SUPABASE_SERVICE_ROLE_KEY', 'service-test'],
     ['GROQ_API_KEY', 'gsk-default'],
+    ['GROQ_API_KEY_BACKUP', 'gsk-backup'],
     ['IO_API_BASE', 'https://api.io.net/v1'],
     ['IO_API_KEY', 'io-default']
   ]);
@@ -78,6 +79,18 @@ test('Groq proxy rejects unsupported models and accepts a personal Groq key', as
   assert.equal(allowed.status, 200);
   assert.equal(calls[0].init.headers.Authorization, 'Bearer gsk-personal');
   assert.equal(JSON.parse(calls[0].init.body).reasoning_effort, undefined);
+});
+
+test('Groq proxy uses the backup only after the site key fails', async () => {
+  const calls = [];
+  const { call } = edgeFixture(async (_url, init) => {
+    calls.push(init.headers.Authorization);
+    if (calls.length === 1) return new Response(JSON.stringify({ error: { message: 'Rate limit reached' } }), { status: 429 });
+    return answer('Ответ от резервного ключа. Второе предложение для проверки.');
+  });
+  const result = await call({ provider: 'groq', model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Вопрос' }] });
+  assert.equal(result.status, 200);
+  assert.deepEqual(calls, ['Bearer gsk-default', 'Bearer gsk-backup']);
 });
 
 test('staging requests without provider keep the existing IO route', async () => {
