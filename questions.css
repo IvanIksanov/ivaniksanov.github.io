@@ -208,6 +208,171 @@ h2 {
   padding-top: 30px;
 }
 
+.questions-view-switcher {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  gap: 0.7rem;
+  position: fixed;
+  bottom: max(1.25rem, env(safe-area-inset-bottom, 0px) + 0.75rem);
+  left: clamp(0.75rem, 2vw, 2rem);
+  z-index: 6;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #d9dde3;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 5px 20px rgba(22, 27, 35, 0.1);
+  color: #515967;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  user-select: none;
+  view-transition-name: questions-view-switcher;
+  transition: gap 280ms ease, padding 280ms ease, bottom 280ms ease;
+}
+
+.questions-view-switcher *,
+.questions-view-switcher *::before,
+.questions-view-switcher *::after { box-sizing: border-box; }
+
+.site-header .logo img { view-transition-name: questions-shared-logo; }
+.site-header .site-title { view-transition-name: questions-shared-title; }
+
+.site-title.is-static .site-title-ascii {
+  -webkit-text-stroke: 0.18px currentColor;
+  text-shadow: 0.22px 0 0 currentColor;
+}
+
+::view-transition-old(questions-shared-logo),
+::view-transition-old(questions-shared-title) {
+  z-index: 1;
+  animation: 320ms step-end both questions-header-hold;
+}
+
+::view-transition-new(questions-shared-logo),
+::view-transition-new(questions-shared-title) { animation: none; }
+
+@keyframes questions-header-hold {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.questions-view-switcher__label {
+  max-width: 7rem;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  opacity: 0.72;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 280ms ease, color 0.2s ease, opacity 220ms ease, visibility 0s;
+}
+
+.questions-view-switcher__label:hover {
+  background: transparent;
+  color: #20242b;
+  opacity: 1;
+}
+
+.questions-view-switcher__label[aria-current="page"] {
+  color: #20242b;
+  opacity: 1;
+  font-weight: 700;
+}
+
+.questions-view-switcher__track {
+  position: relative;
+  display: block;
+  flex: 0 0 50px;
+  width: 50px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #cbd1d9;
+  border-radius: 999px;
+  background: #edf0f3;
+  box-shadow: inset 0 1px 2px rgba(22, 27, 35, 0.07);
+  transition: background-color 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+}
+
+.questions-view-switcher__track:hover { background: #e2e6eb; }
+.questions-view-switcher__track:focus-visible { outline: 2px solid #596575; outline-offset: 4px; }
+
+.questions-view-switcher__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #20242b;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.24s ease, background-color 0.24s ease;
+}
+
+.questions-view-switcher[data-view="map"] .questions-view-switcher__thumb {
+  transform: translateX(26px);
+}
+
+html[data-theme="dark"] .questions-view-switcher {
+  border-color: #454a52;
+  background: rgba(34, 37, 43, 0.92);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.24);
+  color: #b7bdc7;
+}
+html[data-theme="dark"] .questions-view-switcher__track {
+  border-color: #555c66;
+  background: #363b43;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+html[data-theme="dark"] .questions-view-switcher__thumb { background: #f1f3f6; }
+html[data-theme="dark"] .questions-view-switcher__label:hover,
+html[data-theme="dark"] .questions-view-switcher__label[aria-current="page"] { color: #f1f3f6; }
+html[data-theme="dark"] .questions-view-switcher__track:hover { background: #444a53; }
+html[data-theme="dark"] .questions-view-switcher__track:focus-visible { outline-color: #c8d0dc; }
+
+@view-transition { navigation: auto; }
+
+::view-transition-old(root) { animation: 180ms ease-in both questions-view-out; }
+::view-transition-new(root) { animation: 320ms cubic-bezier(0.22, 1, 0.36, 1) both questions-view-in; }
+
+@keyframes questions-view-out {
+  to { opacity: 0; transform: scale(0.985); }
+}
+
+@keyframes questions-view-in {
+  from { opacity: 0; transform: scale(1.015); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 0.01ms; }
+  .questions-view-switcher,
+  .questions-view-switcher .questions-view-switcher__label { transition-duration: 0.01ms; }
+}
+
+@media (max-width: 1300px) {
+  .questions-view-switcher {
+    gap: 0;
+    padding: 0.35rem;
+  }
+  .questions-view-switcher .questions-view-switcher__label {
+    max-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: max-width 280ms ease, opacity 220ms ease, visibility 0s linear 280ms;
+  }
+}
+
+@media (max-width: 1009px) {
+  body:not(.questions-map-page) .questions-view-switcher { display: none; }
+}
+
+@media (max-width: 1099px) {
+  body.questions-map-page .questions-view-switcher { display: none; }
+}
+
 /* Добавь новые стили для чипов */
 .category-filters {
   display: flex;
@@ -421,6 +586,44 @@ html[data-theme="dark"] .questions-skeleton-line {
   font-size: clamp(0.88rem, 0.83rem + 0.24vw, 1rem);
   line-height: 1.55;
 }
+
+.soft-questions-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: soft-question;
+}
+
+.soft-questions-list__item {
+  display: grid;
+  grid-template-columns: 1.7rem minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: #e9eaec;
+  color: #30343a;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  counter-increment: soft-question;
+}
+
+.soft-questions-list__item::before {
+  content: counter(soft-question, decimal-leading-zero);
+  color: #777e87;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.9;
+}
+
+html[data-theme="dark"] .soft-questions-list__item {
+  background: #3b3e42;
+  color: #f1f3f5;
+}
+
+html[data-theme="dark"] .soft-questions-list__item::before { color: #c3c8ce; }
 
 .code-block {
   background: var(--code-bg, #FAFAFA);

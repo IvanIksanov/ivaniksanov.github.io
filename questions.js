@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  const isMapEmbed = new URLSearchParams(window.location.search).get("map_embed") === "1";
+  const softQuestionsItemId = "accordion_theory_q54";
   const debugLog = window.DebugLog || null;
   let questionsAiClient;
   function getQuestionsAiClient() {
@@ -30,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   const SCROLL_POS_KEY = "questions_scroll_y_v1";
   const AUTH_RETURN_SCROLL_KEY = "questions_auth_return_scroll_v1";
-  const savedScrollY = Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
+  const savedScrollY = isMapEmbed ? 0 : Number(sessionStorage.getItem(SCROLL_POS_KEY) || 0);
   function saveAuthReturnScrollPosition() {
     try {
       localStorage.setItem(AUTH_RETURN_SCROLL_KEY, JSON.stringify({
@@ -55,13 +57,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       return null;
     }
   }
-  const authReturnScrollY = consumeAuthReturnScrollPosition();
-  window.addEventListener("scroll", () => {
-    sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
-  }, { passive: true });
-  window.addEventListener("beforeunload", () => {
-    sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
-  });
+  const authReturnScrollY = isMapEmbed ? null : consumeAuthReturnScrollPosition();
+  if (!isMapEmbed) {
+    window.addEventListener("scroll", () => {
+      sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
+    }, { passive: true });
+    window.addEventListener("beforeunload", () => {
+      sessionStorage.setItem(SCROLL_POS_KEY, String(window.scrollY || 0));
+    });
+  }
 
 const systemPrompt =
   "You are an AI assistant for interview preparation in the IT field, specializing in roles such as Test Engineer, QA, AQA, and Test Automation. " +
@@ -185,6 +189,31 @@ const refineSystemPrompt =
   const publicAppendAnswersByQuestion = new Map();
   const aiItemState = new Map();
   let questionsUiRendered = false;
+  let pendingMapQuestionId = "";
+  if (isMapEmbed) {
+    window.QAtoDevMapEmbed = {
+      showQuestion(id) {
+        pendingMapQuestionId = String(id || "");
+        if (!questionsUiRendered || !pendingMapQuestionId) return false;
+        const content = document.getElementById(pendingMapQuestionId);
+        const selectedItem = content?.closest(".t-item");
+        const selectedSection = selectedItem?.closest(".article");
+        if (!selectedSection || !accordionContainerEl?.contains(selectedItem)) return false;
+        accordionContainerEl.querySelectorAll(".article").forEach(section => {
+          section.classList.toggle("questions-map-embed-selected", section === selectedSection);
+        });
+        accordionContainerEl.querySelectorAll(".t-item").forEach(item => {
+          item.classList.toggle("questions-map-embed-selected-item", item === selectedItem);
+        });
+        selectedSection.style.display = "";
+        selectedItem.style.display = "";
+        const trigger = selectedItem.querySelector(".t849__trigger-button");
+        if (trigger?.getAttribute("aria-expanded") !== "true") trigger?.click();
+        window.scrollTo(0, 0);
+        return true;
+      }
+    };
+  }
   let questionsLoadFallbackTimer = null;
   let userApiKeySyncPromise = null;
   let authLastSessionCheckTs = 0;
@@ -1477,6 +1506,7 @@ const refineSystemPrompt =
 
   function applyCloudStateToUi() {
     runtimeQuestionsData.forEach((cat) => {
+      const trackableIds = new Set(cat.items.filter(item => item.id !== softQuestionsItemId).map(item => item.id));
       const studiedKey = `studied_${cat.category}`;
       const unclearKey = `unclear_${cat.category}`;
       const studiedArr = JSON.parse(localStorage.getItem(studiedKey) || "[]");
@@ -1502,7 +1532,10 @@ const refineSystemPrompt =
       });
       safeSetItemWithAiEviction(studiedKey, JSON.stringify(studiedArr));
       safeSetItemWithAiEviction(unclearKey, JSON.stringify(unclearArr));
-      updateProgress(cat.category, studiedArr.length, unclearArr.length, cat.items.length);
+      updateProgress(cat.category,
+        studiedArr.filter(id => trackableIds.has(id)).length,
+        unclearArr.filter(id => trackableIds.has(id)).length,
+        trackableIds.size);
     });
 
     cloudAnswersByQuestion.forEach((rows, questionId) => {
@@ -3132,7 +3165,9 @@ const refineSystemPrompt =
     `;
 
     // 3. Прогресс-бар
-    const total = cat.items.length;
+    const trackableIds = new Set(cat.items.filter(item => item.id !== softQuestionsItemId).map(item => item.id));
+    const total = trackableIds.size;
+    const countTracked = ids => ids.filter(id => trackableIds.has(id)).length;
     section.insertAdjacentHTML('beforeend', `
       <div class="progress-container">
         <div class="progress-bar-unclear" data-category="${cat.category}"></div>
@@ -3163,7 +3198,7 @@ const refineSystemPrompt =
     });
     safeSetItemWithAiEviction(`studied_${cat.category}`, JSON.stringify(studiedArr));
     safeSetItemWithAiEviction(`unclear_${cat.category}`, JSON.stringify(unclearArr));
-    updateProgress(cat.category, studiedArr.length, unclearArr.length, total);
+    updateProgress(cat.category, countTracked(studiedArr), countTracked(unclearArr), total);
 
     // 4. Render вопросов
     cat.items.forEach(item => {
@@ -3206,14 +3241,76 @@ const refineSystemPrompt =
         authorLinksBlock = `<br><br><div class="answer-links">${authorLinks.join('')}</div>`;
       }
 
-      // вставляем в ответ
-      textEl.innerHTML = item.answer + authorLinksBlock;
+      // The soft-skills entry is a collection of prompts, not a question with a model answer.
+      if (item.id === softQuestionsItemId) {
+        const prompts = document.createElement('ul');
+        prompts.className = 'soft-questions-list';
+        for (const part of String(item.answer || '').split(/<br\s*\/?\s*>/i)) {
+          const source = document.createElement('span');
+          source.innerHTML = part;
+          const prompt = source.textContent.trim();
+          if (!prompt) continue;
+          const card = document.createElement('li');
+          card.className = 'soft-questions-list__item';
+          card.textContent = prompt;
+          prompts.appendChild(card);
+        }
+        textEl.replaceChildren(prompts);
+      } else {
+        textEl.innerHTML = item.answer + authorLinksBlock;
+        enhanceAnswerBlock(textEl);
+      }
       textEl.setAttribute("data-item-id", item.id);
-      enhanceAnswerBlock(textEl);
+
+      // Toggle accordion
+      btn.addEventListener("click", () => {
+        const expanded = btn.getAttribute("aria-expanded") === "true";
+        if (expanded) {
+          btn.setAttribute("aria-expanded", "false");
+          content.style.display = "none";
+          header.classList.remove("t849__opened");
+          openSet.delete(item.id);
+        } else {
+          if (!openSet.has(item.id) && openSet.size >= 3) {
+            const oldestId = openSet.values().next().value;
+            if (oldestId) {
+              const oldestBtn = container.querySelector(`.t849__trigger-button[aria-controls="${oldestId}"]`);
+              const oldestHeader = oldestBtn?.closest(".t849__header");
+              const oldestContent = document.getElementById(oldestId);
+              if (oldestBtn) oldestBtn.setAttribute("aria-expanded", "false");
+              if (oldestHeader) oldestHeader.classList.remove("t849__opened");
+              if (oldestContent) oldestContent.style.display = "none";
+              openSet.delete(oldestId);
+            }
+          }
+          btn.setAttribute("aria-expanded", "true");
+          content.style.display = "block";
+          header.classList.add("t849__opened");
+          openSet.delete(item.id);
+          openSet.add(item.id);
+          trackQuestionsGoal({
+            action: "question_open",
+            question_id: item.id,
+            category: cat.category,
+            question_title: shortenText(item.title)
+          });
+        }
+        safeSetItemWithAiEviction(openKey, JSON.stringify(Array.from(openSet)));
+      });
+
+      if (item.id === softQuestionsItemId) {
+        if (openSet.has(item.id)) {
+          btn.setAttribute("aria-expanded", "true");
+          content.style.display = "block";
+          header.classList.add("t849__opened");
+        }
+        section.appendChild(clone);
+        return;
+      }
+
       const baseAnswerHolder = document.createElement("div");
       baseAnswerHolder.innerHTML = item.answer;
       const baseAnswerPlain = (baseAnswerHolder.textContent || "").trim();
-
       textEl.insertAdjacentHTML('beforeend', `
         <div class="answer-actions" style="margin-top:1rem;">
           <div class="answer-actions-left">
@@ -3257,7 +3354,7 @@ const refineSystemPrompt =
           safeSetItemWithAiEviction(unclearKey, JSON.stringify(uArr));
           header.classList.remove('unclear');
           header.classList.add('studied');
-          updateProgress(c, sArr.length, uArr.length, total);
+          updateProgress(c, countTracked(sArr), countTracked(uArr), total);
           saveProgressCloud(id, "studied");
           trackQuestionsGoal({
             action: "mark_studied",
@@ -3282,7 +3379,7 @@ const refineSystemPrompt =
           safeSetItemWithAiEviction('studied_' + c, JSON.stringify(sArr));
           header.classList.remove('studied');
           header.classList.add('unclear');
-          updateProgress(c, sArr.length, uArr.length, total);
+          updateProgress(c, countTracked(sArr), countTracked(uArr), total);
           saveProgressCloud(id, "unclear");
           trackQuestionsGoal({
             action: "mark_unclear",
@@ -3293,41 +3390,6 @@ const refineSystemPrompt =
         }
       });
 
-      // Toggle accordion
-      btn.addEventListener("click", () => {
-        const expanded = btn.getAttribute("aria-expanded") === "true";
-        if (expanded) {
-          btn.setAttribute("aria-expanded", "false");
-          content.style.display = "none";
-          header.classList.remove("t849__opened");
-          openSet.delete(item.id);
-        } else {
-          if (!openSet.has(item.id) && openSet.size >= 3) {
-            const oldestId = openSet.values().next().value;
-            if (oldestId) {
-              const oldestBtn = container.querySelector(`.t849__trigger-button[aria-controls="${oldestId}"]`);
-              const oldestHeader = oldestBtn?.closest(".t849__header");
-              const oldestContent = document.getElementById(oldestId);
-              if (oldestBtn) oldestBtn.setAttribute("aria-expanded", "false");
-              if (oldestHeader) oldestHeader.classList.remove("t849__opened");
-              if (oldestContent) oldestContent.style.display = "none";
-              openSet.delete(oldestId);
-            }
-          }
-          btn.setAttribute("aria-expanded", "true");
-          content.style.display = "block";
-          header.classList.add("t849__opened");
-          openSet.delete(item.id);
-          openSet.add(item.id);
-          trackQuestionsGoal({
-            action: "question_open",
-            question_id: item.id,
-            category: cat.category,
-            question_title: shortenText(item.title)
-          });
-        }
-        safeSetItemWithAiEviction(openKey, JSON.stringify(Array.from(openSet)));
-      });
       const supplementKey = `ai_supplement_${item.id}`;
       const aiAppendBtn = clone.querySelector(`.ai-append-btn[data-id="${item.id}"]`);
       const aiSupplementEl = clone.querySelector(`.ai-supplement[data-id="${item.id}"]`);
@@ -3671,6 +3733,11 @@ const refineSystemPrompt =
   if (typeof window.__questionsApplyActiveFilter === "function") {
     window.__questionsApplyActiveFilter();
   }
+  if (isMapEmbed) {
+    const initialId = pendingMapQuestionId || new URLSearchParams(window.location.search).get("id");
+    if (initialId) window.QAtoDevMapEmbed.showQuestion(initialId);
+    window.dispatchEvent(new Event("qatodev:map-embed-ready"));
+  }
 
   if (authUser) {
     syncLocalAndCloudState({ force: false, source: "post-render" }).catch((e) => {
@@ -3783,34 +3850,6 @@ const refineSystemPrompt =
   });
 })();
 
-// --- Rotating logo/favicons (вне DOMContentLoaded) ---
-(function() {
-  const imgs = [
-    'img/QAtoDev_(Flappy_Bird_style).png',
-    'img/QAtoDev_Classic.png',
-    'img/QAtoDev_new_year.png',
-    'img/QAtoDev_DayQA.png',
-    'img/QAtoDev_Halloween.png',
-    'img/QAtoDev_BlackAndWhite.png',
-    'img/QAtoDev_CoverChatChannel.png'
-  ];
-  let idx = parseInt(localStorage.getItem('logoIdx'), 10);
-  if (isNaN(idx) || idx<0 || idx>=imgs.length) idx = 0;
-  const logoImg    = document.querySelector('.logo img');
-  const faviconTag = document.querySelector('link[rel="icon"]');
-  function updateLogo() {
-    const src = imgs[idx];
-    if (logoImg)    logoImg.src    = src;
-    if (faviconTag) faviconTag.href = src;
-  }
-  updateLogo();
-  setInterval(() => {
-    idx = (idx + 1) % imgs.length;
-    localStorage.setItem('logoIdx', idx);
-    updateLogo();
-  }, 50000);
-})();
-
 /**
  * @param {string} category
  * @param {number} studiedCount
@@ -3838,6 +3877,7 @@ function updateProgress(category, studiedCount, unclearCount, total) {
 
 // ======== Фильтрация по категориям ========
 document.addEventListener('DOMContentLoaded', () => {
+  if (new URLSearchParams(window.location.search).get('map_embed') === '1') return;
   // Ждем полной загрузки DOM перед работой с фильтрами
   function normalizeCategoryKeyLocal(category) {
     const value = String(category || "")

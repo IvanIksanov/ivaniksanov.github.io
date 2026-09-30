@@ -1,4 +1,7 @@
 (function () {
+  if (document.documentElement.classList.contains("questions-map-embed")) {
+    return;
+  }
   if (window.__qaToDevLogoRotatorInitialized) {
     return;
   }
