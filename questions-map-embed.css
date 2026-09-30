@@ -1,0 +1,94 @@
+/* The existing Questions page owns the answer, AI and cloud-sync behavior. */
+html.questions-map-embed,
+html.questions-map-embed body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  padding-top: 0 !important;
+  background: #fafafa !important;
+}
+
+html.questions-map-embed[data-theme="dark"],
+html.questions-map-embed[data-theme="dark"] body {
+  background: #242424 !important;
+}
+
+html.questions-map-embed .site-header,
+html.questions-map-embed .main-content,
+html.questions-map-embed #category-filters-bottom,
+html.questions-map-embed #search-results-title,
+html.questions-map-embed #questions-load-status,
+html.questions-map-embed #about,
+html.questions-map-embed .answer-image,
+html.questions-map-embed .progress-container {
+  display: none !important;
+}
+
+html.questions-map-embed #accordion-container {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html.questions-map-embed #accordion-container .article,
+html.questions-map-embed #accordion-container .t-item {
+  display: none !important;
+}
+
+html.questions-map-embed #accordion-container .article.questions-map-embed-selected,
+html.questions-map-embed #accordion-container .t-item.questions-map-embed-selected-item {
+  display: block !important;
+}
+
+html.questions-map-embed #accordion-container .article.questions-map-embed-selected {
+  width: 100%;
+  max-width: none;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+html.questions-map-embed .t849__accordion,
+html.questions-map-embed .t849__wrapper {
+  margin: 0;
+  overflow: visible;
+}
+
+html.questions-map-embed .t849__header {
+  display: none;
+}
+
+html.questions-map-embed .t849__content {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+}
+
+html.questions-map-embed .t849__text {
+  padding: 0;
+  background: transparent !important;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+html.questions-map-embed .answer-actions {
+  margin-top: 1rem;
+}
+
+html.questions-map-embed .answer-actions-right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+html.questions-map-embed .ai-supplement {
+  overflow-wrap: anywhere;
+}
+
+html.questions-map-embed .api-key-modal,
+html.questions-map-embed .auth-modal {
+  max-width: 100vw;
+}

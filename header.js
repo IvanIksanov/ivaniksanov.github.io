@@ -52,6 +52,11 @@
   function updateHeaderState() {
     const header = document.querySelector('.site-header');
     if (!header) return;
+    if (header.hasAttribute('data-glass-always')) {
+      headerScrolled = true;
+      header.classList.add('is-scrolled');
+      return;
+    }
     const y = window.scrollY || window.pageYOffset || 0;
     if (!headerScrolled && y > HEADER_SCROLL_ENTER_Y) {
       headerScrolled = true;
