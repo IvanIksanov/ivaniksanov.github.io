@@ -37,6 +37,7 @@
   const lines = document.getElementById('questions-map-lines');
   const traceLayer = document.getElementById('questions-map-trace');
   const scroller = document.querySelector('.questions-map-scroller');
+  const phoneLayout = matchMedia('(max-width: 767px)');
   const answerFrame = document.getElementById('questions-map-answer-frame');
   const answerTitle = document.getElementById('questions-map-answer-title');
   const answerCategory = document.getElementById('questions-map-answer-category');
@@ -132,7 +133,8 @@
     try {
       localStorage.setItem(stateKey, JSON.stringify({
         entryRoot,
-        layoutVersion: 2,
+        layoutVersion: 4,
+        phoneLayout: phoneLayout.matches,
         language: activeLanguage,
         expanded: expandedOrder,
         selectedId,
@@ -189,7 +191,7 @@
 
   function visibleMapWidth() {
     return workspace.classList.contains('has-answer') &&
-      !matchMedia('(max-width: 1100px)').matches
+      !phoneLayout.matches
       ? answerPanel.getBoundingClientRect().left - scroller.getBoundingClientRect().left
       : scroller.clientWidth;
   }
@@ -605,12 +607,18 @@
     gesture.lastCenter = center;
     const x = movePanAxis('x', deltaX, ...limit.x, limit.overshootX);
     const y = movePanAxis('y', deltaY, ...limit.y, limit.overshootY);
-    movePanToward({
-      x: x.value,
-      y: y.value,
-      inwardX: x.inward,
-      inwardY: y.inward
-    });
+    if (event.pointerType === 'mouse') {
+      camera.x = x.value;
+      camera.y = y.value;
+      renderCamera();
+    } else {
+      movePanToward({
+        x: x.value,
+        y: y.value,
+        inwardX: x.inward,
+        inwardY: y.inward
+      });
+    }
   });
   function endPointer(event) {
     if (!pointers.has(event.pointerId)) return;
@@ -713,6 +721,23 @@
     element.textContent = label;
   }
 
+  function refreshExpandMarkers() {
+    const visible = new Set([...rootHost.querySelectorAll('.questions-map-branch')]
+      .map(node => node.dataset.questionId));
+    for (const branch of rootHost.querySelectorAll('.questions-map-branch')) {
+      const expand = branch.querySelector(':scope > .questions-map-card > .questions-map-card__expand');
+      if (!expand) continue;
+      const eligible = (nextById.get(branch.dataset.questionId) || []).filter(isAllowedQuestion);
+      const linked = !expand.hidden && expand.getAttribute('aria-expanded') !== 'true' &&
+        eligible.length > 0 && eligible.every(id => visible.has(id));
+      expand.classList.toggle('is-linked', linked);
+      if (!expand.hidden && expand.getAttribute('aria-expanded') !== 'true') {
+        expand.title = linked ? 'Перейти к уже открытому вопросу' : 'Показать связанные вопросы';
+        expand.setAttribute('aria-label', `${linked ? 'Перейти к уже открытому вопросу' : 'Показать следующие вопросы'} после: ${questions.get(branch.dataset.questionId)?.title || ''}`);
+      }
+    }
+  }
+
   function openBranch(branch, { animate = true } = {}) {
     const id = branch.dataset.questionId;
     const expand = branch.querySelector(':scope > .questions-map-card > .questions-map-card__expand');
@@ -728,6 +753,7 @@
     expand.setAttribute('aria-expanded', 'true');
     expand.title = 'Свернуть ветвь';
     expandedOrder.push(id);
+    refreshExpandMarkers();
     return true;
   }
 
@@ -774,13 +800,16 @@
     }
     expand.addEventListener('click', () => {
       const before = new Map([...rootHost.querySelectorAll('.questions-map-card')].map(node => [node, node.getBoundingClientRect()]));
-      if (expand.getAttribute('aria-expanded') === 'true') {
+      const wasExpanded = expand.getAttribute('aria-expanded') === 'true';
+      const anchorBefore = wasExpanded ? card.getBoundingClientRect() : null;
+      if (wasExpanded) {
         const selectedHidden = !!selectedId && [...children.querySelectorAll('.questions-map-branch')]
           .some(node => node.dataset.questionId === selectedId);
         children.replaceChildren();
         expand.setAttribute('aria-expanded', 'false');
         expand.title = 'Показать связанные вопросы';
         if (selectedHidden) clearSelection();
+        refreshExpandMarkers();
       } else {
         const opened = openBranch(branch);
         if (opened !== true) {
@@ -794,7 +823,15 @@
       }
       saveState();
       requestAnimationFrame(() => {
-        const group = expand.getAttribute('aria-expanded') === 'true' ? measureBranchGroup(branch) : null;
+        if (anchorBefore) {
+          const anchorAfter = card.getBoundingClientRect();
+          camera.x += anchorBefore.left - anchorAfter.left;
+          camera.y += anchorBefore.top - anchorAfter.top;
+          restCamera.x = camera.x;
+          restCamera.y = camera.y;
+          renderCamera();
+        }
+        const group = !wasExpanded ? measureBranchGroup(branch) : null;
         for (const [node, oldRect] of before) {
           if (!node.isConnected) continue;
           const newRect = node.getBoundingClientRect();
@@ -809,7 +846,6 @@
         }
         refreshLinesFor(380);
         if (group) centerGroup(group);
-        else focusQuestion(id);
       });
     });
 
@@ -864,7 +900,7 @@
       ...branch.querySelectorAll(':scope > .questions-map-children > .questions-map-branch > .questions-map-card')]);
   }
 
-  function centerGroup(group) {
+  function centerGroup(group, { animate = true } = {}) {
     const availableWidth = visibleMapWidth();
     const margin = 32;
     camera.scale = Math.max(0.65, Math.min(1,
@@ -878,7 +914,7 @@
     camera.y = clamp(camera.y, ...limit.y);
     restCamera.x = camera.x;
     restCamera.y = camera.y;
-    renderCamera({ animate: true });
+    renderCamera({ animate });
   }
 
   function traceExistingConnection(source, targetId) {
@@ -1006,7 +1042,8 @@
     }
     const savedCamera = saved.camera;
     if (![savedCamera?.centerX, savedCamera?.centerY, savedCamera?.scale].every(Number.isFinite)) return false;
-    if (saved.layoutVersion !== 2 && !ids.length && !selected) return false;
+    if (saved.phoneLayout !== undefined && saved.phoneLayout !== phoneLayout.matches) return false;
+    if (phoneLayout.matches && saved.layoutVersion !== 4) return false;
     normalScale = clamp(savedCamera.normalScale ?? 1, 0.65, 1);
     camera.scale = normalScale;
     camera.x = visibleMapWidth() / 2 - savedCamera.centerX * camera.scale;
@@ -1031,6 +1068,7 @@
       return branch;
     });
     rootHost.replaceChildren(...rootBranches, intro);
+    refreshExpandMarkers();
     camera.x = 0;
     camera.y = 0;
     camera.scale = 1;
@@ -1044,9 +1082,14 @@
     refreshLinesFor();
     requestAnimationFrame(() => {
       if (!saved || !restoreState(saved)) {
-        if (focusId && shownRoots.includes(focusId)) focusQuestion(focusId);
-        else centerGroup(measureCards([intro, ...rootBranches.map(branch =>
-          branch.querySelector(':scope > .questions-map-card'))]));
+        const group = measureCards([intro, ...rootBranches.map(branch =>
+          branch.querySelector(':scope > .questions-map-card'))]);
+        if (selectedId || (focusId && shownRoots.includes(focusId))) {
+          centerGroup(group, { animate: false });
+          focusQuestion(selectedId || focusId);
+        } else {
+          centerGroup(group);
+        }
       }
       stateReady = true;
       scheduleStateSave();
@@ -1088,6 +1131,7 @@
         ':scope > .questions-map-branch:not(.is-language-root) > .questions-map-card')];
       const positions = new Map(stableNodes.map(node => [node, node.getBoundingClientRect()]));
       oldRoot.replaceWith(nextRoot);
+      refreshExpandMarkers();
       const card = nextRoot.querySelector(':scope > .questions-map-card');
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
         for (const [node, before] of positions) {

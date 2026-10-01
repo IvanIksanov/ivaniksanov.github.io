@@ -72,6 +72,8 @@ html.questions-map-embed .t849__text {
   padding: 0;
   background: transparent !important;
   color: inherit;
+  font-size: 0.88rem;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
