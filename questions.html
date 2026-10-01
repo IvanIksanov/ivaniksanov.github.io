@@ -14,14 +14,14 @@
     </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.8">
-    <link rel="stylesheet" href="questions.css?v=8.9.18">
+    <link rel="stylesheet" href="questions.css?v=8.9.19">
     <link rel="preload" as="image" href="img/QAtoDev_(Flappy_Bird_style).png">
     <script>
         if (new URLSearchParams(location.search).get('map_embed') === '1') {
             document.documentElement.classList.add('questions-map-embed');
             const style = document.createElement('link');
             style.rel = 'stylesheet';
-            style.href = 'questions-map-embed.css';
+            style.href = 'questions-map-embed.css?v=1.0.1';
             document.head.appendChild(style);
         }
     </script>
@@ -105,7 +105,7 @@
     </div>
 <h2>Вопросы на собеседовании для тестировщика</h2>
 <div class="questions-view-switcher" data-view="list" role="group" aria-label="Вид вопросов">
-    <span class="questions-view-switcher__label" aria-current="page">Вопросы</span>
+    <span class="questions-view-switcher__label" aria-current="page">Список</span>
     <a class="questions-view-switcher__track" href="questions-map.html" aria-label="Показать карту вопросов">
         <span class="questions-view-switcher__thumb" aria-hidden="true"></span>
     </a>

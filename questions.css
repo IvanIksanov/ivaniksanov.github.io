@@ -301,18 +301,19 @@ h2 {
 
 .questions-view-switcher__thumb {
   position: absolute;
-  top: 3px;
+  top: 50%;
   left: 3px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
   background: #20242b;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+  transform: translateY(-50%);
   transition: transform 0.24s ease, background-color 0.24s ease;
 }
 
 .questions-view-switcher[data-view="map"] .questions-view-switcher__thumb {
-  transform: translateX(26px);
+  transform: translate(26px, -50%);
 }
 
 html[data-theme="dark"] .questions-view-switcher {
