@@ -13,6 +13,8 @@
     const progressMap = new Map();
     const answersMap = new Map();
     let syncPromise = null;
+    let lastLoadedAt = 0;
+    let lastLoadedUserId = "";
 
     const config = {
       cloudSyncTsKey: options.cloudSyncTsKey || "cloud_sync_ts_v1",
@@ -441,7 +443,8 @@
       const authUser = getAuthUser();
       if (!isCloudReady() || !authUser?.id) return { ok: false };
       if (!force && syncPromise) return syncPromise;
-      if (!force && (Date.now() - getCloudSyncLastTs()) < config.cloudSyncTtlMs) {
+      if (!force && lastLoadedUserId === authUser.id &&
+          (Date.now() - lastLoadedAt) < config.cloudSyncTtlMs) {
         debugLog?.debug("sync", config.logEvents.skipped, { reason: "ttl", source });
         return { ok: true, skipped: true };
       }
@@ -541,6 +544,8 @@
             source,
             force
           });
+          lastLoadedAt = Date.now();
+          lastLoadedUserId = authUser.id;
           markCloudSyncTs();
           debugLog?.info("sync", config.logEvents.success, {
             source,
