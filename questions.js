@@ -1308,11 +1308,7 @@ const refineSystemPrompt =
     });
     if (!changed) return;
     state.runtimeResponses.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
-    if (typeof state.renderCurrentRuntimeResponse === "function" && state.runtimeResponses.length) {
-      const currentIdx = Math.max(0, Math.min(state.runtimeIndex || 0, state.runtimeResponses.length - 1));
-      state.runtimeIndex = currentIdx;
-      state.renderCurrentRuntimeResponse();
-    }
+    state.restoreRuntimeResponseCursor?.();
   }
 
   function applyPublicAppendAnswersToVisibleUi() {
@@ -1551,9 +1547,7 @@ const refineSystemPrompt =
         state.runtimeResponses.push(resp);
       });
       state.runtimeResponses.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
-      if (state.runtimeResponses.length && typeof state.renderCurrentRuntimeResponse === "function") {
-        state.renderCurrentRuntimeResponse();
-      }
+      state.restoreRuntimeResponseCursor?.();
     });
   }
 
@@ -2643,6 +2637,7 @@ const refineSystemPrompt =
     body.className = "ai-supplement-text ai-rich";
     try {
       body.innerHTML = formatAiText(String(text || ""));
+      enhanceAiTableScrollbars(body);
     } catch (e) {
       console.warn("AI render failed, fallback to plain text", e);
       body.textContent = String(text || "");
@@ -2996,6 +2991,95 @@ const refineSystemPrompt =
         codeEl.classList.add('code-inline');
         codeEl.textContent = text;
       }
+    });
+  }
+
+  function enhanceAiTableScrollbars(root) {
+    root.querySelectorAll('.ai-table-wrap').forEach(viewport => {
+      const shell = document.createElement('div');
+      shell.className = 'ai-table-shell';
+      viewport.parentNode.insertBefore(shell, viewport);
+      shell.appendChild(viewport);
+
+      const track = document.createElement('div');
+      track.className = 'ai-table-scroll-track';
+      track.setAttribute('aria-hidden', 'true');
+      const thumb = document.createElement('div');
+      thumb.className = 'ai-table-scroll-thumb';
+      track.appendChild(thumb);
+      shell.appendChild(track);
+
+      let showTimer;
+      let hideTimer;
+      let dragging = false;
+      let dragPointerId = null;
+      let dragX = 0;
+      let dragScrollLeft = 0;
+
+      function update() {
+        const overflow = viewport.scrollWidth - viewport.clientWidth;
+        shell.classList.toggle('ai-table-shell--scrollable', overflow > 1);
+        if (overflow <= 1) return;
+        const trackWidth = track.clientWidth;
+        const thumbWidth = Math.min(trackWidth, Math.max(36, trackWidth * viewport.clientWidth / viewport.scrollWidth));
+        const travel = Math.max(0, trackWidth - thumbWidth);
+        thumb.style.width = `${thumbWidth}px`;
+        thumb.style.transform = `translateX(${travel * viewport.scrollLeft / overflow}px)`;
+      }
+
+      shell.addEventListener('pointerenter', event => {
+        if (event.pointerType === 'touch') return;
+        clearTimeout(hideTimer);
+        update();
+        showTimer = setTimeout(() => shell.classList.add('ai-table-shell--visible'), 500);
+      });
+      shell.addEventListener('pointerleave', () => {
+        clearTimeout(showTimer);
+        if (!dragging) hideTimer = setTimeout(() => shell.classList.remove('ai-table-shell--visible'), 500);
+      });
+      viewport.addEventListener('scroll', update, { passive: true });
+      track.addEventListener('pointerdown', event => {
+        if (event.button !== 0 || dragging) return;
+        event.preventDefault();
+        update();
+        dragging = true;
+        dragPointerId = event.pointerId;
+        dragX = event.clientX;
+        dragScrollLeft = viewport.scrollLeft;
+        if (event.target !== thumb) {
+          const thumbWidth = thumb.getBoundingClientRect().width;
+          const travel = track.clientWidth - thumbWidth;
+          viewport.scrollLeft = (event.clientX - track.getBoundingClientRect().left - thumbWidth / 2)
+            / Math.max(1, travel) * (viewport.scrollWidth - viewport.clientWidth);
+          dragScrollLeft = viewport.scrollLeft;
+        }
+        track.setPointerCapture(event.pointerId);
+      });
+      track.addEventListener('pointermove', event => {
+        if (!dragging || event.pointerId !== dragPointerId) return;
+        if (!(event.buttons & 1)) {
+          endDrag();
+          return;
+        }
+        const travel = track.clientWidth - thumb.getBoundingClientRect().width;
+        viewport.scrollLeft = dragScrollLeft + (event.clientX - dragX)
+          / Math.max(1, travel) * (viewport.scrollWidth - viewport.clientWidth);
+      });
+      function endDrag() {
+        if (!dragging) return;
+        dragging = false;
+        const pointerId = dragPointerId;
+        dragPointerId = null;
+        if (track.hasPointerCapture(pointerId)) track.releasePointerCapture(pointerId);
+        if (!shell.matches(':hover')) {
+          hideTimer = setTimeout(() => shell.classList.remove('ai-table-shell--visible'), 500);
+        }
+      }
+      track.addEventListener('pointerup', event => {
+        if (event.pointerId === dragPointerId) endDrag();
+      });
+      track.addEventListener('pointercancel', endDrag);
+      track.addEventListener('lostpointercapture', endDrag);
     });
   }
 
@@ -3401,8 +3485,10 @@ const refineSystemPrompt =
         aiSupplementEl,
         runtimeResponses: [],
         runtimeIndex: 0,
+        pendingCursorSignature: "",
         inlineStatus: "",
         renderCurrentRuntimeResponse: null,
+        restoreRuntimeResponseCursor: null,
         pushRuntimeResponse: null,
         setInlineStatus: null
       };
@@ -3431,9 +3517,10 @@ const refineSystemPrompt =
       const localResponses = readLocalAiResponses(item.id);
       localResponses.forEach(resp => pushIfUniqueResponse(mergedCloudResponses, { ...resp }));
       mergedCloudResponses.sort((a, b) => (a.arrivedAt || 0) - (b.arrivedAt || 0));
+      const savedCursor = readAiResponseCursor(item.id);
+      state.pendingCursorSignature = savedCursor?.signature || "";
       if (mergedCloudResponses.length && aiSupplementEl) {
         mergedCloudResponses.forEach(resp => state.runtimeResponses.push(resp));
-        const savedCursor = readAiResponseCursor(item.id);
         if (savedCursor) {
           const bySignatureIdx = savedCursor.signature
             ? state.runtimeResponses.findIndex((x) =>
@@ -3442,6 +3529,7 @@ const refineSystemPrompt =
             : -1;
           if (bySignatureIdx >= 0) {
             state.runtimeIndex = bySignatureIdx;
+            state.pendingCursorSignature = "";
           } else if (Number.isInteger(savedCursor.index)) {
             state.runtimeIndex = Math.max(0, Math.min(savedCursor.index, state.runtimeResponses.length - 1));
           }
@@ -3552,8 +3640,9 @@ const refineSystemPrompt =
         };
 
         const renderCurrentRuntimeResponse = (options = {}) => {
-          const { swipe = null } = options;
+          const { swipe = null, userSelection = false } = options;
           if (!runtimeResponses.length) return;
+          if (userSelection) state.pendingCursorSignature = "";
           const current = runtimeResponses[runtimeIndex];
           state.runtimeIndex = runtimeIndex;
           const canDeleteCurrent = !current?.isPublicShared;
@@ -3568,11 +3657,11 @@ const refineSystemPrompt =
                     total: runtimeResponses.length,
                     onPrev: () => {
                       runtimeIndex = (runtimeIndex - 1 + runtimeResponses.length) % runtimeResponses.length;
-                      renderCurrentRuntimeResponse({ swipe: "prev" });
+                      renderCurrentRuntimeResponse({ swipe: "prev", userSelection: true });
                     },
                     onNext: () => {
                       runtimeIndex = (runtimeIndex + 1) % runtimeResponses.length;
-                      renderCurrentRuntimeResponse({ swipe: "next" });
+                      renderCurrentRuntimeResponse({ swipe: "next", userSelection: true });
                     },
                     onDelete: canDeleteCurrent ? removeRuntimeResponse : null
                   }
@@ -3580,10 +3669,25 @@ const refineSystemPrompt =
             inlineStatus,
             current?.isPublicShared ? "public" : ""
           );
-          writeAiResponseCursor(item.id, runtimeResponses, runtimeIndex);
+          if (!state.pendingCursorSignature) writeAiResponseCursor(item.id, runtimeResponses, runtimeIndex);
           if (swipe) animateAiSupplementSwipe(aiSupplementEl, swipe);
         };
         state.renderCurrentRuntimeResponse = renderCurrentRuntimeResponse;
+        state.restoreRuntimeResponseCursor = () => {
+          const signature = state.pendingCursorSignature || readAiResponseCursor(item.id)?.signature;
+          const selectedIndex = signature
+            ? runtimeResponses.findIndex(resp =>
+                aiSignature(item.id, resp.answerType, resp.model, resp.answer) === signature)
+            : -1;
+          if (selectedIndex >= 0) {
+            runtimeIndex = selectedIndex;
+            state.pendingCursorSignature = "";
+          } else {
+            runtimeIndex = Math.max(0, Math.min(runtimeIndex, runtimeResponses.length - 1));
+          }
+          writeLocalAiResponses(item.id, runtimeResponses);
+          renderCurrentRuntimeResponse();
+        };
         state.setInlineStatus = (text) => {
           inlineStatus = text || "";
           if (runtimeResponses.length) renderCurrentRuntimeResponse();
@@ -3604,7 +3708,7 @@ const refineSystemPrompt =
           } else if (focus) {
             runtimeIndex = targetIndex;
           }
-          renderCurrentRuntimeResponse(swipe ? { swipe } : {});
+          renderCurrentRuntimeResponse({ swipe, userSelection: focus });
           if (delayedFocusMs > 0 && !focus) {
             setTimeout(() => {
               if (!runtimeResponses.length) return;
@@ -3613,7 +3717,7 @@ const refineSystemPrompt =
               );
               if (idx < 0 || runtimeIndex === idx) return;
               runtimeIndex = idx;
-              renderCurrentRuntimeResponse({ swipe: "next" });
+              renderCurrentRuntimeResponse({ swipe: "next", userSelection: true });
             }, delayedFocusMs);
           }
           syncLocalSupplementCache();
