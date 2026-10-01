@@ -321,6 +321,48 @@ test('failed cloud save queues an AI answer and retries it when the connection r
   assert.equal(attempts, 2);
 });
 
+test('a new Questions view loads cloud answers despite a recent sync in another view', async () => {
+  const stored = new Map();
+  const storage = {
+    getItem: key => stored.get(key) ?? null,
+    setItem: (key, value) => stored.set(key, value)
+  };
+  let answerLoads = 0;
+  const sandbox = {
+    console, AbortController, setTimeout, clearTimeout, localStorage: storage,
+    fetch: async url => {
+      const isAnswers = String(url).includes('/ai_answers');
+      if (isAnswers) answerLoads += 1;
+      const rows = isAnswers ? [{
+        id: 'answer-id', question_id: 'question-id', answer_type: 'append',
+        model: 'test-model', content: 'Сохранённый ответ', created_at: new Date().toISOString()
+      }] : [];
+      return new Response(JSON.stringify(rows), { status: 200 });
+    }
+  };
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../questions-cloud-sync.shared.js'), 'utf8'), sandbox);
+  const createView = () => sandbox.QuestionsCloudSyncShared.create({
+    localStorage: storage,
+    getSupabaseStore: () => ({ url: 'https://example.supabase.co', anonKey: 'publishable-test' }),
+    getAuthUser: () => ({ id: 'user-id' }),
+    getActiveSession: async () => ({ access_token: 'session-token' }),
+    cloudOpTimeoutMs: 100,
+    restTimeoutMs: 100
+  });
+
+  const list = createView();
+  assert.equal((await list.syncNow()).ok, true);
+  const map = createView();
+  assert.equal((await map.syncNow()).ok, true);
+  assert.equal(map.getAnswersMap().get('question-id')[0].answer, 'Сохранённый ответ');
+  const listAgain = createView();
+  assert.equal((await listAgain.syncNow()).ok, true);
+  assert.equal(listAgain.getAnswersMap().get('question-id')[0].answer, 'Сохранённый ответ');
+  assert.equal(answerLoads, 3);
+  assert.equal((await map.syncNow()).skipped, true);
+  assert.equal(answerLoads, 3);
+});
+
 test('Roadmap renders Markdown tables without flattening text or code blocks', () => {
   class Element {
     constructor(tag, value = '') { this.tagName = tag.toUpperCase(); this.value = value; this.children = []; this.className = ''; }
