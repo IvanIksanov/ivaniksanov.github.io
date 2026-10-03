@@ -84,17 +84,14 @@
       { skill: 'MySQL', pattern: /\bsql\b|\bselect\b|\bjoin\b|баз[а-я]* данн/i },
       { skill: 'quality-assurance', pattern: /\bqa\b|тестировщ|обеспечени[ея] качеств/i }
     ];
-    // Iconify IDs match the resume skills; colors follow the resume and roadmap palette.
+    // Iconify IDs match the resume skills.
     const chatIcons = {
-      qa: ['tabler:checkup-list', '#f59e0b'], sql: ['tabler:database-search', '#2563eb'],
-      postgresql: ['simple-icons:postgresql', '#336791'], api: ['tabler:api', '#0ea5e9'],
-      docker: ['simple-icons:docker', '#2496ed'], java: ['devicon-plain:java', '#c2413a'],
-      python: ['simple-icons:python', '#7c5bb8'], javascript: ['simple-icons:javascript', '#d9b525'],
-      git: ['simple-icons:git', '#f05032'], linux: ['simple-icons:linux', '#64748b'],
-      web: ['tabler:browser-check', '#2563eb'], 'test-design': ['tabler:ruler-2', '#8b5cf6'],
-      bug: ['tabler:bug', '#ef4444'], postman: ['simple-icons:postman', '#ff6c37'],
-      swagger: ['simple-icons:swagger', '#85ea2d'], kubernetes: ['simple-icons:kubernetes', '#326ce5'],
-      'ci-cd': ['tabler:route-2', '#14b8a6'], interview: ['tabler:users-group', '#7c3aed']
+      qa: 'tabler:checkup-list', sql: 'tabler:database-search', postgresql: 'simple-icons:postgresql',
+      api: 'tabler:api', docker: 'simple-icons:docker', java: 'devicon-plain:java',
+      python: 'simple-icons:python', javascript: 'simple-icons:javascript', git: 'simple-icons:git',
+      linux: 'simple-icons:linux', web: 'tabler:browser-check', 'test-design': 'tabler:ruler-2',
+      bug: 'tabler:bug', postman: 'simple-icons:postman', swagger: 'simple-icons:swagger',
+      kubernetes: 'simple-icons:kubernetes', 'ci-cd': 'tabler:route-2', interview: 'tabler:users-group'
     };
     function chatIcon(value, title = '') {
       const chosen = window.QAtoDevConversationMemory.normalizeIcon(value);
@@ -496,8 +493,7 @@
         if (chat.id === newId) card.classList.add('is-new');
         if (chat.id === activeChatId) card.classList.add('is-active');
         card.dataset.chatId = chat.id;
-        const [symbol, color] = chatIcons[chatIcon(chat.icon, chat.title)];
-        card.style.setProperty('--home-chat-icon-color', color);
+        const symbol = chatIcons[chatIcon(chat.icon, chat.title)];
         const pattern = document.createElement('div');
         pattern.className = 'home-chat__saved-pattern';
         pattern.setAttribute('aria-hidden', 'true');
