@@ -489,6 +489,29 @@
       button.addEventListener('click', onClick);
       return button;
     }
+    function setupActionHover(actions) {
+      const recent = [];
+      const timers = new WeakMap();
+      function collapse(button) {
+        clearTimeout(timers.get(button));
+        button.classList.remove('is-recent');
+        const index = recent.indexOf(button);
+        if (index !== -1) recent.splice(index, 1);
+      }
+      for (const button of actions.querySelectorAll('.home-chat__action')) {
+        button.addEventListener('pointerenter', () => {
+          collapse(button);
+          while (recent.length > 1) collapse(recent[0]);
+        });
+        button.addEventListener('pointerleave', () => {
+          collapse(button);
+          button.classList.add('is-recent');
+          recent.push(button);
+          while (recent.length > 2) collapse(recent[0]);
+          timers.set(button, setTimeout(() => collapse(button), 1000));
+        });
+      }
+    }
     function transferPrompt() {
       const completed = turns.filter(turn => turn.answer);
       const memory = completed.findLast(turn => turn.memory)?.memory || '';
@@ -674,12 +697,12 @@
               setTimeout(() => { caption.textContent = 'Скопировать ответ'; }, 1600);
             } catch { status.textContent = 'Не удалось скопировать ответ.'; }
           }),
-          actionButton('export', 'Скопировать чат для ИИ', async event => {
+          actionButton('export', 'Саммари для ИИ', async event => {
             const caption = event.currentTarget.querySelector('span');
             try {
               await navigator.clipboard.writeText(transferPrompt());
               caption.textContent = 'Чат скопирован';
-              setTimeout(() => { caption.textContent = 'Скопировать чат для ИИ'; }, 1600);
+              setTimeout(() => { caption.textContent = 'Саммари для ИИ'; }, 1600);
             } catch { status.textContent = 'Не удалось скопировать чат.'; }
           })
         );
@@ -703,6 +726,7 @@
           usageButton,
           actionButton('new', 'Новый чат', startNewChat)
         );
+        setupActionHover(actions);
         yes.addEventListener('click', deleteCurrentChat);
         no.addEventListener('click', () => { confirm.hidden = true; });
         section.append(actions);

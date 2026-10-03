@@ -152,7 +152,7 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
 .home-chat__action:hover, .home-chat__action:focus-visible { color: var(--home-text); background: var(--home-surface); }
 .home-chat__action svg { flex: 0 0 18px; width: 18px; height: 18px; }
 .home-chat__action span { display: block; max-width: 0; margin-left: 0; overflow: hidden; white-space: nowrap; opacity: 0; transition: max-width 260ms ease, margin-left 260ms ease, opacity 180ms ease; }
-.home-chat__action:hover span, .home-chat__action:focus-visible span { max-width: 150px; margin-left: 7px; opacity: 1; }
+.home-chat__action:hover span, .home-chat__action:focus-visible span, .home-chat__action.is-recent span { max-width: 150px; margin-left: 7px; opacity: 1; }
 .home-chat__followups { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
 .home-chat__followups button { max-width: 100%; min-height: 36px; padding: 7px 13px; border: 1px solid var(--home-starter-border); border-radius: 999px; background: var(--home-starter-surface); color: var(--home-text); font: inherit; font-size: 12px; line-height: 1.35; text-align: left; cursor: pointer; transition: transform 180ms ease, border-color 180ms ease; }
 .home-chat__followups button:hover { transform: translateY(-1px); border-color: var(--home-starter-accent); }
