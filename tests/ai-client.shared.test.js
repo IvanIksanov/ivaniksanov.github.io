@@ -130,13 +130,25 @@ test('proxy reports a daily limit from the first key even when the backup answer
   let calls = 0;
   const { call } = edgeFixture(async () => {
     calls += 1;
-    if (calls === 1) return new Response(JSON.stringify({ error: { message: 'Rate limit reached on tokens per day (TPD)' } }), { status: 429 });
+    if (calls === 1) return new Response(JSON.stringify({ error: { message: 'Rate limit reached on tokens per day (TPD)' } }),
+      { status: 429, headers: { 'retry-after': '3600' } });
     return answer('Резервный ключ ответил. Ответ содержит пояснение.');
   });
   const response = await call({ provider: 'groq', model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Вопрос' }] });
   assert.equal(response.status, 200);
   assert.equal(response.headers.get('X-QAtoDev-Daily-Limit'), '1');
+  assert.ok(Number(response.headers.get('X-QAtoDev-Daily-Reset-At')) > Date.now() + 3500000);
   assert.equal(calls, 2);
+});
+
+test('daily limit stores only an upstream retry time, never a guessed daily reset', async () => {
+  const resetAt = Date.now() + 60000;
+  const { client, storage } = fixture(async () => new Response(JSON.stringify({ error: { message: 'tokens per day (TPD)' } }),
+    { status: 429, headers: { 'X-QAtoDev-Daily-Limit': '1', 'X-QAtoDev-Daily-Reset-At': String(resetAt) } }));
+  await assert.rejects(client.fetchAnswerOnce('Вопрос', 'fast'));
+  assert.ok(Math.abs(client.readDailyLimit().resetAt - resetAt) < 1000);
+  storage.set('groq_daily_limit_seen_v1', JSON.stringify({ at: Date.now(), model: 'fast', resetAt: Date.now() - 1 }));
+  assert.equal(client.hasRecentDailyLimit(), false);
 });
 
 test('staging requests without provider keep the existing IO route', async () => {

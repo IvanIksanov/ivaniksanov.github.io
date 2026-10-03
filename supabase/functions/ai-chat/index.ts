@@ -4,7 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Expose-Headers": "X-QAtoDev-Daily-Limit",
+  "Access-Control-Expose-Headers": "X-QAtoDev-Daily-Limit, X-QAtoDev-Daily-Reset-At",
 };
 
 const GROQ_API_BASE = "https://api.groq.com/openai/v1";
@@ -54,6 +54,7 @@ function validGroqMessages(messages: unknown[]) {
 
 async function requestUpstream(url: string, init: RequestInit, keys: string[], onSuccess?: (text: string, keyIndex: number) => Promise<void>) {
   let dailyLimitHit = false;
+  let dailyResetAt: number | null = null;
   for (const [index, key] of keys.entries()) {
     try {
       const upstreamRes = await fetch(url, {
@@ -61,7 +62,16 @@ async function requestUpstream(url: string, init: RequestInit, keys: string[], o
         headers: { ...init.headers, Authorization: `Bearer ${key}` },
       });
       const text = await upstreamRes.text();
-      if (upstreamRes.status === 429 && /\b(?:TPD|RPD)\b|tokens per day|requests per day/i.test(text)) dailyLimitHit = true;
+      if (upstreamRes.status === 429 && /\b(?:TPD|RPD)\b|tokens per day|requests per day/i.test(text)) {
+        dailyLimitHit = true;
+        const retryHeader = upstreamRes.headers.get("retry-after") || "";
+        const retrySeconds = Number(retryHeader) || Number(text.match(/try again in\s+([\d.]+)s/i)?.[1]);
+        const retryDate = Date.parse(retryHeader);
+        const resetAt = Number.isFinite(retrySeconds) && retrySeconds > 0
+          ? Date.now() + retrySeconds * 1000
+          : Number.isFinite(retryDate) && retryDate > Date.now() ? retryDate : null;
+        if (resetAt) dailyResetAt = dailyResetAt ? Math.min(dailyResetAt, resetAt) : resetAt;
+      }
       if (!upstreamRes.ok && index < keys.length - 1 && shouldTryNextKey(upstreamRes.status, text)) continue;
       if (upstreamRes.ok && onSuccess) {
         try { await onSuccess(text, index); }
@@ -73,6 +83,7 @@ async function requestUpstream(url: string, init: RequestInit, keys: string[], o
           ...corsHeaders,
           "Content-Type": upstreamRes.headers.get("content-type") || "application/json",
           ...(dailyLimitHit ? { "X-QAtoDev-Daily-Limit": "1" } : {}),
+          ...(dailyResetAt ? { "X-QAtoDev-Daily-Reset-At": String(Math.round(dailyResetAt)) } : {}),
         },
       });
     } catch (error) {
