@@ -84,14 +84,17 @@
       { skill: 'MySQL', pattern: /\bsql\b|\bselect\b|\bjoin\b|баз[а-я]* данн/i },
       { skill: 'quality-assurance', pattern: /\bqa\b|тестировщ|обеспечени[ея] качеств/i }
     ];
-    // Iconify IDs are the same ones used for skills on the resume page.
+    // Iconify IDs match the resume skills; colors follow the resume and roadmap palette.
     const chatIcons = {
-      qa: 'tabler:checkup-list', sql: 'tabler:database-search', postgresql: 'simple-icons:postgresql',
-      api: 'tabler:api', docker: 'simple-icons:docker', java: 'devicon-plain:java',
-      python: 'simple-icons:python', javascript: 'simple-icons:javascript', git: 'simple-icons:git',
-      linux: 'simple-icons:linux', web: 'tabler:browser-check', 'test-design': 'tabler:ruler-2',
-      bug: 'tabler:bug', postman: 'simple-icons:postman', swagger: 'simple-icons:swagger',
-      kubernetes: 'simple-icons:kubernetes', 'ci-cd': 'tabler:route-2', interview: 'tabler:users-group'
+      qa: ['tabler:checkup-list', '#f59e0b'], sql: ['tabler:database-search', '#2563eb'],
+      postgresql: ['simple-icons:postgresql', '#336791'], api: ['tabler:api', '#0ea5e9'],
+      docker: ['simple-icons:docker', '#2496ed'], java: ['devicon-plain:java', '#c2413a'],
+      python: ['simple-icons:python', '#7c5bb8'], javascript: ['simple-icons:javascript', '#d9b525'],
+      git: ['simple-icons:git', '#f05032'], linux: ['simple-icons:linux', '#64748b'],
+      web: ['tabler:browser-check', '#2563eb'], 'test-design': ['tabler:ruler-2', '#8b5cf6'],
+      bug: ['tabler:bug', '#ef4444'], postman: ['simple-icons:postman', '#ff6c37'],
+      swagger: ['simple-icons:swagger', '#85ea2d'], kubernetes: ['simple-icons:kubernetes', '#326ce5'],
+      'ci-cd': ['tabler:route-2', '#14b8a6'], interview: ['tabler:users-group', '#7c3aed']
     };
     function chatIcon(value, title = '') {
       const chosen = window.QAtoDevConversationMemory.normalizeIcon(value);
@@ -493,17 +496,23 @@
         if (chat.id === newId) card.classList.add('is-new');
         if (chat.id === activeChatId) card.classList.add('is-active');
         card.dataset.chatId = chat.id;
+        const [symbol, color] = chatIcons[chatIcon(chat.icon, chat.title)];
+        card.style.setProperty('--home-chat-icon-color', color);
+        const pattern = document.createElement('div');
+        pattern.className = 'home-chat__saved-pattern';
+        pattern.setAttribute('aria-hidden', 'true');
+        for (let i = 0; i < 24; i += 1) {
+          const glyph = document.createElement('iconify-icon');
+          glyph.setAttribute('icon', symbol);
+          pattern.append(glyph);
+        }
         const open = document.createElement('button');
         open.type = 'button'; open.className = 'home-chat__saved-open';
         open.setAttribute('aria-label', `Открыть чат «${chat.title}»`);
-        const icon = document.createElement('iconify-icon');
-        icon.className = 'home-chat__saved-icon';
-        icon.setAttribute('icon', chatIcons[chatIcon(chat.icon, chat.title)]);
-        icon.setAttribute('aria-hidden', 'true');
         const title = document.createElement('strong'); title.textContent = chat.title;
-        open.append(icon, title);
+        open.append(title);
         open.addEventListener('click', () => openChat(chat.id));
-        card.append(open);
+        card.append(pattern, open);
         lists[index % 2].append(card);
       });
       lists.forEach(list => { list.hidden = !list.childElementCount; });

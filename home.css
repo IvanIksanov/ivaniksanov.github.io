@@ -45,25 +45,30 @@ html[data-theme="dark"] .home-stage {
   gap: clamp(24px, 3.4vw, 72px);
 }
 .home-stage__cards {
+  --home-card-gap: clamp(6px, 1.4svh, 18px);
   display: flex;
   flex-direction: column;
   justify-content: safe center;
   min-height: 0;
   overflow: clip;
-  gap: clamp(6px, 1.4svh, 18px);
+  gap: var(--home-card-gap);
   padding: 20px 0;
 }
 .home-stage__cards.is-collapsing { justify-content: safe flex-start; }
 .home-stage__cards > .home-stage__card { flex: 0 0 auto; }
 .home-stage .home-stage__card[hidden] { display: none !important; }
-.home-chat__saved-list { display: flex; flex: 0 0 auto; min-height: 0; flex-direction: column; gap: 8px; padding: 2px; }
+.home-chat__saved-list { display: flex; flex: 0 0 auto; min-height: 0; flex-direction: column; gap: var(--home-card-gap); }
 .home-chat__saved-list[hidden] { display: none; }
-.home-chat__saved-card { position: relative; flex: 0 0 auto; height: var(--home-card-height, clamp(72px, 15svh, 130px)); min-height: 0; border: 1px solid var(--home-border); border-radius: 18px; background: var(--home-surface); overflow: hidden; }
+.home-chat__saved-card { position: relative; flex: 0 0 auto; height: var(--home-card-height, clamp(72px, 15svh, 130px)); min-height: 0; border: 1px solid var(--home-border); border-radius: 18px; background: color-mix(in srgb, var(--home-chat-icon-color) 7%, var(--home-surface)); overflow: hidden; }
 .home-chat__saved-card.is-new { animation: homeSavedCardEnter 360ms cubic-bezier(.22, 1, .36, 1) both; }
 .home-chat__saved-card.is-active { border-color: var(--home-muted); }
-.home-chat__saved-open { display: flex; width: 100%; height: 100%; min-height: 0; align-items: center; gap: 9px; padding: var(--home-card-padding, 15px) 15px; border: 0; background: transparent; color: var(--home-text); text-align: left; cursor: pointer; }
+.home-chat__saved-open { position: relative; z-index: 1; display: flex; width: 100%; height: 100%; min-height: 0; align-items: center; padding: var(--home-card-padding, 15px) 15px; border: 0; background: transparent; color: var(--home-text); text-align: left; cursor: pointer; }
 .home-chat__saved-open:hover, .home-chat__saved-open:focus-visible { background: color-mix(in srgb, var(--home-text) 4%, transparent); }
-.home-chat__saved-icon { flex: 0 0 18px; width: 18px; height: 18px; color: var(--home-muted); opacity: .5; font-size: 18px; line-height: 1; }
+.home-chat__saved-pattern { position: absolute; top: 50%; left: 50%; display: grid; grid-template-columns: repeat(6, 32px); gap: 18px; width: max-content; color: var(--home-chat-icon-color); opacity: .2; transform: translate(-50%, -50%) rotate(-45deg); pointer-events: none; }
+.home-chat__saved-pattern iconify-icon { width: 32px; height: 32px; font-size: 28px; line-height: 1; }
+.home-chat__saved-pattern iconify-icon:nth-child(n+7):nth-child(-n+12),
+.home-chat__saved-pattern iconify-icon:nth-child(n+19):nth-child(-n+24) { translate: 25px 0; }
+html[data-theme="dark"] .home-chat__saved-pattern { opacity: .28; }
 .home-chat__saved-open strong { display: -webkit-box; min-width: 0; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: var(--home-card-title-size, 15px); line-height: 1.2; font-weight: 650; overflow-wrap: anywhere; }
 @keyframes homeSavedCardEnter { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .home-stage .home-stage__card,
@@ -222,7 +227,7 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
   .home-stage__layout { display: flex; flex-direction: column; gap: 0; }
   .home-stage__center { order: 0; min-height: max(440px, calc(100svh - var(--site-header-height) - 60px)); }
   .home-stage__center.has-conversation { margin-top: -11px; }
-  .home-stage__cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 10px 0; overflow: visible; }
+  .home-stage__cards { --home-card-gap: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--home-card-gap); padding: 10px 0; overflow: visible; }
   .home-chat__saved-list { grid-column: 1 / -1; }
   .home-stage__cards--left { order: 1; }
   .home-stage__cards--right { order: 2; }
