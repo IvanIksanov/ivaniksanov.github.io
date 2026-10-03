@@ -42,7 +42,8 @@ function edgeFixture(fetch) {
       rpc: async () => ({ data: [...new Set(usageRows.map(row => `${row.model}:${row.key_slot}`))].map(key => {
         const rows = usageRows.filter(row => `${row.model}:${row.key_slot}` === key);
         return { model: rows[0].model, key_slot: rows[0].key_slot,
-          charged_tokens: rows.reduce((sum, row) => sum + row.charged_tokens, 0), request_count: rows.length };
+          charged_tokens: rows.reduce((sum, row) => sum + row.charged_tokens, 0), request_count: rows.length,
+          resets_at: '2026-10-04T04:00:00+00:00' };
       }), error: null })
     }),
     fetch, Request, Response, URL, Set, Number, String
@@ -72,6 +73,8 @@ test('site-key Groq completions are counted centrally for guests, including back
   assert.equal(balance.limit, 1200000);
   assert.equal(balance.used, 700);
   assert.equal(balance.remaining, 1199300);
+  assert.equal(balance.window, 'america_new_york_day');
+  assert.equal(balance.resetsAt, '2026-10-04T04:00:00+00:00');
   assert.equal(balance.byModel.find(row => row.model === 'openai/gpt-oss-20b').requests, 1);
   await call({ ...request, userApiKey: 'gsk-personal' });
   assert.equal(usageRows.length, 1);
