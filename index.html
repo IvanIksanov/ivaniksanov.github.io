@@ -13,15 +13,16 @@
         })();
     </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
-    <link rel="stylesheet" href="header.css?v=8.9.8">
+    <link rel="stylesheet" href="header.css?v=8.9.11">
     <link rel="stylesheet" href="styles.css?v=8.9.4">
+    <link rel="stylesheet" href="home.css?v=1.0.33">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
     <script src="metrika.shared.js"></script>
 <!-- Yandex.RTB -->
     <script>window.yaContextCb=window.yaContextCb||[]</script>
     <script src="https://yandex.ru/ads/system/context.js" async></script>
 </head>
-<body>
+<body class="home-redesign">
 <noscript><div><img src="https://mc.yandex.ru/watch/99129194" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <div class="site-header">
 <nav>
@@ -36,12 +37,16 @@
 
 <header class="welcome">
     <div class="header-container">
-        <div class="logo"
-             style="cursor: pointer;"
-             onclick="window.location.href='index.html'">
-            <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="Логотип">
+        <div class="logo">
+            <span class="logo-art" role="img" aria-label="Логотип QAtoDev"></span>
         </div>
-        <h3 class="site-title">QAtoDev!</h3>
+        <h3 class="site-title" role="link" tabindex="0" aria-label="Перейти на главную"><span class="site-title-ascii" aria-hidden="true">                            _
+               _           | |
+  ____ _____ _| |_ ___   __| |_____ _   _
+ / _  (____ (_   _) _ \ / _  | ___ | | | |
+| |_| / ___ | | || |_| ( (_| | ____|\ V /
+ \__  \_____|  \__)___/ \____|_____) \_/
+    |_|</span></h3>
     </div>
 
 </header>
@@ -68,6 +73,55 @@
 </div>
 
 <main>
+    <section class="home-stage" aria-label="Главная QAtoDev">
+        <div class="home-stage__layout">
+            <div class="home-stage__cards home-stage__cards--left" aria-label="Учёба и подготовка">
+                <a class="home-stage__card" href="roadmap.html"><img src="img/cover/skills_cover.webp" alt="" loading="lazy"><strong>Roadmap для QA</strong></a>
+                <a class="home-stage__card" href="questions.html"><img src="img/cover/questions_cover.webp" alt="" loading="lazy"><strong>Вопросы</strong></a>
+                <a class="home-stage__card" href="pageBooks.html"><img src="img/cover/books_cover.webp" alt="" loading="lazy"><strong>Книжная полка</strong></a>
+                <div class="home-chat__saved-list" id="home-chat-saved-left" aria-label="Сохранённые чаты" hidden></div>
+            </div>
+
+            <div class="home-stage__center">
+                <div class="home-stage__intro" id="home-chat-intro">
+                    <h1>Разбирайся.<br>Проверяй.<br><span>Спрашивай.</span></h1>
+                    <p>Выбирай раздел или задай вопрос помощнику. Он объяснит тему, подскажет направление и поможет с практикой.</p>
+                    <div class="home-stage__starters" aria-label="Идеи для начала">
+                        <button type="button" data-home-starter="start">С чего начать</button>
+                        <button type="button" data-home-starter="sql">Практиковаться SQL</button>
+                        <button type="button" data-home-starter="rest">Повторить REST-коды</button>
+                        <button type="button" data-home-starter="test-design">Тест-дизайн</button>
+                        <button type="button" data-home-starter="top-questions">Топ вопросов для QA</button>
+                    </div>
+                </div>
+                <div class="home-chat__conversation" id="home-chat-conversation" aria-label="Переписка с помощником" aria-live="polite" hidden></div>
+                <div class="home-chat__bottom">
+                    <p class="home-chat__status" id="home-chat-status" role="status" aria-live="polite"></p>
+                    <form class="home-chat__form" id="home-chat-form">
+                        <span aria-hidden="true">›_</span>
+                        <label class="home-chat__sr-only" for="home-chat-input">Спросить помощника</label>
+                        <textarea id="home-chat-input" rows="1" maxlength="2000" placeholder="Спросить про QA, навык или практику…"></textarea>
+                        <span class="home-chat__usage-inline" id="home-chat-usage-inline" aria-live="polite" hidden></span>
+                        <button class="home-chat__usage-toggle" id="home-chat-usage-toggle" type="button" aria-label="Показать расход токенов" aria-expanded="false" aria-controls="home-chat-usage-inline" hidden>!</button>
+                        <button id="home-chat-send" type="submit" aria-label="Отправить вопрос"><svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true"><path d="M12 19V5m-5 5 5-5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    </form>
+                    <button class="home-chat__settings-toggle" id="home-chat-settings-toggle" type="button" aria-expanded="false" aria-controls="home-chat-settings" hidden>Добавить ключ Groq</button>
+                    <div class="home-chat__settings" id="home-chat-settings" hidden>
+                        <label for="home-chat-key">Личный ключ Groq</label>
+                        <div><input id="home-chat-key" type="password" autocomplete="off" placeholder="Вставьте ключ Groq"><button id="home-chat-key-save" type="button">Сохранить</button></div>
+                        <p id="home-chat-key-status" role="status">Тот же ключ, что в «Вопросах» и Roadmap. <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer">Получить ключ ↗</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="home-stage__cards home-stage__cards--right" aria-label="Практика">
+                <a class="home-stage__card" href="loginSandbox.html"><img src="img/cover/login_cover.webp" alt="" loading="lazy"><strong>Login Sandbox</strong></a>
+                <a class="home-stage__card" href="flappy.html"><img src="img/cover/flappy_cover.webp" alt="" loading="lazy"><strong>Flappy тренажёр</strong></a>
+                <a class="home-stage__card" href="swagger_api.html"><img src="img/cover/magic_cover.webp" alt="" loading="lazy"><strong>Swagger тренажёр</strong></a>
+                <div class="home-chat__saved-list" id="home-chat-saved-right" aria-label="Сохранённые чаты" hidden></div>
+            </div>
+        </div>
+    </section>
     <!-- Yandex.RTB R-A-15042258-1 -->
     <div id="yandex_rtb_R-A-15042258-1"></div>
     <script>
@@ -80,85 +134,6 @@
     </script>
 
     <section id="practice-covers">
-        <div class="carousel">
-            <div class="carousel-images">
-                <div class="skills-cover carousel-item active">
-                    <a class="skills-cover-link" href="#plan-list">
-                        <img class="skills-cover-img" src="img/cover/skills_cover.webp" alt="Конструктор навыков">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">Конструктор навыков</span>
-                            <span class="skills-cover-subtitle">Собери личный маршрут QA и закрепи практику по ключевым инструментам тестировщика.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="#plan-list">Конструктор навыков (обучение)</a>
-                </div>
-                <div class="skills-cover carousel-item">
-                    <a class="skills-cover-link" href="questions.html">
-                        <img class="skills-cover-img" src="img/cover/questions_cover.webp" alt="Вопросы на собеседовании">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">Подготовка к собеседованию</span>
-                            <span class="skills-cover-subtitle">Тренируй ответы на частые вопросы и систематизируй теорию перед интервью.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="questions.html">Подготовка к собеседованию</a>
-                </div>
-                <div class="skills-cover carousel-item">
-                    <a class="skills-cover-link" href="pageBooks.html">
-                        <img class="skills-cover-img" src="img/cover/books_cover.webp" alt="Книги для практики">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">Книжная полка</span>
-                            <span class="skills-cover-subtitle">Проверь интерактивную страницу по чек-листу и прокачай внимательность к деталям.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="pageBooks.html">Протестировать книжную полку</a>
-                </div>
-                <div class="skills-cover carousel-item">
-                    <a class="skills-cover-link" href="flappy.html">
-                        <img class="skills-cover-img" src="img/cover/flappy_cover.webp" alt="Flappy тренажер">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">Flappy тренажер</span>
-                            <span class="skills-cover-subtitle">Отработай тест-дизайн и баг-репорты на игровом сценарии с реальными дефектами.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="flappy.html">Протестировать игру по чек-листу</a>
-                </div>
-                <div class="skills-cover carousel-item">
-                    <a class="skills-cover-link" href="loginSandbox.html">
-                        <img class="skills-cover-img" src="img/cover/login_cover.webp" alt="Login тренажер">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">Login Sandbox</span>
-                            <span class="skills-cover-subtitle">Пройди позитивные и негативные проверки формы входа и зафиксируй найденные баги.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="loginSandbox.html">Логин тренажер (поиск багов)</a>
-                </div>
-                <div class="skills-cover carousel-item">
-                    <a class="skills-cover-link" href="swagger_api.html">
-                        <img class="skills-cover-img" src="img/cover/magic_cover.webp" alt="Swagger тренажер">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">API тренажер (Swagger)</span>
-                            <span class="skills-cover-subtitle">Потренируй проверку эндпоинтов, статусов и структуры ответов в API-практике.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="swagger_api.html">API тренажер (Swagger)</a>
-                </div>
-                <div class="skills-cover carousel-item">
-                    <a class="skills-cover-link" href="#tg-links">
-                        <img class="skills-cover-img" src="img/cover/telegram_cover.webp" alt="Посты в телеграм">
-                        <span class="skills-cover-caption">
-                            <span class="skills-cover-title">Технические посты</span>
-                            <span class="skills-cover-subtitle">Изучай разборы QA-кейсов и дополняй практику полезными материалами сообщества.</span>
-                        </span>
-                    </a>
-                    <a class="skills-cover-cta" href="#tg-links">Популярные технические посты</a>
-                </div>
-            </div>
-            <div class="carousel-controls">
-                <button id="prev" class="carousel-button">‹</button>
-                <button id="next" class="carousel-button">›</button>
-            </div>
-        </div>
-
         <div class="article" id="qa-mini-trainers">
             <div class="qa-mini-trainers__head">
                 <h2>Мини-тренажеры для QA</h2>
@@ -761,12 +736,20 @@
     })();
 </script>
 
-<script src="logo-rotator.js?v=8.9.4"></script>
-
 <script src="debug.shared.js?v=8.9.4"></script>
 <script src="study-plan-sync.shared.js?v=8.9.4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase.client.js?v=8.9.4"></script>
+<script src="ai-client.shared.js?v=1.0.10"></script>
+<script src="ai-table-scroll.shared.js?v=1.0.0"></script>
+<script src="ai-conversation-memory.shared.js?v=1.0.4"></script>
+<script src="home-chat-starters.js?v=1.0.2"></script>
+<script src="home-chat-sync.shared.js?v=1.0.0"></script>
+<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js" defer></script>
+<script src="home-chat.js?v=1.0.31"></script>
+<script src="home-side-cards.js?v=1.0.6"></script>
 <script src="script.js?v=8.9.4"></script>
 
-  <script src="header.js?v=8.9.5"></script>
+  <script src="header.js?v=8.9.11"></script>
 </body>
 </html>

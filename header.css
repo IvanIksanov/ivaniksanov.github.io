@@ -227,46 +227,15 @@ body {
   margin: 0;
 }
 
-.logo img {
+.logo--home-link { cursor: pointer; }
+
+.logo-art {
+  display: block;
   padding: 0;
   width: calc(32px * var(--header-desktop-scale));
   height: calc(32px * var(--header-desktop-scale));
   margin-right: calc(5px * var(--header-desktop-scale));
-  opacity: 0;
-  transform: translateZ(0) scale(1) rotate(0deg);
-  transform-origin: 50% 50%;
-  transition:
-    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    filter 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.2s ease;
-  backface-visibility: hidden;
-}
-
-.logo img.logo-ready {
-  opacity: 1;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .logo img {
-    will-change: transform, filter;
-  }
-
-  .logo:hover img,
-  .logo:focus-within img {
-    transition-delay: 70ms;
-    transform: translateZ(0) scale(1.045) rotate(-5deg);
-    filter: saturate(1.03);
-  }
-
-  .logo:not(:hover):not(:focus-within) img {
-    transition-delay: 0s;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .logo img {
-    transition: none;
-  }
+  background: url('img/QAtoDev_(Flappy_Bird_style).png') center / contain no-repeat;
 }
 
 header.welcome {
@@ -309,27 +278,17 @@ header.welcome {
     background-color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.site-title:not([data-site-title-ready="true"]) {
-  color: transparent;
-}
-
-.site-title-ascii,
-.site-title-ascii__line {
-  display: block;
-}
-
 .site-title-ascii {
+  display: block;
   text-align: left;
+  -webkit-text-stroke: 0.18px currentColor;
+  text-shadow: 0.22px 0 0 currentColor;
 }
+
+.site-title-ascii__line { display: block; }
 
 .site-title-ascii__char {
   display: inline-block;
-  opacity: 1;
-  transform: translate(0, 0) rotate(0deg) scale(1);
-  filter: blur(0);
-  -webkit-text-stroke: 0.18px currentColor;
-  text-shadow: 0.22px 0 0 currentColor;
-  will-change: transform, opacity, filter;
 }
 
 .site-title.is-assembling .site-title-ascii__char {
@@ -345,7 +304,7 @@ header.welcome {
   }
   to {
     opacity: 1;
-    transform: translate(0, 0) rotate(0deg) scale(1);
+    transform: translate(0, 0) rotate(0deg);
     filter: blur(0);
   }
 }
@@ -382,12 +341,6 @@ html[data-theme="dark"] .site-header .site-title {
 @media (max-width: 1200px) {
   .site-title {
     display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .site-title.is-assembling .site-title-ascii__char {
-    animation: none;
   }
 }
 

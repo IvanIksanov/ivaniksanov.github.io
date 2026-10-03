@@ -22,6 +22,7 @@ const answer = text => new Response(JSON.stringify({ choices: [{ message: { cont
 
 function edgeFixture(fetch) {
   let handler;
+  const usageRows = [];
   const source = fs.readFileSync(path.join(__dirname, '../supabase/functions/ai-chat/index.ts'), 'utf8')
     .replace(/^import \{ createClient \} from .*;\n/, '');
   const env = new Map([
@@ -35,14 +36,46 @@ function edgeFixture(fetch) {
   ]);
   vm.runInNewContext(stripTypeScriptTypes(source), {
     Deno: { env: { get: key => env.get(key) }, serve: callback => { handler = callback; } },
-    createClient: () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
+    createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: null } }) },
+      from: () => ({ insert: async row => { usageRows.push(row); return { error: null }; } }),
+      rpc: async () => ({ data: [...new Set(usageRows.map(row => `${row.model}:${row.key_slot}`))].map(key => {
+        const rows = usageRows.filter(row => `${row.model}:${row.key_slot}` === key);
+        return { model: rows[0].model, key_slot: rows[0].key_slot,
+          charged_tokens: rows.reduce((sum, row) => sum + row.charged_tokens, 0), request_count: rows.length };
+      }), error: null })
+    }),
     fetch, Request, Response, URL, Set, Number, String
   });
   const call = body => handler(new Request('https://example.functions.supabase.co/ai-chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
   }));
-  return { call, env };
+  const callUsage = () => handler(new Request('https://example.functions.supabase.co/ai-chat?action=usage&provider=groq'));
+  return { call, callUsage, env, usageRows };
 }
+
+test('site-key Groq completions are counted centrally for guests, including backup responses', async () => {
+  let attempt = 0;
+  const { call, callUsage, usageRows } = edgeFixture(async () => {
+    attempt += 1;
+    if (attempt === 1) return new Response(JSON.stringify({ error: { message: 'tokens per day' } }), { status: 429 });
+    return new Response(JSON.stringify({ id: 'completion-1', usage: {
+      prompt_tokens: 600, completion_tokens: 200, prompt_tokens_details: { cached_tokens: 100 }
+    }, choices: [{ message: { content: 'Тестовый ответ.' } }] }));
+  });
+  const request = { provider: 'groq', model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Вопрос' }] };
+  assert.equal((await call(request)).status, 200);
+  assert.equal(usageRows.length, 1);
+  assert.equal(usageRows[0].key_slot, 'backup');
+  assert.equal(usageRows[0].charged_tokens, 700);
+  const balance = await (await callUsage()).json();
+  assert.equal(balance.limit, 1200000);
+  assert.equal(balance.used, 700);
+  assert.equal(balance.remaining, 1199300);
+  assert.equal(balance.byModel.find(row => row.model === 'openai/gpt-oss-20b').requests, 1);
+  await call({ ...request, userApiKey: 'gsk-personal' });
+  assert.equal(usageRows.length, 1);
+});
 
 test('Groq proxy lists only supported chat models and sends no IO-only fields', async () => {
   const calls = [];
@@ -63,7 +96,7 @@ test('Groq proxy lists only supported chat models and sends no IO-only fields', 
   const payload = JSON.parse(calls[1].init.body);
   assert.equal(calls[1].url, 'https://api.groq.com/openai/v1/chat/completions');
   assert.equal(calls[1].init.headers.Authorization, 'Bearer gsk-default');
-  assert.equal(payload.max_completion_tokens, 1000);
+  assert.equal(payload.max_completion_tokens, 1500);
   assert.equal(payload.reasoning_effort, 'low');
   assert.equal(payload.reasoning_content, undefined);
   assert.equal(payload.stream, false);
@@ -91,6 +124,19 @@ test('Groq proxy uses the backup only after the site key fails', async () => {
   const result = await call({ provider: 'groq', model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Вопрос' }] });
   assert.equal(result.status, 200);
   assert.deepEqual(calls, ['Bearer gsk-default', 'Bearer gsk-backup']);
+});
+
+test('proxy reports a daily limit from the first key even when the backup answers', async () => {
+  let calls = 0;
+  const { call } = edgeFixture(async () => {
+    calls += 1;
+    if (calls === 1) return new Response(JSON.stringify({ error: { message: 'Rate limit reached on tokens per day (TPD)' } }), { status: 429 });
+    return answer('Резервный ключ ответил. Ответ содержит пояснение.');
+  });
+  const response = await call({ provider: 'groq', model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Вопрос' }] });
+  assert.equal(response.status, 200);
+  assert.equal(response.headers.get('X-QAtoDev-Daily-Limit'), '1');
+  assert.equal(calls, 2);
 });
 
 test('staging requests without provider keep the existing IO route', async () => {
@@ -125,6 +171,8 @@ test('guest requests preserve the Questions prompt and limit; chat can pass boun
   body = JSON.parse(calls[1].body);
   assert.deepEqual(body.messages, messages);
   assert.equal(body.userApiKey, 'test-key');
+  await client.fetchAnswerOnce('Практика', 'fast', { messages, maxCompletionTokens: 1500 });
+  assert.equal(JSON.parse(calls[2].body).max_completion_tokens, 1500);
 });
 
 test('first completed model wins; late answers stay available and unsent models cost nothing', async () => {
@@ -229,8 +277,39 @@ test('fallback contains only Groq models listed in its free plan', () => {
 });
 
 test('Groq rate-limit errors do not ask the user to replace a valid key', async () => {
-  const { client } = fixture(async () => new Response(JSON.stringify({ error: { message: 'Rate limit reached for model openai/gpt-oss-20b' } }), { status: 429 }));
-  await assert.rejects(client.fetchAnswerOnce('Вопрос', 'openai/gpt-oss-20b'), error => error.code === 'AI_RATE_LIMITED');
+  const { client } = fixture(async () => new Response(JSON.stringify({ error: { message: 'Rate limit reached on output tokens per minute (OTPM). Please try again in 5.88s.' } }), { status: 429 }));
+  await assert.rejects(client.fetchAnswerOnce('Вопрос', 'openai/gpt-oss-20b'), error => error.code === 'AI_RATE_LIMITED' && error.retryAfterSeconds === 6);
+});
+
+test('daily Groq limits are distinct from minute throttling', async () => {
+  const { client } = fixture(async () => new Response(JSON.stringify({ error: { message: 'Rate limit reached on tokens per day (TPD)' } }), { status: 429 }));
+  await assert.rejects(client.fetchAnswerOnce('Вопрос', 'openai/gpt-oss-20b'), error => error.code === 'AI_DAILY_LIMITED');
+  assert.equal(client.hasRecentDailyLimit(), true);
+});
+
+test('a successful backup response still flags the recent daily limit locally', async () => {
+  const { client, storage } = fixture(async () => new Response(JSON.stringify({
+    choices: [{ message: { content: 'Резервная модель ответила. Ответ достаточно подробный.' } }]
+  }), { headers: { 'X-QAtoDev-Daily-Limit': '1' } }));
+  assert.equal(client.hasRecentDailyLimit(), false);
+  await client.fetchAnswerOnce('Вопрос', 'openai/gpt-oss-20b');
+  assert.equal(client.hasRecentDailyLimit(), true);
+  storage.set('groq_daily_limit_seen_v1', JSON.stringify({ at: Date.now() - 25 * 60 * 60 * 1000, model: 'openai/gpt-oss-20b' }));
+  assert.equal(client.hasRecentDailyLimit(), false);
+});
+
+test('successful Groq responses add actual uncached tokens to the local 24-hour estimate', async () => {
+  const { client, storage } = fixture(async () => new Response(JSON.stringify({
+    choices: [{ message: { content: 'Первый ответ. Он достаточно подробный.' } }],
+    usage: { prompt_tokens: 120, completion_tokens: 30, prompt_tokens_details: { cached_tokens: 20 } }
+  })));
+  await client.fetchAnswerOnce('Вопрос', 'openai/gpt-oss-20b');
+  assert.equal(client.readTokenUsage()[0].tokens, 130);
+  storage.set('groq_token_usage_local_v1', JSON.stringify([
+    { model: 'openai/gpt-oss-20b', tokens: 80, at: Date.now() - 25 * 60 * 60 * 1000 },
+    ...client.readTokenUsage()
+  ]));
+  assert.equal(client.readTokenUsage().length, 1);
 });
 
 test('manual comparison tries other available models in a circle, then the current model', () => {

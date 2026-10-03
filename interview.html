@@ -14,7 +14,7 @@
     </script>
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
   <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
-  <link rel="stylesheet" href="header.css">
+  <link rel="stylesheet" href="header.css?v=8.9.11">
     <link rel="stylesheet" href="interview.css">
     <script src="metrika.shared.js"></script>
 </head>
@@ -35,10 +35,16 @@
 <!-- Небольшой хеддер в духе страницы «Вопросы» -->
 <header class="welcome">
     <div class="header-container">
-        <div class="logo" style="cursor:pointer" onclick="location.href='index.html'">
-            <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="QAtoDev" />
+        <div class="logo">
+            <span class="logo-art" role="img" aria-label="Логотип QAtoDev"></span>
         </div>
-        <h5 class="site-title">На главную</h5>
+        <h5 class="site-title" role="link" tabindex="0" aria-label="Перейти на главную"><span class="site-title-ascii" aria-hidden="true">                            _
+               _           | |
+  ____ _____ _| |_ ___   __| |_____ _   _
+ / _  (____ (_   _) _ \ / _  | ___ | | | |
+| |_| / ___ | | || |_| ( (_| | ____|\ V /
+ \__  \_____|  \__)___/ \____|_____) \_/
+    |_|</span></h5>
     </div>
     <!-- выносим кнопку -->
     
@@ -98,7 +104,6 @@
 <script src="debug.shared.js"></script>
 <script src="questions.js"></script>
 <script src="interview.js?v=8.9.5"></script>
-<script src="logo-rotator.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
       // Ищем именно ваш тег <img src="img/call-cats2.jpeg" ...>
@@ -133,6 +138,6 @@
     });
 </script>
 
-  <script src="header.js?v=8.9.4"></script>
+  <script src="header.js?v=8.9.11"></script>
 </body>
 </html>

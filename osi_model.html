@@ -9,7 +9,7 @@
     <title>OSI: 7 уровней с упором на безопасность</title>
 
     <!-- Стили проекта (подключаем существующие) -->
-    <link rel="stylesheet" href="header.css" />
+    <link rel="stylesheet" href="header.css?v=8.9.11" />
     <link rel="stylesheet" href="styles.css" />
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png" />
 
@@ -307,10 +307,16 @@
 <!-- Шапка в стиле проекта -->
 <header class="welcome">
     <div class="header-container">
-        <div class="logo" style="cursor: pointer" onclick="window.location.href='index.html'">
-            <img src="img/QAtoDev_(Flappy_Bird_style).png" alt="Логотип" />
+        <div class="logo">
+            <span class="logo-art" role="img" aria-label="Логотип QAtoDev"></span>
         </div>
-        <h3 class="site-title">На главную</h3>
+        <h3 class="site-title" role="link" tabindex="0" aria-label="Перейти на главную"><span class="site-title-ascii" aria-hidden="true">                            _
+               _           | |
+  ____ _____ _| |_ ___   __| |_____ _   _
+ / _  (____ (_   _) _ \ / _  | ___ | | | |
+| |_| / ___ | | || |_| ( (_| | ____|\ V /
+ \__  \_____|  \__)___/ \____|_____) \_/
+    |_|</span></h3>
     </div>
 
     <!-- выносим кнопку туды-перёды -->
@@ -823,7 +829,7 @@ dig +rec @public-resolver example.com
     <p>&copy; <span class="footer-year" data-footer-year></span> QAtoDev</p>
 </footer>
 
-<script src="header.js?v=8.9.4"></script>
+<script src="header.js?v=8.9.11"></script>
 <!-- Скрипт: переключение темы (как на других страницах проекта) -->
 <script>
     (function () {
@@ -844,8 +850,6 @@ dig +rec @public-resolver example.com
 </script>
 
 <!-- Скрипт: автосмена логотипа (как в проекте) -->
-<script src="logo-rotator.js"></script>
-
 <!-- Скрипт: логика вкладок (доступность + deep link через hash) -->
 <script>
     (function () {
