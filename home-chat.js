@@ -127,6 +127,14 @@
         ? `повтор после ${new Date(resetAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
         : 'время сброса не указано';
     }
+    let usageResetTimer = null;
+    function scheduleUsageReset(usage) {
+      clearTimeout(usageResetTimer);
+      const resetsAt = usage?.window === 'america_new_york_day' ? Date.parse(usage.resetsAt) : NaN;
+      if (Number.isFinite(resetsAt) && resetsAt > Date.now()) {
+        usageResetTimer = setTimeout(() => void refreshSharedUsage(true), resetsAt - Date.now() + 1000);
+      }
+    }
     async function refreshSharedUsage(force = false) {
       if (sharedUsageRequest) return sharedUsageRequest;
       if (!force && sharedUsage && Date.now() - sharedUsageFetchedAt < 30000) return sharedUsage;
@@ -138,6 +146,7 @@
           if (!Number.isFinite(usage?.used) || !Number.isFinite(usage?.limit)) return null;
           sharedUsage = usage;
           sharedUsageFetchedAt = Date.now();
+          scheduleUsageReset(usage);
           refreshUsageInline();
           root.querySelectorAll('.home-chat__usage-details:not([hidden])').forEach(refreshUsageDetails);
           return usage;
@@ -173,7 +182,7 @@
       details.textContent = client.hasRecentDailyLimit()
         ? `Суточный лимит модели · ${dailyResetHint()}`
         : sharedUsage
-          ? `≈${formatTokens(sharedUsage.remaining)} осталось · оценка за 24 ч · сброс Groq: неизвестен`
+          ? `≈${formatTokens(sharedUsage.remaining)} осталось · ${sharedUsage.window === 'america_new_york_day' ? 'сброс счётчика: 00:00 Нью-Йорк' : 'данные обновляются'}`
           : 'Данные обрабатываются · до 1,2 млн / 24 ч';
     }
     usageToggle.addEventListener('click', () => {
@@ -188,6 +197,9 @@
     void refreshSharedUsage();
     window.addEventListener('storage', event => {
       if (event.key === 'groq_daily_limit_seen_v1') refreshUsageInline();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) void refreshSharedUsage(true);
     });
 
     function cleanTurns(value) {

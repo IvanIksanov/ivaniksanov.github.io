@@ -137,8 +137,12 @@ Deno.serve(async (req) => {
     if (isUsageRequest) {
       if (provider !== "groq") return jsonResponse({ error: "bad_request" }, 400);
       const adminClient = createClient(supabaseUrl, serviceRoleKey);
-      const { data, error } = await adminClient.rpc("ai_token_usage_last_24h");
+      let { data, error } = await adminClient.rpc("ai_token_usage_new_york_day");
+      const calendarDay = !error;
+      if (error) ({ data, error } = await adminClient.rpc("ai_token_usage_last_24h"));
       if (error) return jsonResponse({ error: "usage_unavailable" }, 503);
+      const firstRow = Array.isArray(data) ? data[0] : null;
+      const resetsAt = calendarDay && firstRow?.resets_at ? String(firstRow.resets_at) : null;
       const siteKeyCount = new Set([defaultGroqApiKey, backupGroqApiKey].filter(Boolean)).size;
       const byModel = [...CHAT_MODELS].map(model => {
         const rows = (Array.isArray(data) ? data : []).filter(row => row.model === model);
@@ -148,7 +152,8 @@ Deno.serve(async (req) => {
       });
       const limit = FREE_TOKENS_PER_MODEL_PER_KEY * CHAT_MODELS.size * siteKeyCount;
       const used = byModel.reduce((sum, row) => sum + row.used, 0);
-      return jsonResponse({ window: "rolling_24h", limit, used, remaining: Math.max(0, limit - used), byModel });
+      return jsonResponse({ window: calendarDay ? "america_new_york_day" : "rolling_24h",
+        resetsAt, limit, used, remaining: Math.max(0, limit - used), byModel });
     }
 
     let userId: string | null = null;
