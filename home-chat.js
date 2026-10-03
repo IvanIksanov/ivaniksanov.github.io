@@ -485,32 +485,51 @@
     }
     function renderSaved(newId = null) {
       const lists = [$('saved-left'), $('saved-right')];
-      lists.forEach(list => list.replaceChildren());
+      const existing = new Map(lists.flatMap(list => [...list.children].map(card => [card.dataset.chatId, card])));
       const entries = chatState.saved;
       entries.forEach((chat, index) => {
-        const card = document.createElement('article');
-        card.className = 'home-chat__saved-card';
-        if (chat.id === newId) card.classList.add('is-new');
-        if (chat.id === activeChatId) card.classList.add('is-active');
-        card.dataset.chatId = chat.id;
-        const symbol = chatIcons[chatIcon(chat.icon, chat.title)];
-        const pattern = document.createElement('div');
-        pattern.className = 'home-chat__saved-pattern';
-        pattern.setAttribute('aria-hidden', 'true');
-        for (let i = 0; i < 24; i += 1) {
-          const glyph = document.createElement('iconify-icon');
-          glyph.setAttribute('icon', symbol);
-          pattern.append(glyph);
+        let card = existing.get(chat.id);
+        if (!card) {
+          card = document.createElement('article');
+          card.className = 'home-chat__saved-card';
+          card.dataset.chatId = chat.id;
+          const open = document.createElement('button');
+          open.type = 'button'; open.className = 'home-chat__saved-open';
+          const title = document.createElement('strong');
+          open.append(title);
+          open.addEventListener('click', () => openChat(card.dataset.chatId));
+          card.append(open);
         }
-        const open = document.createElement('button');
-        open.type = 'button'; open.className = 'home-chat__saved-open';
+        if (chat.id === newId) card.classList.add('is-new');
+        const active = chat.id === activeChatId;
+        card.classList.toggle('is-active', active);
+        const open = card.querySelector('.home-chat__saved-open');
         open.setAttribute('aria-label', `Открыть чат «${chat.title}»`);
-        const title = document.createElement('strong'); title.textContent = chat.title;
-        open.append(title);
-        open.addEventListener('click', () => openChat(chat.id));
-        card.append(pattern, open);
+        open.querySelector('strong').textContent = chat.title;
+        if (active) {
+          const symbol = chatIcons[chatIcon(chat.icon, chat.title)];
+          if (card.dataset.patternSymbol !== symbol) {
+            card.querySelectorAll('.home-chat__saved-pattern:not(.is-leaving)').forEach(old => {
+              old.classList.add('is-leaving');
+              setTimeout(() => old.remove(), 450);
+            });
+            const pattern = document.createElement('div');
+            pattern.className = 'home-chat__saved-pattern';
+            pattern.setAttribute('aria-hidden', 'true');
+            for (let i = 0; i < 24; i += 1) {
+              const glyph = document.createElement('iconify-icon');
+              glyph.setAttribute('icon', symbol);
+              pattern.append(glyph);
+            }
+            card.insertBefore(pattern, open);
+            card.dataset.patternSymbol = symbol;
+            requestAnimationFrame(() => requestAnimationFrame(() => pattern.classList.add('is-ready')));
+          }
+        }
         lists[index % 2].append(card);
+        existing.delete(chat.id);
       });
+      existing.forEach(card => card.remove());
       lists.forEach(list => { list.hidden = !list.childElementCount; });
     }
     function applyCloudState(userId, merged) {

@@ -64,11 +64,13 @@ html[data-theme="dark"] .home-stage {
 .home-chat__saved-card.is-active { border-color: var(--home-muted); }
 .home-chat__saved-open { position: relative; z-index: 1; display: flex; width: 100%; height: 100%; min-height: 0; align-items: center; padding: var(--home-card-padding, 15px) 15px; border: 0; background: transparent; color: var(--home-text); text-align: left; cursor: pointer; }
 .home-chat__saved-open:hover, .home-chat__saved-open:focus-visible { background: color-mix(in srgb, var(--home-text) 4%, transparent); }
-.home-chat__saved-pattern { position: absolute; top: 50%; left: 50%; display: grid; grid-template-columns: repeat(6, 32px); gap: 18px; width: max-content; color: var(--home-muted); opacity: .12; transform: translate(-50%, -50%) rotate(-45deg); pointer-events: none; }
+.home-chat__saved-pattern { position: absolute; top: 50%; left: 50%; display: grid; grid-template-columns: repeat(6, 32px); gap: 18px; width: max-content; color: var(--home-muted); opacity: 0; transform: translate(-50%, -50%) rotate(-45deg); transition: opacity 420ms ease; pointer-events: none; }
+.home-chat__saved-card.is-active .home-chat__saved-pattern.is-ready { opacity: .07; }
+.home-chat__saved-pattern.is-leaving { opacity: 0 !important; }
 .home-chat__saved-pattern iconify-icon { width: 32px; height: 32px; font-size: 28px; line-height: 1; }
 .home-chat__saved-pattern iconify-icon:nth-child(n+7):nth-child(-n+12),
 .home-chat__saved-pattern iconify-icon:nth-child(n+19):nth-child(-n+24) { translate: 25px 0; }
-html[data-theme="dark"] .home-chat__saved-pattern { opacity: .14; }
+html[data-theme="dark"] .home-chat__saved-card.is-active .home-chat__saved-pattern.is-ready { opacity: .09; }
 .home-chat__saved-open strong { display: -webkit-box; min-width: 0; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: var(--home-card-title-size, 15px); line-height: 1.2; font-weight: 650; overflow-wrap: anywhere; }
 @keyframes homeSavedCardEnter { from { opacity: 0; transform: translateY(12px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .home-stage .home-stage__card,
@@ -257,5 +259,6 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
   .home-chat__turn.is-offline-entering > .home-chat__answer, .home-chat__turn.is-offline-entering > .home-chat__actions,
   .home-chat__turn.is-offline-entering > .home-chat__followups { animation: none; }
   .home-chat__saved-card.is-new { animation: none; }
+  .home-chat__saved-pattern { transition: none; }
   .home-chat__action span { transition: none; }
 }
