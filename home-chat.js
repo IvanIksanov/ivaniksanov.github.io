@@ -486,20 +486,6 @@
       button.innerHTML = icons[kind];
       const caption = document.createElement('span'); caption.textContent = label;
       button.append(caption);
-      let revealTimer;
-      button.addEventListener('pointerenter', event => {
-        if (event.pointerType !== 'mouse' && event.pointerType !== 'pen') return;
-        clearTimeout(revealTimer);
-        revealTimer = setTimeout(() => {
-          button.classList.add('is-expanded');
-          revealTimer = null;
-        }, 2000);
-      });
-      button.addEventListener('pointerleave', () => {
-        clearTimeout(revealTimer);
-        revealTimer = null;
-        button.classList.remove('is-expanded');
-      });
       button.addEventListener('click', onClick);
       return button;
     }
