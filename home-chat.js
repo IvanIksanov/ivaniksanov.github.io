@@ -121,6 +121,14 @@
     function formatTokens(value) {
       return Math.round(value).toLocaleString('ru-RU');
     }
+    function usageResetHint() {
+      const resetsAt = sharedUsage?.window === 'america_new_york_day' ? Date.parse(sharedUsage.resetsAt) : NaN;
+      if (!Number.isFinite(resetsAt)) return 'время сброса уточняется';
+      const minutes = Math.max(0, Math.ceil((resetsAt - Date.now()) / 60_000));
+      if (!minutes) return 'счётчик обновляется';
+      const hours = Math.floor(minutes / 60);
+      return `сброс через ${hours ? `${hours} ч ` : ''}${minutes % 60} мин`;
+    }
     function dailyResetHint() {
       const resetAt = client.readDailyLimit()?.resetAt;
       return Number.isFinite(resetAt) && resetAt > Date.now()
@@ -182,9 +190,12 @@
       details.textContent = client.hasRecentDailyLimit()
         ? `Суточный лимит модели · ${dailyResetHint()}`
         : sharedUsage
-          ? `≈${formatTokens(sharedUsage.remaining)} осталось · ${sharedUsage.window === 'america_new_york_day' ? 'сброс счётчика: 00:00 Нью-Йорк' : 'данные обновляются'}`
+          ? `≈${formatTokens(sharedUsage.remaining)} осталось · ${usageResetHint()}`
           : 'Данные обрабатываются · до 1,2 млн / 24 ч';
     }
+    setInterval(() => {
+      if (!document.hidden) root.querySelectorAll('.home-chat__usage-details:not([hidden])').forEach(refreshUsageDetails);
+    }, 30_000);
     usageToggle.addEventListener('click', () => {
       refreshUsageInline();
       const open = usageToggle.getAttribute('aria-expanded') !== 'true';
