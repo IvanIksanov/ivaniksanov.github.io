@@ -53,7 +53,9 @@ html[data-theme="dark"] .home-stage {
   overflow: clip;
   gap: var(--home-card-gap);
   padding: 20px 0;
+  transition: opacity 240ms ease, transform 320ms ease;
 }
+.home-stage.is-preparing .home-stage__cards { opacity: 0; pointer-events: none; }
 .home-stage__cards.is-collapsing { justify-content: safe flex-start; }
 .home-stage__cards > .home-stage__card { flex: 0 0 auto; }
 .home-stage .home-stage__card[hidden] { display: none !important; }

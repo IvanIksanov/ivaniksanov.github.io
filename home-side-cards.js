@@ -7,6 +7,13 @@
     const minimumHeight = 52;
     const bottomClearance = 8;
     let scheduled = false;
+    const cardCounts = new Map();
+    const removalTimers = new Map();
+    const firstCardTops = new Map();
+
+    function savedCount(column) {
+      return column.querySelectorAll('.home-chat__saved-card').length;
+    }
 
     function visibleCards(column) {
       return [...column.querySelectorAll('.home-stage__card, .home-chat__saved-card')]
@@ -25,7 +32,13 @@
           card.style.removeProperty('--home-card-title-size');
         }
       }
-      if (mobile.matches || !columns.some(column => column.querySelector('.home-chat__saved-card'))) return;
+      if (mobile.matches || !columns.some(column => column.querySelector('.home-chat__saved-card'))) {
+        for (const column of columns) {
+          const first = visibleCards(column)[0];
+          if (first && !removalTimers.has(column)) firstCardTops.set(column, first.getBoundingClientRect().top);
+        }
+        return;
+      }
 
       let baseHeight = 0;
       let shrinkNeeded = 0;
@@ -59,6 +72,10 @@
           }
         }
       }
+      for (const column of columns) {
+        const first = visibleCards(column)[0];
+        if (first && !removalTimers.has(column)) firstCardTops.set(column, first.getBoundingClientRect().top);
+      }
     }
 
     function scheduleMeasure() {
@@ -68,7 +85,39 @@
     }
 
     for (const column of columns) {
-      const observer = new MutationObserver(scheduleMeasure);
+      cardCounts.set(column, savedCount(column));
+      const observer = new MutationObserver(() => {
+        const count = savedCount(column);
+        const previous = cardCounts.get(column) || 0;
+        cardCounts.set(column, count);
+        clearTimeout(removalTimers.get(column));
+        if (count < previous && !mobile.matches) {
+          const first = visibleCards(column)[0];
+          const oldTop = firstCardTops.get(column);
+          if (first && Number.isFinite(oldTop)) {
+            const offset = oldTop - first.getBoundingClientRect().top;
+            column.style.transition = 'opacity 240ms ease';
+            column.style.transform = `translateY(${offset}px)`;
+          }
+          removalTimers.set(column, setTimeout(() => {
+            measure();
+            column.style.transition = '';
+            column.style.transform = '';
+            requestAnimationFrame(() => {
+              const current = visibleCards(column)[0];
+              if (current) firstCardTops.set(column, current.getBoundingClientRect().top);
+            });
+            removalTimers.delete(column);
+          }, 1000));
+          return;
+        }
+        if (removalTimers.has(column)) {
+          removalTimers.delete(column);
+          column.style.transition = '';
+          column.style.transform = '';
+        }
+        scheduleMeasure();
+      });
       observer.observe(column, { childList: true });
       const savedList = column.querySelector('.home-chat__saved-list');
       if (savedList) observer.observe(savedList, { childList: true });

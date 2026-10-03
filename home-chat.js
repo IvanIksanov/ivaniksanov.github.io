@@ -3,7 +3,10 @@
   'use strict';
   document.addEventListener('DOMContentLoaded', async () => {
     const root = document.querySelector('.home-stage');
-    if (!root || !window.QAtoDevAiClient || !window.QAtoDevConversationMemory) return;
+    if (!root) return;
+    setTimeout(() => root.classList.remove('is-preparing'), 4000);
+    if (!window.QAtoDevAiClient || !window.QAtoDevConversationMemory) return;
+    const revealSideCards = () => requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('is-preparing')));
 
     const $ = id => document.getElementById(`home-chat-${id}`);
     const legacyChatsKey = 'home_ai_chats_v2';
@@ -74,8 +77,18 @@
         starterRevealTimer = null;
       }, 5000);
     }
+    const usageCacheKey = 'home_groq_usage_cache_v1';
     let sharedUsage = null;
     let sharedUsageFetchedAt = 0;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(usageCacheKey) || 'null');
+      if (cached && Date.now() - cached.fetchedAt < 60_000 &&
+          Date.parse(cached.usage?.resetsAt) > Date.now() &&
+          Number.isFinite(cached.usage?.used) && Number.isFinite(cached.usage?.limit)) {
+        sharedUsage = cached.usage;
+        sharedUsageFetchedAt = cached.fetchedAt;
+      }
+    } catch {}
     let sharedUsageRequest = null;
     const maximumSiteTokensReference = 1200000;
     const resourceTopics = [
@@ -159,7 +172,7 @@
     }
     async function refreshSharedUsage(force = false) {
       if (sharedUsageRequest) return sharedUsageRequest;
-      if (!force && sharedUsage && Date.now() - sharedUsageFetchedAt < 30000) return sharedUsage;
+      if (!force && sharedUsage && Date.now() - sharedUsageFetchedAt < 60_000) return sharedUsage;
       sharedUsageRequest = (async () => {
         try {
           const response = await client.callAiProxy({ method: 'GET', query: 'action=usage&provider=groq' });
@@ -168,6 +181,7 @@
           if (!Number.isFinite(usage?.used) || !Number.isFinite(usage?.limit)) return null;
           sharedUsage = usage;
           sharedUsageFetchedAt = Date.now();
+          try { sessionStorage.setItem(usageCacheKey, JSON.stringify({ usage, fetchedAt: sharedUsageFetchedAt })); } catch {}
           scheduleUsageReset(usage);
           refreshUsageInline();
           root.querySelectorAll('.home-chat__usage-details:not([hidden])').forEach(refreshUsageDetails);
@@ -219,12 +233,13 @@
       if (open) void refreshSharedUsage();
     });
     refreshUsageInline();
+    if (sharedUsage) scheduleUsageReset(sharedUsage);
     void refreshSharedUsage();
     window.addEventListener('storage', event => {
       if (event.key === 'groq_daily_limit_seen_v1') refreshUsageInline();
     });
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) void refreshSharedUsage(true);
+      if (!document.hidden) void refreshSharedUsage();
     });
 
     function cleanTurns(value) {
@@ -272,15 +287,23 @@
       if (!currentUserId || !cloudSyncController) return;
       const pendingKey = `home_ai_chats_pending_sync_v1_${currentUserId}`;
       const recentKey = `home_ai_chats_recent_sync_v1_${currentUserId}`;
+      const attemptKey = `home_ai_chats_sync_attempt_v1_${currentUserId}`;
       try {
-        if (!force && !localStorage.getItem(pendingKey) &&
-          Date.now() - Number(sessionStorage.getItem(recentKey)) < 90_000) return;
+        const pending = localStorage.getItem(pendingKey);
+        const lastAttempt = JSON.parse(sessionStorage.getItem(attemptKey) || 'null');
+        if (pending && lastAttempt?.stamp === pending && Date.now() - lastAttempt.at < 60_000) return;
+        if (!force && !pending &&
+          Date.now() - Number(sessionStorage.getItem(recentKey)) < 300_000) return;
       } catch {}
       clearTimeout(cloudSyncTimer);
       const userId = currentUserId;
       cloudSyncTimer = setTimeout(() => {
         let pendingStamp = null;
         try { pendingStamp = localStorage.getItem(pendingKey); } catch {}
+        try {
+          sessionStorage.setItem(attemptKey, JSON.stringify({ stamp: pendingStamp, at: Date.now() }));
+          if (!pendingStamp) sessionStorage.setItem(recentKey, String(Date.now()));
+        } catch {}
         cloudSyncController.sync(userId).then(result => {
           if (!result?.ok || currentUserId !== userId) return;
           try {
@@ -923,6 +946,7 @@
     }, 60_000);
     const restoredChatId = saveFirstAnswer();
     render();
-    renderSaved(restoredChatId, true);
+    renderSaved(restoredChatId);
+    revealSideCards();
   });
 })();
