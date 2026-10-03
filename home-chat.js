@@ -600,6 +600,7 @@
         }
         const list = lists[index % 2];
         const position = Math.floor(index / 2);
+        card.style.order = String(index);
         if (list.children[position] !== card) list.insertBefore(card, list.children[position] || null);
         existing.delete(chat.id);
       });

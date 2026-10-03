@@ -3,7 +3,7 @@
   'use strict';
   document.addEventListener('DOMContentLoaded', () => {
     const columns = [...document.querySelectorAll('.home-stage__cards')];
-    const mobile = matchMedia('(max-width: 760px)');
+    const mobile = matchMedia('(max-width: 900px)');
     const minimumHeight = 52;
     const bottomClearance = 8;
     let scheduled = false;
