@@ -67,7 +67,10 @@
     }
 
     for (const column of columns) {
-      new MutationObserver(scheduleMeasure).observe(column, { childList: true, subtree: true });
+      const observer = new MutationObserver(scheduleMeasure);
+      observer.observe(column, { childList: true });
+      const savedList = column.querySelector('.home-chat__saved-list');
+      if (savedList) observer.observe(savedList, { childList: true });
     }
     addEventListener('resize', scheduleMeasure);
     measure();

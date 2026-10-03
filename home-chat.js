@@ -28,6 +28,7 @@
     const status = $('status');
     const form = $('form');
     let chatState = readChatState();
+    let lastPersistedCloudSignature = cloudSignature(chatState);
     let activeChatId = chatState.activeId;
     let turns = activeChatId
       ? chatState.saved.find(chat => chat.id === activeChatId)?.turns || chatState.draft
@@ -251,12 +252,29 @@
         return { saved: [], draft: !currentUserId ? cleanTurns(JSON.parse(localStorage.getItem(legacyStorageKey) || '[]')) : [], activeId: null, deleted: [] };
       } catch { return { saved: [], draft: [], activeId: null, deleted: [] }; }
     }
-    function scheduleCloudSync(delay = 250) {
+    function cloudSignature(state) {
+      return JSON.stringify([state.saved, state.deleted]);
+    }
+    function scheduleCloudSync(delay = 250, force = false) {
       if (!currentUserId || !cloudSyncController) return;
+      const pendingKey = `home_ai_chats_pending_sync_v1_${currentUserId}`;
+      const recentKey = `home_ai_chats_recent_sync_v1_${currentUserId}`;
+      try {
+        if (!force && !localStorage.getItem(pendingKey) &&
+          Date.now() - Number(sessionStorage.getItem(recentKey)) < 90_000) return;
+      } catch {}
       clearTimeout(cloudSyncTimer);
       const userId = currentUserId;
       cloudSyncTimer = setTimeout(() => {
-        cloudSyncController.sync(userId).catch(error => {
+        let pendingStamp = null;
+        try { pendingStamp = localStorage.getItem(pendingKey); } catch {}
+        cloudSyncController.sync(userId).then(result => {
+          if (!result?.ok || currentUserId !== userId) return;
+          try {
+            sessionStorage.setItem(recentKey, String(Date.now()));
+            if (localStorage.getItem(pendingKey) === pendingStamp) localStorage.removeItem(pendingKey);
+          } catch {}
+        }).catch(error => {
           console.warn('Private chat sync will retry later', error);
         });
       }, delay);
@@ -274,7 +292,16 @@
         }
       } else chatState.draft = completed;
       chatState.activeId = activeChatId;
-      try { localStorage.setItem(activeStorageKey, JSON.stringify(chatState)); scheduleCloudSync(); return true; }
+      const signature = cloudSignature(chatState);
+      try {
+        localStorage.setItem(activeStorageKey, JSON.stringify(chatState));
+        if (currentUserId && signature !== lastPersistedCloudSignature) {
+          try { localStorage.setItem(`home_ai_chats_pending_sync_v1_${currentUserId}`, crypto.randomUUID()); } catch {}
+          scheduleCloudSync(250, true);
+        }
+        lastPersistedCloudSignature = signature;
+        return true;
+      }
       catch { status.textContent = 'Не удалось сохранить переписку в этом браузере.'; return false; }
     }
     function saveFirstAnswer() {
@@ -483,7 +510,7 @@
       render();
       renderSaved();
     }
-    function renderSaved(newId = null) {
+    function renderSaved(newId = null, animateAdded = false) {
       const lists = [$('saved-left'), $('saved-right')];
       const existing = new Map(lists.flatMap(list => [...list.children].map(card => [card.dataset.chatId, card])));
       const entries = chatState.saved;
@@ -492,6 +519,7 @@
         if (!card) {
           card = document.createElement('article');
           card.className = 'home-chat__saved-card';
+          if (animateAdded) card.classList.add('is-appearing');
           card.dataset.chatId = chat.id;
           const open = document.createElement('button');
           open.type = 'button'; open.className = 'home-chat__saved-open';
@@ -524,7 +552,14 @@
             }
             card.insertBefore(pattern, open);
             card.dataset.patternSymbol = symbol;
-            requestAnimationFrame(() => requestAnimationFrame(() => pattern.classList.add('is-ready')));
+            const glyph = pattern.firstElementChild;
+            const revealUntil = performance.now() + 5000;
+            const reveal = () => {
+              if (!pattern.isConnected) return;
+              if (glyph.shadowRoot?.querySelector('svg')) pattern.classList.add('is-ready');
+              else if (performance.now() < revealUntil) requestAnimationFrame(reveal);
+            };
+            requestAnimationFrame(() => requestAnimationFrame(reveal));
           }
         }
         const list = lists[index % 2];
@@ -539,6 +574,7 @@
       if (userId !== currentUserId || busy) return false;
       const previous = JSON.stringify(turns);
       const previousId = activeChatId;
+      const previousCards = JSON.stringify(chatState.saved.map(chat => [chat.id, chat.title, chat.icon]));
       chatState = {
         ...merged,
         saved: merged.saved.map(chat => ({ ...chat, icon: chatIcon(chat.icon, chat.title), turns: cleanTurns(chat.turns) })),
@@ -549,8 +585,11 @@
         ? chatState.saved.find(chat => chat.id === activeChatId)?.turns || []
         : chatState.draft;
       try { localStorage.setItem(activeStorageKey, JSON.stringify(chatState)); } catch {}
+      lastPersistedCloudSignature = cloudSignature(chatState);
       if (previousId !== activeChatId || previous !== JSON.stringify(turns)) render();
-      renderSaved();
+      if (previousId !== activeChatId || previousCards !== JSON.stringify(chatState.saved.map(chat => [chat.id, chat.title, chat.icon]))) {
+        renderSaved(null, true);
+      }
       return true;
     }
     cloudSyncController = window.QAtoDevHomeChatSync?.create({
@@ -568,6 +607,7 @@
         currentUserId = nextUserId;
         activeStorageKey = `${storagePrefix}${nextUserId || 'guest'}`;
         chatState = readChatState();
+        lastPersistedCloudSignature = cloudSignature(chatState);
         activeChatId = chatState.activeId;
         turns = activeChatId
           ? chatState.saved.find(chat => chat.id === activeChatId)?.turns || []
@@ -856,6 +896,7 @@
     window.addEventListener('storage', event => {
       if (event.key !== activeStorageKey || busy) return;
       chatState = readChatState();
+      lastPersistedCloudSignature = cloudSignature(chatState);
       activeChatId = chatState.activeId;
       turns = activeChatId
         ? chatState.saved.find(chat => chat.id === activeChatId)?.turns || []
@@ -869,6 +910,6 @@
     }, 60_000);
     const restoredChatId = saveFirstAnswer();
     render();
-    renderSaved(restoredChatId);
+    renderSaved(restoredChatId, true);
   });
 })();
