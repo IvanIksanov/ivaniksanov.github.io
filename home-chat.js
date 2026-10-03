@@ -505,8 +505,7 @@
         card.classList.toggle('is-active', active);
         const open = card.querySelector('.home-chat__saved-open');
         open.setAttribute('aria-label', `Открыть чат «${chat.title}»`);
-        const title = open.querySelector('strong');
-        if (title.textContent !== chat.title) title.textContent = chat.title;
+        open.querySelector('strong').textContent = chat.title;
         if (active) {
           const symbol = chatIcons[chatIcon(chat.icon, chat.title)];
           if (card.dataset.patternSymbol !== symbol) {
@@ -527,9 +526,7 @@
             requestAnimationFrame(() => requestAnimationFrame(() => pattern.classList.add('is-ready')));
           }
         }
-        const list = lists[index % 2];
-        const position = Math.floor(index / 2);
-        if (list.children[position] !== card) list.insertBefore(card, list.children[position] || null);
+        lists[index % 2].append(card);
         existing.delete(chat.id);
       });
       existing.forEach(card => card.remove());
