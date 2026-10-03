@@ -11,14 +11,18 @@
   const TOKEN_USAGE_KEY = "groq_token_usage_local_v1";
   const DAILY_LIMIT_KEY = "groq_daily_limit_seen_v1";
   const TOKEN_USAGE_WINDOW_MS = 24 * 60 * 60 * 1000;
-  function hasRecentDailyLimit() {
+  function readDailyLimit() {
     try {
       const event = JSON.parse(localStorage.getItem(DAILY_LIMIT_KEY) || "null");
-      return Number.isFinite(event?.at) && event.at > Date.now() - TOKEN_USAGE_WINDOW_MS;
-    } catch { return false; }
+      if (!Number.isFinite(event?.at) || event.at <= Date.now() - TOKEN_USAGE_WINDOW_MS) return null;
+      if (Number.isFinite(event.resetAt) && event.resetAt <= Date.now()) return null;
+      return event;
+    } catch { return null; }
   }
-  function recordDailyLimit(model) {
-    try { localStorage.setItem(DAILY_LIMIT_KEY, JSON.stringify({ at: Date.now(), model })); } catch {}
+  function hasRecentDailyLimit() { return !!readDailyLimit(); }
+  function recordDailyLimit(model, resetAt = null) {
+    try { localStorage.setItem(DAILY_LIMIT_KEY, JSON.stringify({ at: Date.now(), model,
+      resetAt: Number.isFinite(resetAt) && resetAt > Date.now() ? resetAt : null })); } catch {}
   }
   function readTokenUsage() {
     try {
@@ -409,7 +413,8 @@
         err.model = model;
         throw err;
       }
-      if (res.headers.get("x-qatodev-daily-limit") === "1") recordDailyLimit(model);
+      const dailyResetAt = Number(res.headers.get("x-qatodev-daily-reset-at"));
+      if (res.headers.get("x-qatodev-daily-limit") === "1") recordDailyLimit(model, dailyResetAt);
       if (!res.ok) {
         let detail = "";
         try {
@@ -427,7 +432,7 @@
         }
         if (res.status === 429) {
           const daily = /\b(?:TPD|RPD)\b|tokens per day|requests per day/i.test(detail);
-          if (daily) recordDailyLimit(model);
+          if (daily) recordDailyLimit(model, dailyResetAt);
           const err = new Error(daily ? "AI_DAILY_LIMITED" : "AI_RATE_LIMITED");
           err.code = daily ? "AI_DAILY_LIMITED" : "AI_RATE_LIMITED";
           err.status = res.status;
@@ -612,7 +617,7 @@
         order.forEach((_, idx) => { timers[idx] = setTimeout(() => startAttempt(idx), idx * ATTEMPT_DELAY_MS); });
       });
     }
-    return { buildFunctionUrlCandidates, callAiProxy, isApiKeyQuotaDetail, isApiKeyCredentialDetail, isRecoverableApiKeyError, isAllModelsCreditsExhaustedError, isAiRegionAvailabilityError, getAiRegionUnavailableMessage, parseAvailableModelsFromDetail, normalizeAvailableChatModels, readModelTimings, writeModelTimings, recordModelTiming, readModelFailures, writeModelFailures, recordModelFailure, isModelBlocked, getModelOrder, updateLoaderText, getModelDisplayLabel, startLoaderPhases, stopLoaderPhases, fetchAnswerOnce, requestBatchWithTimeout, readTokenUsage, hasRecentDailyLimit };
+    return { buildFunctionUrlCandidates, callAiProxy, isApiKeyQuotaDetail, isApiKeyCredentialDetail, isRecoverableApiKeyError, isAllModelsCreditsExhaustedError, getAiRegionUnavailableMessage, parseAvailableModelsFromDetail, normalizeAvailableChatModels, readModelTimings, writeModelTimings, recordModelTiming, readModelFailures, writeModelFailures, recordModelFailure, isModelBlocked, getModelOrder, updateLoaderText, getModelDisplayLabel, startLoaderPhases, stopLoaderPhases, fetchAnswerOnce, requestBatchWithTimeout, readTokenUsage, readDailyLimit, hasRecentDailyLimit };
   }
   window.QAtoDevAiClient = { create, models: FAST_MODEL_HINTS, modelCacheScope, nextComparisonOrder };
 })();

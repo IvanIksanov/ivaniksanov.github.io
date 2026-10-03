@@ -121,6 +121,12 @@
     function formatTokens(value) {
       return Math.round(value).toLocaleString('ru-RU');
     }
+    function dailyResetHint() {
+      const resetAt = client.readDailyLimit()?.resetAt;
+      return Number.isFinite(resetAt) && resetAt > Date.now()
+        ? `повтор после ${new Date(resetAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`
+        : 'время сброса не указано';
+    }
     async function refreshSharedUsage(force = false) {
       if (sharedUsageRequest) return sharedUsageRequest;
       if (!force && sharedUsage && Date.now() - sharedUsageFetchedAt < 30000) return sharedUsage;
@@ -148,13 +154,13 @@
         usageToggle.setAttribute('aria-expanded', 'false');
         form.classList.remove('is-usage-open');
       }
-      usageInline.textContent = sharedUsage?.remaining <= 0
-        ? 'Лимит токенов ключей сайта исчерпан'
-        : sharedUsage
-          ? `Ключи сайта: ≈${formatTokens(sharedUsage.remaining)} осталось из ${formatTokens(sharedUsage.limit)}`
-          : client.hasRecentDailyLimit()
-            ? 'Суточный лимит модели достигнут · данные обрабатываются'
-            : `Данные обрабатываются · до ${formatTokens(maximumSiteTokensReference)} токенов за 24 ч`;
+      usageInline.textContent = client.hasRecentDailyLimit()
+        ? `Суточный лимит · ${dailyResetHint()}`
+        : sharedUsage?.remaining <= 0
+          ? 'Оценочный лимит исчерпан'
+          : sharedUsage
+            ? `≈${formatTokens(sharedUsage.remaining)} осталось`
+            : `Данные обрабатываются · до ${formatTokens(maximumSiteTokensReference)} / 24 ч`;
     }
     function makeUsageDetails() {
       const details = document.createElement('div');
@@ -164,13 +170,11 @@
       return details;
     }
     function refreshUsageDetails(details) {
-      details.textContent = sharedUsage?.remaining <= 0
-        ? `За 24 ч учтено ${formatTokens(sharedUsage.used)} токенов ключей сайта. Расчётный лимит исчерпан.`
+      details.textContent = client.hasRecentDailyLimit()
+        ? `Суточный лимит модели · ${dailyResetHint()}`
         : sharedUsage
-          ? `За 24 ч учтено ${formatTokens(sharedUsage.used)} из ${formatTokens(sharedUsage.limit)} токенов ключей сайта · осталось ≈${formatTokens(sharedUsage.remaining)}. Фактический остаток Groq может отличаться.`
-          : client.hasRecentDailyLimit()
-            ? 'Суточный лимит одной из моделей достигнут. Общий расход обрабатывается; ориентир до 1,2 млн токенов за 24 ч.'
-            : 'Данные обрабатываются. Ориентир до 1,2 млн токенов за 24 ч на три модели и два ключа.';
+          ? `≈${formatTokens(sharedUsage.remaining)} осталось · оценка за 24 ч · сброс Groq: неизвестен`
+          : 'Данные обрабатываются · до 1,2 млн / 24 ч';
     }
     usageToggle.addEventListener('click', () => {
       refreshUsageInline();
@@ -560,7 +564,7 @@
         const no = document.createElement('button'); no.type = 'button'; no.textContent = 'Отмена';
         confirm.append(prompt, yes, no);
         const usageDetails = makeUsageDetails();
-        const usageButton = actionButton('info', 'Расход токенов', () => {
+        const usageButton = actionButton('info', 'Лимит', () => {
           const open = usageDetails.hidden;
           if (open) refreshUsageDetails(usageDetails);
           usageDetails.hidden = !open;
