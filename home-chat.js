@@ -76,6 +76,7 @@
     let sharedUsage = null;
     let sharedUsageFetchedAt = 0;
     let sharedUsageRequest = null;
+    const maximumSiteTokensReference = 1200000;
     const resourceTopics = [
       { skill: 'postman', pattern: /\bpostman\b/i },
       { skill: 'rest-api', pattern: /\b(?:rest|http|api|endpoint|swagger|200|201|204|400|401|403|404|409|422|500|503)\b|статус|код[а-я]* ответ|эндпоинт|апи/i },
@@ -147,9 +148,13 @@
         usageToggle.setAttribute('aria-expanded', 'false');
         form.classList.remove('is-usage-open');
       }
-      usageInline.textContent = sharedUsage
-        ? `Ключи сайта: ≈${formatTokens(sharedUsage.remaining)} осталось из ${formatTokens(sharedUsage.limit)}`
-        : 'Расход ключей сайта пока недоступен';
+      usageInline.textContent = sharedUsage?.remaining <= 0
+        ? 'Лимит токенов ключей сайта исчерпан'
+        : sharedUsage
+          ? `Ключи сайта: ≈${formatTokens(sharedUsage.remaining)} осталось из ${formatTokens(sharedUsage.limit)}`
+          : client.hasRecentDailyLimit()
+            ? 'Суточный лимит модели достигнут · данные обрабатываются'
+            : `Данные обрабатываются · до ${formatTokens(maximumSiteTokensReference)} токенов за 24 ч`;
     }
     function makeUsageDetails() {
       const details = document.createElement('div');
@@ -159,9 +164,13 @@
       return details;
     }
     function refreshUsageDetails(details) {
-      details.textContent = sharedUsage
-        ? `За 24 ч учтено ${formatTokens(sharedUsage.used)} из ${formatTokens(sharedUsage.limit)} токенов ключей сайта · осталось ≈${formatTokens(sharedUsage.remaining)}. Фактический остаток Groq может отличаться.`
-        : 'Расход ключей сайта пока недоступен.';
+      details.textContent = sharedUsage?.remaining <= 0
+        ? `За 24 ч учтено ${formatTokens(sharedUsage.used)} токенов ключей сайта. Расчётный лимит исчерпан.`
+        : sharedUsage
+          ? `За 24 ч учтено ${formatTokens(sharedUsage.used)} из ${formatTokens(sharedUsage.limit)} токенов ключей сайта · осталось ≈${formatTokens(sharedUsage.remaining)}. Фактический остаток Groq может отличаться.`
+          : client.hasRecentDailyLimit()
+            ? 'Суточный лимит одной из моделей достигнут. Общий расход обрабатывается; ориентир до 1,2 млн токенов за 24 ч.'
+            : 'Данные обрабатываются. Ориентир до 1,2 млн токенов за 24 ч на три модели и два ключа.';
     }
     usageToggle.addEventListener('click', () => {
       refreshUsageInline();
