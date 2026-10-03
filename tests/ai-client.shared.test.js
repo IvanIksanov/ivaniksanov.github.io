@@ -22,6 +22,7 @@ const answer = text => new Response(JSON.stringify({ choices: [{ message: { cont
 
 function edgeFixture(fetch) {
   let handler;
+  const usageRows = [];
   const source = fs.readFileSync(path.join(__dirname, '../supabase/functions/ai-chat/index.ts'), 'utf8')
     .replace(/^import \{ createClient \} from .*;\n/, '');
   const env = new Map([
@@ -35,14 +36,46 @@ function edgeFixture(fetch) {
   ]);
   vm.runInNewContext(stripTypeScriptTypes(source), {
     Deno: { env: { get: key => env.get(key) }, serve: callback => { handler = callback; } },
-    createClient: () => ({ auth: { getUser: async () => ({ data: { user: null } }) } }),
+    createClient: () => ({
+      auth: { getUser: async () => ({ data: { user: null } }) },
+      from: () => ({ insert: async row => { usageRows.push(row); return { error: null }; } }),
+      rpc: async () => ({ data: [...new Set(usageRows.map(row => `${row.model}:${row.key_slot}`))].map(key => {
+        const rows = usageRows.filter(row => `${row.model}:${row.key_slot}` === key);
+        return { model: rows[0].model, key_slot: rows[0].key_slot,
+          charged_tokens: rows.reduce((sum, row) => sum + row.charged_tokens, 0), request_count: rows.length };
+      }), error: null })
+    }),
     fetch, Request, Response, URL, Set, Number, String
   });
   const call = body => handler(new Request('https://example.functions.supabase.co/ai-chat', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
   }));
-  return { call, env };
+  const callUsage = () => handler(new Request('https://example.functions.supabase.co/ai-chat?action=usage&provider=groq'));
+  return { call, callUsage, env, usageRows };
 }
+
+test('site-key Groq completions are counted centrally for guests, including backup responses', async () => {
+  let attempt = 0;
+  const { call, callUsage, usageRows } = edgeFixture(async () => {
+    attempt += 1;
+    if (attempt === 1) return new Response(JSON.stringify({ error: { message: 'tokens per day' } }), { status: 429 });
+    return new Response(JSON.stringify({ id: 'completion-1', usage: {
+      prompt_tokens: 600, completion_tokens: 200, prompt_tokens_details: { cached_tokens: 100 }
+    }, choices: [{ message: { content: 'Тестовый ответ.' } }] }));
+  });
+  const request = { provider: 'groq', model: 'openai/gpt-oss-20b', messages: [{ role: 'user', content: 'Вопрос' }] };
+  assert.equal((await call(request)).status, 200);
+  assert.equal(usageRows.length, 1);
+  assert.equal(usageRows[0].key_slot, 'backup');
+  assert.equal(usageRows[0].charged_tokens, 700);
+  const balance = await (await callUsage()).json();
+  assert.equal(balance.limit, 1200000);
+  assert.equal(balance.used, 700);
+  assert.equal(balance.remaining, 1199300);
+  assert.equal(balance.byModel.find(row => row.model === 'openai/gpt-oss-20b').requests, 1);
+  await call({ ...request, userApiKey: 'gsk-personal' });
+  assert.equal(usageRows.length, 1);
+});
 
 test('Groq proxy lists only supported chat models and sends no IO-only fields', async () => {
   const calls = [];

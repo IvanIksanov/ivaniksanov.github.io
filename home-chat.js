@@ -73,8 +73,9 @@
         starterRevealTimer = null;
       }, 5000);
     }
-    const freeDailyReference = 200000;
-    const trackedModels = ['openai/gpt-oss-20b', 'qwen/qwen3.8-27b', 'openai/gpt-oss-120b'];
+    let sharedUsage = null;
+    let sharedUsageFetchedAt = 0;
+    let sharedUsageRequest = null;
     const resourceTopics = [
       { skill: 'postman', pattern: /\bpostman\b/i },
       { skill: 'rest-api', pattern: /\b(?:rest|http|api|endpoint|swagger|200|201|204|400|401|403|404|409|422|500|503)\b|статус|код[а-я]* ответ|эндпоинт|апи/i },
@@ -119,27 +120,36 @@
     function formatTokens(value) {
       return Math.round(value).toLocaleString('ru-RU');
     }
-    function usageSnapshot() {
-      const byModel = Object.fromEntries(trackedModels.map(model => [model, 0]));
-      for (const item of client.readTokenUsage()) {
-        if (Object.hasOwn(byModel, item.model)) byModel[item.model] += item.tokens;
-      }
-      return byModel;
-    }
-    function usageBalance() {
-      const spent = Object.values(usageSnapshot()).reduce((sum, count) => sum + count, 0);
-      return { spent, remaining: Math.max(0, freeDailyReference - spent) };
+    async function refreshSharedUsage(force = false) {
+      if (sharedUsageRequest) return sharedUsageRequest;
+      if (!force && sharedUsage && Date.now() - sharedUsageFetchedAt < 30000) return sharedUsage;
+      sharedUsageRequest = (async () => {
+        try {
+          const response = await client.callAiProxy({ method: 'GET', query: 'action=usage&provider=groq' });
+          if (!response.ok) return null;
+          const usage = await response.json();
+          if (!Number.isFinite(usage?.used) || !Number.isFinite(usage?.limit)) return null;
+          sharedUsage = usage;
+          sharedUsageFetchedAt = Date.now();
+          refreshUsageInline();
+          root.querySelectorAll('.home-chat__usage-details:not([hidden])').forEach(refreshUsageDetails);
+          return usage;
+        } catch { return null; }
+        finally { sharedUsageRequest = null; }
+      })();
+      return sharedUsageRequest;
     }
     function refreshUsageInline() {
-      const visible = client.hasRecentDailyLimit();
+      const visible = client.hasRecentDailyLimit() || (sharedUsage && sharedUsage.remaining <= 0);
       usageToggle.hidden = !visible;
       usageInline.hidden = !visible;
       if (!visible) {
         usageToggle.setAttribute('aria-expanded', 'false');
         form.classList.remove('is-usage-open');
       }
-      const { spent, remaining } = usageBalance();
-      usageInline.textContent = `Учтено ${formatTokens(spent)} из ${formatTokens(freeDailyReference)} · ≈${formatTokens(remaining)} осталось`;
+      usageInline.textContent = sharedUsage
+        ? `Ключи сайта: ≈${formatTokens(sharedUsage.remaining)} осталось из ${formatTokens(sharedUsage.limit)}`
+        : 'Расход ключей сайта пока недоступен';
     }
     function makeUsageDetails() {
       const details = document.createElement('div');
@@ -149,8 +159,9 @@
       return details;
     }
     function refreshUsageDetails(details) {
-      const { spent, remaining } = usageBalance();
-      details.textContent = `За 24 ч учтено ${formatTokens(spent)} из ${formatTokens(freeDailyReference)} токенов · ориентир остатка ≈${formatTokens(remaining)}.`;
+      details.textContent = sharedUsage
+        ? `За 24 ч учтено ${formatTokens(sharedUsage.used)} из ${formatTokens(sharedUsage.limit)} токенов ключей сайта · осталось ≈${formatTokens(sharedUsage.remaining)}. Фактический остаток Groq может отличаться.`
+        : 'Расход ключей сайта пока недоступен.';
     }
     usageToggle.addEventListener('click', () => {
       refreshUsageInline();
@@ -158,8 +169,10 @@
       usageToggle.setAttribute('aria-expanded', String(open));
       form.classList.toggle('is-usage-open', open);
       usageToggle.setAttribute('aria-label', open ? 'Скрыть расход токенов' : 'Показать расход токенов');
+      if (open) void refreshSharedUsage();
     });
     refreshUsageInline();
+    void refreshSharedUsage();
     window.addEventListener('storage', event => {
       if (event.key === 'groq_daily_limit_seen_v1') refreshUsageInline();
     });
@@ -543,6 +556,7 @@
           if (open) refreshUsageDetails(usageDetails);
           usageDetails.hidden = !open;
           usageButton.setAttribute('aria-expanded', String(open));
+          if (open) void refreshSharedUsage();
         });
         usageButton.setAttribute('aria-expanded', 'false');
         actions.append(
@@ -730,6 +744,7 @@
       } finally {
         busy = false; $('send').disabled = false;
         refreshUsageInline();
+        void refreshSharedUsage(true);
         if (requestEpoch === accountEpoch) fillTurn(section, turn, true);
         else render();
       }
