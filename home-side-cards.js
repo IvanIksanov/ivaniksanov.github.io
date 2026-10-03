@@ -5,6 +5,7 @@
     const columns = [...document.querySelectorAll('.home-stage__cards')];
     const mobile = matchMedia('(max-width: 760px)');
     const minimumHeight = 52;
+    const bottomClearance = 8;
     let scheduled = false;
 
     function visibleCards(column) {
@@ -37,11 +38,11 @@
         const removable = [...promotions, ...saved];
 
         let cards = visibleCards(column);
-        let overflow = Math.max(0, column.scrollHeight - column.clientHeight);
+        let overflow = Math.max(0, column.scrollHeight - column.clientHeight + bottomClearance);
         while (removable.length && overflow > (baseHeight - minimumHeight) * cards.length) {
           removable.shift().hidden = true;
           cards = visibleCards(column);
-          overflow = Math.max(0, column.scrollHeight - column.clientHeight);
+          overflow = Math.max(0, column.scrollHeight - column.clientHeight + bottomClearance);
         }
         if (cards.length) shrinkNeeded = Math.max(shrinkNeeded, overflow / cards.length);
       }

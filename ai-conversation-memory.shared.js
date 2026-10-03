@@ -6,7 +6,7 @@
   const titleBlock = /<qa-title>([\s\S]*?)<\/qa-title>/gi;
   const iconBlock = /<qa-icon>([\s\S]*?)<\/qa-icon>/gi;
   const nextBlock = /<qa-next>([\s\S]*?)<\/qa-next>/gi;
-  const icons = new Set(['qa', 'sql', 'postgresql', 'api', 'docker', 'java', 'python', 'javascript', 'git', 'linux', 'web', 'test-design', 'bug', 'postman', 'swagger', 'kubernetes', 'ci-cd', 'interview']);
+  const icons = new Set(['qa', 'sql', 'postgresql', 'api', 'docker', 'java', 'python', 'javascript', 'git', 'linux', 'web', 'test-design', 'bug', 'postman', 'swagger', 'kubernetes', 'ci-cd', 'interview', 'requirements', 'cases', 'automation', 'regression', 'security', 'performance', 'mobile', 'ui', 'testing']);
 
   function normalizeIcon(value) {
     const icon = String(value || '').trim().toLowerCase();
