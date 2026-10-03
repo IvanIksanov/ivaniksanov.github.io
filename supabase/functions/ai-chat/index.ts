@@ -4,6 +4,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Expose-Headers": "X-QAtoDev-Daily-Limit",
 };
 
 const GROQ_API_BASE = "https://api.groq.com/openai/v1";
@@ -41,6 +42,7 @@ function validGroqMessages(messages: unknown[]) {
 }
 
 async function requestUpstream(url: string, init: RequestInit, keys: string[]) {
+  let dailyLimitHit = false;
   for (const [index, key] of keys.entries()) {
     try {
       const upstreamRes = await fetch(url, {
@@ -48,12 +50,14 @@ async function requestUpstream(url: string, init: RequestInit, keys: string[]) {
         headers: { ...init.headers, Authorization: `Bearer ${key}` },
       });
       const text = await upstreamRes.text();
+      if (upstreamRes.status === 429 && /\b(?:TPD|RPD)\b|tokens per day|requests per day/i.test(text)) dailyLimitHit = true;
       if (!upstreamRes.ok && index < keys.length - 1 && shouldTryNextKey(upstreamRes.status, text)) continue;
       return new Response(text, {
         status: upstreamRes.status,
         headers: {
           ...corsHeaders,
           "Content-Type": upstreamRes.headers.get("content-type") || "application/json",
+          ...(dailyLimitHit ? { "X-QAtoDev-Daily-Limit": "1" } : {}),
         },
       });
     } catch (error) {
@@ -156,7 +160,7 @@ Deno.serve(async (req) => {
     const requestedTemperature = Number(body?.temperature ?? 0.7);
     const temperature = Number.isFinite(requestedTemperature) ? Math.min(2, Math.max(0.01, requestedTemperature)) : 0.7;
     const requestedMaxTokens = Number(body?.max_completion_tokens ?? 1000);
-    const max_completion_tokens = Number.isFinite(requestedMaxTokens) ? Math.min(1000, Math.max(1, Math.floor(requestedMaxTokens))) : 1000;
+    const max_completion_tokens = Number.isFinite(requestedMaxTokens) ? Math.min(1500, Math.max(1, Math.floor(requestedMaxTokens))) : 1000;
 
     if (!model || !messages.length || (provider === "groq" && (!CHAT_MODELS.has(model) || !validGroqMessages(messages)))) {
       return jsonResponse({

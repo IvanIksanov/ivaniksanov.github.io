@@ -234,27 +234,10 @@ h2 {
 .questions-view-switcher *::before,
 .questions-view-switcher *::after { box-sizing: border-box; }
 
-.site-header .logo img { view-transition-name: questions-shared-logo; }
-.site-header .site-title { view-transition-name: questions-shared-title; }
+.site-header { view-transition-name: questions-stable-header; }
 
-.site-title.is-static .site-title-ascii {
-  -webkit-text-stroke: 0.18px currentColor;
-  text-shadow: 0.22px 0 0 currentColor;
-}
-
-::view-transition-old(questions-shared-logo),
-::view-transition-old(questions-shared-title) {
-  z-index: 1;
-  animation: 320ms step-end both questions-header-hold;
-}
-
-::view-transition-new(questions-shared-logo),
-::view-transition-new(questions-shared-title) { animation: none; }
-
-@keyframes questions-header-hold {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
+::view-transition-old(questions-stable-header),
+::view-transition-new(questions-stable-header) { animation: none; }
 
 .questions-view-switcher__label {
   max-width: 7rem;

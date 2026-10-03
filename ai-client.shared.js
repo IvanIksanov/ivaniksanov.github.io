@@ -8,6 +8,36 @@
     "openai/gpt-oss-120b"
   ];
   const FREE_CHAT_MODELS = new Set(FAST_MODEL_HINTS);
+  const TOKEN_USAGE_KEY = "groq_token_usage_local_v1";
+  const DAILY_LIMIT_KEY = "groq_daily_limit_seen_v1";
+  const TOKEN_USAGE_WINDOW_MS = 24 * 60 * 60 * 1000;
+  function hasRecentDailyLimit() {
+    try {
+      const event = JSON.parse(localStorage.getItem(DAILY_LIMIT_KEY) || "null");
+      return Number.isFinite(event?.at) && event.at > Date.now() - TOKEN_USAGE_WINDOW_MS;
+    } catch { return false; }
+  }
+  function recordDailyLimit(model) {
+    try { localStorage.setItem(DAILY_LIMIT_KEY, JSON.stringify({ at: Date.now(), model })); } catch {}
+  }
+  function readTokenUsage() {
+    try {
+      const records = JSON.parse(localStorage.getItem(TOKEN_USAGE_KEY) || "[]");
+      return Array.isArray(records) ? records.filter(item =>
+        item && typeof item.model === "string" && Number.isFinite(item.at) &&
+        item.at > Date.now() - TOKEN_USAGE_WINDOW_MS && Number.isFinite(item.tokens) && item.tokens >= 0
+      ) : [];
+    } catch { return []; }
+  }
+  function recordTokenUsage(model, usage) {
+    const input = Number(usage?.prompt_tokens);
+    const output = Number(usage?.completion_tokens);
+    if (!Number.isFinite(input) || !Number.isFinite(output) || input < 0 || output < 0) return;
+    const cached = Number(usage?.prompt_tokens_details?.cached_tokens) || 0;
+    const records = readTokenUsage();
+    records.push({ model, at: Date.now(), tokens: Math.max(0, input - Math.min(input, cached)) + output });
+    try { localStorage.setItem(TOKEN_USAGE_KEY, JSON.stringify(records.slice(-2500))); } catch {}
+  }
   function modelCacheScope(key) {
     if (!key) return "primary";
     let hash = 2166136261;
@@ -359,7 +389,7 @@
             ],
             temperature: 0.7,
             reasoning_content: false,
-            max_completion_tokens: 1000,
+            max_completion_tokens: Math.min(1500, Math.max(1, Math.floor(Number(options.maxCompletionTokens) || 1000))),
             stream: false,
             userApiKey: getAuthKey() || null
           }
@@ -379,6 +409,7 @@
         err.model = model;
         throw err;
       }
+      if (res.headers.get("x-qatodev-daily-limit") === "1") recordDailyLimit(model);
       if (!res.ok) {
         let detail = "";
         try {
@@ -395,10 +426,14 @@
           throw err;
         }
         if (res.status === 429) {
-          const err = new Error("AI_RATE_LIMITED");
-          err.code = "AI_RATE_LIMITED";
+          const daily = /\b(?:TPD|RPD)\b|tokens per day|requests per day/i.test(detail);
+          if (daily) recordDailyLimit(model);
+          const err = new Error(daily ? "AI_DAILY_LIMITED" : "AI_RATE_LIMITED");
+          err.code = daily ? "AI_DAILY_LIMITED" : "AI_RATE_LIMITED";
           err.status = res.status;
           err.detail = detail;
+          const retry = Number(detail.match(/try again in\s+([\d.]+)s/i)?.[1]);
+          if (!daily && Number.isFinite(retry) && retry > 0) err.retryAfterSeconds = Math.ceil(retry);
           throw err;
         }
         if (res.status === 401 || (detail && isApiKeyCredentialDetail(detail))) {
@@ -439,6 +474,8 @@
         throw err;
       }
       const json = await res.json();
+      // Count every successful completion, including answers later rejected by quality checks.
+      recordTokenUsage(model, json.usage);
       const msg = json.choices?.[0]?.message;
       const answer = msg?.content?.trim();
       if (!answer) {
@@ -452,7 +489,9 @@
         });
         throw new Error("Empty AI answer");
       }
-      const qualityIssue = answerQualityIssue(answer);
+      const visibleAnswer = answer.replace(/<(qa-memory|qa-title|qa-icon|qa-next)>[\s\S]*?<\/\1>/gi, '')
+        .replace(/<(?:qa-memory|qa-title|qa-icon|qa-next)>[\s\S]*$/i, '').trim();
+      const qualityIssue = visibleAnswer ? answerQualityIssue(visibleAnswer) : 'empty_content';
       if (qualityIssue) {
         recordModelFailure(model, qualityIssue);
         debugLog?.warn("ai", "answer-low-quality", { model, reason: qualityIssue, durationMs: Date.now() - startedAt });
@@ -573,7 +612,7 @@
         order.forEach((_, idx) => { timers[idx] = setTimeout(() => startAttempt(idx), idx * ATTEMPT_DELAY_MS); });
       });
     }
-    return { buildFunctionUrlCandidates, callAiProxy, isApiKeyQuotaDetail, isApiKeyCredentialDetail, isRecoverableApiKeyError, isAllModelsCreditsExhaustedError, isAiRegionAvailabilityError, getAiRegionUnavailableMessage, parseAvailableModelsFromDetail, normalizeAvailableChatModels, readModelTimings, writeModelTimings, recordModelTiming, readModelFailures, writeModelFailures, recordModelFailure, isModelBlocked, getModelOrder, updateLoaderText, getModelDisplayLabel, startLoaderPhases, stopLoaderPhases, fetchAnswerOnce, requestBatchWithTimeout };
+    return { buildFunctionUrlCandidates, callAiProxy, isApiKeyQuotaDetail, isApiKeyCredentialDetail, isRecoverableApiKeyError, isAllModelsCreditsExhaustedError, isAiRegionAvailabilityError, getAiRegionUnavailableMessage, parseAvailableModelsFromDetail, normalizeAvailableChatModels, readModelTimings, writeModelTimings, recordModelTiming, readModelFailures, writeModelFailures, recordModelFailure, isModelBlocked, getModelOrder, updateLoaderText, getModelDisplayLabel, startLoaderPhases, stopLoaderPhases, fetchAnswerOnce, requestBatchWithTimeout, readTokenUsage, hasRecentDailyLimit };
   }
   window.QAtoDevAiClient = { create, models: FAST_MODEL_HINTS, modelCacheScope, nextComparisonOrder };
 })();

@@ -22,18 +22,6 @@
     </span>
     <span class="auth-open-btn__label">Войти</span>
   `;
-  // Header ASCII logo: replace only the art between String.raw` and `.
-  // If an art generator gives you ` characters, replace them with . or ' before pasting.
-  const SITE_TITLE_ASCII = siteTitleArt(String.raw`
-                            _
-               _           | |
-  ____ _____ _| |_ ___   __| |_____ _   _
- / _  (____ (_   _) _ \ / _  | ___ | | | |
-| |_| / ___ | | || |_| ( (_| | ____|\ V /
- \__  \_____|  \__)___/ \____|_____) \_/
-    |_|
-`);
-  const SITE_TITLE_ANIMATION_KEY = 'qa_site_title_animate_once';
   let headerScrolled = false;
 
   function withVersion(src) {
@@ -148,52 +136,6 @@
     });
   }
 
-  function revealHeaderLogo() {
-    const logoImg = document.querySelector('.logo img');
-    if (!logoImg) return;
-    if (logoImg.classList.contains('logo-ready')) return;
-
-    const markReady = () => {
-      logoImg.classList.add('logo-ready');
-    };
-
-    if (logoImg.complete) {
-      markReady();
-      return;
-    }
-
-    logoImg.addEventListener('load', markReady, { once: true });
-    logoImg.addEventListener('error', markReady, { once: true });
-  }
-
-  function siteTitleArt(source) {
-    const lines = String(source).replace(/\r/g, '').split('\n');
-    while (lines.length && lines[0].trim() === '') lines.shift();
-    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
-    return lines;
-  }
-
-  function getSiteTitleChaos(index) {
-    let hash = 2166136261;
-    const seed = `site-title:${index}`;
-    for (let i = 0; i < seed.length; i += 1) {
-      hash ^= seed.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-
-    const a = ((hash >>> 0) % 1000) / 1000;
-    const b = (((hash >>> 8) % 1000) / 1000);
-    const c = (((hash >>> 16) % 1000) / 1000);
-    const d = (((hash >>> 24) % 1000) / 1000);
-
-    return {
-      delay: Math.round(a * 360),
-      x: ((b - 0.5) * 1.2).toFixed(2),
-      y: ((c - 0.5) * 1.1).toFixed(2),
-      rotate: Math.round((d - 0.5) * 18)
-    };
-  }
-
   function setupSiteTitleHomeLink() {
     const title = document.querySelector('.site-title');
     if (!title) return;
@@ -203,17 +145,49 @@
 
     const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isHomePage = () => window.location.pathname.endsWith('/') || window.location.pathname.endsWith('/index.html');
-    const restartLogoAnimation = () => {
-      if (prefersReducedMotion()) return;
-      title.classList.remove('is-assembling');
-      void title.offsetWidth;
+    const art = title.querySelector('.site-title-ascii');
+    const originalArt = art?.textContent || '';
+    let animationTimer;
+
+    const animateTitle = () => {
+      if (!art || prefersReducedMotion()) return;
+      clearTimeout(animationTimer);
       title.classList.add('is-assembling');
+      const fragment = document.createDocumentFragment();
+      let index = 0;
+      originalArt.split('\n').forEach(line => {
+        const row = document.createElement('span');
+        row.className = 'site-title-ascii__line';
+        for (const char of line) {
+          if (char === ' ') {
+            row.appendChild(document.createTextNode(char));
+            continue;
+          }
+          const symbol = document.createElement('span');
+          symbol.className = 'site-title-ascii__char';
+          symbol.textContent = char;
+          const seed = (Math.imul(index + 1, 2654435761) >>> 0);
+          symbol.style.setProperty('--site-title-delay', `${seed % 360}ms`);
+          symbol.style.setProperty('--site-title-x', `${(((seed >>> 8) % 100) - 50) / 80}em`);
+          symbol.style.setProperty('--site-title-y', `${(((seed >>> 16) % 100) - 50) / 90}em`);
+          symbol.style.setProperty('--site-title-r', `${((seed >>> 24) % 19) - 9}deg`);
+          row.appendChild(symbol);
+          index += 1;
+        }
+        fragment.appendChild(row);
+      });
+      art.replaceChildren(fragment);
+      animationTimer = setTimeout(() => {
+        title.classList.remove('is-assembling');
+        art.textContent = originalArt;
+      }, 760);
     };
+
     const activateHomeLink = () => {
       if (title.dataset.siteTitleNavigating === 'true') return;
 
       if (isHomePage()) {
-        restartLogoAnimation();
+        animateTitle();
         if (window.scrollY > 0) {
           window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
         }
@@ -221,70 +195,36 @@
       }
 
       title.dataset.siteTitleNavigating = 'true';
-      try {
-        sessionStorage.setItem(SITE_TITLE_ANIMATION_KEY, '1');
-      } catch {
-        // Ignore storage access errors; navigation should still work.
-      }
-      window.location.href = 'index.html';
+      animateTitle();
+      window.setTimeout(() => {
+        window.location.href = 'index.html';
+      }, art && !prefersReducedMotion() ? 720 : 0);
     };
-
-    if (title.dataset.siteTitleReady !== 'true') {
-      title.textContent = '';
-      const ascii = document.createElement('span');
-      ascii.className = 'site-title-ascii';
-      ascii.setAttribute('aria-hidden', 'true');
-      let visibleIndex = 0;
-
-      SITE_TITLE_ASCII.forEach((line) => {
-        const row = document.createElement('span');
-        row.className = 'site-title-ascii__line';
-
-        Array.from(line).forEach((char) => {
-          if (char === ' ') {
-            row.appendChild(document.createTextNode(char));
-            return;
-          }
-
-          const symbol = document.createElement('span');
-          symbol.className = 'site-title-ascii__char';
-          const chaos = getSiteTitleChaos(visibleIndex);
-          symbol.textContent = char;
-          symbol.style.setProperty('--site-title-delay', `${chaos.delay}ms`);
-          symbol.style.setProperty('--site-title-x', `${chaos.x}em`);
-          symbol.style.setProperty('--site-title-y', `${chaos.y}em`);
-          symbol.style.setProperty('--site-title-r', `${chaos.rotate}deg`);
-          row.appendChild(symbol);
-          visibleIndex += 1;
-        });
-
-        ascii.appendChild(row);
-      });
-
-      title.appendChild(ascii);
-      title.setAttribute('data-site-title-ready', 'true');
-    }
-
-    if (isHomePage()) {
-      try {
-        if (sessionStorage.getItem(SITE_TITLE_ANIMATION_KEY) === '1') {
-          sessionStorage.removeItem(SITE_TITLE_ANIMATION_KEY);
-          window.requestAnimationFrame(restartLogoAnimation);
-        }
-      } catch {
-        // Ignore storage access errors.
-      }
-    }
-
-    title.setAttribute('role', 'link');
-    title.setAttribute('tabindex', '0');
-    title.setAttribute('aria-label', 'Перейти на главную');
 
     title.addEventListener('click', activateHomeLink);
     title.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
       activateHomeLink();
+    });
+  }
+
+  function setupHeaderLogoHomeLink() {
+    const logo = document.querySelector('.logo');
+    if (!logo) return;
+    const pageName = getCurrentPageName();
+    if (pageName === '' || pageName === 'index.html') return;
+
+    const goHome = () => { window.location.href = 'index.html'; };
+    logo.classList.add('logo--home-link');
+    logo.setAttribute('role', 'link');
+    logo.setAttribute('tabindex', '0');
+    logo.setAttribute('aria-label', 'Перейти на главную');
+    logo.addEventListener('click', goHome);
+    logo.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      goHome();
     });
   }
 
@@ -494,7 +434,7 @@
       link.addEventListener('click', handleNavClick);
     });
     updateResumeNewBadge();
-    revealHeaderLogo();
+    setupHeaderLogoHomeLink();
     setupSiteTitleHomeLink();
     ensureAuthModalMarkup();
     ensureProfileButton();
