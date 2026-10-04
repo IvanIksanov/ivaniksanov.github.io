@@ -1,12 +1,13 @@
 /* Text-first homepage assistant. Model selection and fallback live in ai-client.shared.js. */
 (() => {
   'use strict';
-  document.addEventListener('DOMContentLoaded', async () => {
+  async function initHomeChat() {
     const root = document.querySelector('.home-stage');
     if (!root) return;
-    setTimeout(() => root.classList.remove('is-preparing'), 4000);
-    if (!window.QAtoDevAiClient || !window.QAtoDevConversationMemory) return;
-    const revealSideCards = () => requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('is-preparing')));
+    if (!window.QAtoDevAiClient || !window.QAtoDevConversationMemory) {
+      root.classList.remove('is-preparing');
+      return;
+    }
 
     const $ = id => document.getElementById(`home-chat-${id}`);
     const legacyChatsKey = 'home_ai_chats_v2';
@@ -600,7 +601,6 @@
         }
         const list = lists[index % 2];
         const position = Math.floor(index / 2);
-        card.style.order = String(index);
         if (list.children[position] !== card) list.insertBefore(card, list.children[position] || null);
         existing.delete(chat.id);
       });
@@ -672,7 +672,7 @@
             try {
               await navigator.clipboard.writeText(turn.answer);
               caption.textContent = 'Скопировано';
-              setTimeout(() => { caption.textContent = 'Скопировать ответ'; }, 1600);
+              event.currentTarget.setAttribute('aria-label', 'Скопировано');
             } catch { status.textContent = 'Не удалось скопировать ответ.'; }
           }),
           actionButton('export', 'Саммари для ИИ', async event => {
@@ -680,7 +680,7 @@
             try {
               await navigator.clipboard.writeText(transferPrompt());
               caption.textContent = 'Чат скопирован';
-              setTimeout(() => { caption.textContent = 'Саммари для ИИ'; }, 1600);
+              event.currentTarget.setAttribute('aria-label', 'Чат скопирован');
             } catch { status.textContent = 'Не удалось скопировать чат.'; }
           })
         );
@@ -923,7 +923,8 @@
     });
     const initialSession = await Promise.resolve().then(() => window.AppSupabase?.getSession?.()).catch(() => null);
     applyAuthSession(initialSession, false);
-    window.AppSupabase?.client?.auth?.onAuthStateChange?.((_event, session) => {
+    window.AppSupabase?.client?.auth?.onAuthStateChange?.((event, session) => {
+      if (!session && event !== 'SIGNED_OUT') return;
       setTimeout(() => applyAuthSession(session), 0);
     });
     window.addEventListener('online', () => scheduleCloudSync(0));
@@ -948,6 +949,16 @@
     const restoredChatId = saveFirstAnswer();
     render();
     renderSaved(restoredChatId);
-    revealSideCards();
+    root.classList.remove('is-preparing');
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    const desktop = matchMedia('(min-width: 901px)');
+    if (desktop.matches) { void initHomeChat(); return; }
+    const start = () => {
+      if (!desktop.matches) return;
+      desktop.removeEventListener('change', start);
+      void initHomeChat();
+    };
+    desktop.addEventListener('change', start);
   });
 })();
