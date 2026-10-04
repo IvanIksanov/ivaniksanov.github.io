@@ -56,6 +56,25 @@ test('generic permission prompts are removed from saved follow-up chips', () => 
   ])), ['Почему GET /profile без токена возвращает 401, а не 403?']);
 });
 
+test('visible follow-up section is moved out of the answer', () => {
+  const parsed = memory.extract('Разбор карты требований.\n\n---\n\n## Следующие вопросы\n\n- Как включить в карту связи между требованиями и тестами?\n- Как оценить покрытие нового функционала?');
+  assert.equal(parsed.answer, 'Разбор карты требований.');
+  assert.deepEqual(Array.from(parsed.suggestions), [
+    'Как включить в карту связи между требованиями и тестами?',
+    'Как оценить покрытие нового функционала?'
+  ]);
+});
+
+test('two questions inside one hidden follow-up become separate chips', () => {
+  const parsed = memory.extract('Ответ.\n<qa-next>Какие элементы включить в карту тестов? Какую карту выбрать для анализа требований?</qa-next>');
+  assert.equal(parsed.answer, 'Ответ.');
+  assert.deepEqual(Array.from(parsed.suggestions), [
+    'Какие элементы включить в карту тестов?',
+    'Какую карту выбрать для анализа требований?'
+  ]);
+  assert.deepEqual(Array.from(memory.normalizeSuggestions(parsed.suggestions)), Array.from(parsed.suggestions));
+});
+
 test('chat icon is hidden, restricted to resume icon keys and carried to the next turn', () => {
   const docker = memory.extract('<qa-title>Docker для QA</qa-title>\n<qa-icon>docker</qa-icon>\n<qa-memory>Контейнеры.</qa-memory>\n\nDocker изолирует окружение.');
   assert.equal(docker.answer, 'Docker изолирует окружение.');
