@@ -403,7 +403,7 @@
     authOpenBtn.type = 'button';
     authOpenBtn.title = 'Войти и сохранить прогресс';
     authOpenBtn.setAttribute('aria-label', 'Войти и сохранить прогресс');
-    authOpenBtn.innerHTML = AUTH_BUTTON_INNER_HTML;
+    if (!authOpenBtn.querySelector('.auth-open-btn__icon')) authOpenBtn.innerHTML = AUTH_BUTTON_INNER_HTML;
     authOpenBtn.classList.toggle('is-guest', storedAuthVisualState !== 'auth');
     authOpenBtn.classList.toggle('is-auth', storedAuthVisualState === 'auth');
     const labelEl = authOpenBtn.querySelector('.auth-open-btn__label');
