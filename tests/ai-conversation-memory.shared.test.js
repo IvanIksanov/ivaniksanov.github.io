@@ -62,5 +62,7 @@ test('chat icon is hidden, restricted to resume icon keys and carried to the nex
   assert.equal(docker.icon, 'docker');
   assert.equal(memory.extract('Следующий ответ.', docker.memory, docker.title, docker.icon).icon, 'docker');
   assert.equal(memory.normalizeIcon('evil:icon'), '');
+  assert.equal(memory.normalizeIcon('requirements'), 'requirements');
+  assert.equal(memory.normalizeIcon('performance'), 'performance');
   assert.equal(memory.extract('Ответ.\n<qa-icon>незаконченный блок').answer, 'Ответ.');
 });
