@@ -197,13 +197,16 @@
       return sharedUsageRequest;
     }
     function refreshUsageInline() {
-      const remainingPercent = sharedUsage?.limit > 0 && Number.isFinite(sharedUsage.remaining)
-        ? Math.round(Math.max(0, Math.min(100, sharedUsage.remaining / sharedUsage.limit * 100)))
+      const remainingRatio = sharedUsage?.limit > 0 && Number.isFinite(sharedUsage.remaining)
+        ? Math.max(0, Math.min(1, sharedUsage.remaining / sharedUsage.limit))
         : null;
-      const available = remainingPercent !== null;
+      const available = remainingRatio !== null;
+      const remainingPercent = available ? Math.round(remainingRatio * 100) : null;
       if (available) usageValue.textContent = `${remainingPercent}%`;
       usageToggle.disabled = !available;
       usageToggle.classList.toggle('is-visible', available);
+      usageToggle.classList.toggle('is-low', available && remainingRatio < .4 && remainingRatio >= .1);
+      usageToggle.classList.toggle('is-critical', available && remainingRatio < .1);
       usageToggle.setAttribute('aria-label', available
         ? `Суточный лимит запросов: осталось ${remainingPercent}%`
         : 'Суточный лимит запросов');

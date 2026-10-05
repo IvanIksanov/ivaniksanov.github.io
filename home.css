@@ -9,6 +9,8 @@ body.home-redesign { overscroll-behavior-x: none; }
   --home-text: #191b1d;
   --home-muted: #69727d;
   --home-accent: #ffa001;
+  --home-usage-warning: #9b6a00;
+  --home-usage-critical: #c53d35;
   --home-answer: #2e343a;
   --home-starter-surface: #fafafa;
   --home-starter-border: #d1d5db;
@@ -29,6 +31,8 @@ html[data-theme="dark"] .home-stage {
   --home-text: #f2f3f4;
   --home-muted: #a5abb2;
   --home-answer: #e2e4e6;
+  --home-usage-warning: #f2c34d;
+  --home-usage-critical: #ff7972;
   --home-starter-surface: #242424;
   --home-starter-border: #374151;
   --home-starter-accent: #a3abb5;
@@ -200,6 +204,10 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
 .home-chat__form.is-usage-open > .home-chat__usage-inline { max-width: 340px; opacity: 1; }
 .home-chat__usage-toggle { position: relative; display: grid; place-items: center; flex: none; width: 0; height: 27px; margin-left: -11px; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--home-muted); font: 500 11px/1 "Fira Code", monospace; opacity: 0; visibility: hidden; pointer-events: none; cursor: pointer; transition: width 240ms ease, margin-left 240ms ease, opacity 240ms ease, visibility 0s linear 240ms; }
 .home-chat__usage-toggle.is-visible { width: 42px; margin-left: 0; opacity: .7; visibility: visible; pointer-events: auto; transition-delay: 0s; }
+.home-chat__usage-toggle.is-low, .home-chat__usage-toggle.is-critical { opacity: .95; }
+.home-chat__usage-value { transition: color 180ms ease; }
+.home-chat__usage-toggle.is-low .home-chat__usage-value { color: var(--home-usage-warning); }
+.home-chat__usage-toggle.is-critical .home-chat__usage-value { color: var(--home-usage-critical); }
 .home-chat__usage-toggle.is-visible:hover, .home-chat__usage-toggle.is-visible:focus-visible { opacity: 1; }
 .home-chat__usage-tooltip { position: absolute; z-index: 2; bottom: calc(100% + 6px); right: 0; width: max-content; max-width: min(220px, 75vw); padding: 5px 8px; border: 1px solid var(--home-border); border-radius: 8px; background: var(--home-surface); color: var(--home-text); font-size: 12px; line-height: 1.3; white-space: nowrap; opacity: 0; transform: translateY(5px) scale(.96); pointer-events: none; visibility: hidden; transition: opacity 220ms ease, transform 220ms ease, visibility 0s linear 220ms; }
 .home-chat__usage-toggle:hover .home-chat__usage-tooltip { opacity: 1; transform: translateY(0) scale(1); visibility: visible; transition-delay: 1s; }
