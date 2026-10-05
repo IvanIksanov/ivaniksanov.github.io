@@ -781,7 +781,7 @@
       const lastTurn = conversation.lastElementChild;
       if (lastTurn) {
         lastTurn.classList.add('is-current');
-        requestAnimationFrame(() => focusTurn(lastTurn));
+        focusTurn(lastTurn);
       }
     }
     function showOfflineAnswer(entry, question, starterId, clearInput = false) {
