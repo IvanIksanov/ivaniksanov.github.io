@@ -229,6 +229,7 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
 @media (max-width: 900px) {
   .home-stage { display: none; }
   .home-mobile-carousel { display: flex; }
+  .home-redesign #practice-covers { padding-top: 8px; }
 }
 @media (max-height: 620px) and (min-width: 901px) {
   .home-stage__intro h1 { font-size: clamp(29px, 6svh, 38px); margin: 8px 0 10px; }
