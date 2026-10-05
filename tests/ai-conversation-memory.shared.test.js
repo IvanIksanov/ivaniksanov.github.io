@@ -84,5 +84,8 @@ test('chat icon is hidden, restricted to resume icon keys and carried to the nex
   assert.equal(memory.normalizeIcon('evil:icon'), '');
   assert.equal(memory.normalizeIcon('requirements'), 'requirements');
   assert.equal(memory.normalizeIcon('performance'), 'performance');
+  assert.equal(memory.normalizeIcon('boundary'), 'boundary');
+  assert.equal(memory.normalizeIcon('decision-table'), 'decision-table');
+  assert.equal(memory.normalizeIcon('integration'), 'integration');
   assert.equal(memory.extract('Ответ.\n<qa-icon>незаконченный блок').answer, 'Ответ.');
 });

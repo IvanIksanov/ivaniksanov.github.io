@@ -95,13 +95,17 @@
       qa: 'tabler:tool', sql: 'tabler:database-search', postgresql: 'simple-icons:postgresql',
       api: 'tabler:api', docker: 'simple-icons:docker', java: 'devicon-plain:java',
       python: 'simple-icons:python', javascript: 'simple-icons:javascript', git: 'simple-icons:git',
-      linux: 'simple-icons:linux', web: 'tabler:browser-check', 'test-design': 'tabler:binary-tree-2',
+      linux: 'simple-icons:linux', web: 'tabler:browser-check', 'test-design': 'tabler:layout-grid',
       bug: 'tabler:bug', postman: 'simple-icons:postman', swagger: 'simple-icons:swagger',
       kubernetes: 'simple-icons:kubernetes', 'ci-cd': 'tabler:route-2', interview: 'tabler:users-group',
       requirements: 'tabler:list-details', cases: 'tabler:route-alt-right',
       automation: 'tabler:terminal-2', regression: 'tabler:repeat', security: 'tabler:shield-check',
       performance: 'tabler:gauge', mobile: 'tabler:device-mobile-check', ui: 'tabler:paint',
-      testing: 'tabler:hand-click'
+      testing: 'tabler:hand-click', functional: 'tabler:checkup-list',
+      integration: 'tabler:plug-connected', system: 'tabler:binary-tree-2',
+      smoke: 'tabler:flame', boundary: 'tabler:math-max-min',
+      equivalence: 'tabler:layers-intersect', 'decision-table': 'tabler:table',
+      states: 'tabler:arrows-exchange', checklist: 'tabler:list-check'
     };
     function chatIcon(value, title = '') {
       const chosen = window.QAtoDevConversationMemory.normalizeIcon(value);
@@ -113,7 +117,16 @@
         ['python', /python|питон/], ['javascript', /javascript|джаваскрипт/], ['java', /\bjava\b|джава/],
         ['git', /\bgit\b/], ['linux', /linux|линукс/], ['bug', /баг|дефект/],
         ['requirements', /требовани|критери[ия] при[её]мк/],
-        ['cases', /тест.кейс|тестов[а-я]* сценари|чек.лист|тест.план/],
+        ['boundary', /граничн|границ[а-я]* значен/],
+        ['equivalence', /эквивалентност/],
+        ['decision-table', /таблиц[а-я]* (?:приняти[яе] решени|решени)|decision.table/],
+        ['states', /переход[а-я]*.*состоян|состоян[а-я]*.*переход|машин[а-я]* состоян/],
+        ['checklist', /чек.лист|checklist/],
+        ['functional', /(?:^|[\s,—:])функциональн[а-я]* тестировани/],
+        ['integration', /интеграционн[а-я]* тестировани/],
+        ['system', /системн[а-я]* тестировани/],
+        ['smoke', /smoke|смоук|дымовых? тест/],
+        ['cases', /тест.кейс|тестов[а-я]* сценари|тест.план/],
         ['automation', /автоматизац|автотест|selenium|playwright|cypress/],
         ['regression', /регресс|повторн[а-я]* проверк/],
         ['security', /безопасност|авторизац|аутентификац|уязвим/],
@@ -124,7 +137,7 @@
         ['ci-cd', /\bci.?cd\b/], ['web', /\bweb\b|браузер|веб/],
         ['testing', /тестировани|тестировщ|провер[а-я]* программ/]
       ].find(([, pattern]) => pattern.test(name))?.[0];
-      return (!chosen || chosen === 'qa' || chosen === 'test-design') && inferred ? inferred : chosen || inferred || 'qa';
+      return (!chosen || ['qa', 'testing', 'test-design'].includes(chosen)) && inferred ? inferred : chosen || inferred || 'qa';
     }
     function relevantResourceHint(question, previousTitle = '') {
       const topic = resourceTopics.find(item => item.pattern.test(question)) ||
