@@ -374,11 +374,17 @@
     const hasQuestionsScript = Array.from(document.scripts).some((s) => String(s.src || "").includes("questions.js"));
     if (hasQuestionsScript) return;
     if (document.querySelector('script[data-model-preflight="true"]')) return;
-    const script = document.createElement('script');
-    script.src = withVersion('model-preflight.shared.js');
-    script.defer = true;
-    script.dataset.modelPreflight = 'true';
-    document.body.appendChild(script);
+    const appendPreflight = () => {
+      const script = document.createElement('script');
+      script.src = withVersion('model-preflight.shared.js');
+      script.dataset.modelPreflight = 'true';
+      document.body.appendChild(script);
+    };
+    if (window.QAtoDevAiPrompts) { appendPreflight(); return; }
+    const prompts = document.createElement('script');
+    prompts.src = 'ai-prompts.shared.js?v=1.0.0';
+    prompts.addEventListener('load', appendPreflight, { once: true });
+    document.body.appendChild(prompts);
   }
 
   function ensureProfileButton() {

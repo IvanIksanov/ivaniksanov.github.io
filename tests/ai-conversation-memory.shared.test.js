@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const sandbox = { window: {} };
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../ai-prompts.shared.js'), 'utf8'), sandbox);
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../ai-conversation-memory.shared.js'), 'utf8'), sandbox);
 const memory = sandbox.window.QAtoDevConversationMemory;
 

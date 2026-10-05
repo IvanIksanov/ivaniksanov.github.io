@@ -2984,45 +2984,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildSummaryPrompt(skills, bullets, options = {}) {
-    const mode = options.mode || "create";
-    const currentSummary = String(options.currentSummary || "").trim();
-    const genderLabel = state.experienceGender === "female" ? "женский" : "мужской";
-    const lines = [
-      "Составь краткий блок «О себе» для резюме QA-инженера на русском языке.",
-      "Нужен один связный абзац без списков и без markdown.",
-      "Пиши как текст для моего резюме от первого лица, без повествования со стороны.",
-      "Не начинай с формулировок вроде «Опытный QA-инженер», «Кандидат», «Специалист» или описания меня в третьем лице.",
-      "Лучше использовать естественные формулировки в духе «Занимаюсь...», «Работаю с...», «Имею опыт...» или безличную, но живую подачу для блока резюме.",
-      "Объем: 3-5 предложений, уверенный деловой стиль, без воды.",
-      "Не перечисляй все навыки подряд через запятую, а собери из них цельный профиль.",
-      "Не выдумывай опыт, опирайся только на переданные данные.",
-      `Согласуй формулировки с выбранным полом пользователя: ${genderLabel}.`
-    ];
-    if (mode === "extend" && currentSummary) {
-      lines.push("Пользователь уже указал дополнительную информацию в поле «О себе». Обязательно используй её как важный контекст, аккуратно дополни и отредактируй итоговый абзац.");
-      lines.push(`Текущий текст пользователя: ${currentSummary}`);
-    }
-    if (mode === "version" && currentSummary) {
-      lines.push("Нужно подготовить новую версию описания на основе текущего текста в поле «О себе».");
-      lines.push("Если в текущем тексте есть правки, ошибки, черновые заметки или дополнительный промпт пользователя, используй полезный смысл, исправь ошибки и верни готовый чистовой абзац для резюме.");
-      lines.push(`Текущий текст в поле «О себе»: ${currentSummary}`);
-    }
-    if (state.profile.headline) lines.push(`Желаемая должность: ${state.profile.headline}`);
-    if (state.profile.experienceTotal) lines.push(`Общий опыт: ${state.profile.experienceTotal}`);
-    lines.push(`Пол для формулировок опыта и блока «О себе»: ${genderLabel}`);
-    if (skills.length) lines.push(`Выбранные навыки: ${skills.join(", ")}`);
-    if (bullets.length) lines.push(`Формулировки опыта: ${bullets.join(" ")}`);
-    return lines.join("\n");
+    return window.QAtoDevAiPrompts.resume.summary({
+      skills, bullets,
+      mode: options.mode || "create",
+      currentSummary: String(options.currentSummary || "").trim(),
+      genderLabel: state.experienceGender === "female" ? "женский" : "мужской",
+      headline: state.profile.headline,
+      experienceTotal: state.profile.experienceTotal
+    });
   }
 
   function getSummarySystemPrompt() {
-    return "Ты помогаешь составить блок «О себе» для резюме QA-инженера. " +
-      "Отвечай только на русском языке. " +
-      "Верни один компактный абзац для резюме без markdown, без списков, без заголовков и без приветствий. " +
-      "Текст должен звучать профессионально, естественно и по-человечески. " +
-      "Пиши этот блок как самопрезентацию для резюме от первого лица, а не как описание кандидата со стороны. " +
-      "Не используй конструкции в третьем лице вроде «опытный QA-инженер», «специализирующийся», «кандидат», «он/она». " +
-      "Не придумывай технологии или достижения, которых нет в данных пользователя.";
+    return window.QAtoDevAiPrompts.resume.summarySystem;
   }
 
   function isDesktopSuggestionAiEnabled() {
@@ -3095,49 +3068,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildSuggestionCorrectionPrompt(experience, suggestionKey, currentText, userPrompt) {
-    const genderLabel = state.experienceGender === "female" ? "женский" : "мужской";
-    const selectedInExperience = getSelectedBullets(experience)
-      .filter((text) => text !== currentText);
-    const selectedEverywhere = state.experiences.flatMap((item, index) => (
+    const selectedInExperience = getSelectedBullets(experience).filter(text => text !== currentText);
+    const selectedEverywhere = state.experiences.flatMap((item, index) =>
       getSelectedBullets(item)
-        .filter((text) => !(index === activeExperienceIndex && text === currentText))
-        .map((text) => `Блок ${index + 1}: ${text}`)
-    ));
-    const lines = [
-      "Скорректируй одну формулировку для блока опыта в QA-резюме.",
-      "Важно: сохрани исходный смысл карточки и тему, не переписывай ее в другую задачу.",
-      "Сделай формулировку более продающей, конкретной и заметной для рекрутера.",
-      "Верни только одну готовую формулировку без markdown, без кавычек и без пояснений.",
-      "Пиши в прошедшем времени от первого лица без местоимения «я».",
-      "Не выдумывай метрики, инструменты, компании и достижения, которых нет в контексте.",
-      "Не повторяй формулировки, которые уже выбраны в других карточках.",
-      `Пол пользователя для согласования глаголов: ${genderLabel}.`,
-      `Компания/работодатель в этом блоке: ${getEmployerName(experience)}.`,
-      `Должность в этом блоке: ${getRoleName(experience)}.`,
-      `Период: ${formatExperiencePeriod(experience)}.`,
-      `Исходная формулировка: ${currentText}`
-    ];
-    if (state.profile.headline) lines.push(`Целевая должность в резюме: ${state.profile.headline}.`);
-    if (state.profile.experienceTotal) lines.push(`Общий опыт: ${state.profile.experienceTotal}.`);
-    if (state.skills.length) lines.push(`Выбранные навыки: ${state.skills.join(", ")}.`);
-    if (selectedInExperience.length) lines.push(`Другие выбранные формулировки этого блока: ${selectedInExperience.join(" | ")}`);
-    if (selectedEverywhere.length) lines.push(`Уже выбранные формулировки, с которыми нельзя повторяться: ${selectedEverywhere.join(" | ")}`);
-    const custom = String(userPrompt || "").trim();
-    if (custom) {
-      lines.push(`Дополнительное пожелание пользователя: ${custom}`);
-    } else {
-      lines.push("Дополнительного пожелания нет: автоматически улучши формулировку под профиль пользователя и выбранный опыт.");
-    }
-    return lines.join("\n");
+        .filter(text => !(index === activeExperienceIndex && text === currentText))
+        .map(text => `Блок ${index + 1}: ${text}`)
+    );
+    return window.QAtoDevAiPrompts.resume.correction({
+      genderLabel: state.experienceGender === "female" ? "женский" : "мужской",
+      employer: getEmployerName(experience),
+      role: getRoleName(experience),
+      period: formatExperiencePeriod(experience),
+      currentText,
+      headline: state.profile.headline,
+      experienceTotal: state.profile.experienceTotal,
+      skills: state.skills,
+      selectedInExperience,
+      selectedEverywhere,
+      userPrompt
+    });
   }
 
   function getSuggestionCorrectionSystemPrompt() {
-    return "Ты карьерный редактор для QA-резюме. " +
-      "Твоя задача — аккуратно улучшать одну выбранную формулировку опыта, сохраняя ее смысл. " +
-      "Отвечай только на русском языке одной строкой. " +
-      "Не добавляй списки, markdown, кавычки, заголовки и объяснения. " +
-      "Не выдумывай факты, метрики, инструменты и достижения. " +
-      "Формулировка должна быть сильной, конкретной и не дублировать уже выбранные пункты.";
+    return window.QAtoDevAiPrompts.resume.correctionSystem;
   }
 
   function getAuthKey() {

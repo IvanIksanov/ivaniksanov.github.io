@@ -550,15 +550,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildAiPrompt(item) {
-    return [
-      `Вопрос для собеседования: ${item.title}`,
-      "",
-      "Базовый ответ (из QAtoDev):",
-      String(item.answer || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]+>/g, " "),
-      "",
-      "Дополните ответ для подготовки к собеседованию QA/тестировщика.",
-      "Нужно кратко и по делу: важные детали, практический пример, частые ошибки."
-    ].join("\n");
+    return window.QAtoDevAiPrompts.interview.append(item);
   }
 
   async function getAiProxyHeaders() {
@@ -604,7 +596,7 @@ document.addEventListener("DOMContentLoaded", () => {
       provider: "groq",
       model: DEFAULT_MODEL,
       messages: [
-        { role: "system", content: "Ты ИИ-помощник для подготовки к собеседованию QA. Отвечай на русском языке, кратко, структурно, без лишней воды. Без markdown таблиц." },
+        { role: "system", content: window.QAtoDevAiPrompts.interview.system },
         { role: "user", content: buildAiPrompt(item) }
       ],
       temperature: 0.4,

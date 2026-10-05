@@ -14,15 +14,8 @@
     "moonshotai/Kimi-K2-Instruct-0905",
     "deepseek-ai/DeepSeek-V3.2"
   ];
-  const WARMUP_SYSTEM_PROMPT =
-    "You are an AI assistant for interview preparation in the IT field, specializing in roles such as Test Engineer, QA, AQA, and Test Automation. " +
-    "Answer all user queries in Russian and maintain the context of software testing throughout. " +
-    "If the user submits only a single term or skill (for example, Postman or SQL), provide a clear definition, explain its purpose, and describe typical use cases. " +
-    "If the user submits a full interview question, respond with a detailed, structured answer in Russian, without generating additional follow-up questions. " +
-    "Provide a concise but rich summary with practical examples. " +
-    "Total answer length should be within 1000 tokens. " +
-    "Do not use markdown tables, charts, or extra formatting.";
-  const WARMUP_USER_PROMPT = "Тема: API. Вопрос: Что такое REST API и как тестировать его на собеседовании QA?";
+  const WARMUP_SYSTEM_PROMPT = window.QAtoDevAiPrompts.preflight.system;
+  const WARMUP_USER_PROMPT = window.QAtoDevAiPrompts.preflight.user;
 
   async function callAiProxy(payload) {
     const urls = Array.from(new Set([
