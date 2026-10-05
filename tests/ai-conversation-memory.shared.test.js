@@ -5,6 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const sandbox = { window: {} };
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../ai-prompts.shared.js'), 'utf8'), sandbox);
 vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../ai-conversation-memory.shared.js'), 'utf8'), sandbox);
 const memory = sandbox.window.QAtoDevConversationMemory;
 
@@ -83,5 +84,8 @@ test('chat icon is hidden, restricted to resume icon keys and carried to the nex
   assert.equal(memory.normalizeIcon('evil:icon'), '');
   assert.equal(memory.normalizeIcon('requirements'), 'requirements');
   assert.equal(memory.normalizeIcon('performance'), 'performance');
+  assert.equal(memory.normalizeIcon('boundary'), 'boundary');
+  assert.equal(memory.normalizeIcon('decision-table'), 'decision-table');
+  assert.equal(memory.normalizeIcon('integration'), 'integration');
   assert.equal(memory.extract('Ответ.\n<qa-icon>незаконченный блок').answer, 'Ответ.');
 });

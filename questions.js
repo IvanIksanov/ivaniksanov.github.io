@@ -67,23 +67,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-const systemPrompt =
-  "You are an AI assistant for interview preparation in the IT field, specializing in roles such as Test Engineer, QA, AQA, and Test Automation. " +
-  "Answer all user queries in Russian and maintain the context of software testing throughout. " +
-  "If the user submits only a single term or skill (for example, “Postman” or “SQL”), provide a clear definition, explain its purpose, and describe typical use cases. " +
-  "If the user submits a full interview question, respond with a detailed, structured answer in Russian, without generating additional follow-up questions. " +
-  "Provide a concise but rich summary: максимум смысла, минимум воды, основные пункты + практические примеры при необходимости. " +
-  "Суммарный объем ответа должен укладываться в лимит 1000 токенов. " +
-  "Не используй таблицы, графики, диаграммы и лишнее оформление в ответе. " +
-  "Do not use markdown, asterisks, or other formatting characters—deliver plain text responses.";
-
-const refineSystemPrompt =
-  "Ты ИИ-помощник для подготовки к собеседованию QA/тестировщика. " +
-  "Отвечай на русском языке, кратко и по делу, с фокусом на выделенном фрагменте и уточняющем вопросе пользователя. " +
-  "Используй переданный контекст вопроса и предыдущего ответа, не игнорируй его. " +
-  "Дай более детальное пояснение, практичный пример и возможные ошибки/риски в рамках темы. " +
-  "Без таблиц, графиков, диаграмм и лишнего оформления. " +
-  "Ответ в пределах 1000 токенов.";
+const systemPrompt = window.QAtoDevAiPrompts.questions.system;
+const refineSystemPrompt = window.QAtoDevAiPrompts.questions.refineSystem;
   let runtimeQuestionsData = [];
   window.questionsData = runtimeQuestionsData; // активный источник для рендера
   const OVERRIDE_API_KEY_STORAGE = "groq_api_key_override";
@@ -2691,14 +2676,7 @@ const refineSystemPrompt =
   }
 
   function buildRefinePrompt(context, userFollowup) {
-    return [
-      `Тема: ${context.category}`,
-      `Основной вопрос: ${context.questionTitle}`,
-      `Базовый ответ: ${context.baseAnswer}`,
-      `Текущий ответ ИИ (если есть): ${context.currentAiAnswer || "нет"}`,
-      `Выделенный фрагмент: ${context.selectedText}`,
-      `Уточнение пользователя: ${userFollowup}`
-    ].join("\n\n");
+    return window.QAtoDevAiPrompts.questions.refine(context, userFollowup);
   }
 
   function showRefineAction(selection, context) {
@@ -3665,7 +3643,7 @@ const refineSystemPrompt =
               hasFocusedGeneratedResponse = true;
               return hasExistingResponses ? { focus: true, swipe: "next" } : {};
             };
-            const promptWithCategory = `Тема: ${cat.category}. Вопрос: ${item.title}`;
+            const promptWithCategory = window.QAtoDevAiPrompts.questions.initial(cat.category, item.title);
             const result = await requestWithFallback(
               promptWithCategory,
               preferredModel,
