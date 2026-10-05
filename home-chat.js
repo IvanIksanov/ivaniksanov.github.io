@@ -187,11 +187,18 @@
       const remainingPercent = sharedUsage?.limit > 0 && Number.isFinite(sharedUsage.remaining)
         ? Math.round(Math.max(0, Math.min(100, sharedUsage.remaining / sharedUsage.limit * 100)))
         : null;
-      usageValue.textContent = remainingPercent === null ? '—%' : `${remainingPercent}%`;
-      usageToggle.setAttribute('aria-label', remainingPercent === null
-        ? 'Суточный лимит запросов: данные загружаются'
-        : `Суточный лимит запросов: осталось ${remainingPercent}%`);
-      usageInline.hidden = false;
+      const available = remainingPercent !== null;
+      if (available) usageValue.textContent = `${remainingPercent}%`;
+      usageToggle.disabled = !available;
+      usageToggle.classList.toggle('is-visible', available);
+      usageToggle.setAttribute('aria-label', available
+        ? `Суточный лимит запросов: осталось ${remainingPercent}%`
+        : 'Суточный лимит запросов');
+      usageInline.hidden = !available;
+      if (!available) {
+        usageToggle.setAttribute('aria-expanded', 'false');
+        form.classList.remove('is-usage-open');
+      }
       usageInline.textContent = client.hasRecentDailyLimit()
         ? `Суточный лимит · ${dailyResetHint()}`
         : sharedUsage?.remaining <= 0
