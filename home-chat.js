@@ -49,6 +49,7 @@
     });
     const usageToggle = $('usage-toggle');
     const usageInline = $('usage-inline');
+    const usageValue = $('usage-value');
     const starters = root.querySelector('.home-stage__starters');
     let starterRevealTimer = null;
     function hideStarters() {
@@ -183,13 +184,14 @@
       return sharedUsageRequest;
     }
     function refreshUsageInline() {
-      const visible = client.hasRecentDailyLimit() || (sharedUsage && sharedUsage.remaining <= 0);
-      usageToggle.hidden = !visible;
-      usageInline.hidden = !visible;
-      if (!visible) {
-        usageToggle.setAttribute('aria-expanded', 'false');
-        form.classList.remove('is-usage-open');
-      }
+      const remainingPercent = sharedUsage?.limit > 0 && Number.isFinite(sharedUsage.remaining)
+        ? Math.round(Math.max(0, Math.min(100, sharedUsage.remaining / sharedUsage.limit * 100)))
+        : null;
+      usageValue.textContent = remainingPercent === null ? '—%' : `${remainingPercent}%`;
+      usageToggle.setAttribute('aria-label', remainingPercent === null
+        ? 'Суточный лимит запросов: данные загружаются'
+        : `Суточный лимит запросов: осталось ${remainingPercent}%`);
+      usageInline.hidden = false;
       usageInline.textContent = client.hasRecentDailyLimit()
         ? `Суточный лимит · ${dailyResetHint()}`
         : sharedUsage?.remaining <= 0
@@ -220,7 +222,6 @@
       const open = usageToggle.getAttribute('aria-expanded') !== 'true';
       usageToggle.setAttribute('aria-expanded', String(open));
       form.classList.toggle('is-usage-open', open);
-      usageToggle.setAttribute('aria-label', open ? 'Скрыть расход токенов' : 'Показать расход токенов');
       if (open) void refreshSharedUsage();
     });
     refreshUsageInline();
