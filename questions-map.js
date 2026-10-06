@@ -1257,6 +1257,11 @@
     showRoots(entryRoot, saved);
   }
 
+  if (location.protocol === 'file:') {
+    status.textContent = 'Карта не может читать JSON через file://. Откройте проект через локальный HTTP-сервер, например http://localhost:8765/questions-map.html.';
+    return;
+  }
+
   let cached = null;
   try {
     cached = JSON.parse(sessionStorage.getItem(dataCacheKey) || 'null');

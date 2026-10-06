@@ -13,7 +13,7 @@
         })();
     </script>
     <link rel="stylesheet" href="header.css?v=8.9.11">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=1.0.1">
     <link rel="stylesheet" href="pageBooks.css">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
     <script>
@@ -24,9 +24,9 @@
           imageAlt: "Login Sandbox",
           accent: "#3091ff",
           text: [
-            "Проверь форму авторизации: телефон и email, маску ввода, очистку полей, силу пароля, ошибку входа и отправку POST-запроса.",
-            "Справа есть чек-лист: для каждого пункта выбери Passed или Failed, а в конце нажми «Проверить регресс», чтобы увидеть корректность прохождения и качество проверки.",
-            "На работе это помогает не просто кликнуть форму, а разложить вход на позитивные, негативные и регрессионные проверки."
+            "Проверь регистрацию и вход по телефону или email. Запросы идут в учебный Petstore API; после успешного ответа откроется каталог электроники с корзиной.",
+            "Справа есть чек-лист: для каждого пункта выбери Passed или Failed, а в конце нажми «Проверить регресс».",
+            "Сервис учебный и может отвечать неожиданно. Проверяй также неверные данные: задача тренажёра — находить баги, а не скрывать их."
           ]
         };
     </script>
@@ -506,6 +506,7 @@
         /* Утилиты */
         .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
     </style>
+    <link rel="stylesheet" href="login-marketplace.css?v=1.0.6">
     <script src="metrika.shared.js"></script>
 </head>
 <body>
@@ -561,7 +562,7 @@
 </div>
 
     <!-- ЗАДАНИЕ-СЛАЙДЕР (заместо заголовка) -->
-    <section class="task-slider" role="region" aria-label="Задание">
+    <section class="task-slider" id="login-task-slider" role="region" aria-label="Задание">
         <div class="task-slider-header">
             <h2 class="task-slider-title">Задание</h2>
         </div>
@@ -590,10 +591,15 @@
     </section>
 
     <!-- ДВЕ КОЛОНКИ: слева форма (sticky), справа чек-лист (скролл, 1 в ряд) -->
-    <section class="login-layout" aria-label="Логин и чек-лист">
+    <section class="login-layout" id="login-layout" aria-label="Логин и чек-лист">
         <!-- ЛЕВАЯ КОЛОНКА -->
         <div class="login-left">
             <section class="login-wrap">
+                <div class="login-intro">
+                    <span class="login-intro__eyebrow">Тестовый магазин электроники</span>
+                    <h1>Войти в магазин</h1>
+                    <p id="login-intro-description">Войдите, чтобы открыть каталог учебного магазина.</p>
+                </div>
                 <!-- Инлайн-ошибка -->
                 <div id="inline-error" class="inline-error" role="alert" aria-live="polite"></div>
 
@@ -604,12 +610,18 @@
                     <button type="button" id="tab-email" role="tab" aria-selected="false" aria-pressed="false">Email</button>
                 </div>
 
-                <form id="login-form" novalidate>
+                <form id="login-form" data-mode="login" novalidate>
+                    <div id="name-container" class="input-container" hidden>
+                        <label for="name-input" class="sr-only">Имя для магазина</label>
+                        <div class="field">
+                            <input type="text" id="name-input" placeholder="Как к вам обращаться" autocomplete="given-name" maxlength="40" />
+                        </div>
+                    </div>
                     <!-- Телефон -->
                     <div id="phone-container" class="input-container">
                         <label for="phone-input" class="sr-only">Номер телефона</label>
                         <div class="field">
-                            <input type="tel" id="phone-input" placeholder="+7 (___) ___-__-__" inputmode="tel" autocomplete="tel" />
+                            <input type="tel" id="phone-input" placeholder="+7 900 123 45 67" inputmode="tel" autocomplete="tel" />
                             <button type="button" class="clear-btn" id="clear-phone" aria-label="Очистить">&times;</button>
                         </div>
                         <small class="hint">Номер должен содержать 11 цифр (вместе с +7)</small>
@@ -637,8 +649,10 @@
 
                     <!-- Кнопка входа -->
                     <div style="display:flex; justify-content:center; margin-top:.25rem;">
-                        <button type="button" id="login-button" class="carousel-button">Войти</button>
+                        <button type="submit" id="login-button" class="carousel-button">Войти</button>
                     </div>
+                    <p class="login-mode-prompt"><span id="login-mode-prompt-text">Впервые здесь?</span> <button type="button" id="login-mode-action">Создать аккаунт</button></p>
+                    <p class="login-demo-note">Это учебный API. Используйте только вымышленные контакты и пароль, который не применяете в других сервисах.</p>
                 </form>
             </section>
         </div>
@@ -676,12 +690,81 @@
             </section>
         </div>
     </section>
+
+    <section id="login-marketplace" class="demo-shop" aria-label="Учебный магазин электроники" hidden>
+        <header class="demo-shop__header">
+            <div>
+                <p class="demo-shop__eyebrow">QAtoDev · тестовый магазин</p>
+                <h1>Техника для каждого дня</h1>
+                <p class="demo-shop__lede">Выбирайте товары, проверяйте каталог и собирайте корзину.</p>
+            </div>
+            <div class="demo-shop__account">
+                <span id="shop-user-name"></span>
+                <button type="button" id="shop-logout">Выйти</button>
+            </div>
+        </header>
+        <div class="demo-shop__toolbar">
+            <label class="demo-shop__search" for="shop-search">
+                <span class="sr-only">Поиск по каталогу</span>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.2 4.2"/></svg>
+                <input id="shop-search" type="search" placeholder="Поиск техники" autocomplete="off">
+            </label>
+            <div id="shop-filters" class="demo-shop__filters" role="group" aria-label="Категории товаров"></div>
+            <button type="button" id="shop-cart-jump" class="demo-shop__cart-jump">Корзина <span id="shop-cart-count">0</span></button>
+        </div>
+        <div class="demo-shop__body">
+            <section class="demo-shop__catalog" aria-label="Каталог товаров">
+                <div class="demo-shop__catalog-heading"><h2>Каталог</h2><span id="shop-results"></span></div>
+                <div id="shop-products" class="demo-shop__products"></div>
+            </section>
+            <aside id="shop-cart" class="demo-shop__cart" aria-label="Корзина">
+                <div class="demo-shop__cart-heading"><h2>Корзина</h2><span id="shop-cart-heading-count">0 товаров</span></div>
+                <div id="shop-cart-items" class="demo-shop__cart-items"></div>
+                <form id="shop-promo-form" class="demo-shop__promo" autocomplete="off">
+                    <label for="shop-promo-input">Промокод</label>
+                    <div class="demo-shop__promo-controls">
+                        <input id="shop-promo-input" name="promo" type="text" maxlength="24" placeholder="Введите код">
+                        <button type="submit">Применить</button>
+                    </div>
+                    <small>Для проверки: QA1 — 1%, QA3 — 3%, QA5 — 5%</small>
+                    <p id="shop-promo-message" role="status"></p>
+                </form>
+                <div id="shop-cart-discount" class="demo-shop__cart-discount" hidden><span id="shop-discount-label"></span><strong id="shop-discount-value"></strong></div>
+                <div class="demo-shop__cart-total"><span>Итого</span><strong id="shop-cart-total">0 ₽</strong></div>
+                <p class="demo-shop__cart-note">Оформление заказа появится в следующем этапе тренажёра.</p>
+            </aside>
+        </div>
+        <button type="button" class="shop-qa__fab" id="shop-qa-fab" aria-controls="shop-qa-panel" aria-expanded="false" aria-label="Открыть QA-панель">QA</button>
+        <aside class="shop-qa__panel" id="shop-qa-panel" aria-label="QA-панель магазина" aria-hidden="true">
+            <div class="shop-qa__head">
+                <div class="shop-qa__tabs" role="tablist" aria-label="Инструменты тестирования магазина">
+                    <button type="button" id="shop-qa-tab-checks" role="tab" aria-selected="true" aria-controls="shop-qa-checks">Чек-лист</button>
+                    <button type="button" id="shop-qa-tab-bugs" role="tab" aria-selected="false" aria-controls="shop-qa-bugs">Баг-репорты</button>
+                </div>
+                <button type="button" class="shop-qa__close" id="shop-qa-close" aria-label="Закрыть QA-панель">×</button>
+            </div>
+            <div class="shop-qa__content">
+                <section id="shop-qa-checks" class="shop-qa__section" role="tabpanel" aria-labelledby="shop-qa-tab-checks">
+                    <h2>Проверки магазина</h2>
+                    <p id="shop-qa-progress" class="shop-qa__hint"></p>
+                    <div id="shop-qa-checklist"></div>
+                    <button type="button" id="shop-qa-verify" class="shop-qa__primary">Проверить регресс</button>
+                    <p id="shop-qa-result" class="shop-qa__result" role="status"></p>
+                </section>
+                <section id="shop-qa-bugs" class="shop-qa__section" role="tabpanel" aria-labelledby="shop-qa-tab-bugs" hidden>
+                    <h2>Баг-репорты</h2>
+                    <p class="shop-qa__hint">Воспроизведите сценарий и отметьте, проявляется ли дефект.</p>
+                    <div id="shop-qa-reports" class="shop-qa__reports"></div>
+                </section>
+            </div>
+        </aside>
+    </section>
 </div>
 
 <footer class="qatodev">
-    <p>
-        <a href="https://t.me/QAtoDev" target="_blank" style="background-color:#FFA001;">Telegram</a>
-        <a href="https://set.ki/channel/PJnPK69" target="_blank" style="background-color:#FFA001;">Сетка</a>
+    <p class="footer-social">
+        <a class="footer-social-link" href="https://t.me/QAtoDev" target="_blank" rel="noopener noreferrer">Telegram</a>
+        <a class="footer-social-link" href="https://set.ki/channel/PJnPK69" target="_blank" rel="noopener noreferrer">Сетка</a>
     </p>
 </footer>
 
@@ -768,15 +851,15 @@
         btn.addEventListener('click', () => { input.value=''; input.dispatchEvent(new Event('input')); input.focus(); });
         toggle();
       }
-      setupClear('phone-input','clear-phone');
-      setupClear('email-input','clear-email');
-      setupClear('password-input','clear-password');
-
       /* --- Маска телефона --- */
       const phoneInput = document.getElementById('phone-input');
       if (phoneInput) {
         phoneInput.addEventListener('input', function(){
           let val = phoneInput.value.replace(/\D/g, '');
+          if (!val) {
+            phoneInput.value = '';
+            return;
+          }
           if (val.startsWith('8')) val = '7' + val.slice(1);
           if (!val.startsWith('7')) val = '7' + val;
           let formatted = '+7';
@@ -787,6 +870,9 @@
           phoneInput.value = formatted;
         });
       }
+      setupClear('phone-input','clear-phone');
+      setupClear('email-input','clear-email');
+      setupClear('password-input','clear-password');
 
       /* --- Сила пароля --- */
       const pwdInput = document.getElementById('password-input');
@@ -794,6 +880,7 @@
       if (pwdInput && strengthText) {
         pwdInput.addEventListener('input', function(){
           const v = pwdInput.value;
+          if (!v) { strengthText.textContent = ''; return; }
           let score=0;
           if(v.length>=6) score++;
           if(/[a-z]/.test(v) && /[A-Z]/.test(v)) score++;
@@ -808,100 +895,33 @@
         });
       }
 
-      /* --- Отправка запроса (инлайн-ошибка вместо модалки) --- */
-      const loginBtn = document.getElementById('login-button');
-      const emailInput = document.getElementById('email-input');
-      const inlineError = document.getElementById('inline-error');
-
-      function showInlineError(message, details) {
-        inlineError.classList.add('show');
-        inlineError.innerHTML = message + (details ? '<small>' + details + '</small>' : '');
-      }
-      function hideInlineError() {
-        inlineError.classList.remove('show');
-        inlineError.textContent = '';
-      }
-
-      loginBtn.addEventListener('click', async function(){
-        hideInlineError();
-
-        const selectedMethod = segmented.getAttribute('data-active') === 'email' ? 'email' : 'phone';
-        const password = (pwdInput.value || '');
-        const rawPhoneDigits = (phoneInput.value || '').replace(/\D/g, '');
-        const phoneNormalized = rawPhoneDigits.startsWith('7') ? rawPhoneDigits : ('7' + rawPhoneDigits);
-        const email = (emailInput.value || '').trim();
-
-        const payload = {
-          method: selectedMethod,
-          phone:  selectedMethod === 'phone' ? phoneNormalized : null,
-          email:  selectedMethod === 'email' ? email : null,
-          password: password
-        };
-
-        const LOGIN_ENDPOINT = 'https://httpstat.us/500?sleep=800';
-
-        const originalText = loginBtn.textContent;
-        loginBtn.disabled = true;
-        loginBtn.textContent = 'Входим...';
-
-        try {
-          const resp = await fetch(LOGIN_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          let respText = '';
-          try { respText = await resp.text(); } catch(e) {}
-
-          console.group('Результат логина');
-          console.log('URL:', LOGIN_ENDPOINT);
-          console.log('Статус:', resp.status, 'OK:', resp.ok);
-          console.log('Тело ответа:', respText);
-          console.log('Payload:', payload);
-          console.groupEnd();
-
-          if (!resp.ok) {
-            showInlineError('Упс! Не можем впустить Вас. Попробуйте позже.', 'HTTP ' + resp.status);
-            return;
-          }
-
-          console.info('Успешный вход (демо).');
-
-        } catch (err) {
-          console.error('Network/Fetch error:', err);
-          showInlineError('Что-то пошло не так', String(err));
-        } finally {
-          loginBtn.disabled = false;
-          loginBtn.textContent = originalText;
-        }
-      });
-
       /* --- Чек-лист (плашки справа, 1 в ряд) --- */
       const CHECKS = [
         { id: 'mask-default-plus7',      text: 'По умолчанию в поле ввода телефона маска +7 ХХХ ХХХ ХХ ХХ', expected: 'bad' },
         { id: 'enter-7-autoprefix',      text: 'Ввод цифры 7 приводит к автоподстановке маски +7', expected: 'ok' },
         { id: 'enter-not7-add-plus7',    text: 'Если первая введённая цифра — не 7, к номеру автоматически проставляется +7', expected: 'ok' },
-        { id: 'clear-cross-appears',     text: 'При вводе первой цифры отображается крестик — нажатие удаляет данные в поле', expected: 'bad' },
+        { id: 'clear-cross-appears',     text: 'При вводе первой цифры отображается крестик — нажатие удаляет данные в поле', expected: 'ok' },
+        { id: 'phone-placeholder-after-clear', text: 'После очистки номера снова отображается плейсхолдер «+7 900 123 45 67»', expected: 'ok' },
         { id: 'clear-cross-disappears',  text: 'Крестик пропадает, если поле очищено', expected: 'ok' },
         { id: 'checkpass6',              text: 'Нет возможности в поле телефон ввести символы и буквы (только цифры)', expected: 'ok' },
         { id: 'checkpass7',              text: 'Под полем телефона отображается подсказка про 11 цифр', expected: 'ok' },
         { id: 'checkpass8',              text: 'При переключении способа входа — введённые данные сохраняются', expected: 'ok' },
-        { id: 'checkpass9',              text: 'Стереть данные можно backspace и Ctrl/⌘+A → Delete', expected: 'bad' },
+        { id: 'checkpass9',              text: 'Стереть данные можно backspace и Ctrl/⌘+A → Delete', expected: 'ok' },
         { id: 'checkpass10',             text: 'При вводе пароля подсвечивается статус защищенности', expected: 'ok' },
         { id: 'checkpass11',             text: 'При вводе первого символа пароля появляется крестик', expected: 'ok' },
-        { id: 'checkpass12',             text: 'Нажатие на крестик стирает пароль + пропадает статус', expected: 'bad' },
+        { id: 'checkpass12',             text: 'Нажатие на крестик стирает пароль + пропадает статус', expected: 'ok' },
         { id: 'checkpass13',             text: 'Статусы: лёгкий / средний / достойный', expected: 'ok' },
         { id: 'checkpass14',             text: '«Достойный»: цифры + нижний/верхний регистр + символы (≥ 8)', expected: 'bad' },
-        { id: 'checkpass15',             text: '«Средний»: есть цифры и буквы (≤ 8)', expected: 'ok' },
-        { id: 'checkpass16',             text: 'Кнопка «Войти» отправляет POST-запрос', expected: 'ok' },
-        { id: 'checkpass17',             text: 'Логин и пароль передаются в теле запроса (демо)', expected: 'ok' },
+        { id: 'checkpass15',             text: '«Средний»: есть цифры и буквы (≤ 8)', expected: 'bad' },
+        { id: 'checkpass16',             text: 'Кнопка «Войти» отправляет GET /user/login', expected: 'ok' },
+        { id: 'checkpass17',             text: 'Регистрация отправляет POST /user с выбранным контактом', expected: 'ok' },
         { id: 'checkpass18',             text: 'При ошибке входа отображается сообщение об ошибке', expected: 'ok' },
+        { id: 'checkpass26',             text: 'Неверный логин или пароль не открывает каталог', expected: 'bad' },
         { id: 'checkpass21',             text: 'Вкладка Email содержит поля Email и Пароль', expected: 'ok' },
-        { id: 'checkpass22',             text: 'Проверка формата email включает @ и домен', expected: 'bad' },
-        { id: 'checkpass23',             text: 'При нарушении маски email — подсказка под полем', expected: 'bad' },
+        { id: 'checkpass22',             text: 'Проверка формата email включает @ и домен', expected: 'ok' },
+        { id: 'checkpass23',             text: 'При неверном email ошибка появляется под полем, а не над формой', expected: 'bad' },
         { id: 'checkpass24',             text: 'Подсказка: «Введите корректный email»', expected: 'ok' },
-        { id: 'checkpass25',             text: 'После обновления страницы выбранный способ и введённые данные сохраняются', expected: 'ok' }
+        { id: 'checkpass25',             text: 'После обновления страницы способ и контакт сохраняются, а пароль очищается', expected: 'ok' }
       ];
 
       const LS_KEY = 'qa_checks_status__LOGIN_INLINE';
@@ -1062,14 +1082,17 @@
         if (saved.method) activate(saved.method);
         if (saved.phone)  { phoneInput.value   = saved.phone;  phoneInput.dispatchEvent(new Event('input')); }
         if (saved.email)  { emailInput.value   = saved.email;  emailInput.dispatchEvent(new Event('input')); }
-        if (saved.pass)   { pwdInput.value     = saved.pass;    pwdInput.dispatchEvent(new Event('input')); }
+        // Старые версии сохраняли пароль в браузере; удаляем его при первом открытии.
+        if ('pass' in saved) {
+          delete saved.pass;
+          localStorage.setItem('login_form__persist', JSON.stringify(saved));
+        }
 
         function save() {
           localStorage.setItem('login_form__persist', JSON.stringify({
             method: segmented.getAttribute('data-active'),
             phone: phoneInput.value,
-            email: emailInput.value,
-            pass:  pwdInput.value
+            email: emailInput.value
           }));
         }
         ['input','change','blur'].forEach(ev => {
@@ -1088,6 +1111,9 @@
       regressBtn.addEventListener('click', evaluateRegression);
     });
 </script>
+<script src="petstore-api.shared.js?v=1.0.0"></script>
+<script src="login-marketplace.js?v=1.0.1"></script>
+<script src="login-marketplace-qa.js?v=1.0.1"></script>
   <script src="header.js?v=8.9.11"></script>
 </body>
 </html>
