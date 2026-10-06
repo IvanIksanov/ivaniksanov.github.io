@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // --- 4.2. Общие переменные ---
-    const hostname = "https://petstore.swagger.io/v2";
+    const hostname = window.QAtoDevPetstore.baseUrl;
 
     // Игровые константы (картинки и описания)
     const IMAGES = {
@@ -1245,11 +1245,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const charType = bodyData?.character;
         const isAllowedCharacter = ALLOWED_CHARACTERS.includes(charType);
 
-        fetch(`${hostname}/user`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "accept": "application/json" },
-            body: JSON.stringify(bodyData)
-        })
+        window.QAtoDevPetstore.createUser(bodyData)
         .then(res => res.json())
         .then(data => {
             document.getElementById(preId).textContent = safeJSONStringify(data);
@@ -1388,10 +1384,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        fetch(`${hostname}/user/login?username=${encodeURIComponent(usernameValue)}&password=${encodeURIComponent(passwordValue)}`, {
-            method: "GET",
-            headers: { "accept": "application/json" }
-        })
+        window.QAtoDevPetstore.loginUser(usernameValue, passwordValue)
         .then(res => res.json())
         .then(data => {
             document.getElementById(preId).textContent = safeJSONStringify(data);

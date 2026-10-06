@@ -513,6 +513,25 @@
       ).join('\n\n---\n\n');
       return window.QAtoDevAiPrompts.home.transfer(transcript, memory);
     }
+    async function copyText(text) {
+      if (navigator.clipboard?.writeText) {
+        try { await navigator.clipboard.writeText(text); return; } catch {}
+      }
+      const previousFocus = document.activeElement;
+      const field = document.createElement('textarea');
+      field.value = text;
+      field.readOnly = true;
+      field.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+      document.body.append(field);
+      try {
+        field.focus({ preventScroll: true });
+        field.select();
+        if (!document.execCommand('copy')) throw new Error('CLIPBOARD_COPY_FAILED');
+      } finally {
+        field.remove();
+        previousFocus?.focus?.({ preventScroll: true });
+      }
+    }
     function startNewChat() {
       if (busy) return;
       if (!persist()) return;
@@ -681,7 +700,7 @@
           actionButton('copy', 'Скопировать ответ', async event => {
             const caption = event.currentTarget.querySelector('span');
             try {
-              await navigator.clipboard.writeText(turn.answer);
+              await copyText(turn.answer);
               caption.textContent = 'Скопировано';
               event.currentTarget.setAttribute('aria-label', 'Скопировано');
             } catch { status.textContent = 'Не удалось скопировать ответ.'; }
@@ -689,7 +708,7 @@
           actionButton('export', 'Саммари для ИИ', async event => {
             const caption = event.currentTarget.querySelector('span');
             try {
-              await navigator.clipboard.writeText(transferPrompt());
+              await copyText(transferPrompt());
               caption.textContent = 'Чат скопирован';
               event.currentTarget.setAttribute('aria-label', 'Чат скопирован');
             } catch { status.textContent = 'Не удалось скопировать чат.'; }
