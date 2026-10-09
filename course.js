@@ -36,8 +36,8 @@
     { id: 'sql', title: 'SQL', phase: 1, pair: 'db', flow: 'request', edge: ['app-a', 'database'], t: .25, when: 'database' },
     { id: 'db-result', title: 'Результат БД', phase: 1, pair: 'db', flow: 'response', edge: ['app-a', 'database'], t: .75, when: 'database' },
     { id: 'origin', title: 'GET файл', flow: 'request', edge: ['assets', 'storage'], t: .5, when: 'storage' },
-    { id: 'css-get', title: 'CSS', phase: 1, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .16, when: 'assets' },
-    { id: 'js-get', title: 'JS', phase: 2, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .37, when: 'assets' },
+    { id: 'css-get', title: 'CSS', phase: 1, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .22, when: 'assets' },
+    { id: 'js-get', title: 'JS', phase: 2, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .41, when: 'assets' },
     { id: 'css', title: 'CSS', phase: 1, pair: 'css', flow: 'response', edge: ['client', 'assets'], t: .61, when: 'assets' },
     { id: 'js', title: 'JS', phase: 2, pair: 'js', flow: 'response', edge: ['client', 'assets'], t: .88, when: 'assets' },
     { id: 'cache', title: 'Cache', flow: 'local', when: 'assets' }
