@@ -286,6 +286,7 @@
   const revealed = new Set(nodes.map(node => node.id));
   const shownPackets = new Set();
   let selected = '';
+  let networkSelected = '';
   let selectedVia = null;
   let removed = false;
   const SESSION_MS = 5 * 60 * 1000;
@@ -781,7 +782,7 @@
         }, 380);
       }
       element.classList.toggle('is-visible', visible);
-      element.classList.toggle('is-selected', selected === item.id && selectedVia !== 'app-b');
+      element.classList.toggle('is-selected', (selected === item.id && selectedVia !== 'app-b') || networkSelected === item.id);
       element.classList.toggle('is-faulty', (['css', 'js'].includes(item.id) ? assetSource(item.id).state === 'failed' : faults.has(item.id)) || (item.id === 'origin' && faults.has('storage')));
       element.classList.toggle('is-empty-cache', item.id === 'cache' && !hasCachedAsset('css') && !hasCachedAsset('js'));
       element.classList.toggle('is-partial-cache', item.id === 'cache' && hasCachedAsset('css') !== hasCachedAsset('js'));
@@ -871,7 +872,8 @@
     if (selected === 'client') renderExample('client');
     return `${lastResponse.code} · ${lastResponse.detail}`;
   }
-  const networkArticles = new Set(['client', 'request', 'asset-get', 'cookie', 'json', 'html', 'css', 'js']);
+  const browserPacketIds = new Set(['request', 'html', 'cookie', 'json', 'asset-get', 'css', 'js']);
+  const networkArticles = new Set(['client', ...browserPacketIds]);
   function networkExplanation(response) {
     if (!response) return '';
     if (response.bodyIssue === 'empty') return 'HTTP 200, но тело API пустое: товар не пришёл.';
@@ -913,9 +915,9 @@
     const keys = id === 'asset-get' ? ['css', 'js'] : ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css', 'js'].includes(id) ? [id] : ['document', 'css', 'js', 'api'];
     return keys.map(key => entries[key]);
   }
-  function renderVisualization(id) {
-    const host = document.getElementById('course-article-visual');
+  function renderVisualization(id, host = document.getElementById('course-article-visual')) {
     if (!host || !id) return;
+    if (id === 'client' && host.id === 'course-article-visual') { host.replaceChildren(); return; }
     if (networkArticles.has(id)) {
       const entries = networkEntries(id);
       if (!entries.some(entry => entry.key === networkKey)) networkKey = entries[0].key;
@@ -926,18 +928,20 @@
           ? `<span class="course-network__cookie-line"><span data-session-cookie>${escapeHtml(line)}</span><span class="course-network__session-time" data-session-remaining></span></span>`
           : escapeHtml(line)).join('\n')
         : escapeHtml(content);
-      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-viz__heading"><span class="course-viz__icon">↗</span><strong>Network</strong><span class="course-viz__caption">${lastRun ? 'Последний запуск' : 'Ожидает запуска'}</span></div><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${escapeHtml(entry.path)} <span>${escapeHtml(entry.source)}</span></div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div>${entries.some(item => item.key === 'api') ? `<label class="course-network__editor">ID товара для следующего запроса <input id="course-product-id" type="number" min="1" max="9999" value="${selectedProductId}" inputmode="numeric"><span>Ответ обновится после запуска схемы</span></label>` : ''}${id === 'client' && lastResponse ? `<p class="course-network__summary">${escapeHtml(networkExplanation(lastResponse))}</p>` : ''}</section>`;
+      const pairNames = { document: 'GET HTML → HTML', css: 'GET CSS → CSS', js: 'GET JS → JS', api: 'GET API → JSON' };
+      const help = { document: articles.request.body + articles.html.body, css: articles['asset-get'].body + articles.css.body, js: articles['asset-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-viz__heading"><span class="course-viz__icon">↗</span><strong>Network</strong><span class="course-viz__caption">${lastRun ? 'Последний запуск' : 'Ожидает запуска'}</span></div><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${escapeHtml(entry.path)} <span>${escapeHtml(entry.source)}</span></div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details>${entries.some(item => item.key === 'api') ? `<label class="course-network__editor">ID товара для следующего запроса <input id="course-product-id" type="number" min="1" max="9999" value="${selectedProductId}" inputmode="numeric"><span>Ответ обновится после запуска схемы</span></label>` : ''}${id === 'client' && lastResponse ? `<p class="course-network__summary">${escapeHtml(networkExplanation(lastResponse))}</p>` : ''}</section>`;
       refreshSessionDisplay();
-      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; renderVisualization(id); }));
-      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; renderVisualization(id); }));
+      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; renderVisualization(id, host); }));
+      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; renderVisualization(id, host); }));
       host.querySelector('#course-product-id')?.addEventListener('change', event => {
         selectedProductId = Math.min(9999, Math.max(1, Number(event.target.value) || 42));
         event.target.value = String(selectedProductId);
-        renderProductTables(); save(); renderActions(selected); renderVisualization(id);
+        renderProductTables(); save(); if (selected) renderActions(selected); renderVisualization(id, host);
       });
       return;
     }
-    if (id === 'database' || id === 'sql') {
+    if (id === 'database') {
       host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}<p class="course-viz__foot">SELECT … WHERE id = ${selectedProductId} → ${productFor(selectedProductId) ? '1 строка' : '0 строк'}</p></section>`;
       return;
     }
@@ -970,6 +974,7 @@
     clearTimeout(articleCloseTimer);
     article.classList.remove('is-closing');
     selected = id;
+    activeActionId = id;
     selectedVia = via;
     document.getElementById('course-article-kicker').textContent = data.kicker.includes('/') ? data.kicker.split('/')[0].trim() : data.kicker.split(' ')[0];
     document.getElementById('course-article-title').textContent = data.title;
@@ -977,8 +982,6 @@
     renderProductTables();
     if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', '<section class="course-example" id="course-example"><h3></h3><pre><code></code></pre></section>');
     renderExample(id);
-    networkKey = id === 'asset-get' ? 'css' : ['json', 'cookie'].includes(id) ? 'api' : id === 'css' || id === 'js' ? id : 'document';
-    networkTab = 'headers';
     renderVisualization(id);
     refreshSessionDisplay();
     if (id === 'tasks') renderTasks();
@@ -1007,6 +1010,18 @@
     }
     if (faults.get(id) === 'overload') report('Сервер упал из-за нагрузки: в этой учебной модели его предел — 600 одновременных запросов. Восстанови сервер или нажми «Сброс».');
     requestAnimationFrame(() => focusElement(id));
+  }
+  function showNetworkPacket(id) {
+    networkSelected = id;
+    activeActionId = id;
+    networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : id === 'js' ? 'js' : 'css';
+    networkTab = ['html', 'json', 'css', 'js'].includes(id) ? 'response' : 'headers';
+    document.getElementById('course-network-selection').textContent = `Действия · ${packets.find(item => item.id === id)?.title || id}`;
+    document.getElementById('course-network-action-result').textContent = '';
+    document.getElementById('course-network-panel').hidden = false;
+    renderActions(id);
+    renderVisualization('client', document.getElementById('course-network-visual'));
+    update();
   }
   for (const node of nodes) {
     const element = document.createElement('div');
@@ -1037,7 +1052,7 @@
     const flowLabel = item.flow === 'request' ? 'запрос' : item.flow === 'response' ? 'ответ' : 'локально';
     element.querySelector('.course-packet__flow').textContent = item.pair === 'assets' ? '2 запроса' : flowLabel;
     element.setAttribute('aria-label', `${item.title}: ${item.pair === 'assets' ? 'запросы 1 и 2' : item.phase ? `пара ${item.phase}, ${flowLabel}` : flowLabel}`);
-    element.addEventListener('click', () => showArticle(item.id));
+    element.addEventListener('click', () => browserPacketIds.has(item.id) ? showNetworkPacket(item.id) : showArticle(item.id));
     packetHost.append(element);
   }
   let lastSessionValidity = hasSession();
@@ -1067,13 +1082,19 @@
     selectedVia = null;
     update();
   });
-  const actionButtons = document.getElementById('course-action-buttons');
-  const actionResult = document.getElementById('course-action-result');
+  document.getElementById('course-network-close').addEventListener('click', () => {
+    networkSelected = '';
+    document.getElementById('course-network-panel').hidden = true;
+    update();
+  });
+  let activeActionId = '';
 
   function report(message) {
-    actionResult.textContent = message;
+    document.getElementById(browserPacketIds.has(activeActionId) ? 'course-network-action-result' : 'course-action-result').textContent = message;
   }
   function renderActions(id) {
+    const networkAction = browserPacketIds.has(id);
+    const actionButtons = document.getElementById(networkAction ? 'course-network-action-buttons' : 'course-action-buttons');
     actionButtons.replaceChildren();
     function add(label, handler, destructive = false) {
       const button = document.createElement('button');
@@ -1081,9 +1102,11 @@
       button.textContent = label;
       button.classList.toggle('is-destructive', destructive);
       button.addEventListener('click', () => {
+        activeActionId = id;
         if (playButton.disabled) { report('Дождись завершения запуска.'); return; }
         handler();
-        renderVisualization(selected);
+        if (networkAction) renderVisualization('client', document.getElementById('course-network-visual'));
+        else renderVisualization(selected);
       });
       actionButtons.append(button);
     }
@@ -1179,7 +1202,9 @@
     } else if (id === 'cache') {
       add('Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report('Локальный кэш браузера пуст. Копии CDN не изменились. Запусти схему, чтобы увидеть новые запросы файлов.'); });
     }
-    actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
+    if (networkAction) {
+      if (!actionButtons.childElementCount && !document.getElementById('course-network-action-result').textContent) report('У этой карточки нет отдельного действия. Подробности запроса — в Network ниже.');
+    } else actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
   }
   let playRun = 0;
   const playButton = document.getElementById('course-play');
@@ -1364,6 +1389,7 @@
     if (runHistory.length > 10) runHistory.shift();
     receiveResponse();
     renderVisualization(selected);
+    if (networkSelected) renderVisualization('client', document.getElementById('course-network-visual'));
     const apiResponse = apiResponseForCurrentState();
     if (scriptAvailable) algorithmStep(apiResponse.code === '200' && !apiResponse.bodyIssue ? 'api' : 'error', `Ответ API: ${apiResponse.code} · ${apiResponse.label}.`);
     finishAlgorithm(lastResponse.code, lastResponse.label, ['broken', 'partial', 'unstyled'].includes(lastResponse.mode) || lastResponse.code === '—' ? 'error' : loadPage ? 'resource' : 'api');
@@ -1397,6 +1423,8 @@
     extraProducts.length = 0;
     lastResponse = null;
     lastRun = null;
+    networkSelected = '';
+    document.getElementById('course-network-panel').hidden = true;
     selectedVia = null;
     configuredRequests = 1;
     remainingRequests = null;
