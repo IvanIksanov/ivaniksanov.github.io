@@ -29,19 +29,20 @@
   const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
   const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
   const packets = [
-    { id: 'request', title: 'GET HTML', phase: 1, pair: 'html', flow: 'request', edge: ['client', 'balancer'], t: .14, when: 'balancer' },
+    { id: 'request', title: 'HTML', phase: 1, pair: 'html', flow: 'request', edge: ['client', 'balancer'], t: .14, when: 'balancer' },
     { id: 'html', title: 'HTML', phase: 1, pair: 'html', flow: 'response', edge: ['client', 'balancer'], t: .38, when: 'balancer' },
-    { id: 'cookie', title: 'GET /api', phase: 2, pair: 'api', flow: 'request', edge: ['client', 'balancer'], t: .62, when: 'balancer' },
+    { id: 'cookie', title: 'API', phase: 2, pair: 'api', flow: 'request', edge: ['client', 'balancer'], t: .62, when: 'balancer' },
     { id: 'json', title: 'JSON', phase: 2, pair: 'api', flow: 'response', edge: ['client', 'balancer'], t: .86, when: 'balancer' },
     { id: 'sql', title: 'SQL', phase: 1, pair: 'db', flow: 'request', edge: ['app-a', 'database'], t: .25, when: 'database' },
     { id: 'db-result', title: 'Результат БД', phase: 1, pair: 'db', flow: 'response', edge: ['app-a', 'database'], t: .75, when: 'database' },
     { id: 'origin', title: 'GET файл', flow: 'request', edge: ['assets', 'storage'], t: .5, when: 'storage' },
-    { id: 'asset-get', title: 'GET CSS/JS', pair: 'assets', flow: 'request', edge: ['client', 'assets'], t: .35, when: 'assets' },
+    { id: 'css-get', title: 'CSS', phase: 1, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .16, when: 'assets' },
+    { id: 'js-get', title: 'JS', phase: 2, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .37, when: 'assets' },
     { id: 'css', title: 'CSS', phase: 1, pair: 'css', flow: 'response', edge: ['client', 'assets'], t: .61, when: 'assets' },
     { id: 'js', title: 'JS', phase: 2, pair: 'js', flow: 'response', edge: ['client', 'assets'], t: .88, when: 'assets' },
     { id: 'cache', title: 'Cache', flow: 'local', when: 'assets' }
   ];
-  const resourcePackets = new Set(['request', 'html', 'origin', 'asset-get', 'css', 'js', 'cache']);
+  const resourcePackets = new Set(['request', 'html', 'origin', 'css-get', 'js-get', 'css', 'js', 'cache']);
 
   const baseProducts = [
     { id: 42, name: 'Ноутбук QA Book', price: 79990, currency: 'RUB' },
@@ -92,9 +93,10 @@
     assets: { kicker: '04 / Доставка файлов', title: 'CDN · копии файлов', body: `<p><strong>CDN</strong> — Content Delivery Network, сеть доставки содержимого. Она хранит копии CSS и JS ближе к пользователю. Сверху показаны копии, доступные в текущем режиме схемы.</p><p>При <strong>cache hit</strong> CDN отвечает сама. При <strong>cache miss</strong> она запрашивает оригинал в источнике. Кэш браузера — отдельное место: если файл уже есть там, запроса к CDN вообще не будет.</p>` },
     storage: { kicker: '05 / Оригиналы файлов', title: 'Источник файлов', body: `<p>Здесь лежат оригиналы <code>style.css</code> и <code>app.js</code>. CDN приходит сюда только при промахе своего кэша. Если источник отключён, готовые копии на CDN всё ещё могут работать.</p>` },
     origin: { kicker: 'Запрос CDN / к источнику', title: 'Получение файла', body: `<p>При промахе своего кэша CDN запрашивает оригинальный файл у источника. Это отдельный HTTP-запрос CDN → источник, а не запрос сервера приложения A или B. После ответа CDN может сохранить копию и отдать файл браузеру.</p>` },
-    request: { kicker: 'Первый запрос страницы', title: 'GET HTML', body: `<p>Браузер отправляет <code>GET /</code> и получает HTML-документ. В Network сверху показан только этот запрос и его ответ.</p><p>В HTML есть адреса CSS и JavaScript, но браузер запрашивает эти файлы отдельно по ветке CDN. Данные товара тоже приходят позже, через отдельный <code>GET /api</code>.</p>` },
-    'asset-get': { kicker: 'Запросы браузера / к CDN', title: 'GET CSS и JS', body: `<p>HTML содержит адреса <code>style.css</code> и <code>app.js</code>. Браузер запрашивает их <strong>по отдельности</strong>; общая карточка на карте лишь экономит место. В Network сверху у каждого файла свой запрос и ответ.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
-    cookie: { kicker: 'Второй запрос браузера', title: 'GET /api/products/{id}', body: `<p>После загрузки страницы JavaScript просит данные товара: <code>GET /api/products/{id}</code>. Это один HTTP-запрос. Сессионная cookie, если она есть, передаётся в его заголовке, а не отдельной плашкой или отдельным запросом.</p><p><strong>REST</strong> здесь означает привычный способ назвать ресурс в API: <code>products/42</code> — товар 42, а <code>GET</code> — получить его данные. REST не является ещё одним запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. «Продлить сессию» имитирует <code>POST /auth/refresh</code>; «Получить сессию» — повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
+    request: { kicker: 'Первый запрос страницы', title: 'HTML-запрос', body: `<p>Браузер отправляет <code>GET /</code> и получает HTML-документ. В Network сверху показан только этот запрос и его ответ.</p><p>В HTML есть адреса CSS и JavaScript, но браузер запрашивает эти файлы отдельно по ветке CDN. Данные товара тоже приходят позже, через отдельный <code>GET /api</code>.</p>` },
+    'css-get': { kicker: 'Запрос браузера / к CDN', title: 'CSS-запрос', body: `<p>Браузер запрашивает <code>style.css</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за JavaScript.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
+    'js-get': { kicker: 'Запрос браузера / к CDN', title: 'JS-запрос', body: `<p>Браузер запрашивает <code>app.js</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за CSS.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
+    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит данные товара: <code>GET /api/products/{id}</code>. Это один HTTP-запрос. Сессионная cookie, если она есть, передаётся в его заголовке, а не отдельной плашкой или отдельным запросом.</p><p><strong>REST</strong> здесь означает привычный способ назвать ресурс в API: <code>products/42</code> — товар 42, а <code>GET</code> — получить его данные. REST не является ещё одним запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. «Обновить сессию» имитирует <code>POST /auth/refresh</code>; «Получить сессию» — повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
     sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>Сервер приложения выполняет <code>SELECT id, name, price FROM products WHERE id = $1</code>. Параметр <code>$1</code> — ID из запроса. Браузер SQL не отправляет.</p><p>Если строка не найдена, база вернёт 0 строк. Это ещё не HTTP 404: ответ клиенту формирует приложение.</p>` },
     'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает строку товара или 0 строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
     json: { kicker: 'Формат данных', title: 'JSON в ответе API', body: `<p><strong>JSON</strong> — текстовый формат обмена данными. В ответе API ключ <code>id</code> означает идентификатор, <code>name</code> — название, <code>price</code> — цену. JavaScript в браузере читает эти значения и показывает товар. JSON не является отдельным сетевым устройством или обязательным дополнительным запросом.</p><p>Сначала смотри <strong>HTTP-статус</strong>, затем тело ответа. <code>200 OK</code> не обещает, что внутри правильный товар: тело может быть пустым или содержать <code>error.code: 404</code>. Этот внутренний код не превращает HTTP 200 в HTTP 404.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>Есть ли тело ответа, совпадают ли типы и значения полей с таблицей <code>products</code>, корректно ли клиент обрабатывает ошибку.</p></div>` },
@@ -106,7 +108,8 @@
   };
   const examples = {
     request: ['Запрос браузера → сервер:', 'GET / HTTP/1.1', 'Host: site.example', 'Accept: text/html', '', 'Ответ сервера → браузер:', 'HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<html>…</html>'],
-    'asset-get': ['GET /style.css HTTP/1.1', 'Host: cdn.site.example', '', 'GET /app.js HTTP/1.1', 'Host: cdn.site.example'],
+    'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.site.example'],
+    'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.site.example'],
     cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products/42 HTTP/1.1', 'Cookie: session=demo123'],
     sql: ['SELECT id, name, price', 'FROM products', 'WHERE id = $1;', '', 'Параметр $1 = 42'],
     html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.site.example/style.css"></head>', '  <body>', '    <h1>Каталог</h1>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.site.example/app.js"></script>', '  </body>', '</html>'],
@@ -129,7 +132,7 @@
       return { title, text: failed ? [apiResponse.code === '—' ? 'Ответ HTTP не получен' : 'HTTP/1.1 ' + apiResponse.code, ...(apiResponse.code === '—' ? [] : [...(apiResponse.code === '401' ? ['WWW-Authenticate: Session realm="training"'] : []), 'Content-Type: application/json', '', JSON.stringify({ error, message: apiResponse.label, servedBy: app }, null, 2)])].join('\n') : ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ ...(lastRun?.product || productFor(42)), servedBy: app }, null, 2)].join('\n') };
     }
     if (!examples[id]) return null;
-    let title = id === 'request' ? 'Запрос страницы и ответ сервера' : id === 'asset-get' ? 'Два запроса браузера к CDN' : id === 'origin' ? 'Запрос CDN к источнику' : id === 'cookie' ? 'Обмен заголовками сессии' : id === 'cache' ? 'Как выглядит запись кэша' : id === 'sql' ? 'SQL, который выполняет сервер' : 'Пример содержимого';
+    let title = id === 'request' ? 'Запрос страницы и ответ сервера' : ['css-get', 'js-get'].includes(id) ? 'Запрос браузера к CDN' : id === 'origin' ? 'Запрос CDN к источнику' : id === 'cookie' ? 'Обмен заголовками сессии' : id === 'cache' ? 'Как выглядит запись кэша' : id === 'sql' ? 'SQL, который выполняет сервер' : 'Пример содержимого';
     let text = examples[id].join('\n');
     if (id === 'cookie') text = text.replaceAll('demo123', sessionToken);
     if (id === 'cache') text = [
@@ -319,8 +322,8 @@
   const faults = new Map();
   const taskDefinitions = [
     { id: 'status-200', title: '200 · страница и данные получены', hint: 'Оставь серверы, базу и источник файлов включёнными. Получи действующую сессию, загрузи или обнови страницу и открой «Данные API» в Network клиента: там должны быть HTTP 200 и товар.' },
-    { id: 'status-401', title: '401 · нет действующей сессии', hint: 'Сначала загрузи страницу. Затем открой «GET /api» на линии и нажми «Удалить сессию» либо дождись конца пяти минут. Обнови страницу: HTML загрузится, но защищённый API ответит 401.' },
-    { id: 'status-403', title: '403 · доступ запрещён', hint: 'В статье «GET /api» сначала получи действующую сессию, затем нажми «Ограничить права». Обнови страницу: cookie уйдёт в API-запросе, но сервер вернёт 403.' },
+    { id: 'status-401', title: '401 · нет действующей сессии', hint: 'Сначала загрузи страницу. Затем открой «API · запрос» на линии и нажми «Удалить сессию» либо дождись конца пяти минут. Обнови страницу: HTML загрузится, но защищённый API ответит 401.' },
+    { id: 'status-403', title: '403 · доступ запрещён', hint: 'В «API · запрос» сначала получи действующую сессию, затем нажми «Ограничить права». Обнови страницу: cookie уйдёт в API-запросе, но сервер вернёт 403.' },
     { id: 'status-404', title: '404 · ресурс не найден', hint: 'Для ошибки документа открой HTML и нажми «Удалить HTML на сервере», затем очисти кэш браузера. Следующая загрузка получит 404 для GET /. Другой вариант: запроси ID товара, которого нет в таблице, в обычном режиме API.' },
     { id: 'status-503', title: '503 · API недоступен', hint: 'Открой базу данных и нажми «Отключить базу». При действующей сессии обнови страницу: документ может прийти с 200, а запрос данных API завершится 503.' },
     { id: 'status-none', title: 'Нет HTTP-ответа', hint: 'Отключи балансировщик и останови сервер A. Теперь у клиента нет доступного маршрута: после запуска схема покажет отсутствие HTTP-ответа.' },
@@ -413,6 +416,10 @@
     if (saved.lastRun && Array.isArray(saved.lastRun.routes) && Array.isArray(saved.lastRun.overloaded)) lastRun = saved.lastRun;
     if (Array.isArray(saved.shownPackets)) {
       for (const id of saved.shownPackets) if (packets.some(packet => packet.id === id)) shownPackets.add(id);
+      if (saved.shownPackets.includes('asset-get')) {
+        shownPackets.add('css-get');
+        shownPackets.add('js-get');
+      }
     } else if (lastRun) {
       // Existing courses predate per-packet visibility; keep their explored map intact.
       for (const packet of packets) shownPackets.add(packet.id);
@@ -542,12 +549,13 @@
     const geometry = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     geometry.setAttribute('d', pathBetween(visualNode(byId.get(edge[0])), visualNode(byId.get(edge[1]))));
     const length = geometry.getTotalLength();
-    const point = geometry.getPointAtLength(length * item.t);
-    marker.style.left = `${point.x - marker.offsetWidth / 2}px`;
+    const groupedAssetRequest = item.id === 'css-get' || item.id === 'js-get';
+    const point = geometry.getPointAtLength(length * (groupedAssetRequest ? .28 : item.t));
+    marker.style.left = `${point.x - marker.offsetWidth / 2 + (groupedAssetRequest ? (item.id === 'css-get' ? -46 : 46) : 0)}px`;
     marker.style.top = `${point.y - marker.offsetHeight / 2}px`;
     const arrow = marker.querySelector('.course-packet__arrow');
     if (!arrow) return;
-    const arrowT = Math.max(.02, Math.min(.98, item.t + (item.flow === 'response' ? -.12 : .12)));
+    const arrowT = Math.max(.02, Math.min(.98, groupedAssetRequest ? .48 : item.t + (item.flow === 'response' ? -.12 : .12)));
     const arrowPoint = geometry.getPointAtLength(length * arrowT);
     const before = geometry.getPointAtLength(length * Math.max(0, arrowT - .01));
     const after = geometry.getPointAtLength(length * Math.min(1, arrowT + .01));
@@ -558,7 +566,8 @@
   }
   function drawLines() {
     lines.replaceChildren();
-    const selectedPacket = packets.find(packet => packet.id === selected);
+    const selectedPacketId = networkSelected || selected;
+    const selectedPacket = packets.find(packet => packet.id === selectedPacketId);
     const routes = displayRoutes();
     for (const [source, target] of edges) {
       if (!revealed.has(source) || !revealed.has(target)) continue;
@@ -572,12 +581,12 @@
       if (source === 'assets' || target === 'assets' || source === 'storage') path.classList.add('is-resource-route');
       if (source === 'assets' && target === 'storage' && !cdnBypass) path.classList.add('is-idle');
       if (source === 'app-b' && target === 'database' && !routes.includes('app-b')) path.classList.add('is-available-route');
-      const selectedEdge = selectedVia === 'app-b' && selectedPacket?.edge && selectedPacket.edge.includes('app-a')
+      const selectedEdge = !networkSelected && selectedVia === 'app-b' && selectedPacket?.edge && selectedPacket.edge.includes('app-a')
         ? selectedPacket.edge.map(id => id === 'app-a' ? 'app-b' : id)
         : selectedPacket?.edge;
       if (selectedEdge?.[0] === source && selectedEdge[1] === target) {
         path.classList.add('is-active-route');
-        if (resourcePackets.has(selected)) path.classList.add('is-resource-route');
+        if (resourcePackets.has(selectedPacketId)) path.classList.add('is-resource-route');
         if (selectedPacket.flow === 'response') path.classList.add('is-return-route');
       }
       lines.append(path);
@@ -872,7 +881,7 @@
     if (selected === 'client') renderExample('client');
     return `${lastResponse.code} · ${lastResponse.detail}`;
   }
-  const browserPacketIds = new Set(['request', 'html', 'cookie', 'json', 'asset-get', 'css', 'js']);
+  const browserPacketIds = new Set(['request', 'html', 'cookie', 'json', 'css-get', 'js-get', 'css', 'js']);
   const networkArticles = new Set(['client', ...browserPacketIds]);
   let networkKey = 'document';
   let networkTab = 'headers';
@@ -881,12 +890,13 @@
     activeActionId = id;
     const packet = packets.find(item => item.id === id);
     document.getElementById('course-network-selection').textContent = packet?.title || id;
+    document.getElementById('course-network-flow').textContent = packet?.flow === 'response' ? 'ответ' : 'запрос';
     document.getElementById('course-network-action-result').textContent = '';
     renderActions(id);
     update();
   }
   function syncNetworkSelection() {
-    const request = { document: 'request', css: 'asset-get', js: 'asset-get', api: 'cookie' };
+    const request = { document: 'request', css: 'css-get', js: 'js-get', api: 'cookie' };
     const response = { document: 'html', css: 'css', js: 'js', api: 'json' };
     setNetworkSelection((networkTab === 'headers' ? request : response)[networkKey]);
   }
@@ -913,7 +923,7 @@
       preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? `${lastRun.product?.name || 'Товар'} · ${lastRun.product?.price?.toLocaleString('ru-RU') || ''} ₽` : api.label,
       response: pendingApi ? '—' : exampleFor('client')?.text || '—' };
     const entries = { document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
-    const keys = id === 'asset-get' ? ['css', 'js'] : ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css', 'js'].includes(id) ? [id] : ['document', 'css', 'js', 'api'];
+    const keys = ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css-get', 'css'].includes(id) ? ['css'] : ['js-get', 'js'].includes(id) ? ['js'] : ['document', 'css', 'js', 'api'];
     return keys.map(key => entries[key]);
   }
   function renderVisualization(id, host = document.getElementById('course-article-visual')) {
@@ -929,8 +939,8 @@
           ? `<span class="course-network__cookie-line"><span data-session-cookie>${escapeHtml(line)}</span><span class="course-network__session-time" data-session-remaining></span></span>`
           : escapeHtml(line)).join('\n')
         : escapeHtml(content);
-      const pairNames = { document: 'GET HTML → HTML', css: 'GET CSS → CSS', js: 'GET JS → JS', api: 'GET API → JSON' };
-      const help = { document: articles.request.body + articles.html.body, css: articles['asset-get'].body + articles.css.body, js: articles['asset-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
+      const pairNames = { document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
+      const help = { document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
       const urlMarkup = entry.key === 'api'
         ? `<span class="course-network__path">https://site.example/api/products/<input id="course-product-id" class="course-network__id-chip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID товара"></span>`
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
@@ -1027,7 +1037,7 @@
     requestAnimationFrame(() => focusElement(id));
   }
   function showNetworkPacket(id) {
-    networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : id === 'js' ? 'js' : 'css';
+    networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : ['js-get', 'js'].includes(id) ? 'js' : 'css';
     networkTab = ['html', 'json', 'css', 'js'].includes(id) ? 'response' : 'headers';
     document.getElementById('course-network-panel').hidden = false;
     setNetworkSelection(id);
@@ -1056,12 +1066,12 @@
     if (Number.isFinite(item.x)) element.style.left = `${item.x}px`;
     if (Number.isFinite(item.y)) element.style.top = `${item.y}px`;
     element.hidden = true;
-    const numbers = item.pair === 'assets' ? [1, 2] : item.phase ? [item.phase] : [];
+    const numbers = item.phase ? [item.phase] : [];
     element.innerHTML = `${numbers.length ? `<span class="course-packet__numbers" aria-hidden="true">${numbers.map(number => `<span data-number="${number}">${number}</span>`).join('')}</span>` : ''}${packetIcon}<span class="course-packet__title"></span><small class="course-packet__flow"></small>${item.edge ? `<span class="course-packet__arrow" aria-hidden="true">${directionIcon}</span>` : ''}`;
     element.querySelector('.course-packet__title').textContent = item.title;
     const flowLabel = item.flow === 'request' ? 'запрос' : item.flow === 'response' ? 'ответ' : 'локально';
-    element.querySelector('.course-packet__flow').textContent = item.pair === 'assets' ? '2 запроса' : flowLabel;
-    element.setAttribute('aria-label', `${item.title}: ${item.pair === 'assets' ? 'запросы 1 и 2' : item.phase ? `пара ${item.phase}, ${flowLabel}` : flowLabel}`);
+    element.querySelector('.course-packet__flow').textContent = flowLabel;
+    element.setAttribute('aria-label', `${item.title}: ${item.phase ? `пара ${item.phase}, ${flowLabel}` : flowLabel}`);
     element.addEventListener('click', () => browserPacketIds.has(item.id) ? showNetworkPacket(item.id) : showArticle(item.id));
     packetHost.append(element);
   }
@@ -1195,12 +1205,12 @@
         save();
         report(message);
       };
-      add(hasSession() ? 'Продлить сессию' : 'Получить сессию', () => {
+      add(hasSession() ? 'Обновить сессию' : 'Получить сессию', () => {
         const wasValid = hasSession();
         rotateSessionToken();
         sessionExpiresAt = Date.now() + SESSION_MS;
         if (!wasValid) sessionRestricted = false;
-        applySessionAction(wasValid ? 'POST /auth/refresh с текущей cookie → 200 и новый Set-Cookie на пять минут. Теперь повтори запрос к API.' : 'POST /auth/login → 200 и Set-Cookie на пять минут. Это отдельный условный вход, а не повтор GET /.');
+        applySessionAction(wasValid ? 'Сессия обновлена на пять минут.' : 'Новая сессия получена на пять минут.');
       });
       if (hasSession()) add('Удалить сессию', () => {
         sessionExpiresAt = 0;
@@ -1321,7 +1331,7 @@
             continue;
           }
           algorithmStep('resource', `Браузер запросил ${fileName} у CDN.`);
-          pulse('client', 'assets', ['asset-get'], 'resource');
+          pulse('client', 'assets', [file === 'css' ? 'css-get' : 'js-get'], 'resource');
           await wait(350);
           if (run !== playRun) return;
           if (outcome.source === 'origin') {
