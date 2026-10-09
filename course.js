@@ -29,16 +29,16 @@
   const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
   const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
   const packets = [
-    { id: 'request', title: 'HTML', phase: 1, pair: 'html', flow: 'request', edge: ['client', 'balancer'], t: .14, when: 'balancer' },
-    { id: 'html', title: 'HTML', phase: 1, pair: 'html', flow: 'response', edge: ['client', 'balancer'], t: .38, when: 'balancer' },
-    { id: 'cookie', title: 'API', phase: 2, pair: 'api', flow: 'request', edge: ['client', 'balancer'], t: .62, when: 'balancer' },
-    { id: 'json', title: 'JSON', phase: 2, pair: 'api', flow: 'response', edge: ['client', 'balancer'], t: .86, when: 'balancer' },
+    { id: 'request', title: 'HTML', phase: 1, pair: 'html', flow: 'request', edge: ['client', 'balancer'], t: .2, when: 'balancer' },
+    { id: 'html', title: 'HTML', phase: 1, pair: 'html', flow: 'response', edge: ['client', 'balancer'], t: .42, when: 'balancer' },
+    { id: 'cookie', title: 'API', phase: 2, pair: 'api', flow: 'request', edge: ['client', 'balancer'], t: .64, when: 'balancer' },
+    { id: 'json', title: 'JSON', phase: 2, pair: 'api', flow: 'response', edge: ['client', 'balancer'], t: .87, when: 'balancer' },
     { id: 'sql', title: 'SQL', phase: 1, pair: 'db', flow: 'request', edge: ['app-a', 'database'], t: .25, when: 'database' },
     { id: 'db-result', title: 'Результат БД', phase: 1, pair: 'db', flow: 'response', edge: ['app-a', 'database'], t: .75, when: 'database' },
     { id: 'origin', title: 'GET файл', flow: 'request', edge: ['assets', 'storage'], t: .5, when: 'storage' },
-    { id: 'css-get', title: 'CSS', phase: 1, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .22, when: 'assets' },
-    { id: 'js-get', title: 'JS', phase: 2, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .41, when: 'assets' },
-    { id: 'css', title: 'CSS', phase: 1, pair: 'css', flow: 'response', edge: ['client', 'assets'], t: .61, when: 'assets' },
+    { id: 'css-get', title: 'CSS', phase: 1, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .27, when: 'assets' },
+    { id: 'js-get', title: 'JS', phase: 2, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .46, when: 'assets' },
+    { id: 'css', title: 'CSS', phase: 1, pair: 'css', flow: 'response', edge: ['client', 'assets'], t: .66, when: 'assets' },
     { id: 'js', title: 'JS', phase: 2, pair: 'js', flow: 'response', edge: ['client', 'assets'], t: .88, when: 'assets' },
     { id: 'cache', title: 'Cache', flow: 'local', when: 'assets' }
   ];
@@ -91,18 +91,18 @@
       <p id="course-db-state"></p>
       <p>База возвращает строку или <strong>0 строк</strong>. HTTP-статус выбирает приложение. Здесь можно воспроизвести намеренные ошибки: HTTP 200 с пустым телом или с <code>error.code: 404</code> внутри JSON.</p>` },
     assets: { kicker: '04 / Доставка файлов', title: 'CDN · копии файлов', body: `<p><strong>CDN</strong> — Content Delivery Network, сеть доставки содержимого. Она хранит копии CSS и JS ближе к пользователю. Сверху показаны копии, доступные в текущем режиме схемы.</p><p>При <strong>cache hit</strong> CDN отвечает сама. При <strong>cache miss</strong> она запрашивает оригинал в источнике. Кэш браузера — отдельное место: если файл уже есть там, запроса к CDN вообще не будет.</p>` },
-    storage: { kicker: '05 / Оригиналы файлов', title: 'Источник файлов', body: `<p>Здесь лежат оригиналы <code>style.css</code> и <code>app.js</code>. CDN приходит сюда только при промахе своего кэша. Если источник отключён, готовые копии на CDN всё ещё могут работать.</p>` },
+    storage: { kicker: '05 / Оригиналы файлов', title: 'Источник файлов', body: `<p>Здесь лежат оригиналы <code>style.css</code> и <code>app.js</code>. Здесь можно удалить, повредить или восстановить каждый оригинал; ответы на линии при этом не редактируются. CDN приходит сюда только при промахе своего кэша. Если источник отключён, готовые копии на CDN всё ещё могут работать.</p>` },
     origin: { kicker: 'Запрос CDN / к источнику', title: 'Получение файла', body: `<p>При промахе своего кэша CDN запрашивает оригинальный файл у источника. Это отдельный HTTP-запрос CDN → источник, а не запрос сервера приложения A или B. После ответа CDN может сохранить копию и отдать файл браузеру.</p>` },
     request: { kicker: 'Первый запрос страницы', title: 'HTML-запрос', body: `<p>Браузер отправляет <code>GET /</code> и получает HTML-документ. В Network сверху показан только этот запрос и его ответ.</p><p>В HTML есть адреса CSS и JavaScript, но браузер запрашивает эти файлы отдельно по ветке CDN. Данные товара тоже приходят позже, через отдельный <code>GET /api</code>.</p>` },
     'css-get': { kicker: 'Запрос браузера / к CDN', title: 'CSS-запрос', body: `<p>Браузер запрашивает <code>style.css</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за JavaScript.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
     'js-get': { kicker: 'Запрос браузера / к CDN', title: 'JS-запрос', body: `<p>Браузер запрашивает <code>app.js</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за CSS.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
-    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит данные товара: <code>GET /api/products/{id}</code>. Это один HTTP-запрос. Сессионная cookie, если она есть, передаётся в его заголовке, а не отдельной плашкой или отдельным запросом.</p><p><strong>REST</strong> здесь означает привычный способ назвать ресурс в API: <code>products/42</code> — товар 42, а <code>GET</code> — получить его данные. REST не является ещё одним запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. «Обновить сессию» имитирует <code>POST /auth/refresh</code>; «Получить сессию» — повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
+    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит данные товара: <code>GET /api/products/{id}</code>. Это один HTTP-запрос. Сессионная cookie, если она есть, передаётся в его заголовке, а не отдельной плашкой или отдельным запросом.</p><p><strong>REST</strong> здесь означает привычный способ назвать ресурс в API: <code>products/42</code> — товар 42, а <code>GET</code> — получить его данные. REST не является ещё одним запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. После истечения или удаления кнопка «Обновить сессию» имитирует повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
     sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>Сервер приложения выполняет <code>SELECT id, name, price FROM products WHERE id = $1</code>. Параметр <code>$1</code> — ID из запроса. Браузер SQL не отправляет.</p><p>Если строка не найдена, база вернёт 0 строк. Это ещё не HTTP 404: ответ клиенту формирует приложение.</p>` },
     'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает строку товара или 0 строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
     json: { kicker: 'Формат данных', title: 'JSON в ответе API', body: `<p><strong>JSON</strong> — текстовый формат обмена данными. В ответе API ключ <code>id</code> означает идентификатор, <code>name</code> — название, <code>price</code> — цену. JavaScript в браузере читает эти значения и показывает товар. JSON не является отдельным сетевым устройством или обязательным дополнительным запросом.</p><p>Сначала смотри <strong>HTTP-статус</strong>, затем тело ответа. <code>200 OK</code> не обещает, что внутри правильный товар: тело может быть пустым или содержать <code>error.code: 404</code>. Этот внутренний код не превращает HTTP 200 в HTTP 404.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>Есть ли тело ответа, совпадают ли типы и значения полей с таблицей <code>products</code>, корректно ли клиент обрабатывает ошибку.</p></div>` },
     html: { kicker: 'Ответ на GET /', title: 'HTML', body: `<p><strong>HTML</strong> задаёт структуру страницы: заголовки, текст, области для данных и ссылки на другие ресурсы. В этой схеме выбранный балансировщиком сервер возвращает HTML на <code>GET /</code>.</p><p>Посмотри пример ниже: <code>link href</code> указывает браузеру адрес CSS, а <code>script src</code> — адрес JavaScript. Браузер сам запрашивает эти файлы у CDN. Если HTML получен, но CSS недоступен, структура может остаться видимой без оформления.</p><p><code>X-Served-By</code> здесь — условный заголовок для показа сервера A или B; на реальном сайте его может не быть.</p>` },
-    css: { kicker: 'Ресурс страницы', title: 'CSS', body: `<p><strong>CSS</strong> описывает внешний вид HTML: цвета, отступы, размеры и расположение блоков. Браузер загружает <code>style.css</code> по адресу из HTML, здесь — с CDN. Запрос API за товаром от этого не становится запросом CSS.</p><p>Карточка CSS на линии — <strong>ответ с содержимым файла</strong>. Действие «Удалить style.css в источнике» удаляет его оригинал из хранилища. Это не точка остановки запроса: браузер всё ещё может получить старую копию из своего кэша или CDN. Чтобы увидеть ошибку, очисти кэш браузера, включи cache miss на CDN и запусти схему. Повреждение оригинала в этой модели тоже мешает получить пригодный файл при cache miss.</p><p>В примере ниже правило <code>.catalog</code> раскладывает карточки по колонкам, а <code>@media</code> меняет раскладку на узком экране.</p>` },
-    js: { kicker: 'Ресурс страницы', title: 'JavaScript', body: `<p><strong>JavaScript</strong> выполняется в браузере и добавляет поведение странице: реагирует на кнопки, запрашивает данные и меняет HTML. В этой модели браузер получает <code>app.js</code> от CDN; уже выполняющийся скрипт отправляет <code>GET /api/products/42</code> через балансировщик.</p><p>Карточка JS на линии — <strong>ответ с содержимым файла</strong>. Действие «Удалить app.js в источнике» удаляет его оригинал из хранилища, а не прерывает текущий запрос как breakpoint. Копии браузера и CDN живут отдельно. Если очистить кэш браузера, включить cache miss CDN и удалить оригинал app.js или отключить источник, новый JS не придёт, локальный кэш не пополнится и запрос API не начнётся.</p><p>В примере ниже <code>fetch</code> получает ответ API, а затем код показывает название товара. При HTTP 200 с пустым телом <code>response.json()</code> завершится ошибкой разбора. При HTTP 200 с <code>error</code> внутри JSON проверка <code>response.ok</code> пройдёт, но нужного <code>product.name</code> не будет.</p><div class="course-article__note"><strong>Что проверить QA</strong><p>Не только HTTP-статус файла, но и ошибки выполнения скрипта, отображение товара и поведение при пустом или ошибочном ответе API.</p></div>` },
+    css: { kicker: 'Ресурс страницы', title: 'CSS', body: `<p><strong>CSS</strong> описывает внешний вид HTML: цвета, отступы, размеры и расположение блоков. Браузер загружает <code>style.css</code> по адресу из HTML, здесь — с CDN. Запрос API за товаром от этого не становится запросом CSS.</p><p>Карточка CSS на линии — <strong>ответ с содержимым файла</strong>. Удалить оригинал можно в «Источнике файлов». Это не прерывает текущий запрос: браузер всё ещё может получить старую копию из своего кэша или CDN. Чтобы увидеть ошибку, очисти кэш браузера, включи cache miss на CDN и запусти схему.</p><p>В примере ниже правило <code>.catalog</code> раскладывает карточки по колонкам, а <code>@media</code> меняет раскладку на узком экране.</p>` },
+    js: { kicker: 'Ресурс страницы', title: 'JavaScript', body: `<p><strong>JavaScript</strong> выполняется в браузере и добавляет поведение странице: реагирует на кнопки, запрашивает данные и меняет HTML. В этой модели браузер получает <code>app.js</code> от CDN; уже выполняющийся скрипт отправляет <code>GET /api/products/42</code> через балансировщик.</p><p>Карточка JS на линии — <strong>ответ с содержимым файла</strong>. Оригинал app.js удаляется в «Источнике файлов», а не в ответе. Копии браузера и CDN живут отдельно. Если очистить кэш браузера, включить cache miss CDN и удалить оригинал app.js или отключить источник, новый JS не придёт, локальный кэш не пополнится и запрос API не начнётся.</p><p>В примере ниже <code>fetch</code> получает ответ API, а затем код показывает название товара. При HTTP 200 с пустым телом <code>response.json()</code> завершится ошибкой разбора. При HTTP 200 с <code>error</code> внутри JSON проверка <code>response.ok</code> пройдёт, но нужного <code>product.name</code> не будет.</p><div class="course-article__note"><strong>Что проверить QA</strong><p>Не только HTTP-статус файла, но и ошибки выполнения скрипта, отображение товара и поведение при пустом или ошибочном ответе API.</p></div>` },
     cache: { kicker: 'Повторная загрузка', title: 'Кэш браузера', body: `<p>При первом запуске учебный кэш пуст. Полученные HTML, CSS и JS браузер сохраняет локально. Свежие CSS и JS при повторном запуске берутся из кэша без обращения к CDN. Плашка кэша остаётся тусклой, пока в нём нет ни CSS, ни JS: после неудачного запроса HTML может сохраниться отдельно, но недоступный файл в кэш не записывается. Ниже показано состояние каждого файла.</p><p>В реальном браузере повторное использование зависит от заголовков ответа и срока свежести. При проверке актуальности сервер может ответить <code>304 Not Modified</code> без повторной передачи тела.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>В DevTools → Network сравни загрузку из сети, <code>memory cache</code>, <code>disk cache</code> и результат после очистки кэша.</p></div>` },
     tasks: { kicker: 'Практика / условия', title: 'Задания', body: `<p>Меняй элементы схемы и запускай запросы. «Сброс» восстанавливает схему, выполненные задания сохраняются. В этой учебной модели один сервер выдерживает до 600 одновременных запросов.</p><div id="course-task-list" class="course-task-list"></div>` }
   };
@@ -995,14 +995,21 @@
   function showArticle(id, via = null) {
     const data = articles[id];
     if (!data) return;
+    const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент', cache: 'Кэш' };
     clearTimeout(articleCloseTimer);
     article.classList.remove('is-closing');
     selected = id;
     activeActionId = id;
     selectedVia = via;
     document.getElementById('course-article-kicker').textContent = data.kicker.includes('/') ? data.kicker.split('/')[0].trim() : data.kicker.split(' ')[0];
-    document.getElementById('course-article-title').textContent = data.title;
+    document.getElementById('course-article-title').textContent = shortTitles[id] || data.title;
     document.getElementById('course-article-body').innerHTML = data.body;
+    const primary = document.getElementById('course-article-primary');
+    primary.replaceChildren();
+    for (const selector of ['.course-load-settings', '.course-algorithm', '#course-task-list']) {
+      const block = document.querySelector(`#course-article-body ${selector}`);
+      if (block) primary.append(block);
+    }
     renderProductTables();
     if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', '<section class="course-example" id="course-example"><h3></h3><pre><code></code></pre></section>');
     renderExample(id);
@@ -1112,14 +1119,33 @@
   function report(message) {
     document.getElementById(browserPacketIds.has(activeActionId) ? 'course-network-action-result' : 'course-action-result').textContent = message;
   }
+  function actionIcon(label) {
+    const paths = {
+      remove: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7m4-7v7"/>',
+      restore: '<path d="M5 11a7 7 0 1 1 2 6M5 5v6h6"/>',
+      damage: '<path d="m13 2-8 11h6l-1 9 9-12h-6z"/>',
+      power: '<path d="M12 3v9M7 5a9 9 0 1 0 10 0"/>',
+      add: '<path d="M12 4v16M4 12h16"/>',
+      switch: '<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
+      clear: '<path d="M4 19h16M8 16l9-9 3 3-9 9H7z"/>'
+    };
+    const kind = /^Удалить/.test(label) ? 'remove' : /^Восстановить|^Запустить|^Включить|^Вернуть/.test(label) ? 'restore' : /^Повредить|^Ошибка/.test(label) ? 'damage' : /^Отключить|^Остановить/.test(label) ? 'power' : /^Добавить/.test(label) ? 'add' : /^Очистить/.test(label) ? 'clear' : 'switch';
+    return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[kind]}</svg>`;
+  }
   function renderActions(id) {
     const networkAction = browserPacketIds.has(id);
     const actionButtons = document.getElementById(networkAction ? 'course-network-action-buttons' : 'course-action-buttons');
     actionButtons.replaceChildren();
-    function add(label, handler, destructive = false) {
+    function add(label, handler, destructive = false, disabled = false) {
       const button = document.createElement('button');
       button.type = 'button';
-      button.textContent = label;
+      button.disabled = disabled;
+      if (networkAction) button.textContent = label;
+      else {
+        button.innerHTML = actionIcon(label);
+        button.setAttribute('aria-label', label);
+        button.dataset.tooltip = label;
+      }
       button.classList.toggle('is-destructive', destructive);
       button.addEventListener('click', () => {
         activeActionId = id;
@@ -1138,6 +1164,24 @@
       renderActions(id);
       report(active ? `${byId.get(target).title} снова доступен.` : `${byId.get(target).title} отключён. Запусти схему, чтобы проверить новый маршрут.`);
     }
+    function fileActions(file, place) {
+      const name = file === 'html' ? 'HTML' : file === 'css' ? 'style.css' : 'app.js';
+      if (faults.has(file)) {
+        add(`Восстановить ${name}`, () => {
+          faults.delete(file); setLiveRoutes(null); renderActions(id);
+          report(`${name} восстановлен ${place}. Запусти схему, чтобы проверить результат.`);
+        });
+        return;
+      }
+      add(`Удалить ${name}`, () => {
+        faults.set(file, 'missing'); setLiveRoutes(null); renderActions(id);
+        report(`${name} удалён ${place}. Копии браузера и CDN остаются доступными до очистки кэша.`);
+      }, true);
+      add(`Повредить ${name}`, () => {
+        faults.set(file, 'corrupt'); setLiveRoutes(null); renderActions(id);
+        report(`${name} повреждён ${place}. Запусти схему, чтобы проверить результат.`);
+      }, true);
+    }
     if (id === 'balancer') {
       add(removed ? 'Восстановить балансировщик' : 'Отключить балансировщик', () => {
         removed = !removed;
@@ -1147,6 +1191,7 @@
       }, !removed);
     } else if (id === 'app-a' || id === 'app-b') {
       add(faults.has(id) ? 'Запустить сервер' : 'Остановить сервер', () => toggleFault(id), !faults.has(id));
+      fileActions('html', 'на серверах приложения');
     } else if (id === 'database') {
       add(faults.has(id) ? 'Включить базу' : 'Отключить базу', () => toggleFault(id), !faults.has(id));
       if (productFor(selectedProductId)) add(`Удалить товар ${selectedProductId}`, () => {
@@ -1181,20 +1226,8 @@
       });
     } else if (id === 'storage') {
       add(faults.has('storage') ? 'Включить источник' : 'Отключить источник', () => toggleFault('storage'), !faults.has('storage'));
-    } else if (id === 'html' || id === 'css' || id === 'js') {
-      const fileName = id === 'css' ? 'style.css' : id === 'js' ? 'app.js' : 'HTML';
-      const place = id === 'html' ? 'на сервере' : 'в источнике';
-      add(`Удалить ${fileName} ${place}`, () => {
-        faults.set(id, 'missing'); setLiveRoutes(null); renderActions(id);
-        report(`${fileName} удалён ${place}. Сохранённые копии браузера и CDN остаются: запусти схему, чтобы увидеть, откуда придёт файл.`);
-      }, true);
-      add(`Повредить ${fileName} ${place}`, () => {
-        faults.set(id, 'corrupt'); setLiveRoutes(null); renderActions(id);
-        report(`${fileName} повреждён ${place}. Сохранённые копии браузера и CDN остаются: запусти схему, чтобы увидеть результат.`);
-      }, true);
-      if (faults.has(id)) add(`Восстановить ${fileName}`, () => {
-        faults.delete(id); setLiveRoutes(null); renderActions(id); report(`${fileName} восстановлен ${place}. Запусти схему, чтобы проверить результат.`);
-      });
+      fileActions('css', 'в источнике файлов');
+      fileActions('js', 'в источнике файлов');
     } else if (id === 'cookie') {
       const applySessionAction = message => {
         refreshSessionDisplay();
@@ -1204,23 +1237,23 @@
         save();
         report(message);
       };
-      add(hasSession() ? 'Обновить сессию' : 'Получить сессию', () => {
-        const wasValid = hasSession();
-        rotateSessionToken();
-        sessionExpiresAt = Date.now() + SESSION_MS;
-        if (!wasValid) sessionRestricted = false;
-        applySessionAction(wasValid ? 'Сессия обновлена на пять минут.' : 'Новая сессия получена на пять минут.');
-      });
       if (hasSession()) add('Удалить сессию', () => {
         sessionExpiresAt = 0;
         applySessionAction('Сессия удалена. Следующий запрос к защищённому API вернёт 401; HTML страницы останется доступен.');
       }, true);
+      else add('Обновить сессию', () => {
+        rotateSessionToken();
+        sessionExpiresAt = Date.now() + SESSION_MS;
+        sessionRestricted = false;
+        applySessionAction('Новая сессия получена на пять минут.');
+      });
       if (id === 'cookie' && hasSession()) add(sessionRestricted ? 'Вернуть право доступа' : 'Ограничить права', () => {
         sessionRestricted = !sessionRestricted;
         applySessionAction(sessionRestricted ? 'Сессия действительна, но права на ресурс нет: следующий запрос API вернёт 403.' : 'Право доступа возвращено: следующий запрос API может получить 200.');
       }, !sessionRestricted);
     } else if (id === 'cache') {
-      add('Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report('Локальный кэш браузера пуст. Копии CDN не изменились. Запусти схему, чтобы увидеть новые запросы файлов.'); });
+      const empty = cacheCleared && !hasCachedAsset('css') && !hasCachedAsset('js');
+      add(empty ? 'Кэш пуст' : 'Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report('Локальный кэш браузера пуст. Копии CDN не изменились. Запусти схему, чтобы увидеть новые запросы файлов.'); }, false, empty);
     }
     if (!networkAction) actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
   }
@@ -1407,7 +1440,9 @@
     if (runHistory.length > 10) runHistory.shift();
     receiveResponse();
     renderVisualization(selected);
+    if (selected) renderActions(selected);
     if (networkSelected) renderVisualization('client', document.getElementById('course-network-visual'));
+    if (networkSelected) renderActions(networkSelected);
     const apiResponse = apiResponseForCurrentState();
     if (scriptAvailable) algorithmStep(apiResponse.code === '200' && !apiResponse.bodyIssue ? 'api' : 'error', `Ответ API: ${apiResponse.code} · ${apiResponse.label}.`);
     finishAlgorithm(lastResponse.code, lastResponse.label, ['broken', 'partial', 'unstyled'].includes(lastResponse.mode) || lastResponse.code === '—' ? 'error' : loadPage ? 'resource' : 'api');
