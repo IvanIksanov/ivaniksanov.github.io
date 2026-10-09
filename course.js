@@ -416,9 +416,9 @@
     if (saved.lastRun && Array.isArray(saved.lastRun.routes) && Array.isArray(saved.lastRun.overloaded)) lastRun = saved.lastRun;
     if (Array.isArray(saved.shownPackets)) {
       for (const id of saved.shownPackets) if (packets.some(packet => packet.id === id)) shownPackets.add(id);
-      if (saved.shownPackets.includes('asset-get')) {
-        shownPackets.add('css-get');
-        shownPackets.add('js-get');
+      // Older progress stored the replies but may lack the newly separated requests.
+      for (const file of ['css', 'js']) {
+        if (saved.shownPackets.includes('asset-get') || shownPackets.has(file)) shownPackets.add(`${file}-get`);
       }
     } else if (lastRun) {
       // Existing courses predate per-packet visibility; keep their explored map intact.
