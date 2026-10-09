@@ -876,6 +876,20 @@
   const networkArticles = new Set(['client', ...browserPacketIds]);
   let networkKey = 'document';
   let networkTab = 'headers';
+  function setNetworkSelection(id) {
+    networkSelected = id;
+    activeActionId = id;
+    const packet = packets.find(item => item.id === id);
+    document.getElementById('course-network-selection').textContent = packet?.title || id;
+    document.getElementById('course-network-action-result').textContent = '';
+    renderActions(id);
+    update();
+  }
+  function syncNetworkSelection() {
+    const request = { document: 'request', css: 'asset-get', js: 'asset-get', api: 'cookie' };
+    const response = { document: 'html', css: 'css', js: 'js', api: 'json' };
+    setNetworkSelection((networkTab === 'headers' ? request : response)[networkKey]);
+  }
   function networkEntries(id) {
     const productId = selectedProductId;
     const pendingApi = !lastRun || lastRun.productId !== productId;
@@ -920,10 +934,10 @@
       const urlMarkup = entry.key === 'api'
         ? `<span class="course-network__path">https://site.example/api/products/<input id="course-product-id" class="course-network__id-chip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID товара"></span>`
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
-      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-viz__heading"><span class="course-viz__icon">↗</span><strong>Network</strong></div><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
       refreshSessionDisplay();
-      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; renderVisualization(id, host); }));
-      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; renderVisualization(id, host); }));
+      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); }));
+      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); }));
       const productInput = host.querySelector('#course-product-id');
       if (productInput) {
         productInput.addEventListener('input', () => {
@@ -1013,16 +1027,11 @@
     requestAnimationFrame(() => focusElement(id));
   }
   function showNetworkPacket(id) {
-    networkSelected = id;
-    activeActionId = id;
     networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : id === 'js' ? 'js' : 'css';
     networkTab = ['html', 'json', 'css', 'js'].includes(id) ? 'response' : 'headers';
-    document.getElementById('course-network-selection').textContent = `Действия · ${packets.find(item => item.id === id)?.title || id}`;
-    document.getElementById('course-network-action-result').textContent = '';
     document.getElementById('course-network-panel').hidden = false;
-    renderActions(id);
+    setNetworkSelection(id);
     renderVisualization('client', document.getElementById('course-network-visual'));
-    update();
   }
   for (const node of nodes) {
     const element = document.createElement('div');
@@ -1204,7 +1213,7 @@
     } else if (id === 'cache') {
       add('Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report('Локальный кэш браузера пуст. Копии CDN не изменились. Запусти схему, чтобы увидеть новые запросы файлов.'); });
     }
-    actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
+    if (!networkAction) actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
   }
   let playRun = 0;
   const playButton = document.getElementById('course-play');
