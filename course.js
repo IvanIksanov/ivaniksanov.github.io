@@ -195,6 +195,17 @@
         name.className = 'course-example__json-key';
         name.textContent = jsonKey[2];
         row.append(document.createTextNode(jsonKey[1]), name, document.createTextNode(jsonKey[3]));
+      } else if (id === 'sql' && line.startsWith('Параметры ')) {
+        row.classList.add('is-sql-params');
+        const label = document.createElement('span');
+        label.textContent = 'Параметры';
+        row.append(label);
+        for (const [, number, value] of line.matchAll(/\$(\d+)\s*=\s*(\d+)/g)) {
+          const chip = document.createElement('span');
+          chip.className = 'course-example__param';
+          chip.textContent = `$${number} = ${value}`;
+          row.append(chip);
+        }
       } else if (id === 'sql' && /\b(SELECT|FROM|WHERE)\b/.test(line)) {
         for (const part of line.split(/\b(SELECT|FROM|WHERE)\b/g)) {
           const token = document.createElement('span');
@@ -1058,6 +1069,7 @@
     const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент', cache: 'Кэш' };
     clearTimeout(articleCloseTimer);
     article.classList.remove('is-closing');
+    article.dataset.article = id;
     selected = id;
     activeActionId = id;
     selectedVia = via;
@@ -1071,8 +1083,9 @@
       if (block) primary.append(block);
     }
     renderProductTables();
-    if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', '<section class="course-example" id="course-example"><h3></h3><pre><code></code></pre></section>');
+    if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', `<section class="course-example${id === 'sql' ? ' course-example--sql' : ''}" id="course-example"><h3></h3><pre><code></code></pre></section>`);
     renderExample(id);
+    if (id === 'sql') primary.append(document.getElementById('course-example'));
     renderVisualization(id);
     refreshSessionDisplay();
     if (id === 'tasks') renderTasks();
