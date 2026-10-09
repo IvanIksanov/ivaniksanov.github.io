@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Как работает веб-приложение — вводный курс QAtoDev</title>
+  <script>try { const theme = localStorage.getItem('theme'); if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme; } catch {}</script>
+  <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
+  <link rel="stylesheet" href="header.css?v=8.9.11">
+  <link rel="stylesheet" href="questions.css?v=8.9.25">
+  <link rel="stylesheet" href="questions-map.css?v=1.0.12">
+  <link rel="stylesheet" href="course.css?v=42">
+  <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
+</head>
+<body class="questions-map-page course-page">
+  <div class="site-header is-scrolled" data-glass-always>
+    <nav><div class="burger-menu"></div><ul>
+      <li><a href="hwois.html">Кто такой тестировщик?</a></li>
+      <li><a href="roadmap.html">Roadmap</a></li>
+      <li><a href="questions.html">Вопросы</a></li>
+      <li><a href="resume.html">Резюме</a></li>
+      <li><a href="practice.html">Практика</a></li>
+    </ul></nav>
+    <header class="welcome"><div class="header-container">
+      <div class="logo"><span class="logo-art" role="img" aria-label="Логотип QAtoDev"></span></div>
+      <h3 class="site-title" role="link" tabindex="0" aria-label="Перейти на главную"><span class="site-title-ascii" aria-hidden="true">                            _
+               _           | |
+  ____ _____ _| |_ ___   __| |_____ _   _
+ / _  (____ (_   _) _ \ / _  | ___ | | | |
+| |_| / ___ | | || |_| ( (_| | ____|\ V /
+ \__  \_____|  \__)___/ \____|_____) \_/
+    |_|</span></h3>
+    </div></header>
+    <div class="theme-switcher">
+      <button id="theme-toggle" class="clean-btn toggleButton_gllP" type="button" title="Переключить тему" aria-label="Переключить тему" aria-live="polite">
+        <svg viewBox="0 0 24 24" width="24" height="24" class="lightToggleIcon_pyhR">
+                <path fill="currentColor" d="M12,9c1.65,0,3,1.35,3,3s-1.35,3-3,3s-3-1.35-3-3S10.35,9,12,9 M12,7c-2.76,0-5,2.24-5,5s2.24,5,5,5s5-2.24,5-5 S14.76,7,12,7L12,7z M2,13l2,0c0.55,0,1-0.45,1-1s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S1.45,13,2,13z M20,13l2,0c0.55,0,1-0.45,1-1 s-0.45-1-1-1l-2,0c-0.55,0-1,0.45-1,1S19.45,13,20,13z M11,2v2c0,0.55,0.45,1,1,1s1-0.45,1-1V2c0-0.55-0.45-1-1-1S11,1.45,11,2z M11,20v2c0,0.55,0.45,1,1,1s1-0.45,1-1v-2c0-0.55-0.45-1-1-1C11.45,19,11,19.45,11,20z M5.99,4.58c-0.39-0.39-1.03-0.39-1.41,0 c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0s0.39-1.03,0-1.41L5.99,4.58z M18.36,16.95 c-0.39-0.39-1.03-0.39-1.41,0c-0.39,0.39-0.39,1.03,0,1.41l1.06,1.06c0.39,0.39,1.03,0.39,1.41,0c0.39-0.39,0.39-1.03,0-1.41 L18.36,16.95z M19.42,5.99c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06c-0.39,0.39-0.39,1.03,0,1.41 s1.03,0.39,1.41,0L19.42,5.99z M7.05,18.36c0.39-0.39,0.39-1.03,0-1.41c-0.39-0.39-1.03-0.39-1.41,0l-1.06,1.06 c-0.39,0.39-0.39,1.03,0,1.41s1.03,0.39,1.41,0L7.05,18.36z"></path>
+            </svg>
+        <svg viewBox="0 0 24 24" width="24" height="24" class="darkToggleIcon_wfgR">
+                <path fill="currentColor" d="M9.37,5.51C9.19,6.15,9.1,6.82,9.1,7.5c0,4.08,3.32,7.4,7.4,7.4c0.68,0,1.35-0.09,1.99-0.27C17.45,17.19,14.93,19,12,19 c-3.86,0-7-3.14-7-7C5,9.07,6.81,6.55,9.37,5.51z M12,3c-4.97,0-9,4.03-9,9s4.03,9,9,9s9-4.03,9-9c0-0.46-0.04-0.92-0.1-1.36 c-0.98,1.37-2.58,2.26-4.4,2.26c-2.98,0-5.4-2.42-5.4-5.4c0-1.81,0.89-3.42,2.26-4.4C12.92,3.04,12.46,3,12,3L12,3z"></path>
+            </svg>
+      </button>
+    </div>
+  </div>
+
+  <main class="course-main">
+    <div class="questions-map-workspace course-workspace" id="course-workspace">
+      <section class="course-scroller" id="course-scroller" aria-label="Интерактивная схема клиент-серверного взаимодействия" tabindex="0">
+        <div class="course-canvas" id="course-canvas">
+          <svg id="course-lines" class="questions-map-lines course-lines" viewBox="0 0 2900 1000" aria-hidden="true"></svg>
+          <svg id="course-trace" class="questions-map-trace course-trace" viewBox="0 0 2900 1000" aria-hidden="true"></svg>
+          <div class="course-intro">
+            <span class="course-eyebrow">Вводный курс · глава 01</span>
+            <h1>Клиент → сервер</h1>
+            <button id="course-reset" class="course-reset course-reset--danger" type="button" title="Сбросить прогресс" disabled>Сброс</button>
+            <button id="course-play" class="course-reset" type="button" title="Загрузить страницу">▶ Загрузить страницу</button>
+            <button id="course-tasks" class="course-reset" type="button" title="Задания по схеме">Задания</button>
+          </div>
+          <div id="course-nodes"></div>
+          <div id="course-packets"></div>
+        </div>
+      </section>
+      <aside class="questions-map-answer course-article" id="course-article" aria-label="Объяснение выбранного элемента" hidden>
+        <button class="questions-map-answer__close" id="course-article-close" type="button" aria-label="Закрыть объяснение"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <div class="questions-map-answer__heading"><div class="questions-map-answer__title-row"><span class="questions-map-answer__category" id="course-article-kicker"></span><h2 id="course-article-title"></h2></div></div>
+        <div class="course-article__scroll"><div id="course-article-visual"></div><section class="course-article__actions" id="course-article-actions" aria-label="Действия с выбранным элементом"><h3>Действия</h3><div id="course-action-buttons"></div><div id="course-action-result" role="status" aria-live="polite"></div></section><div id="course-article-body"></div></div>
+      </aside>
+    </div>
+  </main>
+  <script src="header.js?v=8.9.11"></script>
+  <script src="theme-toggle.shared.js?v=1"></script>
+  <script src="map-motion.shared.js?v=6"></script>
+  <script src="course.js?v=57"></script>
+</body>
+</html>
