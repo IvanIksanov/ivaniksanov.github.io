@@ -747,7 +747,11 @@
     if (!targets.length) return;
     const x = targets.reduce((sum, node) => { const pill = node.querySelector('.questions-map-card__question'); return sum + node.offsetLeft + pill.offsetLeft + pill.offsetWidth / 2; }, 0) / targets.length;
     const y = targets.reduce((sum, node) => { const pill = node.querySelector('.questions-map-card__question'); return sum + node.offsetTop + pill.offsetTop + pill.offsetHeight / 2; }, 0) / targets.length;
-    motion.focus(x, y, smooth);
+    focusMapPoint(x, y, smooth);
+  }
+  function focusMapPoint(x, y, smooth) {
+    const coveredWidth = !article.hidden && window.innerWidth > 767 ? article.getBoundingClientRect().width : 0;
+    motion.focus(x + coveredWidth / (2 * motion.snapshot().scale), y, smooth);
   }
   function focusElement(id, smooth = true) {
     if (byId.has(id)) { centerOn([id], smooth); return; }
@@ -755,7 +759,7 @@
       ? packetHost.querySelector(`[data-parallel-packet="${id}"]`)
       : packetHost.querySelector(`[data-packet="${id}"]`);
     if (!packet || packet.hidden) return;
-    motion.focus(packet.offsetLeft + packet.offsetWidth / 2, packet.offsetTop + packet.offsetHeight / 2, smooth);
+    focusMapPoint(packet.offsetLeft + packet.offsetWidth / 2, packet.offsetTop + packet.offsetHeight / 2, smooth);
   }
   function update() {
     syncPacketRoutes();

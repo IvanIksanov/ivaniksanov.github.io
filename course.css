@@ -282,7 +282,6 @@ html[data-theme="dark"] .course-network__status.is-error, html[data-theme="dark"
 .course-article__theory { margin: .5rem 0 1rem; border-top: 1px solid var(--map-border); }
 .course-article__theory summary { padding: .75rem .1rem; color: var(--map-muted); font-size: .76rem; font-weight: 700; cursor: pointer; }
 .course-article__theory[open] summary { color: var(--map-text); }
-.course-workspace.has-answer .course-scroller { right: clamp(340px, 36vw, 560px); }
 @media (max-width: 767px) {
   .course-workspace.has-answer .course-intro { opacity: 0; pointer-events: none; }
   .course-workspace.has-answer .course-scroller { right: 0; bottom: 52%; }
