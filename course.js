@@ -54,12 +54,15 @@
   const extraProducts = [];
   const deletedProducts = new Set();
   let selectedProductId = 42;
+  let selectedSecondProductId = 43;
+  const requestedProductIds = () => [selectedProductId, selectedSecondProductId];
+  const productsPath = (ids = requestedProductIds()) => `/api/products?ids=${ids.join(',')}`;
   function productFor(id) { return [...baseProducts, ...extraProducts].find(product => product.id === Number(id) && !deletedProducts.has(product.id)); }
   function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
   function rowCountLabel(count) { return `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'строка' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'строки' : 'строк'}`; }
   function requestCountLabel(count) { return `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'запрос' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'запроса' : 'запросов'}`; }
   function productTableMarkup() {
-    const rows = [...baseProducts, ...extraProducts].filter(product => !deletedProducts.has(product.id)).map(product => `<tr class="${product.id === selectedProductId ? 'is-current' : ''}"><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('');
+    const rows = [...baseProducts, ...extraProducts].filter(product => !deletedProducts.has(product.id)).map(product => `<tr class="${requestedProductIds().includes(product.id) ? 'is-current' : ''}"><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('');
     return `<div class="ai-table-shell course-table-shell"><div class="ai-table-wrap"><table class="ai-table"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">price</th><th scope="col">currency</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="course-table-empty">Таблица пуста</td></tr>'}</tbody></table></div></div>`;
   }
 
@@ -84,25 +87,25 @@
         <p class="course-algorithm__result" id="course-algorithm-result" hidden></p>
       </section>` },
     balancer: { kicker: '02 / Маршрутизация', title: 'Балансировщик', body: `<p>Балансировщик — точка входа перед экземплярами приложения A и B. Это может быть отдельный сервер, облачный сервис или программа на той же машине. На схеме он вынесен отдельно, чтобы было видно, кто выбирает обработчик запроса.</p><p><strong>Реальные примеры:</strong> NGINX и HAProxy как обратные прокси, AWS Application Load Balancer как облачный сервис. Клиент обращается к одному адресу, а балансировщик пересылает запрос выбранному экземпляру приложения.</p><p><strong>Подходы:</strong> round robin — по очереди A, B, A; least connections — серверу с меньшим числом активных соединений; проверки доступности — не отправлять запросы на недоступный сервер. В этой учебной модели один запрос идёт на A, а 1000 делятся поровну между A и B; это упрощение, а не точная симуляция NGINX или HAProxy. Сверху показана нагрузка последнего запуска.</p>` },
-    'app-a': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения A', body: `<p>Сервер A возвращает HTML на <code>GET /</code> и данные товара на <code>GET /api/products/{id}</code>. Для данных он проверяет сессию и обращается к общей базе.</p><p>Шкала сверху показывает нагрузку последнего запуска. В учебной модели больше 600 одновременных запросов перегружают один сервер.</p>` },
+    'app-a': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения A', body: `<p>Сервер A возвращает HTML на <code>GET /</code> и список товаров на <code>GET /api/products?ids=42,43</code>. Для данных он проверяет сессию и обращается к общей базе.</p><p>Шкала сверху показывает нагрузку последнего запуска. В учебной модели больше 600 одновременных запросов перегружают один сервер.</p>` },
     'app-b': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения B', body: `<p>Сервер B — второй экземпляр того же приложения. Он может вернуть HTML, обработать API-запрос и обратиться к той же базе, что и A.</p><p>Балансировщик направляет запросы на B при распределении нагрузки или когда A недоступен. Серверы не обязаны обмениваться запросами напрямую.</p>` },
     database: { kicker: '04 / Данные', title: 'База данных', body: `
-      <p>Сервер приложения ищет товар в таблице <code>products</code> по ID из запроса. Браузер не подключается к базе напрямую.</p>
+      <p>Сервер приложения ищет два товара в таблице <code>products</code> по ID из запроса. Браузер не подключается к базе напрямую.</p>
       <p id="course-db-state"></p>
-      <p>База возвращает строку или <strong>0 строк</strong>. HTTP-статус выбирает приложение. Здесь можно воспроизвести намеренные ошибки: HTTP 200 с пустым телом или с <code>error.code: 404</code> внутри JSON.</p>` },
+      <p>База возвращает до двух строк или <strong>0 строк</strong>. HTTP-статус выбирает приложение. Здесь можно воспроизвести намеренные ошибки: HTTP 200 с пустым телом или с <code>error.code: 404</code> внутри JSON.</p>` },
     assets: { kicker: '04 / Доставка файлов', title: 'CDN · копии файлов', body: `<p><strong>CDN</strong> — Content Delivery Network, сеть доставки содержимого. Она хранит копии CSS и JS ближе к пользователю. Сверху показаны копии, доступные в текущем режиме схемы.</p><p>При <strong>cache hit</strong> CDN отвечает сама. При <strong>cache miss</strong> она запрашивает оригинал в источнике. Кэш браузера — отдельное место: если файл уже есть там, запроса к CDN вообще не будет.</p>` },
     storage: { kicker: '05 / Оригиналы файлов', title: 'Источник файлов', body: `<p>Здесь лежат оригиналы <code>style.css</code> и <code>app.js</code>. Здесь можно удалить, повредить или восстановить каждый оригинал; ответы на линии при этом не редактируются. CDN приходит сюда только при промахе своего кэша. Если источник отключён, готовые копии на CDN всё ещё могут работать.</p>` },
     origin: { kicker: 'Запрос CDN / к источнику', title: 'Получение файла', body: `<p>При промахе своего кэша CDN запрашивает оригинальный файл у источника. Это отдельный HTTP-запрос CDN → источник, а не запрос сервера приложения A или B. После ответа CDN может сохранить копию и отдать файл браузеру.</p>` },
     request: { kicker: 'Первый запрос страницы', title: 'HTML-запрос', body: `<p>Браузер отправляет <code>GET /</code> и получает HTML-документ. В Network сверху показан только этот запрос и его ответ.</p><p>В HTML есть адреса CSS и JavaScript, но браузер запрашивает эти файлы отдельно по ветке CDN. Данные товара тоже приходят позже, через отдельный <code>GET /api</code>.</p>` },
     'css-get': { kicker: 'Запрос браузера / к CDN', title: 'CSS-запрос', body: `<p>Браузер запрашивает <code>style.css</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за JavaScript.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
     'js-get': { kicker: 'Запрос браузера / к CDN', title: 'JS-запрос', body: `<p>Браузер запрашивает <code>app.js</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за CSS.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
-    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит данные товара: <code>GET /api/products/{id}</code>. Это один HTTP-запрос. Сессионная cookie, если она есть, передаётся в его заголовке, а не отдельной плашкой или отдельным запросом.</p><p><strong>REST</strong> здесь означает привычный способ назвать ресурс в API: <code>products/42</code> — товар 42, а <code>GET</code> — получить его данные. REST не является ещё одним запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. После истечения или удаления кнопка «Обновить сессию» имитирует повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
-    sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>Сервер приложения выполняет <code>SELECT id, name, price FROM products WHERE id = $1</code>. Параметр <code>$1</code> — ID из запроса. Браузер SQL не отправляет.</p><p>Если строка не найдена, база вернёт 0 строк. Это ещё не HTTP 404: ответ клиенту формирует приложение.</p>` },
-    'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает строку товара или 0 строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
+    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит два товара одним запросом: <code>GET /api/products?ids=42,43</code>. Оба ID можно изменить в Network. Сессионная cookie, если она есть, передаётся в заголовке этого же запроса.</p><p><strong>REST</strong> здесь означает способ организации API: <code>products</code> — ресурс, а <code>ids</code> выбирает нужные записи. REST не является отдельным запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. После истечения или удаления кнопка «Обновить сессию» имитирует повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
+    sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>Сервер приложения выполняет <code>SELECT id, name, price FROM products WHERE id IN ($1, $2)</code>. Параметры <code>$1</code> и <code>$2</code> — два ID из запроса. Браузер SQL не отправляет.</p><p>База возвращает найденные строки. Если обе не найдены, результат пуст. HTTP-статус выбирает приложение.</p>` },
+    'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает до двух найденных строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
     json: { kicker: 'Формат данных', title: 'JSON в ответе API', body: `<p><strong>JSON</strong> — текстовый формат обмена данными. В ответе API ключ <code>id</code> означает идентификатор, <code>name</code> — название, <code>price</code> — цену. JavaScript в браузере читает эти значения и показывает товар. JSON не является отдельным сетевым устройством или обязательным дополнительным запросом.</p><p>Сначала смотри <strong>HTTP-статус</strong>, затем тело ответа. <code>200 OK</code> не обещает, что внутри правильный товар: тело может быть пустым или содержать <code>error.code: 404</code>. Этот внутренний код не превращает HTTP 200 в HTTP 404.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>Есть ли тело ответа, совпадают ли типы и значения полей с таблицей <code>products</code>, корректно ли клиент обрабатывает ошибку.</p></div>` },
     html: { kicker: 'Ответ на GET /', title: 'HTML', body: `<p><strong>HTML</strong> задаёт структуру страницы: заголовки, текст, области для данных и ссылки на другие ресурсы. В этой схеме выбранный балансировщиком сервер возвращает HTML на <code>GET /</code>.</p><p>Посмотри пример ниже: <code>link href</code> указывает браузеру адрес CSS, а <code>script src</code> — адрес JavaScript. Браузер сам запрашивает эти файлы у CDN. Если HTML получен, но CSS недоступен, структура может остаться видимой без оформления.</p><p><code>X-Served-By</code> здесь — условный заголовок для показа сервера A или B; на реальном сайте его может не быть.</p>` },
     css: { kicker: 'Ресурс страницы', title: 'CSS', body: `<p><strong>CSS</strong> описывает внешний вид HTML: цвета, отступы, размеры и расположение блоков. Браузер загружает <code>style.css</code> по адресу из HTML, здесь — с CDN. Запрос API за товаром от этого не становится запросом CSS.</p><p>Карточка CSS на линии — <strong>ответ с содержимым файла</strong>. Удалить оригинал можно в «Источнике файлов». Это не прерывает текущий запрос: браузер всё ещё может получить старую копию из своего кэша или CDN. Чтобы увидеть ошибку, очисти кэш браузера, включи cache miss на CDN и запусти схему.</p><p>В примере ниже правило <code>.catalog</code> раскладывает карточки по колонкам, а <code>@media</code> меняет раскладку на узком экране.</p>` },
-    js: { kicker: 'Ресурс страницы', title: 'JavaScript', body: `<p><strong>JavaScript</strong> выполняется в браузере и добавляет поведение странице: реагирует на кнопки, запрашивает данные и меняет HTML. В этой модели браузер получает <code>app.js</code> от CDN; уже выполняющийся скрипт отправляет <code>GET /api/products/42</code> через балансировщик.</p><p>Карточка JS на линии — <strong>ответ с содержимым файла</strong>. Оригинал app.js удаляется в «Источнике файлов», а не в ответе. Копии браузера и CDN живут отдельно. Если очистить кэш браузера, включить cache miss CDN и удалить оригинал app.js или отключить источник, новый JS не придёт, локальный кэш не пополнится и запрос API не начнётся.</p><p>В примере ниже <code>fetch</code> получает ответ API, а затем код показывает название товара. При HTTP 200 с пустым телом <code>response.json()</code> завершится ошибкой разбора. При HTTP 200 с <code>error</code> внутри JSON проверка <code>response.ok</code> пройдёт, но нужного <code>product.name</code> не будет.</p><div class="course-article__note"><strong>Что проверить QA</strong><p>Не только HTTP-статус файла, но и ошибки выполнения скрипта, отображение товара и поведение при пустом или ошибочном ответе API.</p></div>` },
+    js: { kicker: 'Ресурс страницы', title: 'JavaScript', body: `<p><strong>JavaScript</strong> выполняется в браузере и добавляет поведение странице: реагирует на кнопки, запрашивает данные и меняет HTML. В этой модели браузер получает <code>app.js</code> от CDN; затем скрипт отправляет <code>GET /api/products?ids=42,43</code> через балансировщик.</p><p>Карточка JS на линии — <strong>ответ с содержимым файла</strong>. Оригинал app.js удаляется в «Источнике файлов», а не в ответе. Копии браузера и CDN живут отдельно. Если очистить кэш браузера, включить cache miss CDN и удалить оригинал app.js или отключить источник, новый JS не придёт, локальный кэш не пополнится и запрос API не начнётся.</p><p>В примере ниже <code>fetch</code> получает массив товаров. При HTTP 200 с пустым телом <code>response.json()</code> завершится ошибкой разбора. При HTTP 200 с <code>error</code> внутри JSON проверка <code>response.ok</code> пройдёт, но массива <code>products</code> не будет.</p><div class="course-article__note"><strong>Что проверить QA</strong><p>Не только HTTP-статус файла, но и ошибки выполнения скрипта, отображение обоих товаров и поведение при пустом или ошибочном ответе API.</p></div>` },
     cache: { kicker: 'Повторная загрузка', title: 'Кэш браузера', body: `<p>При первом запуске учебный кэш пуст. Полученные HTML, CSS и JS браузер сохраняет локально. Свежие CSS и JS при повторном запуске берутся из кэша без обращения к CDN. Плашка кэша остаётся тусклой, пока в нём нет ни CSS, ни JS: после неудачного запроса HTML может сохраниться отдельно, но недоступный файл в кэш не записывается. Ниже показано состояние каждого файла.</p><p>В реальном браузере повторное использование зависит от заголовков ответа и срока свежести. При проверке актуальности сервер может ответить <code>304 Not Modified</code> без повторной передачи тела.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>В DevTools → Network сравни загрузку из сети, <code>memory cache</code>, <code>disk cache</code> и результат после очистки кэша.</p></div>` },
     tasks: { kicker: 'Практика / условия', title: 'Задания', body: `<p>Меняй элементы схемы и запускай запросы. «Сброс» восстанавливает схему, выполненные задания сохраняются. В этой учебной модели один сервер выдерживает до 600 одновременных запросов.</p><div id="course-task-list" class="course-task-list"></div>` }
   };
@@ -110,11 +113,11 @@
     request: ['Запрос браузера → сервер:', 'GET / HTTP/1.1', 'Host: site.example', 'Accept: text/html', '', 'Ответ сервера → браузер:', 'HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<html>…</html>'],
     'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.site.example'],
     'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.site.example'],
-    cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products/42 HTTP/1.1', 'Cookie: session=demo123'],
-    sql: ['SELECT id, name, price', 'FROM products', 'WHERE id = $1;', '', 'Параметр $1 = 42'],
-    html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.site.example/style.css"></head>', '  <body>', '    <h1>Каталог</h1>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.site.example/app.js"></script>', '  </body>', '</html>'],
-    css: ['body { margin: 0; font: 16px system-ui; }', '.catalog { display: grid; gap: 16px;', '  grid-template-columns: repeat(3, 1fr); }', '@media (max-width: 700px) {', '  .catalog { grid-template-columns: 1fr; }', '}'],
-    js: ['const response = await fetch("/api/products/42");', 'if (!response.ok) throw new Error(`HTTP ${response.status}`);', 'const product = await response.json();', 'document.querySelector("#products").textContent = product.name;'],
+    cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products?ids=42,43 HTTP/1.1', 'Cookie: session=demo123'],
+    sql: ['SELECT id, name, price', 'FROM products', 'WHERE id IN ($1, $2);', '', 'Параметры $1 = 42, $2 = 43'],
+    html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.site.example/style.css"></head>', '  <body>', '    <header>qa market</header>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.site.example/app.js"></script>', '  </body>', '</html>'],
+    css: ['body { margin: 0; font: 16px system-ui; }', '#products { display: grid; gap: 16px;', '  grid-template-columns: repeat(2, 1fr); }', '@media (max-width: 700px) {', '  #products { grid-template-columns: 1fr; }', '}'],
+    js: ['const response = await fetch("/api/products?ids=42,43");', 'if (!response.ok) throw new Error(`HTTP ${response.status}`);', 'const { products } = await response.json();', 'renderProductCards(products);'],
     origin: ['GET /app.js HTTP/1.1', 'Host: origin.site.example', '', 'CDN запрашивает оригинал после cache miss.'],
     cache: ['Ключ: GET https://cdn.site.example/style.css', 'Место: HTTP-кэш браузера (память или диск)', 'Ответ: 200 OK, Cache-Control: public, max-age=3600', 'Повтор: браузер может использовать сохранённую копию.', 'Точный файловый путь определяет браузер, а не сайт.']
   };
@@ -129,12 +132,12 @@
       const title = id === 'client' ? 'Что получил браузер от API' : 'Ответ API · JSON';
       if (apiResponse.bodyIssue === 'empty') return { title, text: ['HTTP/1.1 200 OK', 'Content-Length: 0'].join('\n') };
       if (apiResponse.bodyIssue === 'embedded-error') return { title, text: ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ error: { code: 404, message: 'PRODUCT_NOT_FOUND' } }, null, 2)].join('\n') };
-      return { title, text: failed ? [apiResponse.code === '—' ? 'Ответ HTTP не получен' : 'HTTP/1.1 ' + apiResponse.code, ...(apiResponse.code === '—' ? [] : [...(apiResponse.code === '401' ? ['WWW-Authenticate: Session realm="training"'] : []), 'Content-Type: application/json', '', JSON.stringify({ error, message: apiResponse.label, servedBy: app }, null, 2)])].join('\n') : ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ ...(lastRun?.product || productFor(42)), servedBy: app }, null, 2)].join('\n') };
+      return { title, text: failed ? [apiResponse.code === '—' ? 'Ответ HTTP не получен' : 'HTTP/1.1 ' + apiResponse.code, ...(apiResponse.code === '—' ? [] : [...(apiResponse.code === '401' ? ['WWW-Authenticate: Session realm="training"'] : []), 'Content-Type: application/json', '', JSON.stringify({ error, message: apiResponse.label, servedBy: app }, null, 2)])].join('\n') : ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ products: lastRun?.products || requestedProductIds().map(productFor).filter(Boolean), servedBy: app }, null, 2)].join('\n') };
     }
     if (!examples[id]) return null;
     let title = id === 'request' ? 'Запрос страницы и ответ сервера' : ['css-get', 'js-get'].includes(id) ? 'Запрос браузера к CDN' : id === 'origin' ? 'Запрос CDN к источнику' : id === 'cookie' ? 'Обмен заголовками сессии' : id === 'cache' ? 'Как выглядит запись кэша' : id === 'sql' ? 'SQL, который выполняет сервер' : 'Пример содержимого';
     let text = examples[id].join('\n');
-    if (id === 'cookie') text = text.replaceAll('demo123', sessionToken);
+    if (id === 'cookie') text = text.replaceAll('demo123', sessionToken).replace('42,43', requestedProductIds().join(','));
     if (id === 'cache') text = [
       `HTML: ${cacheCleared ? 'нет копии' : 'копия сохранена после GET /'}`,
       `style.css: ${hasCachedAsset('css') ? 'есть копия в кэше браузера' : 'нет копии'}`,
@@ -143,8 +146,9 @@
       'Место: HTTP-кэш браузера (память или диск).',
       'Копии CDN здесь не показаны: это другой кэш.'
     ].join('\n');
-    if (id === 'sql') text = text.replace('Параметр $1 = 42', `Параметр $1 = ${lastRun?.productId || selectedProductId}`);
-    if (id === 'cookie' && !hasSession()) text = ['GET /api/products/42 HTTP/1.1', 'Cookie: —', '', 'HTTP/1.1 401 Unauthorized', '', 'Чтобы войти повторно:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', `Set-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`].join('\n');
+    if (id === 'sql') text = text.replace('Параметры $1 = 42, $2 = 43', `Параметры $1 = ${lastRun?.productId || selectedProductId}, $2 = ${lastRun?.secondProductId || selectedSecondProductId}`);
+    if (id === 'js') text = text.replace('42,43', requestedProductIds().join(','));
+    if (id === 'cookie' && !hasSession()) text = [`GET ${productsPath()} HTTP/1.1`, 'Cookie: —', '', 'HTTP/1.1 401 Unauthorized', '', 'Чтобы войти повторно:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', `Set-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`].join('\n');
     if (id === 'cookie' && hasSession() && sessionRestricted) text += '\n\nHTTP/1.1 403 Forbidden — сессия есть, права недостаточны';
     if (id === 'html' && lastRun && !lastRun.documentAvailable) return { title: 'HTML не получен', text: 'GET / не вернул доступный HTML. Браузер не может прочитать ссылки на CSS и JS из документа.' };
     if (id === 'html' && lastRun?.documentRoute && !faults.has('html')) text = text.replace('Content-Type: text/html; charset=utf-8', `Content-Type: text/html; charset=utf-8\nX-Served-By: ${lastRun.documentRoute}`);
@@ -208,9 +212,7 @@
   function renderProductTables() {
     document.querySelectorAll('[data-course-product-table]').forEach(host => { host.innerHTML = productTableMarkup(); });
     const state = document.getElementById('course-db-state');
-    if (state) state.textContent = productFor(selectedProductId)
-      ? `Товар ${selectedProductId} есть в таблице. Следующий запрос вернёт его данные.`
-      : `Для id = ${selectedProductId} строк нет. Следующий запуск покажет, как приложение ответит на пустой результат.`;
+    if (state) state.textContent = `Для ID ${requestedProductIds().join(' и ')} база вернёт ${rowCountLabel([...new Set(requestedProductIds())].map(productFor).filter(Boolean).length)}.`;
   }
 
   const scroller = document.getElementById('course-scroller');
@@ -401,6 +403,7 @@
     cdnBypass = !!saved.cdnBypass;
     if (['empty', 'embedded-error'].includes(saved.productMode)) productMode = saved.productMode;
     if (Number.isInteger(saved.selectedProductId) && saved.selectedProductId >= 1 && saved.selectedProductId <= 9999) selectedProductId = saved.selectedProductId;
+    if (Number.isInteger(saved.selectedSecondProductId) && saved.selectedSecondProductId >= 1 && saved.selectedSecondProductId <= 9999) selectedSecondProductId = saved.selectedSecondProductId;
     if (Array.isArray(saved.extraProducts)) for (const product of saved.extraProducts.slice(0, 12)) {
       if (Number.isInteger(product?.id) && product.id >= 47 && product.id <= 9999 && typeof product.name === 'string' && Number.isFinite(product.price)) extraProducts.push(product);
     }
@@ -467,12 +470,12 @@
   let saveTimer;
 
   function hasResettableProgress() {
-    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || extraProducts.length || selectedProductId !== 42 || configuredRequests !== 1);
+    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || extraProducts.length || selectedProductId !== 42 || selectedSecondProductId !== 43 || configuredRequests !== 1);
   }
   function syncResetButton() { resetButton.disabled = !hasResettableProgress(); }
   function save() {
     syncResetButton();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, completedTasks: [...completedTasks], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, cdnBypass, productMode, selectedProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, completedTasks: [...completedTasks], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
   }
   function activeApp() {
     if (!faults.has('app-a')) return 'app-a';
@@ -832,9 +835,9 @@
     if (lastRun?.apiSent && lastRun.sessionState === 'missing') return { code: '401', label: 'Сессия истекла', mode: 'partial', detail: 'HTML страницы загрузился, но защищённый API не получил действующую сессию и вернул 401. Получи сессию и повтори запрос.' };
     if (lastRun?.apiSent && lastRun.sessionState === 'forbidden') return { code: '403', label: 'Нет права доступа', mode: 'partial', detail: 'Сессия действительна, но права на ресурс недостаточны. Защищённый API вернул 403; продление сессии само по себе прав не добавит.' };
     if (faults.has('database')) return { code: '503', label: 'Нет данных API', mode: 'partial', detail: 'База отключена: приложение не может получить данные для API. В этой модели API возвращает 503, хотя HTML страницы может загрузиться с кодом 200.' };
-    if (lastRun?.apiSent && lastRun.productMissing && lastRun.productMode === 'empty') return { code: '200', label: 'Пустой ответ API', mode: 'partial', bodyIssue: 'empty', detail: `GET /api/products/${lastRun.productId} получил HTTP 200, но тело ответа пустое: SQL вернул 0 строк, а приложение ошибочно сообщило об успехе.` };
-    if (lastRun?.apiSent && lastRun.productMissing && lastRun.productMode === 'embedded-error') return { code: '200', label: 'Ошибка внутри ответа', mode: 'partial', bodyIssue: 'embedded-error', detail: `GET /api/products/${lastRun.productId} получил HTTP 200, но внутри JSON находится error.code: 404 · PRODUCT_NOT_FOUND. Число в теле не заменяет HTTP-статус.` };
-    if (lastRun?.apiSent && lastRun.productMissing) return { code: '404', label: 'Товар не найден', mode: 'partial', detail: `GET /api/products/${lastRun.productId}: в базе нет строки с таким ID, API вернул HTTP 404.` };
+    if (lastRun?.apiSent && lastRun.productMissing && lastRun.productMode === 'empty') return { code: '200', label: 'Пустой ответ API', mode: 'partial', bodyIssue: 'empty', detail: `GET ${productsPath(lastRun.productIds)} получил HTTP 200, но тело ответа пустое: SQL вернул 0 строк, а приложение ошибочно сообщило об успехе.` };
+    if (lastRun?.apiSent && lastRun.productMissing && lastRun.productMode === 'embedded-error') return { code: '200', label: 'Ошибка внутри ответа', mode: 'partial', bodyIssue: 'embedded-error', detail: `GET ${productsPath(lastRun.productIds)} получил HTTP 200, но внутри JSON находится error.code: 404 · PRODUCT_NOT_FOUND. Число в теле не заменяет HTTP-статус.` };
+    if (lastRun?.apiSent && lastRun.productMissing) return { code: '404', label: 'Товары не найдены', mode: 'partial', detail: `GET ${productsPath(lastRun.productIds)}: в базе нет строк с этими ID, API вернул HTTP 404.` };
     for (const file of ['css', 'js']) {
       if (!faults.has(file) || !lastRun?.assetOutcomes?.[file]) continue;
       const source = lastRun.assetOutcomes[file].source;
@@ -904,8 +907,9 @@
     const cssFailed = css?.state === 'failed';
     const jsFailed = js?.state === 'failed';
     const api = run?.apiResult;
-    const product = run?.apiSent && api?.code === '200' && !api.bodyIssue ? run.product : null;
-    const icon = previewProductIcons[product?.id] || '<path d="M3 7h18v13H3zM3 7l4-4h10l4 4M8 13h8"/>';
+    const products = run?.apiSent && api?.code === '200' && !api.bodyIssue ? (run.products || [run.product].filter(Boolean)) : [];
+    const legacyRun = !!run && !Array.isArray(run.productIds);
+    const previewIds = run?.productIds || (run?.productId ? [run.productId, selectedSecondProductId] : requestedProductIds());
     let message = 'Загрузка товара…';
     if (run) {
       if (jsFailed || !run.apiSent) message = 'JavaScript не загрузился';
@@ -914,15 +918,21 @@
       else if (api?.code === '404') message = 'Товар не найден';
       else if (api?.code !== '200') message = `Данные товара не получены${api?.code && api.code !== '—' ? ` · ${api.code}` : ''}`;
     }
-    const productMarkup = product
-      ? `<article class="course-page-preview__product"><span class="course-page-preview__product-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="course-page-preview__product-copy"><strong>${escapeHtml(product.name)}</strong><small>${product.id} · ${product.price.toLocaleString('ru-RU')} ₽</small></span></article>`
-      : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${run ? '!' : '···'}</span><span class="course-page-preview__product-copy"><strong>${escapeHtml(message)}</strong><small>${run && !jsFailed && run.apiSent ? `GET /api/products/${run.productId}` : jsFailed ? 'Товар недоступен' : 'Каталог'}</small></span></article>`;
+    const productMarkup = products.length
+      ? previewIds.map(id => {
+        const product = products.find(item => item.id === id);
+        const icon = previewProductIcons[id] || '<path d="M3 7h18v13H3zM3 7l4-4h10l4 4M8 13h8"/>';
+        return product
+          ? `<article class="course-page-preview__product"><span class="course-page-preview__product-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="course-page-preview__product-copy"><strong>${escapeHtml(product.name)}</strong><small>${product.id} · ${product.price.toLocaleString('ru-RU')} ₽</small></span></article>`
+          : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${legacyRun ? '···' : '!'}</span><span class="course-page-preview__product-copy"><strong>${legacyRun ? 'Обновите страницу' : `Товар ${id} не найден`}</strong><small>${legacyRun ? `Товар ${id} ещё не запрошен` : 'Нет в ответе API'}</small></span></article>`;
+      }).join('')
+      : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${run ? '!' : '···'}</span><span class="course-page-preview__product-copy"><strong>${escapeHtml(message)}</strong><small>${jsFailed ? 'Товар недоступен' : 'Каталог'}</small></span></article>`;
     const state = !run ? 'pending' : documentFailed ? 'document-error' : cssFailed ? 'unstyled' : 'styled';
-    const summary = documentFailed ? htmlFault === 'corrupt' ? 'HTML повреждён — страница отображается неправильно' : 'HTML не получен — страницу нельзя построить' : cssFailed ? 'HTML без CSS' : jsFailed ? 'HTML загружен, но JavaScript недоступен' : product ? `Страница с товаром ${product.name}` : message;
+    const summary = documentFailed ? htmlFault === 'corrupt' ? 'HTML повреждён — страница отображается неправильно' : 'HTML не получен — страницу нельзя построить' : cssFailed ? 'HTML без CSS' : jsFailed ? 'HTML загружен, но JavaScript недоступен' : products.length ? `Страница с товарами ${products.map(item => item.name).join(' и ')}` : message;
     const page = documentFailed
       ? `<div class="course-page-preview__document-error"><strong>${htmlFault === 'corrupt' ? 'Разметка повреждена' : 'Страница не загрузилась'}</strong><span>${htmlFault === 'corrupt' ? 'Сервер ответил 200, но HTML нельзя правильно построить.' : 'Браузер не получил HTML.'}</span></div>`
-      : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main><strong class="course-page-preview__title">Техника для работы</strong><span class="course-page-preview__skeleton"></span>${productMarkup}<div class="course-page-preview__extras" aria-hidden="true"><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Характеристики</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--short"></span></div><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Описание</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--medium"></span></div></div></main></div>`;
-    return `<div class="course-page-preview course-page-preview--${state}${product ? ` course-page-preview--product-${product.id}` : ''}" role="img" aria-label="${escapeHtml(summary)}">${page}</div>`;
+      : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main>${productMarkup}<div class="course-page-preview__extras" aria-hidden="true"><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Характеристики</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--short"></span></div><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Описание</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--medium"></span></div></div></main></div>`;
+    return `<div class="course-page-preview course-page-preview--${state}${products[0] ? ` course-page-preview--product-${products[0].id}` : ''}${products[1] ? ` course-page-preview--product-secondary-${products[1].id}` : ''}" role="img" aria-label="${escapeHtml(summary)}">${page}</div>`;
   }
   function setNetworkSelection(id) {
     networkSelected = id;
@@ -941,7 +951,8 @@
   }
   function networkEntries(id) {
     const productId = selectedProductId;
-    const pendingApi = !lastRun || lastRun.productId !== productId;
+    const productIds = requestedProductIds();
+    const pendingApi = !lastRun || productIds.some((value, index) => value !== (lastRun.productIds || [lastRun.productId])[index]);
     const api = pendingApi ? { code: '—', label: '—' } : lastRun.apiResult;
     const fileEntry = file => {
       const outcome = lastRun?.assetOutcomes?.[file];
@@ -951,15 +962,15 @@
       return { key: file, name, path: `https://cdn.site.example/${name}`, status, source,
         headers: `GET /${name} HTTP/1.1\nHost: cdn.site.example\n\n${status === '—' ? 'Ответа пока нет' : `Статус: ${status}\nContent-Type: ${file === 'css' ? 'text/css' : 'text/javascript'}`}`,
         preview: !lastRun ? 'Нажми «Загрузить страницу».' : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : `${name} получен: ${source}.`,
-        response: outcome?.state === 'ok' ? examples[file].join('\n') : outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ появится после запуска.' };
+        response: outcome?.state === 'ok' ? examples[file].join('\n').replace('42,43', productIds.join(',')) : outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ появится после запуска.' };
     };
     const document = { key: 'document', name: 'HTML', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable || (lastRun.documentRoute && lastRun.htmlFault === 'corrupt') ? '200' : lastRun.documentRoute && lastRun.htmlFault === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : lastRun.documentRoute ? `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}` : 'нет ответа',
       headers: 'GET / HTTP/1.1\nHost: site.example\nAccept: text/html\n\nContent-Type: text/html; charset=utf-8',
       preview: lastRun?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
       response: lastRun?.documentAvailable ? examples.html.join('\n') : lastRun?.documentRoute && lastRun.htmlFault === 'corrupt' ? 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><main><h1>Каталог</main>…' : lastRun ? 'Ответ HTML не получен.' : 'Ответ появится после запуска.' };
-    const apiEntry = { key: 'api', name: `/api/products/${productId}`, path: `https://site.example/api/products/${productId}`, status: !pendingApi && lastRun.apiSent ? api.code : '—', source: pendingApi ? '—' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : '—',
-      headers: `GET /api/products/${productId} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${!pendingApi && lastRun.apiSent ? api.code : '—'}`,
-      preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? `${lastRun.product?.name || 'Товар'} · ${lastRun.product?.price?.toLocaleString('ru-RU') || ''} ₽` : api.label,
+    const apiEntry = { key: 'api', name: productsPath(), path: `https://site.example${productsPath()}`, status: !pendingApi && lastRun.apiSent ? api.code : '—', source: pendingApi ? '—' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : '—',
+      headers: `GET ${productsPath()} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${!pendingApi && lastRun.apiSent ? api.code : '—'}`,
+      preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? (lastRun.products || [lastRun.product].filter(Boolean)).map(product => `${product.name} · ${product.price.toLocaleString('ru-RU')} ₽`).join('\n') : api.label,
       response: pendingApi ? '—' : exampleFor('client')?.text || '—' };
     const entries = { document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
     const keys = ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css-get', 'css'].includes(id) ? ['css'] : ['js-get', 'js'].includes(id) ? ['js'] : ['document', 'css', 'js', 'api'];
@@ -982,32 +993,31 @@
       const pairNames = { document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
       const help = { document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
       const urlMarkup = entry.key === 'api'
-        ? `<span class="course-network__path course-network__path--api">/api/products/<input id="course-product-id" class="course-network__id-chip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID товара"></span>`
+        ? `<span class="course-network__path course-network__path--api">/api/products?ids=<input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара">,<input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара"></span>`
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
       host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
       refreshSessionDisplay();
       host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); }));
       host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); }));
-      const productInput = host.querySelector('#course-product-id');
-      if (productInput) {
-        productInput.addEventListener('input', () => {
-          if (/^\d{1,4}$/.test(productInput.value)) selectedProductId = Math.max(1, Number(productInput.value));
-        });
+      host.querySelectorAll('[data-product-id-index]').forEach(productInput => {
         let applied = false;
         const applyProductId = () => {
           if (applied) return;
           applied = true;
-          selectedProductId = Math.min(9999, Math.max(1, Number(productInput.value) || 42));
+          const current = productInput.dataset.productIdIndex === '0' ? selectedProductId : selectedSecondProductId;
+          const next = /^[1-9]\d{0,3}$/.test(productInput.value) ? Number(productInput.value) : current;
+          if (productInput.dataset.productIdIndex === '0') selectedProductId = next;
+          else selectedSecondProductId = next;
           renderProductTables(); save(); if (selected) renderActions(selected); renderVisualization(id, host);
         };
         productInput.addEventListener('change', applyProductId);
         productInput.addEventListener('blur', applyProductId);
         productInput.addEventListener('keydown', event => { if (event.key === 'Enter') productInput.blur(); });
-      }
+      });
       return;
     }
     if (id === 'database') {
-      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}<p class="course-viz__foot">SELECT … WHERE id = ${selectedProductId} → ${productFor(selectedProductId) ? '1 строка' : '0 строк'}</p></section>`;
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}<p class="course-viz__foot">SELECT … WHERE id IN (${requestedProductIds().join(', ')}) → ${rowCountLabel([...new Set(requestedProductIds())].map(productFor).filter(Boolean).length)}</p></section>`;
       return;
     }
     if (id === 'db-result') {
@@ -1255,15 +1265,17 @@
       add(faults.has(id) ? 'Запустить сервер' : 'Остановить сервер', () => toggleFault(id), !faults.has(id));
     } else if (id === 'database') {
       add(faults.has(id) ? 'Включить базу' : 'Отключить базу', () => toggleFault(id), !faults.has(id));
-      if (productFor(selectedProductId)) add(`Удалить товар ${selectedProductId}`, () => {
-        deletedProducts.add(selectedProductId); productMode = 'empty'; renderProductTables(); renderActions(id); save();
-        report(`Товар ${selectedProductId} удалён. После запуска SQL вернёт 0 строк; учебный API ответит 200 с пустым телом.`);
-      }, true);
-      else {
-        if ([...baseProducts, ...extraProducts].some(product => product.id === selectedProductId)) add(`Восстановить товар ${selectedProductId}`, () => {
-          deletedProducts.delete(selectedProductId); productMode = 'normal'; renderProductTables(); renderActions(id); save();
-          report(`Товар ${selectedProductId} восстановлен. Обнови страницу, чтобы получить его данные.`);
+      for (const productId of new Set(requestedProductIds())) {
+        if (productFor(productId)) add(`Удалить товар ${productId}`, () => {
+          deletedProducts.add(productId); productMode = 'empty'; renderProductTables(); renderActions(id); save();
+          report(`Товар ${productId} удалён. После запуска API вернёт только оставшиеся найденные товары.`);
+        }, true);
+        else if ([...baseProducts, ...extraProducts].some(product => product.id === productId)) add(`Восстановить товар ${productId}`, () => {
+          deletedProducts.delete(productId); productMode = 'normal'; renderProductTables(); renderActions(id); save();
+          report(`Товар ${productId} восстановлен. Обнови страницу, чтобы получить его данные.`);
         });
+      }
+      if (!requestedProductIds().some(productFor)) {
         add(productMode === 'empty' ? 'Ошибка в теле 200' : 'Пустое тело 200', () => {
           productMode = productMode === 'empty' ? 'embedded-error' : 'empty';
           renderProductTables(); renderActions(id); save();
@@ -1347,8 +1359,12 @@
     playButton.disabled = true;
     const requestCount = configuredRequests;
     const productId = selectedProductId;
-    const product = productFor(productId);
-    const productMissing = !product;
+    const secondProductId = selectedSecondProductId;
+    const productIds = [productId, secondProductId];
+    const products = productIds.map(productFor).filter(Boolean);
+    const dbRows = [...new Set(productIds)].map(productFor).filter(Boolean);
+    const product = products[0] || null;
+    const productMissing = products.length === 0;
     configuredRequests = requestCount;
     remainingRequests = requestCount;
     renderLoadControls();
@@ -1449,7 +1465,7 @@
     if (run !== playRun) return;
     if (scriptAvailable) {
       sessionState = !hasSession() ? 'missing' : sessionRestricted ? 'forbidden' : 'ok';
-      algorithmStep('api', `JavaScript отправил ${requestCount === 1 ? `GET /api/products/${productId}` : `${requestCount} запросов к API для товара ${productId}`}.`);
+      algorithmStep('api', `JavaScript отправил ${requestCount === 1 ? `GET ${productsPath(productIds)}` : `${requestCount} запросов ${productsPath(productIds)}`}.`);
       algorithmStep(sessionState === 'missing' ? 'error' : 'api', sessionState === 'missing' ? 'Сессионная cookie отсутствует или её срок истёк.' : 'Идентификатор сессии включён в заголовок этого же запроса.');
       pulse('client', usedBalancer ? 'balancer' : 'app-a', ['cookie']);
       await wait(400);
@@ -1470,7 +1486,7 @@
         if (!overloaded.includes(id) && sessionState === 'ok') pulse(id, 'database', ['sql']);
       }
       for (const id of overloaded) algorithmStep('error', `Сервер ${id === 'app-a' ? 'A' : 'B'} перегружен и не ответил.`);
-      if (routes.length && !overloaded.length) algorithmStep(sessionState !== 'ok' || faults.has('database') || productMissing ? 'error' : 'api', sessionState === 'missing' ? 'Сервер отклонил запрос с кодом 401; SQL не выполнялся.' : sessionState === 'forbidden' ? 'Сервер отклонил запрос с кодом 403; SQL не выполнялся.' : faults.has('database') ? 'База данных отключена: SQL не выполнен.' : productMissing ? `SQL выполнен, но товар ${productId} не найден: база вернула 0 строк.` : `Сервер получил из базы строку товара ${productId}.`);
+      if (routes.length && !overloaded.length) algorithmStep(sessionState !== 'ok' || faults.has('database') || productMissing ? 'error' : 'api', sessionState === 'missing' ? 'Сервер отклонил запрос с кодом 401; SQL не выполнялся.' : sessionState === 'forbidden' ? 'Сервер отклонил запрос с кодом 403; SQL не выполнялся.' : faults.has('database') ? 'База данных отключена: SQL не выполнен.' : productMissing ? `SQL выполнен, но товары ${productIds.join(' и ')} не найдены: база вернула 0 строк.` : `Сервер получил из базы ${rowCountLabel(products.length)} для товаров ${productIds.join(' и ')}.`);
       await wait(500);
       if (run !== playRun) return;
       for (const id of overloaded) faults.set(id, 'overload');
@@ -1489,7 +1505,7 @@
     renderLoadControls();
     playButton.disabled = false;
     const sqlAttempted = scriptAvailable && sessionState === 'ok' && apiRoutes.some(id => !apiOverloaded.includes(id));
-    lastRun = { requestCount, usedBalancer, routes: [...apiRoutes], documentRoute, counts, overloaded: apiOverloaded, cachedFiles, htmlFault: faults.get('html') || null, assetOutcomes, assetsOffline: faults.has('assets'), originMiss: originMiss && documentAvailable, originOffline, documentAvailable, apiSent: scriptAvailable, sessionState, productMode, productId, product, productMissing, dbResult: sqlAttempted && !faults.has('database') ? (product ? [product] : []) : null };
+    lastRun = { requestCount, usedBalancer, routes: [...apiRoutes], documentRoute, counts, overloaded: apiOverloaded, cachedFiles, htmlFault: faults.get('html') || null, assetOutcomes, assetsOffline: faults.has('assets'), originMiss: originMiss && documentAvailable, originOffline, documentAvailable, apiSent: scriptAvailable, sessionState, productMode, productId, secondProductId, productIds, product, products, productMissing, dbResult: sqlAttempted && !faults.has('database') ? dbRows : null };
     lastRun.apiResult = apiResponseForCurrentState();
     if (loadPage) {
       pageLoaded = documentAvailable;
@@ -1531,6 +1547,7 @@
     cdnBypass = false;
     productMode = 'normal';
     selectedProductId = 42;
+    selectedSecondProductId = 43;
     deletedProducts.clear();
     extraProducts.length = 0;
     lastResponse = null;
