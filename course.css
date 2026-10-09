@@ -237,6 +237,7 @@ html[data-theme="dark"] .course-network__session-time.is-expired { color: #f0a69
 .course-network__help p { margin: .55rem .1rem; font-size: .75rem; line-height: 1.55; }
 .course-network__help code { padding: .04rem .25rem; border-radius: 4px; background: var(--map-selected-bg); }
 .course-network__url .course-network__path { display: inline-flex; align-items: center; flex-wrap: wrap; min-width: 0; gap: 0; color: var(--map-text); }
+.course-network__url .course-network__path--api { flex-wrap: nowrap; white-space: nowrap; }
 .course-network__id-chip { width: 3.3rem; min-width: 0; margin-left: .12rem; padding: .12rem .25rem; border: 1px solid color-mix(in srgb, var(--course-blue) 40%, var(--map-border)); border-radius: .4rem; outline-color: var(--course-blue); background: color-mix(in srgb, var(--course-blue) 13%, var(--map-bg)); color: var(--course-blue); font: inherit; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
 .course-load-settings { margin: 0 0 1.2rem; padding: .85rem; border: 1px solid var(--map-border); border-radius: 18px; background: color-mix(in srgb, var(--course-blue) 3%, var(--map-bg)); }
 .course-load-settings h3 { margin: 0 0 .3rem; font-size: .9rem; }
