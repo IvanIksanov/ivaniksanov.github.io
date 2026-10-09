@@ -903,11 +903,11 @@
         preview: !lastRun ? 'Нажми «Загрузить страницу».' : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : `${name} получен: ${source}.`,
         response: outcome?.state === 'ok' ? examples[file].join('\n') : outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ появится после запуска.' };
     };
-    const document = { key: 'document', name: 'HTML-документ', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable ? '200' : faults.get('html') === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}`,
+    const document = { key: 'document', name: '/', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable ? '200' : faults.get('html') === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}`,
       headers: 'GET / HTTP/1.1\nHost: site.example\nAccept: text/html\n\nContent-Type: text/html; charset=utf-8',
       preview: lastRun?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
       response: lastRun?.documentAvailable ? examples.html.join('\n') : 'Ответ появится после запуска.' };
-    const apiEntry = { key: 'api', name: 'Данные API', path: `https://site.example/api/products/${productId}`, status: lastRun?.apiSent ? api.code : '—', source: !lastRun ? 'ожидает запроса' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : 'запрос не отправлен',
+    const apiEntry = { key: 'api', name: `/api/products/${productId}`, path: `https://site.example/api/products/${productId}`, status: lastRun?.apiSent ? api.code : '—', source: !lastRun ? 'ожидает запроса' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : 'запрос не отправлен',
       headers: `GET /api/products/${productId} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${lastRun?.apiSent ? api.code : 'ожидает запуска'}`,
       preview: !lastRun ? 'Нажми «Загрузить страницу».' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? `${lastRun.product?.name || 'Товар'} · ${lastRun.product?.price?.toLocaleString('ru-RU') || ''} ₽` : api.label,
       response: lastRun ? exampleFor('client')?.text || 'Ответа нет.' : 'Ответ появится после запуска.' };
@@ -1068,6 +1068,7 @@
     if (lastSessionValidity !== !!seconds) {
       lastSessionValidity = !!seconds;
       if (selected === 'cookie') renderActions(selected);
+      if (networkSelected === 'cookie') renderActions(networkSelected);
       syncResetButton();
     }
   }
