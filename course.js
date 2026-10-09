@@ -114,7 +114,7 @@
     'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.site.example'],
     'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.site.example'],
     cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products?ids=42,43 HTTP/1.1', 'Cookie: session=demo123'],
-    sql: ['SELECT id, name, price', 'FROM products', 'WHERE id IN ($1, $2);', '', 'Параметры $1 = 42, $2 = 43'],
+    sql: ['SELECT id, name, price', 'FROM products', 'WHERE id IN ($1, $2);', 'Параметры $1 = 42, $2 = 43'],
     html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.site.example/style.css"></head>', '  <body>', '    <header>qa market</header>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.site.example/app.js"></script>', '  </body>', '</html>'],
     css: ['body { margin: 0; font: 16px system-ui; }', '#products { display: grid; gap: 16px;', '  grid-template-columns: repeat(2, 1fr); }', '@media (max-width: 700px) {', '  #products { grid-template-columns: 1fr; }', '}'],
     js: ['const response = await fetch("/api/products?ids=42,43");', 'if (!response.ok) throw new Error(`HTTP ${response.status}`);', 'const { products } = await response.json();', 'renderProductCards(products);'],
@@ -1108,7 +1108,7 @@
     update();
     renderActions(id);
     const packet = packets.find(item => item.id === id);
-    if (packet) {
+    if (packet && id !== 'sql') {
       const edge = via === 'app-b' && packet.edge?.includes('app-a') ? packet.edge.map(node => node === 'app-a' ? 'app-b' : node) : packet.edge;
       report(id === 'cookie' ? 'Это один API-запрос; сессия передаётся в его заголовке Cookie.' : packet.flow === 'local' ? 'Локальные данные браузера: они не проходят по сетевой линии.' : `${packet.flow === 'request' ? 'Запрос' : 'Ответ'}: ${byId.get(edge[packet.flow === 'response' ? 1 : 0]).title} → ${byId.get(edge[packet.flow === 'response' ? 0 : 1]).title}. Стрелка на карте показывает направление.`);
     }
