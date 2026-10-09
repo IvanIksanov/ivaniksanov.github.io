@@ -888,6 +888,42 @@
   const networkArticles = new Set(['client', ...browserPacketIds]);
   let networkKey = 'document';
   let networkTab = 'headers';
+  const previewProductIcons = {
+    42: '<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M2 20h20l-1-3H3z"/>',
+    43: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 5h4m-2 14h.01"/>',
+    44: '<path d="M4 13v-2a8 8 0 0 1 16 0v2M4 13h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1-2Zm16 0h-3v7h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-2Z"/>',
+    45: '<rect x="2" y="3" width="20" height="15" rx="2"/><path d="M12 18v3m-5 0h10"/>',
+    46: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M5 10h.01M9 10h.01M13 10h.01M17 10h.01M5 13h.01M9 13h.01M13 13h.01M17 13h.01M7 16h10"/>'
+  };
+  function htmlPagePreview() {
+    const run = lastRun;
+    const css = run?.assetOutcomes?.css;
+    const js = run?.assetOutcomes?.js;
+    const documentFailed = !!run && !run.documentAvailable;
+    const htmlFault = run?.documentRoute ? (run.htmlFault === undefined ? faults.get('html') : run.htmlFault) : null;
+    const cssFailed = css?.state === 'failed';
+    const jsFailed = js?.state === 'failed';
+    const api = run?.apiResult;
+    const product = run?.apiSent && api?.code === '200' && !api.bodyIssue ? run.product : null;
+    const icon = previewProductIcons[product?.id] || '<path d="M3 7h18v13H3zM3 7l4-4h10l4 4M8 13h8"/>';
+    let message = 'Загрузка товара…';
+    if (run) {
+      if (jsFailed || !run.apiSent) message = 'JavaScript не загрузился';
+      else if (api?.bodyIssue === 'empty') message = 'Ответ 200, но данных о товаре нет';
+      else if (api?.bodyIssue === 'embedded-error') message = 'Ответ 200 содержит ошибку товара';
+      else if (api?.code === '404') message = 'Товар не найден';
+      else if (api?.code !== '200') message = `Данные товара не получены${api?.code && api.code !== '—' ? ` · ${api.code}` : ''}`;
+    }
+    const productMarkup = product
+      ? `<article class="course-page-preview__product"><span class="course-page-preview__product-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="course-page-preview__product-copy"><strong>${escapeHtml(product.name)}</strong><small>${product.id} · ${product.price.toLocaleString('ru-RU')} ₽</small></span></article>`
+      : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${run ? '!' : '···'}</span><span class="course-page-preview__product-copy"><strong>${escapeHtml(message)}</strong><small>${run && !jsFailed && run.apiSent ? `GET /api/products/${run.productId}` : jsFailed ? 'Товар недоступен' : 'Каталог'}</small></span></article>`;
+    const state = !run ? 'pending' : documentFailed ? 'document-error' : cssFailed ? 'unstyled' : 'styled';
+    const summary = documentFailed ? htmlFault === 'corrupt' ? 'HTML повреждён — страница отображается неправильно' : 'HTML не получен — страницу нельзя построить' : cssFailed ? 'HTML без CSS' : jsFailed ? 'HTML загружен, но JavaScript недоступен' : product ? `Страница с товаром ${product.name}` : message;
+    const page = documentFailed
+      ? `<div class="course-page-preview__document-error"><strong>${htmlFault === 'corrupt' ? 'Разметка повреждена' : 'Страница не загрузилась'}</strong><span>${htmlFault === 'corrupt' ? 'Сервер ответил 200, но HTML нельзя правильно построить.' : 'Браузер не получил HTML.'}</span></div>`
+      : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main><strong class="course-page-preview__title">Техника для работы</strong><span class="course-page-preview__skeleton"></span>${productMarkup}</main></div>`;
+    return `<div class="course-page-preview course-page-preview--${state}" role="img" aria-label="${escapeHtml(summary)}">${page}</div>`;
+  }
   function setNetworkSelection(id) {
     networkSelected = id;
     activeActionId = id;
@@ -917,10 +953,10 @@
         preview: !lastRun ? 'Нажми «Загрузить страницу».' : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : `${name} получен: ${source}.`,
         response: outcome?.state === 'ok' ? examples[file].join('\n') : outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ появится после запуска.' };
     };
-    const document = { key: 'document', name: 'HTML', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable ? '200' : faults.get('html') === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}`,
+    const document = { key: 'document', name: 'HTML', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable || (lastRun.documentRoute && lastRun.htmlFault === 'corrupt') ? '200' : lastRun.documentRoute && lastRun.htmlFault === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : lastRun.documentRoute ? `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}` : 'нет ответа',
       headers: 'GET / HTTP/1.1\nHost: site.example\nAccept: text/html\n\nContent-Type: text/html; charset=utf-8',
       preview: lastRun?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
-      response: lastRun?.documentAvailable ? examples.html.join('\n') : 'Ответ появится после запуска.' };
+      response: lastRun?.documentAvailable ? examples.html.join('\n') : lastRun?.documentRoute && lastRun.htmlFault === 'corrupt' ? 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><main><h1>Каталог</main>…' : lastRun ? 'Ответ HTML не получен.' : 'Ответ появится после запуска.' };
     const apiEntry = { key: 'api', name: `/api/products/${productId}`, path: `https://site.example/api/products/${productId}`, status: !pendingApi && lastRun.apiSent ? api.code : '—', source: pendingApi ? '—' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : '—',
       headers: `GET /api/products/${productId} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${!pendingApi && lastRun.apiSent ? api.code : '—'}`,
       preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? `${lastRun.product?.name || 'Товар'} · ${lastRun.product?.price?.toLocaleString('ru-RU') || ''} ₽` : api.label,
@@ -937,7 +973,8 @@
       if (!entries.some(entry => entry.key === networkKey)) networkKey = entries[0].key;
       const entry = entries.find(item => item.key === networkKey);
       const content = networkTab === 'headers' ? entry.headers : networkTab === 'preview' ? entry.preview : entry.response;
-      const contentMarkup = entry.key === 'api' && networkTab === 'headers'
+      const pagePreview = entry.key === 'document' && networkTab === 'preview';
+      const contentMarkup = pagePreview ? htmlPagePreview() : entry.key === 'api' && networkTab === 'headers'
         ? content.split('\n').map(line => line.startsWith('Cookie: ')
           ? `<span class="course-network__cookie-line"><span data-session-cookie>${escapeHtml(line)}</span><span class="course-network__session-time" data-session-remaining></span></span>`
           : escapeHtml(line)).join('\n')
@@ -947,7 +984,7 @@
       const urlMarkup = entry.key === 'api'
         ? `<span class="course-network__path course-network__path--api">/api/products/<input id="course-product-id" class="course-network__id-chip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID товара"></span>`
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
-      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
       refreshSessionDisplay();
       host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); }));
       host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); }));
@@ -1452,7 +1489,7 @@
     renderLoadControls();
     playButton.disabled = false;
     const sqlAttempted = scriptAvailable && sessionState === 'ok' && apiRoutes.some(id => !apiOverloaded.includes(id));
-    lastRun = { requestCount, usedBalancer, routes: [...apiRoutes], documentRoute, counts, overloaded: apiOverloaded, cachedFiles, assetOutcomes, assetsOffline: faults.has('assets'), originMiss: originMiss && documentAvailable, originOffline, documentAvailable, apiSent: scriptAvailable, sessionState, productMode, productId, product, productMissing, dbResult: sqlAttempted && !faults.has('database') ? (product ? [product] : []) : null };
+    lastRun = { requestCount, usedBalancer, routes: [...apiRoutes], documentRoute, counts, overloaded: apiOverloaded, cachedFiles, htmlFault: faults.get('html') || null, assetOutcomes, assetsOffline: faults.has('assets'), originMiss: originMiss && documentAvailable, originOffline, documentAvailable, apiSent: scriptAvailable, sessionState, productMode, productId, product, productMissing, dbResult: sqlAttempted && !faults.has('database') ? (product ? [product] : []) : null };
     lastRun.apiResult = apiResponseForCurrentState();
     if (loadPage) {
       pageLoaded = documentAvailable;
