@@ -173,7 +173,6 @@ html[data-theme="dark"] .course-method--delete, html[data-theme="dark"] .course-
 .course-packet[data-pair="db"] { --packet-pair-color: #a18dbb; }
 .course-packet[data-pair]:not(.is-faulty), .course-packet[data-pair]:not(.is-faulty):is(:hover, .is-selected, .is-transiting, .is-transiting-resource) { border-color: var(--packet-pair-color); }
 .course-packet__numbers { position: absolute; z-index: 4; top: -9px; left: 2px; display: flex; gap: 2px; pointer-events: none; }
-.course-packet[data-packet="db-result"] .course-packet__numbers { left: auto; right: 7px; }
 .course-packet__numbers span { display: grid; place-items: center; width: 15px; height: 15px; border: 1px solid var(--packet-pair-color, var(--map-border)); border-radius: 50%; background: var(--course-packet); color: var(--packet-pair-color, var(--map-text)); font-size: 9px; font-weight: 800; line-height: 1; }
 html[data-theme="dark"] .course-packet[data-pair="html"] { --packet-pair-color: #dfa3c0; }
 html[data-theme="dark"] .course-packet[data-pair="api"] { --packet-pair-color: #aab9ef; }
