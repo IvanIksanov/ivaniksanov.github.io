@@ -913,7 +913,7 @@
         preview: !lastRun ? 'Нажми «Загрузить страницу».' : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : `${name} получен: ${source}.`,
         response: outcome?.state === 'ok' ? examples[file].join('\n') : outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ появится после запуска.' };
     };
-    const document = { key: 'document', name: '/', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable ? '200' : faults.get('html') === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}`,
+    const document = { key: 'document', name: 'HTML', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable ? '200' : faults.get('html') === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}`,
       headers: 'GET / HTTP/1.1\nHost: site.example\nAccept: text/html\n\nContent-Type: text/html; charset=utf-8',
       preview: lastRun?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
       response: lastRun?.documentAvailable ? examples.html.join('\n') : 'Ответ появится после запуска.' };
@@ -980,14 +980,23 @@
       const countA = lastRun?.counts?.['app-a'] || 0, countB = lastRun?.counts?.['app-b'] || 0;
       const server = id === 'app-a' ? 'A' : 'B';
       const bars = id === 'balancer' ? [['A', countA], ['B', countB]] : [[server, server === 'A' ? countA : countB]];
-      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">${id === 'balancer' ? '⇄' : '▥'}</span><strong>${id === 'balancer' ? 'Распределение запросов' : `Нагрузка сервера ${server}`}</strong><span class="course-viz__caption">${lastRun ? requestCountLabel(lastRun.requestCount) : 'Ожидает запуска'}</span></div>${bars.map(([name,count]) => `<div class="course-load"><span>Сервер ${name}</span><div class="course-load__track"><span class="${count > 600 ? 'is-overload' : ''}" style="width:${Math.min(100, count / 600 * 100)}%"></span></div><strong>${count} / 600</strong></div>`).join('')}<p class="course-viz__foot">${id === 'balancer' && removed ? 'Балансировщик отключён: запросы идут напрямую на A.' : id !== 'balancer' && faults.has(id) ? 'Сервер сейчас остановлен.' : 'До 600 одновременных запросов на сервер в этой модели.'}</p></section>`;
+      const htmlState = faults.get('html');
+      const htmlRow = id === 'balancer' ? '' : `<div class="course-files"><div class="course-file ${htmlState ? 'is-missing' : ''}"><span>▧</span><strong>index.html</strong><small>${htmlState === 'missing' ? 'удалён' : htmlState === 'corrupt' ? 'повреждён' : 'формируется'}</small><div class="course-file__actions" data-file-actions="html"></div></div></div>`;
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">${id === 'balancer' ? '⇄' : '▥'}</span><strong>${id === 'balancer' ? 'Распределение запросов' : `Нагрузка сервера ${server}`}</strong><span class="course-viz__caption">${lastRun ? requestCountLabel(lastRun.requestCount) : 'Ожидает запуска'}</span></div>${bars.map(([name,count]) => `<div class="course-load"><span>Сервер ${name}</span><div class="course-load__track"><span class="${count > 600 ? 'is-overload' : ''}" style="width:${Math.min(100, count / 600 * 100)}%"></span></div><strong>${count} / 600</strong></div>`).join('')}${htmlRow}<p class="course-viz__foot">${id === 'balancer' && removed ? 'Балансировщик отключён: запросы идут напрямую на A.' : id !== 'balancer' && faults.has(id) ? 'Сервер сейчас остановлен.' : 'До 600 одновременных запросов на сервер в этой модели.'}</p></section>`;
+      renderFileRowActions(host, id);
       return;
     }
     if (['assets', 'storage', 'cache', 'origin'].includes(id)) {
       const isBrowser = id === 'cache', isOrigin = id === 'storage' || id === 'origin';
       const title = isBrowser ? 'Кэш браузера' : isOrigin ? 'Источник файлов' : 'Копии CDN';
       const files = [...(isBrowser ? [['HTML', !cacheCleared]] : []), ['style.css', isBrowser ? hasCachedAsset('css') : isOrigin ? !faults.has('storage') && !faults.has('css') : !faults.has('assets') && !cdnBypass], ['app.js', isBrowser ? hasCachedAsset('js') : isOrigin ? !faults.has('storage') && !faults.has('js') : !faults.has('assets') && !cdnBypass]];
-      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▤</span><strong>${title}</strong><span class="course-viz__caption">${id === 'assets' && cdnBypass ? 'cache miss' : ''}</span></div><div class="course-files">${files.map(([name,available]) => `<div class="course-file ${available ? '' : 'is-missing'}"><span>▧</span><strong>${name}</strong><small>${available ? 'доступен' : isOrigin ? 'недоступен' : 'нет копии'}</small></div>`).join('')}</div><p class="course-viz__foot">${isBrowser ? 'Кэш браузера не равен копии CDN.' : isOrigin ? 'CDN обращается сюда только при cache miss.' : 'Браузер запрашивает файлы у CDN отдельно от API.'}</p></section>`;
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▤</span><strong>${title}</strong><span class="course-viz__caption">${id === 'assets' && cdnBypass ? 'cache miss' : ''}</span></div><div class="course-files">${files.map(([name,available]) => {
+        const file = name === 'style.css' ? 'css' : name === 'app.js' ? 'js' : '';
+        const state = isOrigin && file ? faults.get(file) : null;
+        const status = state === 'missing' ? 'удалён' : state === 'corrupt' ? 'повреждён' : available ? 'доступен' : isOrigin ? 'недоступен' : 'нет копии';
+        return `<div class="course-file ${available ? '' : 'is-missing'}"><span>▧</span><strong>${name}</strong><small>${status}</small>${id === 'storage' && file ? `<div class="course-file__actions" data-file-actions="${file}"></div>` : ''}</div>`;
+      }).join('')}</div><p class="course-viz__foot">${isBrowser ? 'Кэш браузера не равен копии CDN.' : isOrigin ? 'CDN обращается сюда только при cache miss.' : 'Браузер запрашивает файлы у CDN отдельно от API.'}</p></section>`;
+      renderFileRowActions(host, id);
       return;
     }
     host.replaceChildren();
@@ -1132,6 +1141,36 @@
     const kind = /^Удалить/.test(label) ? 'remove' : /^Восстановить|^Запустить|^Включить|^Вернуть/.test(label) ? 'restore' : /^Повредить|^Ошибка/.test(label) ? 'damage' : /^Отключить|^Остановить/.test(label) ? 'power' : /^Добавить/.test(label) ? 'add' : /^Очистить/.test(label) ? 'clear' : 'switch';
     return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[kind]}</svg>`;
   }
+  function renderFileRowActions(host, ownerId) {
+    host.querySelectorAll('[data-file-actions]').forEach(container => {
+      const file = container.dataset.fileActions;
+      const name = file === 'html' ? 'HTML' : file === 'css' ? 'style.css' : 'app.js';
+      const place = file === 'html' ? 'на серверах приложения' : 'в источнике файлов';
+      const actions = faults.has(file) ? [['Восстановить', null]] : [['Удалить', 'missing'], ['Повредить', 'corrupt']];
+      actions.forEach(([verb, state]) => {
+        const label = `${verb} ${name}`;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerHTML = actionIcon(label);
+        button.setAttribute('aria-label', label);
+        button.dataset.tooltip = label;
+        button.classList.toggle('is-destructive', !!state);
+        button.addEventListener('click', () => {
+          activeActionId = ownerId;
+          if (playButton.disabled) { report('Дождись завершения запуска.'); return; }
+          if (state) faults.set(file, state);
+          else faults.delete(file);
+          setLiveRoutes(null);
+          renderVisualization(ownerId);
+          const effect = state === 'missing' ? `${name} удалён ${place}. Копии браузера и CDN остаются доступными до очистки кэша.`
+            : state === 'corrupt' ? `${name} повреждён ${place}. Запусти схему, чтобы проверить результат.`
+              : `${name} восстановлен ${place}. Запусти схему, чтобы проверить результат.`;
+          report(effect);
+        });
+        container.append(button);
+      });
+    });
+  }
   function renderActions(id) {
     const networkAction = browserPacketIds.has(id);
     const actionButtons = document.getElementById(networkAction ? 'course-network-action-buttons' : 'course-action-buttons');
@@ -1164,24 +1203,6 @@
       renderActions(id);
       report(active ? `${byId.get(target).title} снова доступен.` : `${byId.get(target).title} отключён. Запусти схему, чтобы проверить новый маршрут.`);
     }
-    function fileActions(file, place) {
-      const name = file === 'html' ? 'HTML' : file === 'css' ? 'style.css' : 'app.js';
-      if (faults.has(file)) {
-        add(`Восстановить ${name}`, () => {
-          faults.delete(file); setLiveRoutes(null); renderActions(id);
-          report(`${name} восстановлен ${place}. Запусти схему, чтобы проверить результат.`);
-        });
-        return;
-      }
-      add(`Удалить ${name}`, () => {
-        faults.set(file, 'missing'); setLiveRoutes(null); renderActions(id);
-        report(`${name} удалён ${place}. Копии браузера и CDN остаются доступными до очистки кэша.`);
-      }, true);
-      add(`Повредить ${name}`, () => {
-        faults.set(file, 'corrupt'); setLiveRoutes(null); renderActions(id);
-        report(`${name} повреждён ${place}. Запусти схему, чтобы проверить результат.`);
-      }, true);
-    }
     if (id === 'balancer') {
       add(removed ? 'Восстановить балансировщик' : 'Отключить балансировщик', () => {
         removed = !removed;
@@ -1191,7 +1212,6 @@
       }, !removed);
     } else if (id === 'app-a' || id === 'app-b') {
       add(faults.has(id) ? 'Запустить сервер' : 'Остановить сервер', () => toggleFault(id), !faults.has(id));
-      fileActions('html', 'на серверах приложения');
     } else if (id === 'database') {
       add(faults.has(id) ? 'Включить базу' : 'Отключить базу', () => toggleFault(id), !faults.has(id));
       if (productFor(selectedProductId)) add(`Удалить товар ${selectedProductId}`, () => {
@@ -1226,8 +1246,6 @@
       });
     } else if (id === 'storage') {
       add(faults.has('storage') ? 'Включить источник' : 'Отключить источник', () => toggleFault('storage'), !faults.has('storage'));
-      fileActions('css', 'в источнике файлов');
-      fileActions('js', 'в источнике файлов');
     } else if (id === 'cookie') {
       const applySessionAction = message => {
         refreshSessionDisplay();

@@ -256,24 +256,27 @@ html[data-theme="dark"] .course-network__session-time.is-expired { color: #f0a69
 .course-load__track span.is-overload { background: #d26e68; }
 .course-files { display: grid; gap: .42rem; margin-top: .8rem; }
 .course-file { display: grid; grid-template-columns: 1.4rem 1fr auto; align-items: center; gap: .35rem; padding: .58rem .7rem; border: 1px solid var(--map-border); border-radius: .75rem; background: var(--map-bg); font-size: .78rem; }
+.course-file:has(.course-file__actions) { grid-template-columns: 1.4rem minmax(0, 1fr) auto auto; }
 .course-file > span { color: var(--course-blue); font-size: 1rem; }
+.course-file strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .course-file small { color: #238157; font-size: .68rem; }
-.course-file.is-missing { opacity: .65; }
+.course-file.is-missing > :not(.course-file__actions) { opacity: .65; }
 .course-file.is-missing small { color: #bd514c; }
+.course-file__actions { display: flex; gap: .2rem; padding-left: .25rem; }
 .course-viz .course-table-shell { margin: .75rem 0 .25rem; }
 .course-viz .course-table-shell .ai-table tr.is-current td { background: color-mix(in srgb, var(--course-blue) 9%, var(--map-bg)); }
 html[data-theme="dark"] .course-network__status.is-ok, html[data-theme="dark"] .course-file small { color: #87d9b1; }
 html[data-theme="dark"] .course-network__status.is-error, html[data-theme="dark"] .course-file.is-missing small { color: #f0a69d; }
 .course-article__actions { flex: none; }
 #course-action-buttons { display: flex; align-items: center; gap: .25rem; }
-#course-action-buttons button { position: relative; display: grid; place-items: center; width: 29px; height: 29px; padding: 0; border: 1px solid var(--map-border); border-radius: 9px; background: var(--map-bg); color: var(--map-text); cursor: pointer; }
-#course-action-buttons button svg { width: 15px; height: 15px; }
-#course-action-buttons button::after { content: attr(data-tooltip); position: absolute; z-index: 8; top: calc(100% + 7px); right: 0; max-width: 240px; width: max-content; padding: .42rem .58rem; border: 1px solid var(--map-border); border-radius: 8px; background: var(--map-surface); color: var(--map-text); box-shadow: 0 6px 20px color-mix(in srgb, #101c29 12%, transparent); font-size: .68rem; font-weight: 650; white-space: nowrap; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
-#course-action-buttons button:is(:hover, :focus-visible)::after { opacity: 1; transform: none; }
-#course-action-buttons button:hover { border-color: var(--course-blue); }
-#course-action-buttons button.is-destructive { color: #bd514c; border-color: color-mix(in srgb, #d26e68 60%, var(--map-border)); }
-#course-action-buttons button:disabled { opacity: .4; cursor: default; }
-#course-action-buttons button:disabled::after { display: none; }
+:is(#course-action-buttons, .course-file__actions) button { position: relative; display: grid; place-items: center; width: 29px; height: 29px; padding: 0; border: 1px solid var(--map-border); border-radius: 9px; background: var(--map-bg); color: var(--map-text); cursor: pointer; }
+:is(#course-action-buttons, .course-file__actions) button svg { width: 15px; height: 15px; }
+:is(#course-action-buttons, .course-file__actions) button::after { content: attr(data-tooltip); position: absolute; z-index: 8; top: calc(100% + 7px); right: 0; max-width: 240px; width: max-content; padding: .42rem .58rem; border: 1px solid var(--map-border); border-radius: 8px; background: var(--map-surface); color: var(--map-text); box-shadow: 0 6px 20px color-mix(in srgb, #101c29 12%, transparent); font-size: .68rem; font-weight: 650; white-space: nowrap; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .16s ease, transform .16s ease; }
+:is(#course-action-buttons, .course-file__actions) button:is(:hover, :focus-visible)::after { opacity: 1; transform: none; }
+:is(#course-action-buttons, .course-file__actions) button:hover { border-color: var(--course-blue); }
+:is(#course-action-buttons, .course-file__actions) button.is-destructive { color: #bd514c; border-color: color-mix(in srgb, #d26e68 60%, var(--map-border)); }
+:is(#course-action-buttons, .course-file__actions) button:disabled { opacity: .4; cursor: default; }
+:is(#course-action-buttons, .course-file__actions) button:disabled::after { display: none; }
 #course-action-result { margin: .1rem 0 .55rem; color: var(--map-muted); font-size: .72rem; line-height: 1.45; }
 #course-action-result:empty { display: none; }
 .course-article__theory { margin: .5rem 0 1rem; border-top: 1px solid var(--map-border); }
