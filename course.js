@@ -874,25 +874,12 @@
   }
   const browserPacketIds = new Set(['request', 'html', 'cookie', 'json', 'asset-get', 'css', 'js']);
   const networkArticles = new Set(['client', ...browserPacketIds]);
-  function networkExplanation(response) {
-    if (!response) return '';
-    if (response.bodyIssue === 'empty') return 'HTTP 200, но тело API пустое: товар не пришёл.';
-    if (response.bodyIssue === 'embedded-error') return 'HTTP 200, но в JSON находится ошибка 404.';
-    if (response.code === '401') return 'Сессии нет или она истекла: API отклонил запрос.';
-    if (response.code === '403') return 'Сессия есть, но доступа к ресурсу нет.';
-    if (response.code === '404') return response.label === 'Нет страницы' ? 'HTML-документ не найден: страница не загрузилась.' : /CSS|JavaScript/.test(response.label) ? 'Файл страницы не найден в источнике.' : 'Запрошенный товар не найден.';
-    if (response.code === '503') return /CSS|JavaScript/.test(response.label) ? 'Файл страницы временно недоступен.' : 'Сервер или база временно недоступны.';
-    if (response.code === '—') return /CSS|JavaScript/.test(response.label) ? 'Файл не получен: проверь CDN и источник.' : 'HTTP-ответ не пришёл: проверь маршрут и сервер.';
-    if (response.mode === 'cached') return 'Страница открылась с сохранёнными файлами браузера.';
-    if (response.mode === 'broken') return 'HTTP 200 пришёл, но содержимое страницы повреждено.';
-    if (response.mode === 'unstyled') return 'CSS не загрузился: HTML открыт без оформления.';
-    return 'Страница и данные API получены.';
-  }
   let networkKey = 'document';
   let networkTab = 'headers';
   function networkEntries(id) {
-    const productId = lastRun?.productId || selectedProductId;
-    const api = lastRun?.apiResult || { code: '—', label: 'Ожидает запуска' };
+    const productId = selectedProductId;
+    const pendingApi = !lastRun || lastRun.productId !== productId;
+    const api = pendingApi ? { code: '—', label: '—' } : lastRun.apiResult;
     const fileEntry = file => {
       const outcome = lastRun?.assetOutcomes?.[file];
       const name = file === 'css' ? 'style.css' : 'app.js';
@@ -907,10 +894,10 @@
       headers: 'GET / HTTP/1.1\nHost: site.example\nAccept: text/html\n\nContent-Type: text/html; charset=utf-8',
       preview: lastRun?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
       response: lastRun?.documentAvailable ? examples.html.join('\n') : 'Ответ появится после запуска.' };
-    const apiEntry = { key: 'api', name: `/api/products/${productId}`, path: `https://site.example/api/products/${productId}`, status: lastRun?.apiSent ? api.code : '—', source: !lastRun ? 'ожидает запроса' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : 'запрос не отправлен',
-      headers: `GET /api/products/${productId} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${lastRun?.apiSent ? api.code : 'ожидает запуска'}`,
-      preview: !lastRun ? 'Нажми «Загрузить страницу».' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? `${lastRun.product?.name || 'Товар'} · ${lastRun.product?.price?.toLocaleString('ru-RU') || ''} ₽` : api.label,
-      response: lastRun ? exampleFor('client')?.text || 'Ответа нет.' : 'Ответ появится после запуска.' };
+    const apiEntry = { key: 'api', name: `/api/products/${productId}`, path: `https://site.example/api/products/${productId}`, status: !pendingApi && lastRun.apiSent ? api.code : '—', source: pendingApi ? '—' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : '—',
+      headers: `GET /api/products/${productId} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${!pendingApi && lastRun.apiSent ? api.code : '—'}`,
+      preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? `${lastRun.product?.name || 'Товар'} · ${lastRun.product?.price?.toLocaleString('ru-RU') || ''} ₽` : api.label,
+      response: pendingApi ? '—' : exampleFor('client')?.text || '—' };
     const entries = { document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
     const keys = id === 'asset-get' ? ['css', 'js'] : ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css', 'js'].includes(id) ? [id] : ['document', 'css', 'js', 'api'];
     return keys.map(key => entries[key]);
@@ -930,15 +917,29 @@
         : escapeHtml(content);
       const pairNames = { document: 'GET HTML → HTML', css: 'GET CSS → CSS', js: 'GET JS → JS', api: 'GET API → JSON' };
       const help = { document: articles.request.body + articles.html.body, css: articles['asset-get'].body + articles.css.body, js: articles['asset-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
-      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-viz__heading"><span class="course-viz__icon">↗</span><strong>Network</strong><span class="course-viz__caption">${lastRun ? 'Последний запуск' : 'Ожидает запуска'}</span></div><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${escapeHtml(entry.path)} <span>${escapeHtml(entry.source)}</span></div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details>${entries.some(item => item.key === 'api') ? `<label class="course-network__editor">ID товара для следующего запроса <input id="course-product-id" type="number" min="1" max="9999" value="${selectedProductId}" inputmode="numeric"><span>Ответ обновится после запуска схемы</span></label>` : ''}${id === 'client' && lastResponse ? `<p class="course-network__summary">${escapeHtml(networkExplanation(lastResponse))}</p>` : ''}</section>`;
+      const urlMarkup = entry.key === 'api'
+        ? `<span class="course-network__path">https://site.example/api/products/<input id="course-product-id" class="course-network__id-chip" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID товара"></span>`
+        : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-viz__heading"><span class="course-viz__icon">↗</span><strong>Network</strong></div><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div><pre class="course-network__content">${contentMarkup}</pre></div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
       refreshSessionDisplay();
       host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; renderVisualization(id, host); }));
       host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; renderVisualization(id, host); }));
-      host.querySelector('#course-product-id')?.addEventListener('change', event => {
-        selectedProductId = Math.min(9999, Math.max(1, Number(event.target.value) || 42));
-        event.target.value = String(selectedProductId);
-        renderProductTables(); save(); if (selected) renderActions(selected); renderVisualization(id, host);
-      });
+      const productInput = host.querySelector('#course-product-id');
+      if (productInput) {
+        productInput.addEventListener('input', () => {
+          if (/^\d{1,4}$/.test(productInput.value)) selectedProductId = Math.max(1, Number(productInput.value));
+        });
+        let applied = false;
+        const applyProductId = () => {
+          if (applied) return;
+          applied = true;
+          selectedProductId = Math.min(9999, Math.max(1, Number(productInput.value) || 42));
+          renderProductTables(); save(); if (selected) renderActions(selected); renderVisualization(id, host);
+        };
+        productInput.addEventListener('change', applyProductId);
+        productInput.addEventListener('blur', applyProductId);
+        productInput.addEventListener('keydown', event => { if (event.key === 'Enter') productInput.blur(); });
+      }
       return;
     }
     if (id === 'database') {
