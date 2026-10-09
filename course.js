@@ -549,13 +549,12 @@
     const geometry = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     geometry.setAttribute('d', pathBetween(visualNode(byId.get(edge[0])), visualNode(byId.get(edge[1]))));
     const length = geometry.getTotalLength();
-    const groupedAssetRequest = item.id === 'css-get' || item.id === 'js-get';
-    const point = geometry.getPointAtLength(length * (groupedAssetRequest ? .28 : item.t));
-    marker.style.left = `${point.x - marker.offsetWidth / 2 + (groupedAssetRequest ? (item.id === 'css-get' ? -46 : 46) : 0)}px`;
+    const point = geometry.getPointAtLength(length * item.t);
+    marker.style.left = `${point.x - marker.offsetWidth / 2}px`;
     marker.style.top = `${point.y - marker.offsetHeight / 2}px`;
     const arrow = marker.querySelector('.course-packet__arrow');
     if (!arrow) return;
-    const arrowT = Math.max(.02, Math.min(.98, groupedAssetRequest ? .48 : item.t + (item.flow === 'response' ? -.12 : .12)));
+    const arrowT = Math.max(.02, Math.min(.98, item.t + (item.flow === 'response' ? -.12 : .12)));
     const arrowPoint = geometry.getPointAtLength(length * arrowT);
     const before = geometry.getPointAtLength(length * Math.max(0, arrowT - .01));
     const after = geometry.getPointAtLength(length * Math.min(1, arrowT + .01));
