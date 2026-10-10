@@ -106,7 +106,7 @@
     html: { kicker: 'Ответ на GET /', title: 'HTML', body: `<p><strong>HTML</strong> задаёт структуру страницы: заголовки, текст, области для данных и ссылки на другие ресурсы. В этой схеме выбранный балансировщиком сервер возвращает HTML на <code>GET /</code>.</p><p>Посмотри пример ниже: <code>link href</code> указывает браузеру адрес CSS, а <code>script src</code> — адрес JavaScript. Браузер сам запрашивает эти файлы у CDN. Если HTML получен, но CSS недоступен, структура может остаться видимой без оформления.</p><p><code>X-Served-By</code> здесь — условный заголовок для показа сервера A или B; на реальном сайте его может не быть.</p>` },
     css: { kicker: 'Ресурс страницы', title: 'CSS', body: `<p><strong>CSS</strong> описывает внешний вид HTML: цвета, отступы, размеры и расположение блоков. Браузер загружает <code>style.css</code> по адресу из HTML, здесь — с CDN. Запрос API за товаром от этого не становится запросом CSS.</p><p>Карточка CSS на линии — <strong>ответ с содержимым файла</strong>. Удалить оригинал можно в «Источнике файлов». Это не прерывает текущий запрос: браузер всё ещё может получить старую копию из своего кэша или CDN. Чтобы увидеть ошибку, очисти кэш браузера, включи cache miss на CDN и запусти схему.</p><p>В примере ниже правило <code>.catalog</code> раскладывает карточки по колонкам, а <code>@media</code> меняет раскладку на узком экране.</p>` },
     js: { kicker: 'Ресурс страницы', title: 'JavaScript', body: `<p><strong>JavaScript</strong> выполняется в браузере и добавляет поведение странице: реагирует на кнопки, запрашивает данные и меняет HTML. В этой модели браузер получает <code>app.js</code> от CDN; затем скрипт отправляет <code>GET /api/products?ids=42,43</code> через балансировщик.</p><p>Карточка JS на линии — <strong>ответ с содержимым файла</strong>. Оригинал app.js удаляется в «Источнике файлов», а не в ответе. Копии браузера и CDN живут отдельно. Если очистить кэш браузера, включить cache miss CDN и удалить оригинал app.js или отключить источник, новый JS не придёт, локальный кэш не пополнится и запрос API не начнётся.</p><p>В примере ниже <code>fetch</code> получает массив товаров. При HTTP 200 с пустым телом <code>response.json()</code> завершится ошибкой разбора. При HTTP 200 с <code>error</code> внутри JSON проверка <code>response.ok</code> пройдёт, но массива <code>products</code> не будет.</p><div class="course-article__note"><strong>Что проверить QA</strong><p>Не только HTTP-статус файла, но и ошибки выполнения скрипта, отображение обоих товаров и поведение при пустом или ошибочном ответе API.</p></div>` },
-    cache: { kicker: 'Повторная загрузка', title: 'Кэш браузера', body: `<p>При первом запуске учебный кэш пуст. Полученные HTML, CSS и JS браузер сохраняет локально. Свежие CSS и JS при повторном запуске берутся из кэша без обращения к CDN. Плашка кэша остаётся тусклой, пока в нём нет ни CSS, ни JS: после неудачного запроса HTML может сохраниться отдельно, но недоступный файл в кэш не записывается. Ниже показано состояние каждого файла.</p><p>В реальном браузере повторное использование зависит от заголовков ответа и срока свежести. При проверке актуальности сервер может ответить <code>304 Not Modified</code> без повторной передачи тела.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>В DevTools → Network сравни загрузку из сети, <code>memory cache</code>, <code>disk cache</code> и результат после очистки кэша.</p></div>` },
+    cache: { kicker: 'DevTools / Application', title: 'Application', body: `<p>Это учебная модель <strong>HTTP-кэша</strong>: браузер хранит полученные HTML, CSS и JS и может использовать свежую копию при следующей загрузке. В настоящем Chrome такие ответы проверяют во вкладке <strong>Network</strong>: столбец Size показывает <code>memory cache</code> или <code>disk cache</code>.</p><p>Чтобы очистить именно HTTP-кэш в DevTools, выбери <strong>Network → Clear browser cache</strong> в контекстном меню списка запросов или <strong>Empty Cache and Hard Reload</strong> в меню перезагрузки. <strong>Application → Cache Storage</strong> показывает отдельный Cache API, часто используемый Service Worker; этот список HTML/CSS/JS не является его буквальной копией.</p><p>Повторное использование HTTP-кэша зависит от заголовков ответа и срока свежести. При проверке актуальности сервер может ответить <code>304 Not Modified</code> без повторной передачи файла.</p><p><a href="https://developer.chrome.com/docs/devtools/network/reference/" target="_blank" rel="noopener noreferrer">Как очистить HTTP-кэш в Network</a> · <a href="https://developer.chrome.com/docs/devtools/storage/cache" target="_blank" rel="noopener noreferrer">Что показывает Cache Storage</a></p>` },
     tasks: { kicker: 'Практика / условия', title: 'Задания', body: `<p>Меняй элементы схемы и запускай запросы. «Сброс» восстанавливает схему, выполненные задания сохраняются. В этой учебной модели один сервер выдерживает до 600 одновременных запросов.</p><div id="course-task-list" class="course-task-list"></div>` }
   };
   const examples = {
@@ -162,7 +162,7 @@
   function renderExample(id) {
     const host = document.getElementById('course-example');
     const example = exampleFor(id);
-    if (!host) return;
+    if (!host || selected !== id) return;
     host.hidden = !example;
     if (!example) return;
     host.querySelector('h3').textContent = example.title;
@@ -990,6 +990,11 @@
   function renderVisualization(id, host = document.getElementById('course-article-visual')) {
     if (!host || !id) return;
     if (id === 'client' && host.id === 'course-article-visual') { host.replaceChildren(); return; }
+    if (id === 'cache') {
+      const files = [['index.html', !cacheCleared], ['style.css', hasCachedAsset('css')], ['app.js', hasCachedAsset('js')]];
+      host.innerHTML = `<section class="course-application" aria-label="Учебная модель HTTP-кэша"><div class="course-application__heading"><strong>HTTP-кэш браузера</strong><small>учебная модель</small></div><div class="course-application__files">${files.map(([name, available]) => `<div class="course-application__file ${available ? '' : 'is-missing'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg><strong>${name}</strong><small>${available ? 'сохранён' : 'нет копии'}</small></div>`).join('')}</div></section>`;
+      return;
+    }
     if (networkArticles.has(id)) {
       const entries = networkEntries(id);
       if (!entries.some(entry => entry.key === networkKey)) networkKey = entries[0].key;
@@ -1066,7 +1071,7 @@
   function showArticle(id, via = null) {
     const data = articles[id];
     if (!data) return;
-    const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент', cache: 'Кэш' };
+    const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент' };
     clearTimeout(articleCloseTimer);
     article.classList.remove('is-closing');
     article.dataset.article = id;
@@ -1075,6 +1080,10 @@
     selectedVia = via;
     document.getElementById('course-article-kicker').textContent = data.kicker.includes('/') ? data.kicker.split('/')[0].trim() : data.kicker.split(' ')[0];
     document.getElementById('course-article-title').textContent = shortTitles[id] || data.title;
+    document.getElementById('course-article-devtools-icon').hidden = id !== 'cache';
+    const subtitle = document.getElementById('course-article-subtitle');
+    subtitle.hidden = id !== 'cache';
+    subtitle.textContent = id === 'cache' ? 'Вкладка DevTools' : '';
     document.getElementById('course-article-body').innerHTML = data.body;
     const primary = document.getElementById('course-article-primary');
     primary.replaceChildren();
@@ -1108,7 +1117,7 @@
     update();
     renderActions(id);
     const packet = packets.find(item => item.id === id);
-    if (packet && id !== 'sql') {
+    if (packet && id !== 'sql' && id !== 'cache') {
       const edge = via === 'app-b' && packet.edge?.includes('app-a') ? packet.edge.map(node => node === 'app-a' ? 'app-b' : node) : packet.edge;
       report(id === 'cookie' ? 'Это один API-запрос; сессия передаётся в его заголовке Cookie.' : packet.flow === 'local' ? 'Локальные данные браузера: они не проходят по сетевой линии.' : `${packet.flow === 'request' ? 'Запрос' : 'Ответ'}: ${byId.get(edge[packet.flow === 'response' ? 1 : 0]).title} → ${byId.get(edge[packet.flow === 'response' ? 0 : 1]).title}. Стрелка на карте показывает направление.`);
     }
@@ -1317,7 +1326,7 @@
         refreshSessionDisplay();
         update();
         renderActions(id);
-        renderExample(id);
+        if (selected === id) renderExample(id);
         save();
         report(message);
       };
@@ -1337,7 +1346,7 @@
       }, !sessionRestricted);
     } else if (id === 'cache') {
       const empty = cacheCleared && !hasCachedAsset('css') && !hasCachedAsset('js');
-      add(empty ? 'Кэш пуст' : 'Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report('Локальный кэш браузера пуст. Копии CDN не изменились. Запусти схему, чтобы увидеть новые запросы файлов.'); }, false, empty);
+      add(empty ? 'Кэш пуст' : 'Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report(''); }, false, empty);
     }
     if (!networkAction) actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
   }
