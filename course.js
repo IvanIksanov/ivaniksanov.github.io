@@ -1209,9 +1209,9 @@
       power: '<path d="M12 3v9M7 5a9 9 0 1 0 10 0"/>',
       add: '<path d="M12 4v16M4 12h16"/>',
       switch: '<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
-      clear: '<path d="M4 19h16M8 16l9-9 3 3-9 9H7z"/>'
+      clear: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7m4-7v7"/>'
     };
-    const kind = /^Удалить/.test(label) ? 'remove' : /^Восстановить|^Запустить|^Включить|^Вернуть/.test(label) ? 'restore' : /^Повредить|^Ошибка/.test(label) ? 'damage' : /^Отключить|^Остановить/.test(label) ? 'power' : /^Добавить/.test(label) ? 'add' : /^Очистить/.test(label) ? 'clear' : 'switch';
+    const kind = /^Удалить/.test(label) ? 'remove' : /^Восстановить|^Запустить|^Включить|^Вернуть/.test(label) ? 'restore' : /^Повредить|^Ошибка/.test(label) ? 'damage' : /^Отключить|^Остановить/.test(label) ? 'power' : /^Добавить/.test(label) ? 'add' : /^Очистить|^Кэш пуст/.test(label) ? 'clear' : 'switch';
     return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[kind]}</svg>`;
   }
   function renderFileRowActions(host, ownerId) {
