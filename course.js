@@ -1357,6 +1357,11 @@
     playButton.textContent = label;
     playButton.title = label.slice(2);
   }
+  function refreshLiveApplication() {
+    if (selected !== 'cache' || article.hidden) return;
+    renderVisualization('cache');
+    renderActions('cache');
+  }
   document.getElementById('course-tasks').addEventListener('click', () => showArticle('tasks'));
   const wait = ms => new Promise(resolve => setTimeout(resolve, Math.round(ms * 1.8)));
   function pulseLocalCache() {
@@ -1427,16 +1432,17 @@
       await wait(400);
       if (run !== playRun) return;
       if (documentRoute && !faults.has('html')) {
-        cacheCleared = false;
-        showPackets(['cache']);
-        save();
-        algorithmStep('resource', `HTML получен от сервера ${documentRoute === 'app-a' ? 'A' : 'B'}.`);
         pulse(documentRoute, usedBalancer ? 'balancer' : 'client', [], 'resource');
         if (usedBalancer) {
           await wait(320);
           if (run !== playRun) return;
           pulse('balancer', 'client', ['html'], 'resource');
         } else pulse('app-a', 'client', ['html'], 'resource');
+        cacheCleared = false;
+        showPackets(['cache']);
+        save();
+        algorithmStep('resource', `HTML получен от сервера ${documentRoute === 'app-a' ? 'A' : 'B'}.`);
+        refreshLiveApplication();
       }
       await wait(460);
       if (run !== playRun) return;
@@ -1476,6 +1482,7 @@
             cachedAssets.set(file, Date.now() + ASSET_CACHE_MS);
             save();
             update();
+            refreshLiveApplication();
           } else {
             showPackets([file]);
             algorithmStep('error', `${fileName} не удалось загрузить: ${outcome.reason}. Кэш браузера не заполняется.`);
