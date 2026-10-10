@@ -1119,30 +1119,13 @@
         : escapeHtml(content);
       const pairNames = { login: 'Вход · запрос → cookie', document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
       const help = { login: '<p>Это отдельный учебный POST-запрос, выполненный до начала схемы. Сервер возвращает HTTP 200 и заголовок Set-Cookie с сессией на пять минут. Браузер сохраняет cookie и добавляет заголовок Cookie к следующему запросу API. Сессия не продлевается автоматически.</p>', document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
-      const urlMarkup = entry.key === 'api'
-        ? `<span class="course-network__path course-network__path--api">/api/products?ids=<input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара" ${liveNetwork ? 'disabled' : ''}>,<input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара" ${liveNetwork ? 'disabled' : ''}></span>`
-        : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
+      const urlMarkup = `<span class="course-network__path">${escapeHtml(entry.key === 'api' ? productsPath() : entry.path)}</span>`;
       host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status === '…' ? 'is-pending' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>Как это работает</summary><div><strong class="course-network__help-title">${pairNames[entry.key]}</strong>${help[entry.key]}</div></details></section>`;
       renderFeedback('network');
       refreshSessionDisplay();
       host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); save(); }));
       host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); save(); }));
       host.querySelector('.course-network__help').addEventListener('toggle', save);
-      host.querySelectorAll('[data-product-id-index]').forEach(productInput => {
-        let applied = false;
-        const applyProductId = () => {
-          if (applied) return;
-          applied = true;
-          const current = productInput.dataset.productIdIndex === '0' ? selectedProductId : selectedSecondProductId;
-          const next = /^[1-9]\d{0,3}$/.test(productInput.value) ? Number(productInput.value) : current;
-          if (productInput.dataset.productIdIndex === '0') selectedProductId = next;
-          else selectedSecondProductId = next;
-          renderProductTables(); save(); if (selected) renderActions(selected); renderVisualization(id, host);
-        };
-        productInput.addEventListener('change', applyProductId);
-        productInput.addEventListener('blur', applyProductId);
-        productInput.addEventListener('keydown', event => { if (event.key === 'Enter') productInput.blur(); });
-      });
       return;
     }
     if (id === 'database') {
@@ -1440,6 +1423,7 @@
   function fitNetworkActions() {
     const container = document.getElementById('course-network-action-buttons');
     if (!container.clientWidth || !container.childElementCount) return;
+    if (container.querySelector('[data-product-id-index]')) { container.classList.remove('is-compact'); return; }
     container.classList.remove('is-compact');
     const buttons = [...container.children];
     buttons.forEach(button => { button.textContent = button.dataset.actionLabel; });
@@ -1509,7 +1493,23 @@
       });
     } else if (id === 'storage') {
       add(faults.has('storage') ? 'Включить источник' : 'Отключить источник', () => toggleFault('storage'), !faults.has('storage'));
-    } else if (id === 'cookie' || id === 'login') {
+    } else if (id === 'cookie') {
+      actionButtons.innerHTML = `<div class="course-network__id-controls" role="group" aria-label="ID товаров в API-запросе"><span>ID</span><input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара" ${liveNetwork ? 'disabled' : ''}><span>,</span><input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара" ${liveNetwork ? 'disabled' : ''}></div>`;
+      actionButtons.querySelectorAll('[data-product-id-index]').forEach(input => {
+        input.addEventListener('input', () => {
+          if (liveNetwork || !/^[1-9]\d{0,3}$/.test(input.value)) return;
+          if (input.dataset.productIdIndex === '0') selectedProductId = Number(input.value);
+          else selectedSecondProductId = Number(input.value);
+          renderProductTables();
+          refreshLiveNetwork();
+          save();
+        });
+        input.addEventListener('blur', () => {
+          if (!/^[1-9]\d{0,3}$/.test(input.value)) input.value = input.dataset.productIdIndex === '0' ? selectedProductId : selectedSecondProductId;
+        });
+        input.addEventListener('keydown', event => { if (event.key === 'Enter') input.blur(); });
+      });
+    } else if (id === 'login') {
       const applySessionAction = (message, short) => {
         refreshSessionDisplay();
         update();
@@ -1518,17 +1518,17 @@
         save();
         report(message, short);
       };
-      if (id === 'login' && hasSession()) add('Удалить сессию', () => {
+      if (hasSession()) add('Удалить сессию', () => {
         sessionExpiresAt = 0;
         applySessionAction('Сессия удалена. Следующий запрос к защищённому API вернёт 401; HTML страницы останется доступен.');
       }, true);
-      else if (id === 'login' && !hasSession()) add('Обновить сессию', () => {
+      else add('Обновить сессию', () => {
         rotateSessionToken();
         sessionExpiresAt = Date.now() + SESSION_MS;
         sessionRestricted = false;
         applySessionAction('Новая сессия получена на пять минут.');
       });
-      if (id === 'login' && hasSession()) add(sessionRestricted ? 'Вернуть право доступа' : 'Ограничить права', () => {
+      if (hasSession()) add(sessionRestricted ? 'Вернуть право доступа' : 'Ограничить права', () => {
         sessionRestricted = !sessionRestricted;
         applySessionAction(sessionRestricted ? 'Сессия действительна, но права на ресурс нет: следующий запрос API вернёт 403.' : 'Право доступа возвращено: следующий запрос API может получить 200.', sessionRestricted ? 'Права ограничены · API вернёт 403' : 'Права восстановлены · API может вернуть 200');
       }, !sessionRestricted);
@@ -1564,6 +1564,7 @@
     if (help) help.open = helpOpen;
     const detail = visual.querySelector('.course-network__content');
     if (detail) detail.scrollTop = detailScroll;
+    panel.querySelectorAll('#course-network-action-buttons [data-product-id-index]').forEach(input => { input.disabled = !!liveNetwork; });
     panel.scrollTop = panelScroll;
   }
   document.getElementById('course-tasks').addEventListener('click', () => showArticle('tasks'));
