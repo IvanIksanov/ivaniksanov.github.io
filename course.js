@@ -25,7 +25,8 @@
     files: '<path d="M5 3h9l5 5v13H5zM14 3v5h5M8 12h8M8 16h8"/>',
     cdn: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9a4.5 4.5 0 0 0 1 9Z"/><path d="M9 14h6"/>',
     storage: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 13h8m-8 3h5"/>',
-    cache: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>'
+    cache: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    login: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>'
   };
   const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
   const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
@@ -100,7 +101,7 @@
     request: { kicker: 'Первый запрос страницы', title: 'HTML-запрос', body: `<p>Браузер отправляет <code>GET /</code> и получает HTML-документ. В Network сверху показан только этот запрос и его ответ.</p><p>В HTML есть адреса CSS и JavaScript, но браузер запрашивает эти файлы отдельно по ветке CDN. Данные товара тоже приходят позже, через отдельный <code>GET /api</code>.</p>` },
     'css-get': { kicker: 'Запрос браузера / к CDN', title: 'CSS-запрос', body: `<p>Браузер запрашивает <code>style.css</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за JavaScript.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
     'js-get': { kicker: 'Запрос браузера / к CDN', title: 'JS-запрос', body: `<p>Браузер запрашивает <code>app.js</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за CSS.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
-    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит два товара одним запросом: <code>GET /api/products?ids=42,43</code>. Оба ID можно изменить в Network. Сессионная cookie, если она есть, передаётся в заголовке этого же запроса.</p><p><strong>REST</strong> здесь означает способ организации API: <code>products</code> — ресурс, а <code>ids</code> выбирает нужные записи. REST не является отдельным запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. После истечения или удаления кнопка «Обновить сессию» имитирует повторный вход. Без сессии API вернёт 401, без прав — 403.</p>` },
+    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит два товара одним запросом: <code>GET /api/products?ids=42,43</code>. Оба ID можно изменить в Network. Сессионная cookie, если она есть, передаётся в заголовке этого же запроса.</p><p><strong>REST</strong> здесь означает способ организации API: <code>products</code> — ресурс, а <code>ids</code> выбирает нужные записи. REST не является отдельным запросом на линии.</p><p>Для упражнения считаем, что пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. Сессию и права меняют в строке авторизации POST /auth/login в Network; здесь виден результат для API. Без сессии API вернёт 401, без прав — 403.</p>` },
     sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>Сервер приложения выполняет <code>SELECT id, name, price FROM products WHERE id IN ($1, $2)</code>. Параметры <code>$1</code> и <code>$2</code> — два ID из запроса. Браузер SQL не отправляет. Это внутреннее обращение сервера к базе, поэтому оно не входит в номера четырёх запросов браузера.</p><p>База возвращает найденные строки. Если обе не найдены, результат пуст. HTTP-статус выбирает приложение.</p>` },
     'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает до двух найденных строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
     json: { kicker: 'Формат данных', title: 'JSON в ответе API', body: `<p><strong>JSON</strong> — текстовый формат обмена данными. В ответе API ключ <code>id</code> означает идентификатор, <code>name</code> — название, <code>price</code> — цену. JavaScript в браузере читает эти значения и показывает товар. JSON не является отдельным сетевым устройством или обязательным дополнительным запросом.</p><p>Сначала смотри <strong>HTTP-статус</strong>, затем тело ответа. <code>200 OK</code> не обещает, что внутри правильный товар: тело может быть пустым или содержать <code>error.code: 404</code>. Этот внутренний код не превращает HTTP 200 в HTTP 404.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>Есть ли тело ответа, совпадают ли типы и значения полей с таблицей <code>products</code>, корректно ли клиент обрабатывает ошибку.</p></div>` },
@@ -386,8 +387,8 @@
   const faults = new Map();
   const taskDefinitions = [
     { id: 'status-200', title: '200 · страница и данные получены', steps: [['client', 'Оставь схему рабочей и загрузи страницу.'], ['cookie', 'В Network открой API: проверь HTTP 200 и оба товара.']] },
-    { id: 'status-401', title: '401 · нет действующей сессии', steps: [['client', 'Сначала загрузи страницу.'], ['cookie', 'В API-запросе удали сессию и обнови страницу: API ответит 401.', 'Удалить сессию']] },
-    { id: 'status-403', title: '403 · доступ запрещён', steps: [['cookie', 'При действующей сессии ограничь права в API-запросе.', 'Ограничить права'], ['client', 'Обнови страницу и проверь 403 в Network.']] },
+    { id: 'status-401', title: '401 · нет действующей сессии', steps: [['client', 'Сначала загрузи страницу.'], ['login', 'В строке POST /auth/login удали сессию и обнови страницу: API ответит 401.', 'Удалить сессию']] },
+    { id: 'status-403', title: '403 · доступ запрещён', steps: [['login', 'При действующей сессии ограничь права в POST /auth/login.', 'Ограничить права'], ['client', 'Обнови страницу и проверь 403 в Network.']] },
     { id: 'status-404', title: '404 · ресурс не найден', steps: [['cookie', 'В Network укажи два отсутствующих ID, например 98 и 99.'], ['database', 'Если раньше включал «пустое тело 200» или «ошибка в теле 200», введи «обычный ответ».'], ['client', 'Обнови страницу: API вернёт HTTP 404.']] },
     { id: 'status-503', title: '503 · API недоступен', steps: [['database', 'В поле команд базы введи «отключить базу».'], ['client', 'С действующей сессией обнови страницу и проверь 503 у API.']] },
     { id: 'status-none', title: 'Нет HTTP-ответа', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['app-a', 'Останови сервер A и обнови страницу.', 'Остановить сервер']] },
@@ -427,7 +428,7 @@
       panel.className = 'course-task__panel';
       panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => {
         const symbol = icons[byId.get(place)?.icon || place] || icons.files;
-        return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place" title="${escapeHtml(byId.get(place)?.title || articles[place]?.title || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action">${actionIcon(action)}<small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
+        return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place" title="${escapeHtml(place === 'login' ? 'POST /auth/login' : byId.get(place)?.title || articles[place]?.title || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action">${actionIcon(action)}<small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
       }).join('')}</div>`;
       heading.addEventListener('click', () => {
         const open = !item.classList.contains('is-expanded');
@@ -1517,17 +1518,17 @@
         save();
         report(message, short);
       };
-      if (id === 'cookie' && hasSession()) add('Удалить сессию', () => {
+      if (id === 'login' && hasSession()) add('Удалить сессию', () => {
         sessionExpiresAt = 0;
         applySessionAction('Сессия удалена. Следующий запрос к защищённому API вернёт 401; HTML страницы останется доступен.');
       }, true);
-      else if (!hasSession()) add('Обновить сессию', () => {
+      else if (id === 'login' && !hasSession()) add('Обновить сессию', () => {
         rotateSessionToken();
         sessionExpiresAt = Date.now() + SESSION_MS;
         sessionRestricted = false;
         applySessionAction('Новая сессия получена на пять минут.');
       });
-      if (id === 'cookie' && hasSession()) add(sessionRestricted ? 'Вернуть право доступа' : 'Ограничить права', () => {
+      if (id === 'login' && hasSession()) add(sessionRestricted ? 'Вернуть право доступа' : 'Ограничить права', () => {
         sessionRestricted = !sessionRestricted;
         applySessionAction(sessionRestricted ? 'Сессия действительна, но права на ресурс нет: следующий запрос API вернёт 403.' : 'Право доступа возвращено: следующий запрос API может получить 200.', sessionRestricted ? 'Права ограничены · API вернёт 403' : 'Права восстановлены · API может вернуть 200');
       }, !sessionRestricted);
