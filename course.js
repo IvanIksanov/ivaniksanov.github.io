@@ -1142,7 +1142,7 @@
       const server = id === 'app-a' ? 'A' : 'B';
       const bars = id === 'balancer' ? [['A', countA], ['B', countB]] : [[server, server === 'A' ? countA : countB]];
       const htmlState = faults.get('html');
-      const htmlRow = id === 'balancer' ? '' : `<div class="course-files"><div class="course-file ${htmlState ? 'is-missing' : ''}"><span>▧</span><strong>index.html</strong><small>${htmlState === 'missing' ? 'удалён' : htmlState === 'corrupt' ? 'повреждён' : 'формируется'}</small><div class="course-file__actions" data-file-actions="html"></div></div></div>`;
+      const htmlRow = id === 'balancer' ? '' : `<div class="course-files"><div class="course-file ${htmlState ? 'is-missing' : ''}"><span>▧</span><strong>index.html</strong><small>${htmlState === 'missing' ? 'удалён' : htmlState === 'corrupt' ? 'повреждён' : 'формируется'}</small><div class="course-file__actions" data-file-actions="html"></div></div><div class="course-file"><span>⇄</span><strong>Ответ API</strong><small>${apiFormat === 'xml' ? 'application/xml' : 'application/json'}</small></div></div>`;
       const sessionRow = id === 'balancer' ? '' : `<div class="course-server-session"><strong>Сессии · student</strong><span data-session-cookie>Cookie: session=${sessionToken}</span><span class="course-network__session-time" data-session-remaining></span><small data-session-access>${!hasSession() ? 'Нет доступа · 401' : sessionRestricted ? 'Товары: доступ ограничен · 403' : 'Товары: чтение разрешено'}</small></div>`;
       host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">${id === 'balancer' ? '⇄' : '▥'}</span><strong>${id === 'balancer' ? 'Распределение запросов' : `Нагрузка сервера ${server}`}</strong><span class="course-viz__caption">${lastRun ? requestCountLabel(lastRun.requestCount) : 'Ожидает запуска'}</span></div>${bars.map(([name,count]) => `<div class="course-load"><span>Сервер ${name}</span><div class="course-load__track"><span class="${count > 600 ? 'is-overload' : ''}" style="width:${Math.min(100, count / 600 * 100)}%"></span></div><strong>${count} / 600</strong></div>`).join('')}${sessionRow}${htmlRow}<p class="course-viz__foot">${id === 'balancer' && removed ? 'Балансировщик отключён: запросы идут напрямую на A.' : id !== 'balancer' && faults.has(id) ? 'Сервер сейчас остановлен.' : 'До 600 одновременных запросов на сервер в этой модели.'}</p></section>`;
       renderFileRowActions(host, id);
@@ -1491,6 +1491,11 @@
         update();
         report(sessionRestricted ? 'Активная сессия сохранена, но сервер запретит доступ к товарам: следующий API-запрос вернёт 403.' : 'Право чтения товаров возвращено: следующий API-запрос может вернуть 200.');
       }, !sessionRestricted);
+      add(apiFormat === 'xml' ? 'Вернуть JSON' : 'Подменить JSON на XML', () => {
+        apiFormat = apiFormat === 'xml' ? 'json' : 'xml';
+        renderActions(id);
+        report(apiFormat === 'xml' ? 'Следующий успешный ответ API будет XML. Скрипт ожидает JSON и не покажет товары.' : 'Следующий успешный ответ API снова будет JSON.');
+      });
       for (const [mode, label] of [['empty', 'Пустое тело 200'], ['embedded-error', 'Ошибка в теле 200']]) {
         if (productMode === 'normal' || productMode === mode) add(productMode === mode ? 'Обычный ответ' : label, () => {
           productMode = productMode === mode ? 'normal' : mode;
@@ -1526,12 +1531,6 @@
           if (!/^[1-9]\d{0,3}$/.test(input.value)) input.value = input.dataset.productIdIndex === '0' ? selectedProductId : selectedSecondProductId;
         });
         input.addEventListener('keydown', event => { if (event.key === 'Enter') input.blur(); });
-      });
-    } else if (id === 'json') {
-      add(apiFormat === 'xml' ? 'Вернуть JSON' : 'Подменить JSON на XML', () => {
-        apiFormat = apiFormat === 'xml' ? 'json' : 'xml';
-        renderActions(id);
-        report(apiFormat === 'xml' ? 'Следующий ответ API получит Content-Type: application/xml и XML-тело. Скрипт ожидает JSON и не покажет товары.' : 'Следующий ответ API снова будет JSON.');
       });
     } else if (id === 'login') {
       const applySessionAction = (message, short) => {
