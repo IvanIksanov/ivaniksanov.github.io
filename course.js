@@ -992,7 +992,7 @@
     if (id === 'client' && host.id === 'course-article-visual') { host.replaceChildren(); return; }
     if (id === 'cache') {
       const files = [['index.html', !cacheCleared], ['style.css', hasCachedAsset('css')], ['app.js', hasCachedAsset('js')]];
-      host.innerHTML = `<section class="course-application" aria-label="Учебная модель HTTP-кэша"><div class="course-application__heading"><strong>HTTP-кэш браузера</strong><small>учебная модель</small></div><div class="course-application__files">${files.map(([name, available]) => `<div class="course-application__file ${available ? '' : 'is-missing'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg><strong>${name}</strong><small>${available ? 'сохранён' : 'нет копии'}</small></div>`).join('')}</div></section>`;
+      host.innerHTML = `<section class="course-application" aria-label="Учебная модель HTTP-кэша"><div class="course-application__heading"><strong>HTTP-кэш браузера</strong><small>учебная модель</small></div><div class="course-application__files">${files.map(([name, available]) => `<div class="course-file ${available ? '' : 'is-missing'}"><span>▧</span><strong>${name}</strong><small>${available ? 'сохранён' : 'нет копии'}</small></div>`).join('')}</div></section>`;
       return;
     }
     if (networkArticles.has(id)) {

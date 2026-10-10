@@ -233,14 +233,7 @@ html[data-theme="dark"] .course-packet[data-pair="db"] { --packet-pair-color: #c
 .course-application { display: flex; flex: 1; flex-direction: column; min-height: 0; margin: .35rem 0 .25rem; padding: .55rem; border: 1px solid var(--map-border); border-radius: .85rem; background: var(--map-bg); }
 .course-application__heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .1rem .2rem .45rem; color: var(--map-text); font-size: .74rem; }
 .course-application__heading small { color: var(--map-muted); font-size: .6rem; white-space: nowrap; }
-.course-application__files { display: grid; align-content: start; gap: .25rem; }
-.course-application__file { display: grid; grid-template-columns: 1rem minmax(0, 1fr) auto; align-items: center; gap: .4rem; min-height: 30px; padding: .28rem .5rem; border: 1px solid var(--map-border); border-radius: .55rem; background: var(--map-surface); color: var(--map-text); font-size: .69rem; }
-.course-application__file svg { width: 14px; height: 14px; fill: none; stroke: var(--course-blue); stroke-width: 1.7; }
-.course-application__file strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.course-application__file small { color: #238157; font-size: .62rem; white-space: nowrap; }
-.course-application__file.is-missing { opacity: .65; }
-.course-application__file.is-missing small { color: var(--map-muted); }
-html[data-theme="dark"] .course-application__file:not(.is-missing) small { color: #87d9b1; }
+.course-application__files { display: grid; align-content: start; gap: .42rem; }
 .course-network__split { display: grid; grid-template-columns: minmax(118px, 36%) minmax(0, 1fr); align-items: start; gap: .55rem; margin-top: .65rem; }
 .course-network__requests { display: grid; align-content: start; gap: .35rem; min-width: 0; }
 .course-network__requests button { display: flex; align-items: center; gap: .3rem; width: 100%; min-width: 0; padding: .45rem .5rem; border: 1px solid transparent; border-radius: .75rem; background: color-mix(in srgb, var(--map-text) 4%, var(--map-bg)); color: var(--map-text); text-align: left; font: inherit; cursor: pointer; }
