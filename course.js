@@ -1297,7 +1297,7 @@
       stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
       add: '<path d="M12 4v16M4 12h16"/>',
       switch: '<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
-      sessionRenew: '<circle cx="9" cy="13" r="6.5"/><path d="M9 9v4l2 1.5M19 6v6m-3-3h6"/>',
+      sessionRenew: '<path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v6h-6"/>',
       restrict: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
       allow: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
       cacheMiss: '<path d="M6 18a4 4 0 0 1-.5-8A7 7 0 0 1 19 11a3.5 3.5 0 0 1-.5 7H17M12 11v8m-3-3 3 3 3-3"/>',
