@@ -332,6 +332,7 @@
   const completedTasks = new Set();
   let liveRoutes = null;
   let savedPosition = null;
+  let savedPanels = null;
   const faults = new Map();
   const taskDefinitions = [
     { id: 'status-200', title: '200 · страница и данные получены', hint: 'Оставь серверы, базу и источник файлов включёнными. Получи действующую сессию, загрузи или обнови страницу и открой «Данные API» в Network клиента: там должны быть HTTP 200 и товар.' },
@@ -398,6 +399,7 @@
   }
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (saved.panels && typeof saved.panels === 'object') savedPanels = saved.panels;
     if (saved.layout === 5 && Number.isFinite(saved.camera?.x) && Number.isFinite(saved.camera?.y) && Math.abs((saved.camera?.width ?? 0) - window.innerWidth) < 60) savedPosition = saved.camera;
     const knownTasks = new Set(taskDefinitions.map(task => task.id));
     if (Array.isArray(saved.completedTasks)) {
@@ -481,12 +483,12 @@
   let saveTimer;
 
   function hasResettableProgress() {
-    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || extraProducts.length || selectedProductId !== 42 || selectedSecondProductId !== 43 || configuredRequests !== 1);
+    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || extraProducts.length || selectedProductId !== 42 || selectedSecondProductId !== 43 || configuredRequests !== 1 || (selected && !article.hidden) || !document.getElementById('course-network-panel').hidden);
   }
   function syncResetButton() { resetButton.disabled = !hasResettableProgress(); }
   function save() {
     syncResetButton();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, completedTasks: [...completedTasks], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open } : null }, completedTasks: [...completedTasks], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
   }
   function activeApp() {
     if (!faults.has('app-a')) return 'app-a';
@@ -958,11 +960,11 @@
   function syncNetworkSelection() {
     if (networkKey === 'login') {
       networkSelected = '';
-      activeActionId = '';
+      activeActionId = 'login';
       document.getElementById('course-network-selection').textContent = 'Авторизация';
       document.getElementById('course-network-flow').textContent = networkTab === 'headers' ? 'запрос' : 'ответ';
-      document.getElementById('course-network-action-buttons').replaceChildren();
       document.getElementById('course-network-action-result').textContent = '';
+      renderActions('login');
       update();
       return;
     }
@@ -1027,8 +1029,9 @@
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
       host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
       refreshSessionDisplay();
-      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); }));
-      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); }));
+      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); save(); }));
+      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); save(); }));
+      host.querySelector('.course-network__help').addEventListener('toggle', save);
       host.querySelectorAll('[data-product-id-index]').forEach(productInput => {
         let applied = false;
         const applyProductId = () => {
@@ -1082,7 +1085,7 @@
     }
     host.replaceChildren();
   }
-  function showArticle(id, via = null) {
+  function showArticle(id, via = null, focus = true) {
     const data = articles[id];
     if (!data) return;
     const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент' };
@@ -1136,7 +1139,8 @@
       report(id === 'cookie' ? 'Это один API-запрос; сессия передаётся в его заголовке Cookie.' : packet.flow === 'local' ? 'Локальные данные браузера: они не проходят по сетевой линии.' : `${packet.flow === 'request' ? 'Запрос' : 'Ответ'}: ${byId.get(edge[packet.flow === 'response' ? 1 : 0]).title} → ${byId.get(edge[packet.flow === 'response' ? 0 : 1]).title}. Стрелка на карте показывает направление.`);
     }
     if (faults.get(id) === 'overload') report('Сервер упал из-за нагрузки: в этой учебной модели его предел — 600 одновременных запросов. Восстанови сервер или нажми «Сброс».');
-    requestAnimationFrame(() => focusElement(id));
+    if (focus) requestAnimationFrame(() => focusElement(id));
+    save();
   }
   function showNetworkPacket(id) {
     networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : ['js-get', 'js'].includes(id) ? 'js' : 'css';
@@ -1144,6 +1148,7 @@
     document.getElementById('course-network-panel').hidden = false;
     setNetworkSelection(id);
     renderVisualization('client', document.getElementById('course-network-visual'));
+    save();
   }
   for (const node of nodes) {
     const element = document.createElement('div');
@@ -1192,11 +1197,13 @@
       lastSessionValidity = !!seconds;
       if (selected === 'cookie') renderActions(selected);
       if (networkSelected === 'cookie') renderActions(networkSelected);
+      if (networkKey === 'login' && !document.getElementById('course-network-panel').hidden) renderActions('login');
       syncResetButton();
     }
   }
   refreshSessionDisplay();
   window.setInterval(refreshSessionDisplay, 1000);
+  article.querySelector('.course-article__theory').addEventListener('toggle', save);
 
   document.getElementById('course-article-close').addEventListener('click', () => {
     article.classList.add('is-closing');
@@ -1205,16 +1212,18 @@
     selected = '';
     selectedVia = null;
     update();
+    save();
   });
   document.getElementById('course-network-close').addEventListener('click', () => {
     networkSelected = '';
     document.getElementById('course-network-panel').hidden = true;
     update();
+    save();
   });
   let activeActionId = '';
 
   function report(message) {
-    document.getElementById(browserPacketIds.has(activeActionId) ? 'course-network-action-result' : 'course-action-result').textContent = message;
+    document.getElementById(activeActionId === 'login' || browserPacketIds.has(activeActionId) ? 'course-network-action-result' : 'course-action-result').textContent = message;
   }
   function actionIcon(label) {
     const paths = {
@@ -1260,7 +1269,7 @@
     });
   }
   function renderActions(id) {
-    const networkAction = browserPacketIds.has(id);
+    const networkAction = id === 'login' || browserPacketIds.has(id);
     const actionButtons = document.getElementById(networkAction ? 'course-network-action-buttons' : 'course-action-buttons');
     actionButtons.replaceChildren();
     function add(label, handler, destructive = false, disabled = false) {
@@ -1336,7 +1345,7 @@
       });
     } else if (id === 'storage') {
       add(faults.has('storage') ? 'Включить источник' : 'Отключить источник', () => toggleFault('storage'), !faults.has('storage'));
-    } else if (id === 'cookie') {
+    } else if (id === 'cookie' || id === 'login') {
       const applySessionAction = message => {
         refreshSessionDisplay();
         update();
@@ -1345,11 +1354,11 @@
         save();
         report(message);
       };
-      if (hasSession()) add('Удалить сессию', () => {
+      if (id === 'cookie' && hasSession()) add('Удалить сессию', () => {
         sessionExpiresAt = 0;
         applySessionAction('Сессия удалена. Следующий запрос к защищённому API вернёт 401; HTML страницы останется доступен.');
       }, true);
-      else add('Обновить сессию', () => {
+      else if (!hasSession()) add('Обновить сессию', () => {
         rotateSessionToken();
         sessionExpiresAt = Date.now() + SESSION_MS;
         sessionRestricted = false;
@@ -1598,6 +1607,13 @@
     lastRun = null;
     networkSelected = '';
     document.getElementById('course-network-panel').hidden = true;
+    networkKey = 'document';
+    networkTab = 'headers';
+    clearTimeout(articleCloseTimer);
+    article.hidden = true;
+    article.classList.remove('is-closing');
+    workspace.classList.remove('has-answer');
+    selected = '';
     selectedVia = null;
     configuredRequests = 1;
     remainingRequests = null;
@@ -1607,7 +1623,6 @@
     resetAlgorithm();
     update();
     renderTasks();
-    if (selected) { renderActions(selected); renderExample(selected); renderVisualization(selected); }
     save();
   });
   let viewportWidth = window.innerWidth;
@@ -1630,5 +1645,20 @@
       const scale = .8;
       motion.restore({ x: scroller.clientWidth / 2 - 760 * scale, y: scroller.clientHeight / 2 + 60 - 475 * scale, scale });
     }
+    const articleState = savedPanels?.article;
+    if (articleState && Object.prototype.hasOwnProperty.call(articles, articleState.id)) {
+      showArticle(articleState.id, articleState.via === 'app-b' ? 'app-b' : null, false);
+      article.querySelector('.course-article__theory').open = articleState.helpOpen === true;
+    }
+    const networkState = savedPanels?.network;
+    if (networkState && ['login', 'document', 'css', 'js', 'api'].includes(networkState.key)) {
+      networkKey = networkState.key;
+      networkTab = ['headers', 'preview', 'response'].includes(networkState.tab) ? networkState.tab : 'headers';
+      document.getElementById('course-network-panel').hidden = false;
+      syncNetworkSelection();
+      renderVisualization('client', document.getElementById('course-network-visual'));
+      document.querySelector('#course-network-panel .course-network__help').open = networkState.helpOpen === true;
+    }
+    if (articleState || networkState) save();
   });
 })();

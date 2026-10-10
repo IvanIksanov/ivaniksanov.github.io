@@ -255,7 +255,7 @@ html[data-theme="dark"] .course-packet[data-pair="db"] { --packet-pair-color: #c
 .course-network__requests button { display: flex; align-items: center; gap: .3rem; width: 100%; min-width: 0; padding: .45rem .5rem; border: 1px solid transparent; border-radius: .75rem; background: color-mix(in srgb, var(--map-text) 4%, var(--map-bg)); color: var(--map-text); text-align: left; font: inherit; cursor: pointer; }
 .course-network__requests button.is-current { border-color: color-mix(in srgb, var(--course-blue) 40%, var(--map-border)); background: color-mix(in srgb, var(--course-blue) 9%, var(--map-bg)); }
 .course-network__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .72rem; font-weight: 650; }
-.course-network__cookie-line { display: flex; align-items: center; justify-content: space-between; gap: 1rem; white-space: normal; }
+.course-network__cookie-line { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; white-space: normal; }
 .course-network__cookie-line > span:first-child { min-width: 0; overflow-wrap: anywhere; }
 .course-network__session-time { flex: none; padding: .16rem .37rem; border-radius: .45rem; background: color-mix(in srgb, #2c9b72 13%, var(--map-bg)); color: #238157; font-weight: 750; }
 .course-network__session-time.is-expired { background: color-mix(in srgb, #d26e68 14%, var(--map-bg)); color: #bd514c; }
