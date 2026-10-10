@@ -962,7 +962,7 @@
       networkSelected = '';
       activeActionId = 'login';
       document.getElementById('course-network-selection').textContent = 'Авторизация';
-      document.getElementById('course-network-flow').textContent = networkTab === 'headers' ? 'запрос' : 'ответ';
+      document.getElementById('course-network-flow').textContent = `${networkTab === 'headers' ? 'запрос' : 'ответ'} · ранее, вне карты`;
       document.getElementById('course-network-action-result').textContent = '';
       renderActions('login');
       update();
@@ -977,7 +977,7 @@
     const productIds = requestedProductIds();
     const pendingApi = !lastRun || productIds.some((value, index) => value !== (lastRun.productIds || [lastRun.productId])[index]);
     const api = pendingApi ? { code: '—', label: '—' } : lastRun.apiResult;
-    const login = { key: 'login', method: 'POST', name: '/auth/login', path: 'https://site.example/auth/login', status: '200', source: 'ранее · вне карты',
+    const login = { key: 'login', method: 'POST', name: '/auth/login', path: 'https://site.example/auth/login', status: '200', source: '—',
       headers: `POST /auth/login HTTP/1.1\nHost: site.example\nContent-Type: application/json\n\n{"login":"student","password":"••••"}\n\nHTTP/1.1 200 OK\nContent-Type: application/json\nSet-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`,
       preview: 'Вход выполнен до начала упражнения. Сервер выдал сессионную cookie; этот прошлый запрос не показан на карте.',
       response: '{\n  "user": "student",\n  "authenticated": true\n}' };
