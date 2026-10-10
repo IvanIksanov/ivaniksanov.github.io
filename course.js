@@ -1142,7 +1142,7 @@
       const server = id === 'app-a' ? 'A' : 'B';
       const bars = id === 'balancer' ? [['A', countA], ['B', countB]] : [[server, server === 'A' ? countA : countB]];
       const htmlState = faults.get('html');
-      const htmlRow = id === 'balancer' ? '' : `<div class="course-files"><div class="course-file ${htmlState ? 'is-missing' : ''}"><span>▧</span><strong>index.html</strong><small>${htmlState === 'missing' ? 'удалён' : htmlState === 'corrupt' ? 'повреждён' : 'формируется'}</small><div class="course-file__actions" data-file-actions="html"></div></div><div class="course-file"><span>⇄</span><strong>Ответ API</strong><small>${apiFormat === 'xml' ? 'application/xml' : 'application/json'}</small></div></div>`;
+      const htmlRow = id === 'balancer' ? '' : `<div class="course-files"><div class="course-file ${htmlState ? 'is-missing' : ''}"><span>▧</span><strong>index.html</strong><small>${htmlState === 'missing' ? 'удалён' : htmlState === 'corrupt' ? 'повреждён' : 'формируется'}</small><div class="course-file__actions" data-file-actions="html"></div></div><div class="course-file"><span>⇄</span><strong title="GET ${productsPath()}">GET ${productsPath()}</strong><small>${apiFormat === 'xml' ? 'application/xml' : 'application/json'}</small></div></div>`;
       const sessionRow = id === 'balancer' ? '' : `<div class="course-server-session"><strong>Сессии · student</strong><span data-session-cookie>Cookie: session=${sessionToken}</span><span class="course-network__session-time" data-session-remaining></span><small data-session-access>${!hasSession() ? 'Нет доступа · 401' : sessionRestricted ? 'Товары: доступ ограничен · 403' : 'Товары: чтение разрешено'}</small></div>`;
       const heading = id === 'balancer' ? `<div class="course-viz__heading"><span class="course-viz__icon">⇄</span><strong>Распределение запросов</strong><span class="course-viz__caption">${lastRun ? requestCountLabel(lastRun.requestCount) : 'Ожидает запуска'}</span></div>` : '';
       const foot = id === 'balancer' && removed ? 'Балансировщик отключён: запросы идут напрямую на A.' : id !== 'balancer' && faults.has(id) ? 'Сервер сейчас остановлен.' : '';
@@ -1526,6 +1526,7 @@
           if (input.dataset.productIdIndex === '0') selectedProductId = Number(input.value);
           else selectedSecondProductId = Number(input.value);
           renderProductTables();
+          if (selected === 'app-a' || selected === 'app-b') renderVisualization(selected);
           refreshLiveNetwork();
           save();
         });
