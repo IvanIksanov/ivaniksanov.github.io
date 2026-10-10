@@ -1270,12 +1270,37 @@
       remove: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7m4-7v7"/>',
       restore: '<path d="M5 11a7 7 0 1 1 2 6M5 5v6h6"/>',
       damage: '<path d="m13 2-8 11h6l-1 9 9-12h-6z"/>',
-      power: '<path d="M12 3v9M7 5a9 9 0 1 0 10 0"/>',
+      powerOn: '<path d="M12 3v9M7 5a9 9 0 1 0 10 0"/>',
+      powerOff: '<path d="M12 3v7M7 5a9 9 0 0 0 10 14M17 5a9 9 0 0 1 3 10M3 21 21 3"/>',
+      start: '<path d="m8 5 11 7-11 7V5Z"/>',
+      stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
       add: '<path d="M12 4v16M4 12h16"/>',
       switch: '<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
-      clear: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7m4-7v7"/>'
+      sessionRenew: '<path d="M20 7v5h-5M4 17v-5h5M5.7 9a7 7 0 0 1 12.2-2L20 9M4 15l2.1 2a7 7 0 0 0 12.2-2"/><circle cx="12" cy="12" r="1"/>',
+      restrict: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+      allow: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
+      cacheMiss: '<path d="M6 18a4 4 0 0 1-.5-8A7 7 0 0 1 19 11a3.5 3.5 0 0 1-.5 7H17M12 11v8m-3-3 3 3 3-3"/>',
+      cacheHit: '<path d="M6 18a4 4 0 0 1-.5-8A7 7 0 0 1 19 11a3.5 3.5 0 0 1-.5 7H17m-8-2 2 2 4-4"/>',
+      emptyBody: '<path d="M6 3h8l4 4v14H6zM14 3v5h4M9 15h6"/>',
+      bodyError: '<path d="M6 3h8l4 4v14H6zM14 3v5h4M12 11v5m0 2h.01"/>'
     };
-    const kind = /^Удалить/.test(label) ? 'remove' : /^Восстановить|^Запустить|^Включить|^Вернуть/.test(label) ? 'restore' : /^Повредить|^Ошибка/.test(label) ? 'damage' : /^Отключить|^Остановить/.test(label) ? 'power' : /^Добавить/.test(label) ? 'add' : /^Очистить|^Кэш пуст/.test(label) ? 'clear' : 'switch';
+    const kind = [
+      [/^Обновить сессию/, 'sessionRenew'],
+      [/^Ограничить права/, 'restrict'],
+      [/^Вернуть право доступа/, 'allow'],
+      [/^Сымитировать cache miss/, 'cacheMiss'],
+      [/^Вернуть cache hit/, 'cacheHit'],
+      [/^Пустое тело 200/, 'emptyBody'],
+      [/^Ошибка в теле 200/, 'bodyError'],
+      [/^Удалить|^Очистить|^Кэш пуст/, 'remove'],
+      [/^Восстановить/, 'restore'],
+      [/^Повредить/, 'damage'],
+      [/^Запустить/, 'start'],
+      [/^Остановить/, 'stop'],
+      [/^Включить/, 'powerOn'],
+      [/^Отключить/, 'powerOff'],
+      [/^Добавить/, 'add']
+    ].find(([pattern]) => pattern.test(label))?.[1] || 'switch';
     return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[kind]}</svg>`;
   }
   function renderFileRowActions(host, ownerId) {
