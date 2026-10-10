@@ -110,29 +110,29 @@
     tasks: { kicker: 'Практика / условия', title: 'Задания', body: `<p>Меняй элементы схемы и запускай запросы. «Сброс» восстанавливает схему, выполненные задания сохраняются. В этой учебной модели один сервер выдерживает до 600 одновременных запросов.</p><div id="course-task-list" class="course-task-list"></div>` }
   };
   const examples = {
-    request: ['Запрос браузера → сервер:', 'GET / HTTP/1.1', 'Host: site.example', 'Accept: text/html', '', 'Ответ сервера → браузер:', 'HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<html>…</html>'],
-    'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.site.example'],
-    'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.site.example'],
+    request: ['Запрос браузера → сервер:', 'GET / HTTP/1.1', 'Host: qatodev.ru', 'Accept: text/html', '', 'Ответ сервера → браузер:', 'HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<html>…</html>'],
+    'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.qatodev.ru'],
+    'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.qatodev.ru'],
     cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products?ids=42,43 HTTP/1.1', 'Cookie: session=demo123'],
     sql: ['SELECT id, name, price', 'FROM products', 'WHERE id IN ($1, $2);', 'Параметры $1 = 42, $2 = 43'],
-    html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.site.example/style.css"></head>', '  <body>', '    <header>qa market</header>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.site.example/app.js"></script>', '  </body>', '</html>'],
+    html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.qatodev.ru/style.css"></head>', '  <body>', '    <header>qa market</header>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.qatodev.ru/app.js"></script>', '  </body>', '</html>'],
     css: ['body { margin: 0; font: 16px system-ui; }', '#products { display: grid; gap: 16px;', '  grid-template-columns: repeat(2, 1fr); }', '@media (max-width: 700px) {', '  #products { grid-template-columns: 1fr; }', '}'],
     js: ['const response = await fetch("/api/products?ids=42,43");', 'if (!response.ok) throw new Error(`HTTP ${response.status}`);', 'const { products } = await response.json();', 'renderProductCards(products);'],
-    origin: ['GET /app.js HTTP/1.1', 'Host: origin.site.example', '', 'CDN запрашивает оригинал после cache miss.'],
-    cache: ['Ключ: GET https://cdn.site.example/style.css', 'Место: HTTP-кэш браузера (память или диск)', 'Ответ: 200 OK, Cache-Control: public, max-age=3600', 'Повтор: браузер может использовать сохранённую копию.', 'Точный файловый путь определяет браузер, а не сайт.']
+    origin: ['GET /app.js HTTP/1.1', 'Host: origin.qatodev.ru', '', 'CDN запрашивает оригинал после cache miss.'],
+    cache: ['Ключ: GET https://cdn.qatodev.ru/style.css', 'Место: HTTP-кэш браузера (память или диск)', 'Ответ: 200 OK, Cache-Control: public, max-age=3600', 'Повтор: браузер может использовать сохранённую копию.', 'Точный файловый путь определяет браузер, а не сайт.']
   };
-  function exampleFor(id) {
-    if (id === 'client' && !lastRun) return null;
+  function exampleFor(id, run = lastRun) {
+    if (id === 'client' && !run) return null;
     if (id === 'json' || id === 'client') {
-      if (id === 'client' && lastRun && !lastRun.apiSent) return { title: 'Запрос API не отправлен', text: lastRun.documentAvailable ? 'HTML получен, но app.js не загрузился. Код fetch не выполнился, поэтому запроса к API и его HTTP-ответа не было.' : 'HTML не получен. Браузер не дошёл до выполнения JavaScript и не отправил запрос к API.' };
-      const app = selectedVia === 'app-b' || (!selectedVia && lastRun?.routes?.[0] === 'app-b') ? 'B' : 'A';
-      const apiResponse = apiResponseForCurrentState();
+      if (id === 'client' && !run.apiSent) return { title: 'Запрос API не отправлен', text: run.documentAvailable ? 'HTML получен, но app.js не загрузился. Код fetch не выполнился, поэтому запроса к API и его HTTP-ответа не было.' : 'HTML не получен. Браузер не дошёл до выполнения JavaScript и не отправил запрос к API.' };
+      const app = selectedVia === 'app-b' || (!selectedVia && run?.routes?.[0] === 'app-b') ? 'B' : 'A';
+      const apiResponse = apiResponseForCurrentState(run);
       const failed = apiResponse.code !== '200';
       const error = apiResponse.code === '401' ? 'SESSION_REQUIRED' : apiResponse.code === '403' ? 'ACCESS_DENIED' : apiResponse.code === '404' ? 'PRODUCT_NOT_FOUND' : 'SERVICE_UNAVAILABLE';
       const title = id === 'client' ? 'Что получил браузер от API' : 'Ответ API · JSON';
       if (apiResponse.bodyIssue === 'empty') return { title, text: ['HTTP/1.1 200 OK', 'Content-Length: 0'].join('\n') };
       if (apiResponse.bodyIssue === 'embedded-error') return { title, text: ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ error: { code: 404, message: 'PRODUCT_NOT_FOUND' } }, null, 2)].join('\n') };
-      return { title, text: failed ? [apiResponse.code === '—' ? 'Ответ HTTP не получен' : 'HTTP/1.1 ' + apiResponse.code, ...(apiResponse.code === '—' ? [] : [...(apiResponse.code === '401' ? ['WWW-Authenticate: Session realm="training"'] : []), 'Content-Type: application/json', '', JSON.stringify({ error, message: apiResponse.label, servedBy: app }, null, 2)])].join('\n') : ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ products: lastRun?.products || requestedProductIds().map(productFor).filter(Boolean), servedBy: app }, null, 2)].join('\n') };
+      return { title, text: failed ? [apiResponse.code === '—' ? 'Ответ HTTP не получен' : 'HTTP/1.1 ' + apiResponse.code, ...(apiResponse.code === '—' ? [] : [...(apiResponse.code === '401' ? ['WWW-Authenticate: Session realm="training"'] : []), 'Content-Type: application/json', '', JSON.stringify({ error, message: apiResponse.label, servedBy: app }, null, 2)])].join('\n') : ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ products: run?.products || requestedProductIds().map(productFor).filter(Boolean), servedBy: app }, null, 2)].join('\n') };
     }
     if (!examples[id]) return null;
     let title = id === 'request' ? 'Запрос страницы и ответ сервера' : ['css-get', 'js-get'].includes(id) ? 'Запрос браузера к CDN' : id === 'origin' ? 'Запрос CDN к источнику' : id === 'cookie' ? 'Обмен заголовками сессии' : id === 'cache' ? 'Как выглядит запись кэша' : id === 'sql' ? 'SQL, который выполняет сервер' : 'Пример содержимого';
@@ -326,6 +326,7 @@
   let productMode = 'normal';
   let lastResponse = null;
   let lastRun = null;
+  let liveNetwork = null;
   const LOAD_OPTIONS = new Set([1, 100, 500, 1000]);
   let configuredRequests = 1;
   let remainingRequests = null;
@@ -861,18 +862,18 @@
     if (staticFailure && hasCachedAsset('css') && hasCachedAsset('js')) return { code: '200', label: 'Файлы из кэша', mode: 'cached', detail: 'Браузер использует свежие копии CSS и JS из локального кэша и не обращается к CDN. После очистки кэша эти файлы понадобятся из сети.' };
     return { code: '200', label: 'Страница работает', mode: 'ok', detail: 'HTML и необходимые ресурсы доступны, приложение получило данные. Код 200 относится к успешному запросу; содержимое всё равно стоит проверить отдельно.' };
   }
-  function apiResponseForCurrentState() {
-    if (lastRun?.apiResult) return lastRun.apiResult;
-    if (lastRun && !lastRun.apiSent) return { code: '—', label: 'Запрос API не отправлен' };
+  function apiResponseForCurrentState(run = lastRun) {
+    if (run?.apiResult) return run.apiResult;
+    if (run && !run.apiSent) return { code: '—', label: 'Запрос API не отправлен' };
     if (removed && faults.has('app-a')) return { code: '—', label: 'Нет ответа API' };
     if (!removed && faults.has('app-a') && faults.has('app-b')) return { code: '503', label: 'Серверы приложения недоступны' };
-    if (lastRun?.apiSent && lastRun.routes.length && lastRun.routes.every(id => lastRun.overloaded.includes(id) && faults.get(id) === 'overload')) return { code: lastRun.usedBalancer ? '503' : '—', label: 'Сервер перегружен' };
-    if (lastRun?.apiSent && lastRun.sessionState === 'missing') return { code: '401', label: 'Сессия отсутствует или истекла' };
-    if (lastRun?.apiSent && lastRun.sessionState === 'forbidden') return { code: '403', label: 'Недостаточно прав' };
+    if (run?.apiSent && run.routes.length && run.routes.every(id => run.overloaded.includes(id) && faults.get(id) === 'overload')) return { code: run.usedBalancer ? '503' : '—', label: 'Сервер перегружен' };
+    if (run?.apiSent && run.sessionState === 'missing') return { code: '401', label: 'Сессия отсутствует или истекла' };
+    if (run?.apiSent && run.sessionState === 'forbidden') return { code: '403', label: 'Недостаточно прав' };
     if (faults.has('database')) return { code: '503', label: 'База данных недоступна' };
-    if (lastRun?.productMissing && lastRun.productMode === 'empty') return { code: '200', label: 'OK · пустое тело', bodyIssue: 'empty' };
-    if (lastRun?.productMissing && lastRun.productMode === 'embedded-error') return { code: '200', label: 'OK · ошибка в теле', bodyIssue: 'embedded-error' };
-    if (lastRun?.productMissing) return { code: '404', label: 'Товар не найден' };
+    if (run?.productMissing && run.productMode === 'empty') return { code: '200', label: 'OK · пустое тело', bodyIssue: 'empty' };
+    if (run?.productMissing && run.productMode === 'embedded-error') return { code: '200', label: 'OK · ошибка в теле', bodyIssue: 'embedded-error' };
+    if (run?.productMissing) return { code: '404', label: 'Товар не найден' };
     return { code: '200', label: 'OK' };
   }
   function renderLoadControls() {
@@ -914,20 +915,27 @@
     46: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M5 10h.01M9 10h.01M13 10h.01M17 10h.01M5 13h.01M9 13h.01M13 13h.01M17 13h.01M7 16h10"/>'
   };
   function htmlPagePreview() {
-    const run = lastRun;
+    const run = liveNetwork || lastRun;
     const css = run?.assetOutcomes?.css;
     const js = run?.assetOutcomes?.js;
-    const documentFailed = !!run && !run.documentAvailable;
+    const documentPending = !!liveNetwork && !run.documentFinished;
+    const documentFailed = !!run && !documentPending && !run.documentAvailable;
     const htmlFault = run?.documentRoute ? (run.htmlFault === undefined ? faults.get('html') : run.htmlFault) : null;
     const cssFailed = css?.state === 'failed';
     const jsFailed = js?.state === 'failed';
     const api = run?.apiResult;
-    const products = run?.apiSent && api?.code === '200' && !api.bodyIssue ? (run.products || [run.product].filter(Boolean)) : [];
+    const products = run?.apiFinished !== false && run?.apiSent && api?.code === '200' && !api.bodyIssue ? (run.products || [run.product].filter(Boolean)) : [];
+    const productPending = !!liveNetwork && !run.apiFinished && !jsFailed;
     const legacyRun = !!run && !Array.isArray(run.productIds);
     const previewIds = run?.productIds || (run?.productId ? [run.productId, selectedSecondProductId] : requestedProductIds());
     let message = 'Загрузка товара…';
     if (run) {
-      if (jsFailed || !run.apiSent) message = 'JavaScript не загрузился';
+      if (jsFailed) message = 'JavaScript не загрузился';
+      else if (liveNetwork && !run.assetStarted.js) message = 'Ожидаем app.js…';
+      else if (liveNetwork && !run.assetFinished.js) message = 'Загрузка app.js…';
+      else if (run.apiFinished && !run.apiSent) message = 'Запрос API не отправлен';
+      else if (run.apiSent && !run.apiFinished) message = 'Ждём ответ API…';
+      else if (js?.state === 'ok' && run.apiFinished === false) message = 'JavaScript готов · загрузка товара…';
       else if (api?.bodyIssue === 'empty') message = 'Ответ 200, но данных о товаре нет';
       else if (api?.bodyIssue === 'embedded-error') message = 'Ответ 200 содержит ошибку товара';
       else if (api?.code === '404') message = 'Товар не найден';
@@ -941,10 +949,12 @@
           ? `<article class="course-page-preview__product"><span class="course-page-preview__product-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="course-page-preview__product-copy"><strong>${escapeHtml(product.name)}</strong><small>${product.id} · ${product.price.toLocaleString('ru-RU')} ₽</small></span></article>`
           : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${legacyRun ? '···' : '!'}</span><span class="course-page-preview__product-copy"><strong>${legacyRun ? 'Обновите страницу' : `Товар ${id} не найден`}</strong><small>${legacyRun ? `Товар ${id} ещё не запрошен` : 'Нет в ответе API'}</small></span></article>`;
       }).join('')
-      : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${run ? '!' : '···'}</span><span class="course-page-preview__product-copy"><strong>${escapeHtml(message)}</strong><small>${jsFailed ? 'Товар недоступен' : 'Каталог'}</small></span></article>`;
-    const state = !run ? 'pending' : documentFailed ? 'document-error' : cssFailed ? 'unstyled' : 'styled';
-    const summary = documentFailed ? htmlFault === 'corrupt' ? 'HTML повреждён — страница отображается неправильно' : 'HTML не получен — страницу нельзя построить' : cssFailed ? 'HTML без CSS' : jsFailed ? 'HTML загружен, но JavaScript недоступен' : products.length ? `Страница с товарами ${products.map(item => item.name).join(' и ')}` : message;
-    const page = documentFailed
+      : `<article class="course-page-preview__product ${productPending ? 'course-page-preview__product--pending' : 'course-page-preview__product--empty'}"><span class="course-page-preview__product-icon">${!run || productPending ? '···' : '!'}</span><span class="course-page-preview__product-copy"><strong>${escapeHtml(message)}</strong><small>${jsFailed ? 'Товар недоступен' : 'Каталог'}</small></span></article>`;
+    const state = !run || documentPending ? 'pending' : documentFailed ? 'document-error' : css?.state === 'ok' ? 'styled' : 'unstyled';
+    const summary = documentPending ? 'Браузер ожидает HTML' : documentFailed ? htmlFault === 'corrupt' ? 'HTML повреждён — страница отображается неправильно' : 'HTML не получен — страницу нельзя построить' : cssFailed || !css ? 'HTML без CSS' : jsFailed ? 'HTML загружен, но JavaScript недоступен' : products.length ? `Страница с товарами ${products.map(item => item.name).join(' и ')}` : message;
+    const page = documentPending
+      ? '<div class="course-page-preview__document-wait"><strong>Ожидаем HTML…</strong><span>Браузер отправил GET /.</span></div>'
+      : documentFailed
       ? `<div class="course-page-preview__document-error"><strong>${htmlFault === 'corrupt' ? 'Разметка повреждена' : 'Страница не загрузилась'}</strong><span>${htmlFault === 'corrupt' ? 'Сервер ответил 200, но HTML нельзя правильно построить.' : 'Браузер не получил HTML.'}</span></div>`
       : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main>${productMarkup}<div class="course-page-preview__extras" aria-hidden="true"><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Характеристики</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--short"></span></div><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Описание</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--medium"></span></div></div></main></div>`;
     return `<div class="course-page-preview course-page-preview--${state}${products[0] ? ` course-page-preview--product-${products[0].id}` : ''}${products[1] ? ` course-page-preview--product-secondary-${products[1].id}` : ''}" role="img" aria-label="${escapeHtml(summary)}">${page}</div>`;
@@ -965,7 +975,7 @@
       networkSelected = '';
       activeActionId = 'login';
       document.getElementById('course-network-selection').textContent = 'Авторизация';
-      document.getElementById('course-network-flow').textContent = `${networkTab === 'headers' ? 'запрос' : 'ответ'} · ранее, вне карты`;
+      document.getElementById('course-network-flow').textContent = networkTab === 'headers' ? 'запрос' : 'ответ';
       if (networkNotice?.key !== networkKey) networkNotice = null;
       renderFeedback('network');
       renderActions('login');
@@ -977,32 +987,43 @@
     setNetworkSelection((networkTab === 'headers' ? request : response)[networkKey]);
   }
   function networkEntries(id) {
-    const productId = selectedProductId;
+    const run = liveNetwork || lastRun;
+    const live = !!liveNetwork;
     const productIds = requestedProductIds();
-    const pendingApi = !lastRun || productIds.some((value, index) => value !== (lastRun.productIds || [lastRun.productId])[index]);
-    const api = pendingApi ? { code: '—', label: '—' } : lastRun.apiResult;
-    const login = { key: 'login', method: 'POST', name: '/auth/login', path: 'https://site.example/auth/login', status: '200', source: '—',
-      headers: `POST /auth/login HTTP/1.1\nHost: site.example\nContent-Type: application/json\n\n{"login":"student","password":"••••"}\n\nHTTP/1.1 200 OK\nContent-Type: application/json\nSet-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`,
+    const pendingApi = !run || productIds.some((value, index) => value !== (run.productIds || [run.productId])[index]);
+    const api = pendingApi ? { code: '—', label: '—' } : run.apiResult || { code: '—', label: 'Ожидание ответа' };
+    const login = { key: 'login', method: 'POST', name: '/auth/login', path: 'https://qatodev.ru/auth/login', status: '200', source: '—',
+      headers: `POST /auth/login HTTP/1.1\nHost: qatodev.ru\nContent-Type: application/json\n\n{"login":"student","password":"••••"}\n\nHTTP/1.1 200 OK\nContent-Type: application/json\nSet-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`,
       preview: 'Вход выполнен до начала упражнения. Сервер выдал сессионную cookie; этот прошлый запрос не показан на карте.',
       response: '{\n  "user": "student",\n  "authenticated": true\n}' };
     const fileEntry = file => {
-      const outcome = lastRun?.assetOutcomes?.[file];
+      const outcome = run?.assetOutcomes?.[file];
+      const loadingSource = run?.assetSources?.[file];
       const name = file === 'css' ? 'style.css' : 'app.js';
-      const status = !lastRun ? '—' : !lastRun.documentAvailable ? '—' : outcome?.state === 'ok' ? '200' : outcome?.reason === 'файл удалён в источнике' ? '404' : outcome?.source === 'cdn' ? '—' : '503';
-      const source = !lastRun || !lastRun.documentAvailable ? 'ожидает запроса' : outcome?.source === 'browser' ? 'кэш браузера' : outcome?.source === 'cdn' ? 'CDN' : 'источник через CDN';
-      return { key: file, name, path: `https://cdn.site.example/${name}`, status, source,
-        headers: `GET /${name} HTTP/1.1\nHost: cdn.site.example\n\n${status === '—' ? 'Ответа пока нет' : `Статус: ${status}\nContent-Type: ${file === 'css' ? 'text/css' : 'text/javascript'}`}`,
-        preview: !lastRun ? 'Нажми «Загрузить страницу».' : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : `${name} получен: ${source}.`,
-        response: outcome?.state === 'ok' ? examples[file].join('\n').replace('42,43', productIds.join(',')) : outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ появится после запуска.' };
+      const started = !!run?.documentAvailable && (!live || run.assetStarted[file]);
+      const finished = started && (!live || run.assetFinished[file]);
+      const status = !run || !run.documentAvailable || !started ? '—' : !finished ? '…' : outcome?.state === 'ok' ? '200' : outcome?.reason === 'файл удалён в источнике' ? '404' : outcome?.source === 'cdn' ? '—' : '503';
+      const source = !run || !run.documentAvailable || !started ? 'ожидает запроса' : !finished ? loadingSource === 'browser' ? 'кэш браузера' : 'загружается' : outcome?.source === 'browser' ? 'кэш браузера' : outcome?.source === 'cdn' ? 'CDN' : 'источник через CDN';
+      return { key: file, name, path: `https://cdn.qatodev.ru/${name}`, status, source,
+        headers: `GET /${name} HTTP/1.1\nHost: cdn.qatodev.ru${loadingSource === 'browser' || outcome?.source === 'browser' ? '\nИсточник: HTTP-кэш браузера\nСетевого запроса к CDN нет' : ''}\n\n${status === '—' ? 'Ответа пока нет' : status === '…' ? 'Ожидание ответа' : `Статус: ${status}\nContent-Type: ${file === 'css' ? 'text/css' : 'text/javascript'}`}`,
+        preview: !run ? 'Нажми «Загрузить страницу».' : !started ? 'Запрос ещё не отправлен.' : !finished ? `${name} загружается…` : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : `${name} получен: ${source}.`,
+        response: finished && outcome?.state === 'ok' ? examples[file].join('\n').replace('42,43', productIds.join(',')) : finished && outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ ещё не пришёл.' };
     };
-    const document = { key: 'document', name: 'HTML', path: 'https://site.example/', status: !lastRun ? '—' : lastRun.documentAvailable || (lastRun.documentRoute && lastRun.htmlFault === 'corrupt') ? '200' : lastRun.documentRoute && lastRun.htmlFault === 'missing' ? '404' : '—', source: !lastRun ? 'ожидает запроса' : lastRun.cachedFiles?.includes('html') ? 'кэш браузера' : lastRun.documentRoute ? `сервер ${lastRun.documentRoute === 'app-b' ? 'B' : 'A'}` : 'нет ответа',
-      headers: 'GET / HTTP/1.1\nHost: site.example\nAccept: text/html\n\nContent-Type: text/html; charset=utf-8',
-      preview: lastRun?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
-      response: lastRun?.documentAvailable ? examples.html.join('\n') : lastRun?.documentRoute && lastRun.htmlFault === 'corrupt' ? 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><main><h1>Каталог</main>…' : lastRun ? 'Ответ HTML не получен.' : 'Ответ появится после запуска.' };
-    const apiEntry = { key: 'api', name: productsPath(), path: `https://site.example${productsPath()}`, status: !pendingApi && lastRun.apiSent ? api.code : '—', source: pendingApi ? '—' : lastRun.apiSent ? `сервер ${lastRun.routes?.[0] === 'app-b' ? 'B' : 'A'}` : '—',
-      headers: `GET ${productsPath()} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${!pendingApi && lastRun.apiSent ? api.code : '—'}`,
-      preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? (lastRun.products || [lastRun.product].filter(Boolean)).map(product => `${product.name} · ${product.price.toLocaleString('ru-RU')} ₽`).join('\n') : api.label,
-      response: pendingApi ? '—' : exampleFor('client')?.text || '—' };
+    const documentStarted = !!run && (!live || run.documentStarted);
+    const documentFinished = !!run && (!live || run.documentFinished);
+    const documentStatus = !run || !documentStarted ? '—' : !documentFinished ? '…' : run.documentAvailable || (run.documentRoute && run.htmlFault === 'corrupt') ? '200' : run.documentRoute && run.htmlFault === 'missing' ? '404' : '—';
+    const documentHeaders = `GET / HTTP/1.1\nHost: qatodev.ru\nAccept: text/html${documentFinished ? documentStatus === '—' ? '\n\nОтвет не получен' : `\n\nHTTP/1.1 ${documentStatus}\nContent-Type: text/html; charset=utf-8` : '\n\nОжидание ответа'}`;
+    const document = { key: 'document', name: 'HTML', path: 'https://qatodev.ru/', status: documentStatus, source: !run || !documentStarted ? 'ожидает запроса' : !documentFinished ? 'загружается' : run.cachedFiles?.includes('html') ? 'кэш браузера' : run.documentRoute ? `сервер ${run.documentRoute === 'app-b' ? 'B' : 'A'}` : 'нет ответа',
+      headers: documentHeaders,
+      preview: run?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
+      response: documentFinished && run?.documentAvailable ? examples.html.join('\n') : documentFinished && run?.documentRoute && run.htmlFault === 'corrupt' ? 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><main><h1>Каталог</main>…' : documentFinished && run ? 'Ответ HTML не получен.' : 'Ответ ещё не пришёл.' };
+    const apiStarted = !!run?.apiSent;
+    const apiFinished = !!run && (!live || run.apiFinished);
+    const apiStatus = pendingApi || !apiStarted ? '—' : !apiFinished ? '…' : api.code;
+    const apiEntry = { key: 'api', name: productsPath(), path: `https://qatodev.ru${productsPath()}`, status: apiStatus, source: pendingApi || !apiStarted ? '—' : !apiFinished ? 'ожидание ответа' : `сервер ${run.routes?.[0] === 'app-b' ? 'B' : 'A'}`,
+      headers: `GET ${productsPath()} HTTP/1.1\nHost: qatodev.ru\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${apiStatus === '…' ? 'ожидание' : apiStatus}`,
+      preview: pendingApi ? '—' : !apiStarted ? apiFinished ? 'JavaScript не отправил запрос API.' : 'JavaScript ещё не отправил запрос API.' : !apiFinished ? 'Ожидаем ответ API…' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? (run.products || [run.product].filter(Boolean)).map(product => `${product.name} · ${product.price.toLocaleString('ru-RU')} ₽`).join('\n') : api.label,
+      response: pendingApi ? '—' : !apiFinished ? 'Ответ ещё не пришёл.' : exampleFor('client', run)?.text || '—' };
     const entries = { login, document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
     const keys = ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css-get', 'css'].includes(id) ? ['css'] : ['js-get', 'js'].includes(id) ? ['js'] : ['document', 'css', 'js', 'api'];
     return ['login', ...keys].map(key => entries[key]);
@@ -1029,9 +1050,9 @@
       const pairNames = { login: 'Вход · запрос → cookie', document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
       const help = { login: '<p>Это отдельный учебный POST-запрос, выполненный до начала схемы. Сервер возвращает HTTP 200 и заголовок Set-Cookie с сессией на пять минут. Браузер сохраняет cookie и добавляет заголовок Cookie к следующему запросу API. Сессия не продлевается автоматически.</p>', document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
       const urlMarkup = entry.key === 'api'
-        ? `<span class="course-network__path course-network__path--api">/api/products?ids=<input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара">,<input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара"></span>`
+        ? `<span class="course-network__path course-network__path--api">/api/products?ids=<input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара" ${liveNetwork ? 'disabled' : ''}>,<input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара" ${liveNetwork ? 'disabled' : ''}></span>`
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
-      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>Как это работает</summary><div><strong class="course-network__help-title">${pairNames[entry.key]}</strong>${help[entry.key]}</div></details></section>`;
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status === '…' ? 'is-pending' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>Как это работает</summary><div><strong class="course-network__help-title">${pairNames[entry.key]}</strong>${help[entry.key]}</div></details></section>`;
       renderFeedback('network');
       refreshSessionDisplay();
       host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); save(); }));
@@ -1276,7 +1297,7 @@
       stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
       add: '<path d="M12 4v16M4 12h16"/>',
       switch: '<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
-      sessionRenew: '<path d="M20 7v5h-5M4 17v-5h5M5.7 9a7 7 0 0 1 12.2-2L20 9M4 15l2.1 2a7 7 0 0 0 12.2-2"/><circle cx="12" cy="12" r="1"/>',
+      sessionRenew: '<path d="M20 12a8 8 0 1 1-2.4-5.7M20 4v6h-6M12 8v4l3 2"/>',
       restrict: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
       allow: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
       cacheMiss: '<path d="M6 18a4 4 0 0 1-.5-8A7 7 0 0 1 19 11a3.5 3.5 0 0 1-.5 7H17M12 11v8m-3-3 3 3 3-3"/>',
@@ -1471,6 +1492,20 @@
     renderVisualization('cache');
     renderActions('cache');
   }
+  function refreshLiveNetwork() {
+    const panel = document.getElementById('course-network-panel');
+    if (panel.hidden) return;
+    const visual = document.getElementById('course-network-visual');
+    const helpOpen = !!visual.querySelector('.course-network__help')?.open;
+    const panelScroll = panel.scrollTop;
+    const detailScroll = visual.querySelector('.course-network__content')?.scrollTop || 0;
+    renderVisualization('client', visual);
+    const help = visual.querySelector('.course-network__help');
+    if (help) help.open = helpOpen;
+    const detail = visual.querySelector('.course-network__content');
+    if (detail) detail.scrollTop = detailScroll;
+    panel.scrollTop = panelScroll;
+  }
   document.getElementById('course-tasks').addEventListener('click', () => showArticle('tasks'));
   const wait = ms => new Promise(resolve => setTimeout(resolve, Math.round(ms * 1.8)));
   function pulseLocalCache() {
@@ -1523,6 +1558,16 @@
     const apiRoutes = scriptAvailable ? routes : [];
     const apiOverloaded = scriptAvailable ? overloaded : [];
     let sessionState = 'missing';
+    liveNetwork = {
+      documentStarted: true, documentFinished: false, documentAvailable: false, documentRoute,
+      htmlFault: faults.get('html') || null, cachedFiles, assetOutcomes: {},
+      assetSources: {},
+      assetStarted: { css: false, js: false }, assetFinished: { css: false, js: false },
+      apiSent: false, apiFinished: false, apiResult: null, sessionState,
+      requestCount, usedBalancer, routes: [...apiRoutes], overloaded: [...apiOverloaded],
+      productId, secondProductId, productIds, product, products, productMissing, productMode
+    };
+    refreshLiveNetwork();
     startAlgorithm(pageLoaded ? 'Обновление страницы' : 'Первый запуск');
     if (loadPage && !pageLoaded) algorithmStep(hasSession() ? 'api' : 'error', hasSession()
       ? 'До загрузки: пользователь уже вошёл через POST /auth/login; сервер ранее выдал сессию на пять минут. Сброс начал упражнение с этого состояния.'
@@ -1550,15 +1595,23 @@
         cacheCleared = false;
         showPackets(['cache']);
         save();
+        liveNetwork.documentAvailable = true;
+        liveNetwork.documentFinished = true;
+        refreshLiveNetwork();
         algorithmStep('resource', `HTML получен от сервера ${documentRoute === 'app-a' ? 'A' : 'B'}.`);
         refreshLiveApplication();
       }
       await wait(460);
       if (run !== playRun) return;
       if (documentAvailable && faults.has('html') && !cacheCleared) {
+        liveNetwork.documentAvailable = true;
+        liveNetwork.documentFinished = true;
+        refreshLiveNetwork();
         algorithmStep('resource', 'HTML недоступен в сети; взята сохранённая копия.');
         pulseLocalCache();
       } else if (!documentAvailable) {
+        liveNetwork.documentFinished = true;
+        refreshLiveNetwork();
         if (faults.has('html')) showPackets(['html']);
         algorithmStep('error', 'HTML не получен — браузер не загрузил страницу.');
       }
@@ -1568,10 +1621,17 @@
           if (run !== playRun) return;
           const fileName = file === 'css' ? 'style.css' : 'app.js';
           const outcome = assetOutcomes[file];
+          liveNetwork.assetSources[file] = outcome.source;
+          liveNetwork.assetStarted[file] = true;
+          refreshLiveNetwork();
           if (outcome.source === 'browser') {
             algorithmStep('resource', `${fileName} взят из локального кэша; CDN не запрашивали.`);
             pulseLocalCache();
             await wait(420);
+            if (run !== playRun) return;
+            liveNetwork.assetOutcomes[file] = outcome;
+            liveNetwork.assetFinished[file] = true;
+            refreshLiveNetwork();
             continue;
           }
           algorithmStep('resource', `Браузер запросил ${fileName} у CDN.`);
@@ -1596,6 +1656,9 @@
             showPackets([file]);
             algorithmStep('error', `${fileName} не удалось загрузить: ${outcome.reason}. Кэш браузера не заполняется.`);
           }
+          liveNetwork.assetOutcomes[file] = outcome;
+          liveNetwork.assetFinished[file] = true;
+          refreshLiveNetwork();
           await wait(350);
         }
       }
@@ -1603,6 +1666,9 @@
     if (run !== playRun) return;
     if (scriptAvailable) {
       sessionState = !hasSession() ? 'missing' : sessionRestricted ? 'forbidden' : 'ok';
+      liveNetwork.sessionState = sessionState;
+      liveNetwork.apiSent = true;
+      refreshLiveNetwork();
       algorithmStep('api', `JavaScript отправил ${requestCount === 1 ? `GET ${productsPath(productIds)}` : `${requestCount} запросов ${productsPath(productIds)}`}.`);
       algorithmStep(sessionState === 'missing' ? 'error' : 'api', sessionState === 'missing' ? 'Сессионная cookie отсутствует или её срок истёк.' : 'Идентификатор сессии включён в заголовок этого же запроса.');
       pulse('client', usedBalancer ? 'balancer' : 'app-a', ['cookie']);
@@ -1636,7 +1702,12 @@
       await wait(400);
       if (run !== playRun) return;
       if (usedBalancer && routes.some(id => !overloaded.includes(id))) pulse('balancer', 'client', ['json']);
+      liveNetwork.apiResult = apiResponseForCurrentState(liveNetwork);
+      liveNetwork.apiFinished = true;
+      refreshLiveNetwork();
     } else {
+      liveNetwork.apiFinished = true;
+      refreshLiveNetwork();
       algorithmStep('error', documentAvailable ? 'JavaScript недоступен — запрос API не отправлен.' : 'Без HTML браузер не запустил JavaScript и API.');
     }
     remainingRequests = null;
@@ -1645,6 +1716,7 @@
     const sqlAttempted = scriptAvailable && sessionState === 'ok' && apiRoutes.some(id => !apiOverloaded.includes(id));
     lastRun = { requestCount, usedBalancer, routes: [...apiRoutes], documentRoute, counts, overloaded: apiOverloaded, cachedFiles, htmlFault: faults.get('html') || null, assetOutcomes, assetsOffline: faults.has('assets'), originMiss: originMiss && documentAvailable, originOffline, documentAvailable, apiSent: scriptAvailable, sessionState, productMode, productId, secondProductId, productIds, product, products, productMissing, dbResult: sqlAttempted && !faults.has('database') ? dbRows : null };
     lastRun.apiResult = apiResponseForCurrentState();
+    liveNetwork = null;
     if (loadPage) {
       pageLoaded = documentAvailable;
     }
@@ -1654,7 +1726,7 @@
     receiveResponse();
     renderVisualization(selected);
     if (selected) renderActions(selected);
-    if (networkSelected) renderVisualization('client', document.getElementById('course-network-visual'));
+    refreshLiveNetwork();
     if (networkSelected) renderActions(networkSelected);
     const apiResponse = apiResponseForCurrentState();
     if (scriptAvailable) algorithmStep(apiResponse.code === '200' && !apiResponse.bodyIssue ? 'api' : 'error', `Ответ API: ${apiResponse.code} · ${apiResponse.label}.`);
@@ -1663,6 +1735,7 @@
   });
   resetButton.addEventListener('click', () => {
     playRun++;
+    liveNetwork = null;
     pulsedPackets.clear();
     shownPackets.clear();
     packetHost.querySelectorAll('[data-packet]').forEach(marker => {
