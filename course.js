@@ -422,7 +422,7 @@
       heading.type = 'button';
       heading.className = 'course-task__heading';
       heading.setAttribute('aria-expanded', expanded === task.id ? 'true' : 'false');
-      heading.innerHTML = `<span class="course-task__mark">${completedTasks.has(task.id) ? '✓' : ''}</span><strong>${escapeHtml(task.title)}</strong><span class="course-task__chevron" aria-hidden="true">⌄</span>`;
+      heading.innerHTML = `<span class="course-task__mark">${completedTasks.has(task.id) ? '✓' : ''}</span><strong>${escapeHtml(task.title)}</strong><span class="course-task__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
       const panel = document.createElement('div');
       panel.className = 'course-task__panel';
       panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => {
