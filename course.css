@@ -63,6 +63,10 @@ html[data-theme="dark"] .course-page { --course-packet: #303840; --course-resour
 .course-network-panel .course-network { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .course-network-panel .course-network__split { flex: 1; min-height: 0; align-items: stretch; }
 .course-network-panel .course-network__detail { display: flex; flex-direction: column; min-height: 0; }
+.course-network-panel:has(.course-network__help[open]) #course-network-visual { display: block; flex: none; min-height: auto; }
+.course-network-panel:has(.course-network__help[open]) .course-network { display: block; min-height: auto; }
+.course-network-panel:has(.course-network__help[open]) .course-network__split { height: clamp(190px, 28vh, 300px); min-height: 0; }
+.course-network-panel:has(.course-network__help[open]) .course-network__help { padding-bottom: .75rem; }
 .course-scroller { position: absolute; inset: 0; overflow: hidden; overscroll-behavior: none; touch-action: none; background: var(--map-bg); cursor: grab; user-select: none; }
 .course-scroller::-webkit-scrollbar { display: none; }
 .course-scroller.is-dragging { cursor: grabbing; user-select: none; }
@@ -211,6 +215,7 @@ html[data-theme="dark"] .course-packet[data-pair="db"] { --packet-pair-color: #c
 .course-article.is-closing { animation: course-article-out .28s ease both; pointer-events: none; }
 @keyframes course-article-out { to { opacity: 0; transform: translateX(18px); } }
 .course-article__scroll { overflow-y: auto; min-height: 0; padding: .1rem 0 1.5rem; scrollbar-width: thin; }
+.course-article:has(.course-article__theory[open]) .course-article__scroll { display: block; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 1rem; }
 .course-article:has(.course-article__theory:not([open])) .course-article__scroll { display: flex; flex-direction: column; padding-bottom: 0; }
 .course-article:has(.course-article__theory:not([open])) #course-article-visual:not(:empty) { display: flex; flex: 1 0 auto; flex-direction: column; min-height: 0; }
 .course-article:has(.course-article__theory:not([open])) #course-article-visual > .course-viz { display: flex; flex: 1; flex-direction: column; margin: .35rem 0 .25rem; }

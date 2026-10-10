@@ -956,6 +956,16 @@
     update();
   }
   function syncNetworkSelection() {
+    if (networkKey === 'login') {
+      networkSelected = '';
+      activeActionId = '';
+      document.getElementById('course-network-selection').textContent = 'Авторизация';
+      document.getElementById('course-network-flow').textContent = networkTab === 'headers' ? 'запрос' : 'ответ';
+      document.getElementById('course-network-action-buttons').replaceChildren();
+      document.getElementById('course-network-action-result').textContent = '';
+      update();
+      return;
+    }
     const request = { document: 'request', css: 'css-get', js: 'js-get', api: 'cookie' };
     const response = { document: 'html', css: 'css', js: 'js', api: 'json' };
     setNetworkSelection((networkTab === 'headers' ? request : response)[networkKey]);
@@ -965,6 +975,10 @@
     const productIds = requestedProductIds();
     const pendingApi = !lastRun || productIds.some((value, index) => value !== (lastRun.productIds || [lastRun.productId])[index]);
     const api = pendingApi ? { code: '—', label: '—' } : lastRun.apiResult;
+    const login = { key: 'login', method: 'POST', name: '/auth/login', path: 'https://site.example/auth/login', status: '200', source: 'ранее · вне карты',
+      headers: `POST /auth/login HTTP/1.1\nHost: site.example\nContent-Type: application/json\n\n{"login":"student","password":"••••"}\n\nHTTP/1.1 200 OK\nContent-Type: application/json\nSet-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`,
+      preview: 'Вход выполнен до начала упражнения. Сервер выдал сессионную cookie; этот прошлый запрос не показан на карте.',
+      response: '{\n  "user": "student",\n  "authenticated": true\n}' };
     const fileEntry = file => {
       const outcome = lastRun?.assetOutcomes?.[file];
       const name = file === 'css' ? 'style.css' : 'app.js';
@@ -983,9 +997,9 @@
       headers: `GET ${productsPath()} HTTP/1.1\nHost: site.example\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${!pendingApi && lastRun.apiSent ? api.code : '—'}`,
       preview: pendingApi ? '—' : !lastRun.apiSent ? 'JavaScript не отправил запрос API.' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.code === '200' ? (lastRun.products || [lastRun.product].filter(Boolean)).map(product => `${product.name} · ${product.price.toLocaleString('ru-RU')} ₽`).join('\n') : api.label,
       response: pendingApi ? '—' : exampleFor('client')?.text || '—' };
-    const entries = { document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
+    const entries = { login, document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
     const keys = ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css-get', 'css'].includes(id) ? ['css'] : ['js-get', 'js'].includes(id) ? ['js'] : ['document', 'css', 'js', 'api'];
-    return keys.map(key => entries[key]);
+    return ['login', ...keys].map(key => entries[key]);
   }
   function renderVisualization(id, host = document.getElementById('course-article-visual')) {
     if (!host || !id) return;
@@ -1001,17 +1015,17 @@
       const entry = entries.find(item => item.key === networkKey);
       const content = networkTab === 'headers' ? entry.headers : networkTab === 'preview' ? entry.preview : entry.response;
       const pagePreview = entry.key === 'document' && networkTab === 'preview';
-      const contentMarkup = pagePreview ? htmlPagePreview() : entry.key === 'api' && networkTab === 'headers'
-        ? content.split('\n').map(line => line.startsWith('Cookie: ')
-          ? `<span class="course-network__cookie-line"><span data-session-cookie>${escapeHtml(line)}</span><span class="course-network__session-time" data-session-remaining></span></span>`
+      const contentMarkup = pagePreview ? htmlPagePreview() : networkTab === 'headers'
+        ? content.split('\n').map(line => line.startsWith('Cookie: ') || line.startsWith('Set-Cookie: ')
+          ? `<span class="course-network__cookie-line"><span ${line.startsWith('Set-Cookie: ') ? 'data-session-set-cookie' : 'data-session-cookie'}>${escapeHtml(line)}</span><span class="course-network__session-time" data-session-remaining></span></span>`
           : escapeHtml(line)).join('\n')
         : escapeHtml(content);
-      const pairNames = { document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
-      const help = { document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
+      const pairNames = { login: 'Вход · запрос → cookie', document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
+      const help = { login: '<p>Это отдельный учебный POST-запрос, выполненный до начала схемы. Сервер возвращает HTTP 200 и заголовок Set-Cookie с сессией на пять минут. Браузер сохраняет cookie и добавляет заголовок Cookie к следующему запросу API. Сессия не продлевается автоматически.</p>', document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
       const urlMarkup = entry.key === 'api'
         ? `<span class="course-network__path course-network__path--api">/api/products?ids=<input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара">,<input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара"></span>`
         : `<span class="course-network__path">${escapeHtml(entry.path)}</span>`;
-      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--get">GET</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>${pairNames[entry.key]} · как это работает</summary><div>${help[entry.key]}</div></details></section>`;
       refreshSessionDisplay();
       host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); }));
       host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); }));
@@ -1169,6 +1183,7 @@
     const remaining = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
     const inactiveLabel = sessionExpiresAt === 0 ? 'удалена' : 'истекла';
     document.querySelectorAll('[data-session-cookie]').forEach(label => { label.textContent = `Cookie: session=${sessionToken}`; });
+    document.querySelectorAll('[data-session-set-cookie]').forEach(label => { label.textContent = `Set-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`; });
     document.querySelectorAll('[data-session-remaining]').forEach(badge => {
       badge.textContent = seconds ? remaining : inactiveLabel;
       badge.classList.toggle('is-expired', !seconds);
