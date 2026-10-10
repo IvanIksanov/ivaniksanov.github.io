@@ -1308,15 +1308,33 @@
       });
     });
   }
+  function fitNetworkActions() {
+    const container = document.getElementById('course-network-action-buttons');
+    if (!container.clientWidth || !container.childElementCount) return;
+    container.classList.remove('is-compact');
+    const buttons = [...container.children];
+    buttons.forEach(button => { button.textContent = button.dataset.actionLabel; });
+    const gap = parseFloat(getComputedStyle(container).columnGap) || 0;
+    const requiredWidth = buttons.reduce((width, button) => width + button.getBoundingClientRect().width, 0) + gap * (buttons.length - 1);
+    if (requiredWidth <= container.clientWidth) return;
+    container.classList.add('is-compact');
+    buttons.forEach(button => { button.innerHTML = actionIcon(button.dataset.actionLabel); });
+  }
   function renderActions(id) {
     const networkAction = id === 'login' || browserPacketIds.has(id);
     const actionButtons = document.getElementById(networkAction ? 'course-network-action-buttons' : 'course-action-buttons');
     actionButtons.replaceChildren();
+    if (networkAction) actionButtons.classList.remove('is-compact');
     function add(label, handler, destructive = false, disabled = false) {
       const button = document.createElement('button');
       button.type = 'button';
       button.disabled = disabled;
-      if (networkAction) button.textContent = label;
+      if (networkAction) {
+        button.textContent = label;
+        button.dataset.actionLabel = label;
+        button.dataset.tooltip = label;
+        button.setAttribute('aria-label', label);
+      }
       else {
         button.innerHTML = actionIcon(label);
         button.setAttribute('aria-label', label);
@@ -1412,8 +1430,10 @@
       const empty = cacheCleared && !hasCachedAsset('css') && !hasCachedAsset('js');
       add(empty ? 'Кэш пуст' : 'Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report(''); }, false, empty);
     }
-    if (!networkAction) actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
+    if (networkAction) fitNetworkActions();
+    else actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
   }
+  new ResizeObserver(fitNetworkActions).observe(document.getElementById('course-network-panel'));
   let playRun = 0;
   const playButton = document.getElementById('course-play');
   function syncPlayButton() {
