@@ -158,7 +158,6 @@ html[data-theme="dark"] .course-node[data-node="assets"].is-cache-miss::after { 
 .course-example__json-key { color: var(--course-resource); font-weight: 700; }
 .course-example__keyword { color: #9a67bc; font-weight: 800; }
 .course-example--sql { margin: .15rem 0 .35rem; padding: .55rem; border: 1px solid var(--map-border); border-radius: 14px; background: color-mix(in srgb, var(--course-blue) 4%, var(--map-surface)); }
-.course-example--sql h3 { margin: 0 0 .35rem; font-size: .8rem; }
 .course-example--sql pre { padding: .55rem; overflow: visible; border-color: color-mix(in srgb, var(--course-blue) 24%, var(--map-border)); background: var(--map-bg); font-size: .8rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
 .course-example--sql .course-example__line { white-space: pre-wrap; }
 .course-sql-command { display: flex; align-items: center; gap: .4rem; margin-top: .5rem; border-bottom: 1px solid var(--map-border); }

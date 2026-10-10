@@ -174,7 +174,8 @@
     if (!host || selected !== id) return;
     host.hidden = !example;
     if (!example) return;
-    host.querySelector('h3').textContent = example.title;
+    const heading = host.querySelector('h3');
+    if (heading) heading.textContent = example.title;
     const code = host.querySelector('code');
     code.replaceChildren();
     for (const line of example.text.split('\n')) {
@@ -1187,7 +1188,7 @@
       if (block) primary.append(block);
     }
     renderProductTables();
-    if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', `<section class="course-example${id === 'sql' ? ' course-example--sql' : ''}" id="course-example"><h3></h3><pre><code></code></pre></section>`);
+    if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', `<section class="course-example${id === 'sql' ? ' course-example--sql' : ''}" id="course-example">${id === 'sql' ? '' : '<h3></h3>'}<pre><code></code></pre></section>`);
     renderExample(id);
     if (id === 'sql') {
       primary.append(document.getElementById('course-example'));
