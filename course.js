@@ -427,7 +427,7 @@
       panel.className = 'course-task__panel';
       panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => {
         const symbol = icons[byId.get(place)?.icon || place] || icons.files;
-        return `<div class="course-task__step"><span class="course-task__place" title="${escapeHtml(byId.get(place)?.title || articles[place]?.title || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span><b>${index + 1}.</b> ${escapeHtml(instruction)}${action ? `<span class="course-task__action">${actionIcon(action)}<small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
+        return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place" title="${escapeHtml(byId.get(place)?.title || articles[place]?.title || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action">${actionIcon(action)}<small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
       }).join('')}</div>`;
       heading.addEventListener('click', () => {
         const open = !item.classList.contains('is-expanded');
