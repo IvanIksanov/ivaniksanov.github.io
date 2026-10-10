@@ -24,7 +24,8 @@
     database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
     files: '<path d="M5 3h9l5 5v13H5zM14 3v5h5M8 12h8M8 16h8"/>',
     cdn: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9a4.5 4.5 0 0 0 1 9Z"/><path d="M9 14h6"/>',
-    storage: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 13h8m-8 3h5"/>'
+    storage: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 13h8m-8 3h5"/>',
+    cache: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>'
   };
   const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
   const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
@@ -225,6 +226,51 @@
     const state = document.getElementById('course-db-state');
     if (state) state.textContent = `Для ID ${requestedProductIds().join(' и ')} база вернёт ${rowCountLabel([...new Set(requestedProductIds())].map(productFor).filter(Boolean).length)}.`;
   }
+  function applyDatabaseCommand(raw) {
+    const command = raw.trim().toLowerCase().replace(/\s+/g, ' ').replace(/ё/g, 'е');
+    const match = command.match(/^(удалить товар|восстановить товар|добавить строку)(?: (\d{1,4}))?$/);
+    if (match) {
+      const verb = match[1];
+      if (verb !== 'добавить строку' && !match[2]) return 'Укажи ID товара, например «удалить товар 42».';
+      let nextAvailableId = 47;
+      while ([...baseProducts, ...extraProducts].some(product => product.id === nextAvailableId)) nextAvailableId++;
+      const id = match[2] ? Number(match[2]) : [...requestedProductIds()].find(item => !productFor(item)) || nextAvailableId;
+      if (id < 1 || id > 9999) return 'Укажи ID от 1 до 9999.';
+      const exists = [...baseProducts, ...extraProducts].some(product => product.id === id);
+      if (verb === 'удалить товар') {
+        if (!exists || deletedProducts.has(id)) return `Товара ${id} сейчас нет в таблице.`;
+        deletedProducts.add(id);
+        productMode = 'empty';
+        return `Товар ${id} удалён. Обнови страницу и сравни результат в Network.`;
+      }
+      if (verb === 'восстановить товар') {
+        if (!exists || !deletedProducts.has(id)) return `Товар ${id} не удалён.`;
+        deletedProducts.delete(id);
+        productMode = 'normal';
+        return `Товар ${id} восстановлен.`;
+      }
+      if (deletedProducts.has(id)) {
+        deletedProducts.delete(id);
+        productMode = 'normal';
+        return `Строка ${id} восстановлена. Обнови страницу.`;
+      }
+      if (exists) return `Строка ${id} уже есть в products.`;
+      if (extraProducts.length >= 12) return 'В этой модели можно добавить не больше 12 строк.';
+      extraProducts.push({ id, name: `Товар для проверки ${id}`, price: 4990 + extraProducts.length * 1000, currency: 'RUB' });
+      productMode = 'normal';
+      return `Строка ${id} добавлена. Запроси этот ID в Network и обнови страницу.`;
+    }
+    if (command === 'отключить базу' || command === 'включить базу') {
+      if (command === 'отключить базу') faults.set('database', 'offline');
+      else faults.delete('database');
+      return command === 'отключить базу' ? 'База отключена. Обнови страницу и проверь ответ API.' : 'База снова доступна.';
+    }
+    if (command === 'пустое тело 200' || command === 'ошибка в теле 200' || command === 'обычный ответ') {
+      productMode = command === 'пустое тело 200' ? 'empty' : command === 'ошибка в теле 200' ? 'embedded-error' : 'normal';
+      return productMode === 'normal' ? 'Обычный ответ восстановлен.' : `Режим «${command}» включён. Он проявится, если SELECT вернёт 0 строк.`;
+    }
+    return 'Команда не распознана. Открой задание: там показаны точные команды и порядок действий.';
+  }
 
   const scroller = document.getElementById('course-scroller');
   const nodeHost = document.getElementById('course-nodes');
@@ -333,51 +379,69 @@
   let pageLoaded = false;
   const runHistory = [];
   const completedTasks = new Set();
+  const missingProductIdsSeen = new Set();
   let liveRoutes = null;
   let savedPosition = null;
   let savedPanels = null;
   const faults = new Map();
   const taskDefinitions = [
-    { id: 'status-200', title: '200 · страница и данные получены', hint: 'Оставь серверы, базу и источник файлов включёнными. Получи действующую сессию, загрузи или обнови страницу и открой «Данные API» в Network клиента: там должны быть HTTP 200 и товар.' },
-    { id: 'status-401', title: '401 · нет действующей сессии', hint: 'Сначала загрузи страницу. Затем открой «API · запрос» на линии и нажми «Удалить сессию» либо дождись конца пяти минут. Обнови страницу: HTML загрузится, но защищённый API ответит 401.' },
-    { id: 'status-403', title: '403 · доступ запрещён', hint: 'В «API · запрос» сначала получи действующую сессию, затем нажми «Ограничить права». Обнови страницу: cookie уйдёт в API-запросе, но сервер вернёт 403.' },
-    { id: 'status-404', title: '404 · ресурс не найден', hint: 'Для ошибки документа открой HTML и нажми «Удалить HTML на сервере», затем очисти кэш браузера. Следующая загрузка получит 404 для GET /. Другой вариант: запроси ID товара, которого нет в таблице, в обычном режиме API.' },
-    { id: 'status-503', title: '503 · API недоступен', hint: 'Открой базу данных и нажми «Отключить базу». При действующей сессии обнови страницу: документ может прийти с 200, а запрос данных API завершится 503.' },
-    { id: 'status-none', title: 'Нет HTTP-ответа', hint: 'Отключи балансировщик и останови сервер A. Теперь у клиента нет доступного маршрута: после запуска схема покажет отсутствие HTTP-ответа.' },
-    { id: 'status-cache', title: '200 · файлы из кэша браузера', hint: 'Сначала загрузи страницу и сохрани CSS и JS. Затем отключи CDN, не очищая кэш браузера, и обнови страницу: файлы придут из локальной копии.' },
-    { id: 'first-css', title: 'Запроси CSS у CDN', hint: 'Очисти кэш браузера и загрузи страницу: браузер отправит отдельный GET style.css.' },
-    { id: 'css-cache', title: 'Загрузи CSS из кэша браузера', hint: 'Сначала загрузи страницу, затем отключи CDN и обнови её без очистки кэша браузера.' },
-    { id: 'origin-miss', title: 'Получи CSS и JS из источника', hint: 'Очисти кэш браузера, включи cache miss на CDN и обнови страницу при работающем источнике.' },
-    { id: 'missing-js', title: 'Найди пропавший JavaScript', hint: 'Очисти кэш браузера, включи cache miss на CDN, удали app.js в источнике и обнови страницу.' },
-    { id: 'cdn-copy', title: 'Получи JS из копии CDN', hint: 'Удали app.js в источнике, очисти кэш браузера, верни cache hit на CDN и обнови страницу.' },
-    { id: 'origin-offline', title: 'Проверь недоступный источник', hint: 'Очисти кэш браузера, включи cache miss на CDN, отключи источник файлов и обнови страницу.' },
-    { id: 'empty-body', title: '200 · пустое тело ответа', hint: 'Выбери ID товара в Network клиента, открой базу и удали эту строку. Оставь режим «Пустое тело 200», обнови страницу и сравни HTTP-статус с вкладкой «Ответ».' },
-    { id: 'body-error', title: '200 · ошибка внутри JSON', hint: 'Выбери ID товара в Network клиента, удали его из базы и переключи режим на «Ошибка в теле 200». Обнови страницу: HTTP покажет 200, а в JSON окажется error.code: 404.' },
-    { id: 'route-b', title: 'Переведи запрос на сервер B', hint: 'Останови A при работающем балансировщике и обнови страницу.' },
-    { id: 'balanced-load', title: 'Распредели 1000 запросов', hint: 'Оба сервера должны работать: балансировщик отправит по 500 каждому.' },
-    { id: 'overload-a', title: 'Перегрузи сервер A', hint: 'Отключи балансировщик и отправь 1000 запросов напрямую.' },
-    { id: 'failover-b', title: 'Продолжи работу через B', hint: 'После падения A восстанови балансировщик и запусти схему ещё раз.' },
-    { id: 'overload-b', title: 'Перегрузи сервер B', hint: 'Оставь B единственным доступным сервером и отправь 1000 запросов.' }
+    { id: 'status-200', title: '200 · страница и данные получены', steps: [['client', 'Оставь схему рабочей и загрузи страницу.'], ['cookie', 'В Network открой API: проверь HTTP 200 и оба товара.']] },
+    { id: 'status-401', title: '401 · нет действующей сессии', steps: [['client', 'Сначала загрузи страницу.'], ['cookie', 'В API-запросе удали сессию и обнови страницу: API ответит 401.', 'Удалить сессию']] },
+    { id: 'status-403', title: '403 · доступ запрещён', steps: [['cookie', 'При действующей сессии ограничь права в API-запросе.', 'Ограничить права'], ['client', 'Обнови страницу и проверь 403 в Network.']] },
+    { id: 'status-404', title: '404 · ресурс не найден', steps: [['cookie', 'В Network укажи два отсутствующих ID, например 98 и 99.'], ['database', 'Если раньше включал «пустое тело 200» или «ошибка в теле 200», введи «обычный ответ».'], ['client', 'Обнови страницу: API вернёт HTTP 404.']] },
+    { id: 'status-503', title: '503 · API недоступен', steps: [['database', 'В поле команд базы введи «отключить базу».'], ['client', 'С действующей сессией обнови страницу и проверь 503 у API.']] },
+    { id: 'status-none', title: 'Нет HTTP-ответа', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['app-a', 'Останови сервер A и обнови страницу.', 'Остановить сервер']] },
+    { id: 'status-cache', title: '200 · файлы из кэша браузера', steps: [['client', 'Загрузи страницу, чтобы CSS и JS сохранились.'], ['assets', 'Отключи CDN, затем обнови страницу, не очищая кэш браузера.', 'Отключить CDN']] },
+    { id: 'first-css', title: 'Запроси CSS у CDN', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['client', 'Загрузи страницу: в Network появится GET style.css.']] },
+    { id: 'css-cache', title: 'Загрузи CSS из кэша браузера', steps: [['client', 'Загрузи страницу один раз.'], ['assets', 'Отключи CDN и обнови страницу, не очищая локальный кэш.', 'Отключить CDN']] },
+    { id: 'origin-miss', title: 'Получи CSS и JS из источника', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'В CDN включи cache miss.', 'Сымитировать cache miss'], ['client', 'Обнови страницу: CDN запросит оба оригинала у источника.']] },
+    { id: 'missing-js', title: 'Найди пропавший JavaScript', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'Включи cache miss.', 'Сымитировать cache miss'], ['storage', 'Удали app.js в строке источника и обнови страницу.', 'Удалить app.js']] },
+    { id: 'cdn-copy', title: 'Получи JS из копии CDN', steps: [['storage', 'Удали app.js из источника.', 'Удалить app.js'], ['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'Верни cache hit и обнови страницу.', 'Вернуть cache hit']] },
+    { id: 'origin-offline', title: 'Проверь недоступный источник', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'Включи cache miss.', 'Сымитировать cache miss'], ['storage', 'Отключи источник и обнови страницу.', 'Отключить источник']] },
+    { id: 'empty-body', title: '200 · пустое тело ответа', steps: [['cookie', 'В Network посмотри два ID запроса, изначально 42 и 43.'], ['database', 'Удали оба запрошенных товара. Например: «удалить товар 42», затем «удалить товар 43». Введи «пустое тело 200».'], ['client', 'Обнови страницу: HTTP 200, но тело API пустое.']] },
+    { id: 'body-error', title: '200 · ошибка внутри JSON', steps: [['cookie', 'В Network посмотри оба ID запроса.'], ['database', 'Удали оба запрошенных товара. Например: «удалить товар 42» и «удалить товар 43». Введи «ошибка в теле 200».'], ['client', 'Обнови страницу: HTTP 200, внутри JSON — error.code: 404.']] },
+    { id: 'missing-then-add', title: 'Найди товар, добавь строку и повтори запрос', steps: [['cookie', 'В Network замени второй ID на отсутствующий 99 и обнови страницу: в просмотре не будет второй карточки.'], ['database', 'В поле команд введи «добавить строку 99».'], ['client', 'Обнови страницу ещё раз: карточка товара 99 появится в просмотре HTML.']] },
+    { id: 'route-b', title: 'Переведи запрос на сервер B', steps: [['app-a', 'Останови A при работающем балансировщике.', 'Остановить сервер'], ['client', 'Обнови страницу и проверь путь через B.']] },
+    { id: 'balanced-load', title: 'Распредели 1000 запросов', steps: [['client', 'В Article клиента выбери 1000 запросов.'], ['balancer', 'Оставь балансировщик и оба сервера включёнными, затем обнови страницу.']] },
+    { id: 'overload-a', title: 'Перегрузи сервер A', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['client', 'Выбери 1000 запросов и обнови страницу.']] },
+    { id: 'failover-b', title: 'Продолжи работу через B', steps: [['app-a', 'Сначала перегрузи A предыдущим заданием.'], ['balancer', 'Восстанови балансировщик и обнови страницу.', 'Восстановить балансировщик']] },
+    { id: 'overload-b', title: 'Перегрузи сервер B', steps: [['app-a', 'Останови A, оставив B работающим.', 'Остановить сервер'], ['client', 'Выбери 1000 запросов и обнови страницу через балансировщик.']] }
   ];
   function renderTasks() {
     const host = document.getElementById('course-task-list');
     if (!host) return;
+    const expanded = host.querySelector('.course-task.is-expanded')?.dataset.taskId;
     host.replaceChildren();
     for (const task of taskDefinitions) {
       const item = document.createElement('div');
       item.className = 'course-task';
+      item.dataset.taskId = task.id;
       item.classList.toggle('is-complete', completedTasks.has(task.id));
-      const title = document.createElement('strong');
-      title.textContent = `${completedTasks.has(task.id) ? '✓ ' : ''}${task.title}`;
-      const hint = document.createElement('span');
-      hint.textContent = task.hint;
-      item.append(title, hint);
+      item.classList.toggle('is-expanded', expanded === task.id);
+      const heading = document.createElement('button');
+      heading.type = 'button';
+      heading.className = 'course-task__heading';
+      heading.setAttribute('aria-expanded', expanded === task.id ? 'true' : 'false');
+      heading.innerHTML = `<span class="course-task__mark">${completedTasks.has(task.id) ? '✓' : ''}</span><strong>${escapeHtml(task.title)}</strong><span class="course-task__chevron" aria-hidden="true">⌄</span>`;
+      const panel = document.createElement('div');
+      panel.className = 'course-task__panel';
+      panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => {
+        const symbol = icons[byId.get(place)?.icon || place] || icons.files;
+        return `<div class="course-task__step"><span class="course-task__place" title="${escapeHtml(byId.get(place)?.title || articles[place]?.title || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span><b>${index + 1}.</b> ${escapeHtml(instruction)}${action ? `<span class="course-task__action">${actionIcon(action)}<small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
+      }).join('')}</div>`;
+      heading.addEventListener('click', () => {
+        const open = !item.classList.contains('is-expanded');
+        host.querySelectorAll('.course-task.is-expanded').forEach(other => { other.classList.remove('is-expanded'); other.querySelector('.course-task__heading').setAttribute('aria-expanded', 'false'); });
+        item.classList.toggle('is-expanded', open);
+        heading.setAttribute('aria-expanded', String(open));
+      });
+      item.append(heading, panel);
       host.append(item);
     }
   }
   function evaluateTasks(result) {
     const routes = result.routes;
-    if (lastResponse?.code === '200' && lastResponse.mode === 'ok' && !lastResponse.bodyIssue && result.apiSent) completedTasks.add('status-200');
+    if (lastResponse?.code === '200' && lastResponse.mode === 'ok' && !lastResponse.bodyIssue && result.apiSent && result.productIds.every(id => result.products.some(product => product.id === id))) completedTasks.add('status-200');
     if (lastResponse?.code === '401') completedTasks.add('status-401');
     if (lastResponse?.code === '403') completedTasks.add('status-403');
     if (lastResponse?.code === '404') completedTasks.add('status-404');
@@ -393,6 +457,8 @@
     if (result.originOffline && Object.values(result.assetOutcomes || {}).some(outcome => outcome.state === 'failed')) completedTasks.add('origin-offline');
     if (result.apiSent && result.productMode === 'empty' && lastResponse?.bodyIssue === 'empty') completedTasks.add('empty-body');
     if (result.apiSent && result.productMode === 'embedded-error' && lastResponse?.bodyIssue === 'embedded-error') completedTasks.add('body-error');
+    if (result.apiSent && result.sessionState === 'ok' && !faults.has('database') && ['200', '404'].includes(result.apiResult?.code)) result.productIds.filter(id => !result.products.some(product => product.id === id)).forEach(id => missingProductIdsSeen.add(id));
+    if (result.apiSent && result.productIds.some(id => id >= 47 && missingProductIdsSeen.has(id) && result.products.some(product => product.id === id))) completedTasks.add('missing-then-add');
     if (result.requestCount === 1000 && result.counts['app-a'] === 500 && result.counts['app-b'] === 500 && !result.overloaded.length) completedTasks.add('balanced-load');
     if (result.requestCount === 1000 && !result.usedBalancer && result.overloaded.includes('app-a')) completedTasks.add('overload-a');
     if (result.requestCount === 1000 && result.overloaded.includes('app-b')) completedTasks.add('overload-b');
@@ -421,11 +487,14 @@
     if (Number.isInteger(saved.selectedProductId) && saved.selectedProductId >= 1 && saved.selectedProductId <= 9999) selectedProductId = saved.selectedProductId;
     if (Number.isInteger(saved.selectedSecondProductId) && saved.selectedSecondProductId >= 1 && saved.selectedSecondProductId <= 9999) selectedSecondProductId = saved.selectedSecondProductId;
     if (Array.isArray(saved.extraProducts)) for (const product of saved.extraProducts.slice(0, 12)) {
-      if (Number.isInteger(product?.id) && product.id >= 47 && product.id <= 9999 && typeof product.name === 'string' && Number.isFinite(product.price)) extraProducts.push(product);
+      if (Number.isInteger(product?.id) && product.id >= 1 && product.id <= 9999 && !baseProducts.some(row => row.id === product.id) && !extraProducts.some(row => row.id === product.id) && typeof product.name === 'string' && Number.isFinite(product.price)) extraProducts.push(product);
     }
     if (Array.isArray(saved.deletedProducts)) {
       for (const id of saved.deletedProducts) if (Number.isInteger(id)) deletedProducts.add(id);
     } else if (saved.productMode && saved.productMode !== 'normal') deletedProducts.add(42);
+    if (Array.isArray(saved.missingProductIdsSeen)) for (const id of saved.missingProductIdsSeen) {
+      if (Number.isInteger(id) && id >= 1 && id <= 9999) missingProductIdsSeen.add(id);
+    }
     configuredRequests = LOAD_OPTIONS.has(saved.configuredRequests) ? saved.configuredRequests : 1;
     pageLoaded = saved.pageLoaded === true;
     if (Array.isArray(saved.faults)) for (const [id, value] of saved.faults) {
@@ -491,7 +560,7 @@
   function syncResetButton() { resetButton.disabled = !hasResettableProgress(); }
   function save() {
     syncResetButton();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, completedTasks: [...completedTasks], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, completedTasks: [...completedTasks], missingProductIdsSeen: [...missingProductIdsSeen], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
   }
   function activeApp() {
     if (!faults.has('app-a')) return 'app-a';
@@ -956,7 +1025,7 @@
       ? '<div class="course-page-preview__document-wait"><strong>Ожидаем HTML…</strong><span>Браузер отправил GET /.</span></div>'
       : documentFailed
       ? `<div class="course-page-preview__document-error"><strong>${htmlFault === 'corrupt' ? 'Разметка повреждена' : 'Страница не загрузилась'}</strong><span>${htmlFault === 'corrupt' ? 'Сервер ответил 200, но HTML нельзя правильно построить.' : 'Браузер не получил HTML.'}</span></div>`
-      : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main>${productMarkup}<div class="course-page-preview__extras" aria-hidden="true"><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Характеристики</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--short"></span></div><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Описание</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--medium"></span></div></div></main></div>`;
+      : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main><div class="course-page-preview__products" aria-label="Список товаров" tabindex="0">${productMarkup}</div><div class="course-page-preview__extras" aria-hidden="true"><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Характеристики</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--short"></span></div><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Описание</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--medium"></span></div></div></main></div>`;
     return `<div class="course-page-preview course-page-preview--${state}${products[0] ? ` course-page-preview--product-${products[0].id}` : ''}${products[1] ? ` course-page-preview--product-secondary-${products[1].id}` : ''}" role="img" aria-label="${escapeHtml(summary)}">${page}</div>`;
   }
   function setNetworkSelection(id) {
@@ -1076,7 +1145,20 @@
       return;
     }
     if (id === 'database') {
-      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}<p class="course-viz__foot">SELECT … WHERE id IN (${requestedProductIds().join(', ')}) → ${rowCountLabel([...new Set(requestedProductIds())].map(productFor).filter(Boolean).length)}</p></section>`;
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}<form class="course-db-command" aria-label="Команда для учебной базы"><input type="text" name="command" autocomplete="off" spellcheck="false" maxlength="64" placeholder="Команда из задания…" aria-label="Команда для базы данных" ${playButton.disabled ? 'disabled' : ''}><button type="submit" aria-label="Выполнить команду" ${playButton.disabled ? 'disabled' : ''}>↵</button></form></section>`;
+      host.querySelector('.course-db-command').addEventListener('submit', event => {
+        event.preventDefault();
+        if (playButton.disabled) return;
+        const input = event.currentTarget.querySelector('input[name="command"]');
+        if (!input.value.trim()) return;
+        activeActionId = 'database';
+        const message = applyDatabaseCommand(input.value);
+        renderProductTables();
+        renderVisualization('database', host);
+        renderActions('database');
+        update();
+        report(message);
+      });
       return;
     }
     if (id === 'db-result') {
@@ -1414,30 +1496,7 @@
     } else if (id === 'app-a' || id === 'app-b') {
       add(faults.has(id) ? 'Запустить сервер' : 'Остановить сервер', () => toggleFault(id), !faults.has(id));
     } else if (id === 'database') {
-      add(faults.has(id) ? 'Включить базу' : 'Отключить базу', () => toggleFault(id), !faults.has(id));
-      for (const productId of new Set(requestedProductIds())) {
-        if (productFor(productId)) add(`Удалить товар ${productId}`, () => {
-          deletedProducts.add(productId); productMode = 'empty'; renderProductTables(); renderActions(id); save();
-          report(`Товар ${productId} удалён. После запуска API вернёт только оставшиеся найденные товары.`);
-        }, true);
-        else if ([...baseProducts, ...extraProducts].some(product => product.id === productId)) add(`Восстановить товар ${productId}`, () => {
-          deletedProducts.delete(productId); productMode = 'normal'; renderProductTables(); renderActions(id); save();
-          report(`Товар ${productId} восстановлен. Обнови страницу, чтобы получить его данные.`);
-        });
-      }
-      if (!requestedProductIds().some(productFor)) {
-        add(productMode === 'empty' ? 'Ошибка в теле 200' : 'Пустое тело 200', () => {
-          productMode = productMode === 'empty' ? 'embedded-error' : 'empty';
-          renderProductTables(); renderActions(id); save();
-          report(productMode === 'embedded-error' ? 'Обнови страницу: HTTP 200 придёт с кодом ошибки 404 внутри JSON.' : 'Обнови страницу: HTTP 200 придёт с пустым телом.');
-        });
-      }
-      if (extraProducts.length < 12) add('Добавить строку', () => {
-        const newId = 47 + extraProducts.length;
-        extraProducts.push({ id: newId, name: `Товар для проверки ${newId}`, price: 4990 + extraProducts.length * 1000, currency: 'RUB' });
-        renderProductTables(); renderActions(id); save();
-        report(`Строка ${newId} добавлена в products. Укажи этот ID в Network и запусти запрос.`);
-      });
+      // Команды для базы вводятся в поле под таблицей; шапка Article остаётся свободной.
     } else if (id === 'assets') {
       add(faults.has('assets') ? 'Включить CDN' : 'Отключить CDN', () => toggleFault('assets'), !faults.has('assets'));
       add(cdnBypass ? 'Вернуть cache hit' : 'Сымитировать cache miss', () => {
@@ -1761,6 +1820,7 @@
     selectedSecondProductId = 43;
     deletedProducts.clear();
     extraProducts.length = 0;
+    missingProductIdsSeen.clear();
     lastResponse = null;
     lastRun = null;
     networkSelected = '';
