@@ -302,6 +302,18 @@ html[data-theme="dark"] .course-network__session-time.is-expired { color: #f0a69
 .course-network__tabs button { flex: none; padding: .55rem .45rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--map-muted); font: inherit; font-size: .72rem; white-space: nowrap; cursor: pointer; }
 .course-network__tabs button[aria-selected="true"] { border-bottom-color: var(--course-blue); color: var(--map-text); font-weight: 750; }
 .course-network__content { flex: 1; min-height: 0; max-height: none; margin: 0; padding: .6rem; overflow: auto; color: var(--map-text); font-size: .7rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.course-code__key, .course-code__method, .course-code__path { color: #2878ac; font-weight: 700; }
+.course-code__string, .course-code__value, .course-code__success { color: #21815a; }
+.course-code__number { color: #ad6c26; }
+.course-code__tag, .course-code__keyword { color: #8d5eb0; font-weight: 700; }
+.course-code__error { color: #bc514c; font-weight: 700; }
+.course-code__muted, .course-code__comment { color: var(--map-muted); }
+.course-code__comment { font-style: italic; }
+html[data-theme="dark"] .course-code__key, html[data-theme="dark"] .course-code__method, html[data-theme="dark"] .course-code__path { color: #8ec5ef; }
+html[data-theme="dark"] .course-code__string, html[data-theme="dark"] .course-code__value, html[data-theme="dark"] .course-code__success { color: #8dd5b0; }
+html[data-theme="dark"] .course-code__number { color: #e2b376; }
+html[data-theme="dark"] .course-code__tag, html[data-theme="dark"] .course-code__keyword { color: #c8a5e2; }
+html[data-theme="dark"] .course-code__error { color: #efa6a0; }
 .course-network__content--page { display: flex; flex: 1; min-height: 120px; max-height: none; padding: .35rem; overflow: visible; white-space: normal; }
 .course-page-preview { display: flex; flex: 1; flex-direction: column; overflow: hidden; border: 1px solid var(--map-border); border-radius: .8rem; background: var(--map-surface); color: var(--map-text); font: inherit; font-size: clamp(.65rem, .8dvh, .9rem); line-height: 1.35; }
 .course-page-preview--product-42 { --course-preview-accent: #5c94d6; }

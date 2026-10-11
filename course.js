@@ -58,6 +58,16 @@
   let sqlDraft = '';
   let sqlFeedback = '';
   let apiFormat = 'json';
+  function setApiPacketTitle(format) {
+    const packet = packets.find(item => item.id === 'json');
+    packet.title = format === 'xml' ? 'XML' : 'JSON';
+    const element = document.querySelector('[data-packet="json"]');
+    if (element) {
+      element.querySelector('.course-packet__title').textContent = packet.title;
+      element.setAttribute('aria-label', `${packet.title}: пара ${packet.phase}, ответ`);
+    }
+    if (networkSelected === 'json') document.getElementById('course-network-selection').textContent = packet.title;
+  }
   let selectedProductId = 42;
   let selectedSecondProductId = 43;
   const requestedProductIds = () => [selectedProductId, selectedSecondProductId];
@@ -378,10 +388,10 @@
   let savedPanels = null;
   const faults = new Map();
   const taskDefinitions = [
-    { id: 'status-200', title: '200 · страница и данные получены', steps: [['client', 'Оставь схему рабочей и загрузи страницу.'], ['cookie', 'В Network открой API: проверь HTTP 200 и оба товара.']] },
-    { id: 'status-401', title: '401 · нет действующей сессии', steps: [['client', 'Сначала загрузи страницу.'], ['login', 'В строке POST /auth/login удали сессию и обнови страницу: API ответит 401.', 'Удалить сессию']] },
+    { id: 'status-200', title: '200 · страница и данные получены', steps: [['client', 'Оставь схему в исходном состоянии или нажми "Сброс", затем нажми "Загрузить страницу".'], ['cookie', 'На схеме нажми на запрос HTTP с названием "API", проверь его статус-код 200 и оба товара.']] },
+    { id: 'status-401', title: '401 · нет действующей сессии', steps: [['client', 'Сначала загрузи страницу (кнопка "Загрузить страницу" изменилась на "Обновить страницу".'], ['login', 'В строке POST /auth/login удали сессию и обнови страницу: API ответит 401.', 'Удалить сессию']] },
     { id: 'status-403', title: '403 · доступ запрещён', steps: [['app-a', 'На сервере ограничь права активной сессии.', 'Ограничить права'], ['client', 'Обнови страницу и проверь 403 в Network.']] },
-    { id: 'status-404', title: '404 · ресурс не найден', steps: [['cookie', 'В Network укажи два отсутствующих ID, например 98 и 99.'], ['app-a', 'Если включён ошибочный формат ответа, верни обычный ответ.', 'Обычный ответ'], ['client', 'Обнови страницу: API вернёт HTTP 404.']] },
+    { id: 'status-404', title: '404 · ресурс не найден', steps: [['cookie', 'В Network в запросе /api/products укажи два отсутствующих ID, например 98 и 99.'], ['app-a', 'Если включён ошибочный формат ответа, верни обычный ответ.', 'Обычный ответ'], ['client', 'Нажми "Обновить страницу": API вернёт HTTP 404.']] },
     { id: 'status-503', title: '503 · API недоступен', steps: [['database', 'Отключи базу данных.', 'Отключить базу'], ['client', 'С действующей сессией обнови страницу и проверь 503 у API.']] },
     { id: 'status-none', title: 'Нет HTTP-ответа', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['app-a', 'Останови сервер A и обнови страницу.', 'Остановить сервер']] },
     { id: 'status-cache', title: '200 · файлы из кэша браузера', steps: [['client', 'Загрузи страницу, чтобы CSS и JS сохранились.'], ['assets', 'Отключи CDN, затем обнови страницу, не очищая кэш браузера.', 'Отключить CDN']] },
@@ -497,7 +507,7 @@
     }
     if (saved.lastResponse && typeof saved.lastResponse.code === 'string') lastResponse = saved.lastResponse;
     if (saved.lastRun && Array.isArray(saved.lastRun.routes) && Array.isArray(saved.lastRun.overloaded)) lastRun = saved.lastRun;
-    if (lastRun?.apiResult?.bodyIssue === 'xml') packets.find(packet => packet.id === 'json').title = 'XML';
+    setApiPacketTitle(lastRun?.apiResult?.bodyIssue === 'xml' ? 'xml' : 'json');
     if (Array.isArray(saved.shownPackets)) {
       for (const id of saved.shownPackets) if (packets.some(packet => packet.id === id)) shownPackets.add(id);
       // Older progress stored the replies but may lack the newly separated requests.
@@ -1096,6 +1106,51 @@
     const keys = ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css-get', 'css'].includes(id) ? ['css'] : ['js-get', 'js'].includes(id) ? ['js'] : ['document', 'css', 'js', 'api'];
     return ['login', ...keys].map(key => entries[key]);
   }
+  function codeSpan(kind, value) { return `<span class="course-code__${kind}">${escapeHtml(value)}</span>`; }
+  function highlightParts(line, pattern, classify) {
+    let result = '', position = 0;
+    for (const match of line.matchAll(pattern)) {
+      result += escapeHtml(line.slice(position, match.index));
+      result += codeSpan(classify(match[0], match.index, line), match[0]);
+      position = match.index + match[0].length;
+    }
+    return result + escapeHtml(line.slice(position));
+  }
+  function highlightHeaders(line) {
+    const request = line.match(/^(GET|POST|PUT|PATCH|DELETE) (\S+) (HTTP\/\d(?:\.\d)?)$/);
+    if (request) return `${codeSpan('method', request[1])} ${codeSpan('path', request[2])} ${codeSpan('muted', request[3])}`;
+    const response = line.match(/^(HTTP\/\d(?:\.\d)?) (\d{3})(.*)$/);
+    if (response) return `${codeSpan('muted', response[1])} ${codeSpan(Number(response[2]) >= 400 ? 'error' : 'success', response[2])}${escapeHtml(response[3])}`;
+    const header = line.match(/^([^:\s][^:]*:)(\s*)(.*)$/);
+    if (header) return `${codeSpan('key', header[1])}${escapeHtml(header[2])}${codeSpan('value', header[3])}`;
+    return escapeHtml(line);
+  }
+  function highlightMarkup(line) {
+    let result = '', position = 0;
+    for (const match of line.matchAll(/<[^>]+>/g)) {
+      const before = line.slice(position, match.index);
+      result += before.trim() ? codeSpan('value', before) : escapeHtml(before);
+      const tag = match[0].match(/^(<\/?!?)([A-Za-z][\w:-]*)([\s\S]*?)(\/?>)$/);
+      result += tag ? `${codeSpan('muted', tag[1])}${codeSpan('tag', tag[2])}${highlightParts(tag[3], /[A-Za-z_:][\w:.-]*(?=\s*=)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, token => token.startsWith('"') || token.startsWith("'") ? 'string' : 'key')}${codeSpan('muted', tag[4])}` : codeSpan('tag', match[0]);
+      position = match.index + match[0].length;
+    }
+    const after = line.slice(position);
+    return result + (after.trim() ? codeSpan('value', after) : escapeHtml(after));
+  }
+  function highlightNetworkLine(line, entry, tab, isXml) {
+    if (tab === 'headers' || /^(?:HTTP\/\d|(?:GET|POST|PUT|PATCH|DELETE) \S+ HTTP\/|(?:Content-Type|Content-Length|Host|Accept|Cookie|Set-Cookie):)/.test(line)) return highlightHeaders(line);
+    if (tab !== 'response') return escapeHtml(line);
+    if (line.includes('SyntaxError')) return codeSpan('error', line);
+    if ((entry.key === 'api' && isXml) || entry.key === 'document') return highlightMarkup(line);
+    if (entry.key === 'api' || entry.key === 'login') return highlightParts(line, /"(?:\\.|[^"\\])*"(?=\s*:)|"(?:\\.|[^"\\])*"|-?\b\d+(?:\.\d+)?\b|\b(?:true|false|null)\b|[{}\[\]:,]/g, (token, index, source) => token.startsWith('"') ? /^\s*:/.test(source.slice(index + token.length)) ? 'key' : 'string' : /^-?\d|^(true|false|null)$/.test(token) ? 'number' : 'muted');
+    if (entry.key === 'css') return highlightParts(line, /\/\*.*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#[\w-]+|@[a-z-]+|\b[a-z-]+(?=\s*:)|-?\b\d+(?:\.\d+)?(?:px|rem|em|%|vh|vw)?\b|[{}();:,]/g, (token, index, source) => token.startsWith('/*') ? 'comment' : /^['"]/.test(token) ? 'string' : /^-?\d|^#[\da-f]{3,8}$/i.test(token) ? 'number' : /^@/.test(token) ? 'keyword' : /^\w/.test(token) && /^\s*:/.test(source.slice(index + token.length)) ? 'key' : /^[{}();:,]$/.test(token) ? 'muted' : 'tag');
+    if (entry.key === 'js') return highlightParts(line, /\/\/.*$|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:const|let|var|await|if|throw|new|return|function|async|true|false|null)\b|\b\d+(?:\.\d+)?\b|[{}()\[\];,.=]/g, token => token.startsWith('//') ? 'comment' : /^["'`]/.test(token) ? 'string' : /^\d/.test(token) ? 'number' : /^(const|let|var|await|if|throw|new|return|function|async|true|false|null)$/.test(token) ? 'keyword' : 'muted');
+    return escapeHtml(line);
+  }
+  function highlightNetworkContent(content, entry, tab) {
+    const isXml = entry.key === 'api' && content.includes('Content-Type: application/xml');
+    return content.split('\n').map(line => highlightNetworkLine(line, entry, tab, isXml)).join('\n');
+  }
   function renderVisualization(id, host = document.getElementById('course-article-visual')) {
     if (!host || !id) return;
     if (id === 'client' && host.id === 'course-article-visual') { host.replaceChildren(); return; }
@@ -1112,10 +1167,10 @@
       const pagePreview = entry.key === 'document' && networkTab === 'preview';
       const contentMarkup = pagePreview ? htmlPagePreview() : networkTab === 'headers'
         ? content.split('\n').map(line => line.startsWith('Cookie: ') || line.startsWith('Set-Cookie: ')
-          ? `<span class="course-network__cookie-line"><span ${line.startsWith('Set-Cookie: ') ? 'data-session-set-cookie' : 'data-session-cookie'}>${escapeHtml(line)}</span><span class="course-network__session-time" data-session-remaining></span></span>`
-          : escapeHtml(line)).join('\n')
-        : escapeHtml(content);
-      const pairNames = { login: 'Вход · запрос → cookie', document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: 'API · запрос → JSON' };
+          ? `<span class="course-network__cookie-line"><span class="course-code__key">${line.startsWith('Set-Cookie: ') ? 'Set-Cookie:' : 'Cookie:'}</span> <span class="course-code__value" ${line.startsWith('Set-Cookie: ') ? 'data-session-set-cookie-value' : 'data-session-cookie-value'}>${escapeHtml(line.slice(line.indexOf(':') + 2))}</span><span class="course-network__session-time" data-session-remaining></span></span>`
+          : highlightHeaders(line)).join('\n')
+        : highlightNetworkContent(content, entry, networkTab);
+      const pairNames = { login: 'Вход · запрос → cookie', document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: `API · запрос → ${entry.response.includes('Content-Type: application/xml') ? 'XML' : 'JSON'}` };
       const help = { login: '<p>Это отдельный учебный POST-запрос, выполненный до начала схемы. Сервер возвращает HTTP 200 и заголовок Set-Cookie с сессией на пять минут. Браузер сохраняет cookie и добавляет заголовок Cookie к следующему запросу API. Сессия не продлевается автоматически.</p>', document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
       const urlMarkup = `<span class="course-network__path">${escapeHtml(entry.key === 'api' ? productsPath() : entry.path)}</span>`;
       host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status === '…' ? 'is-pending' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${entry.key !== 'api' && entry.source !== '—' ? `<span>${escapeHtml(entry.source)}</span>` : ''}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>Как это работает</summary><div><strong class="course-network__help-title">${pairNames[entry.key]}</strong>${help[entry.key]}</div></details></section>`;
@@ -1287,6 +1342,8 @@
     const inactiveLabel = sessionExpiresAt === 0 ? 'удалена' : 'истекла';
     document.querySelectorAll('[data-session-cookie]').forEach(label => { label.textContent = `Cookie: session=${sessionToken}`; });
     document.querySelectorAll('[data-session-set-cookie]').forEach(label => { label.textContent = `Set-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`; });
+    document.querySelectorAll('[data-session-cookie-value]').forEach(label => { label.textContent = `session=${sessionToken}`; });
+    document.querySelectorAll('[data-session-set-cookie-value]').forEach(label => { label.textContent = `session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`; });
     document.querySelectorAll('[data-session-remaining]').forEach(badge => {
       badge.textContent = seconds ? remaining : inactiveLabel;
       badge.classList.toggle('is-expired', !seconds);
@@ -1790,8 +1847,7 @@
       if (run !== playRun) return;
       if (usedBalancer && routes.some(id => !overloaded.includes(id))) pulse('balancer', 'client', ['json']);
       liveNetwork.apiResult = apiResponseForCurrentState(liveNetwork);
-      packets.find(packet => packet.id === 'json').title = liveNetwork.apiResult.bodyIssue === 'xml' ? 'XML' : 'JSON';
-      if (networkSelected === 'json') document.getElementById('course-network-selection').textContent = packets.find(packet => packet.id === 'json').title;
+      setApiPacketTitle(liveNetwork.apiResult.bodyIssue === 'xml' ? 'xml' : 'json');
       liveNetwork.apiFinished = true;
       refreshLiveNetwork();
     } else {
@@ -1840,7 +1896,7 @@
     sessionExpiresAt = Date.now() + SESSION_MS;
     sessionRestricted = false;
     apiFormat = 'json';
-    packets.find(packet => packet.id === 'json').title = 'JSON';
+    setApiPacketTitle('json');
     sqlDraft = '';
     sqlFeedback = '';
     refreshSessionDisplay();
