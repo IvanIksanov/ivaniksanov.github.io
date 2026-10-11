@@ -6,7 +6,7 @@
   <title>Как работает веб-приложение — вводный курс QAtoDev</title>
   <script>try { const theme = localStorage.getItem('theme'); if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme; } catch {}</script>
   <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
-  <link rel="stylesheet" href="header.css?v=8.9.13">
+  <link rel="stylesheet" href="header.css?v=8.9.14">
   <link rel="stylesheet" href="questions.css?v=8.9.26">
   <link rel="stylesheet" href="questions-map.css?v=1.0.12">
   <link rel="stylesheet" href="course.css?v=110">
@@ -15,7 +15,7 @@
 <body class="questions-map-page course-page">
   <div class="site-header is-scrolled" data-glass-always>
     <nav><div class="burger-menu"></div><ul>
-      <li><a href="hwois.html">Кто такой тестировщик?</a></li>
+      <li><a class="is-active" href="index.html">Архитектура<span class="header-nav-new-badge" aria-hidden="true">new</span></a></li>
       <li><a href="roadmap.html">Roadmap</a></li>
       <li><a href="questions.html">Вопросы</a></li>
       <li><a href="resume.html">Резюме</a></li>
@@ -50,7 +50,7 @@
           <svg id="course-lines" class="questions-map-lines course-lines" viewBox="0 0 2900 1000" aria-hidden="true"></svg>
           <div class="course-intro">
             <span class="course-eyebrow">Вводный курс · глава 01</span>
-            <h1>Клиент → сервер</h1>
+            <h1>Клиент → Сервер</h1>
             <button id="course-reset" class="course-reset course-reset--danger" type="button" title="Сбросить прогресс" disabled>Сброс</button>
             <button id="course-play" class="course-reset" type="button" title="Загрузить страницу">▶ Загрузить страницу</button>
             <button id="course-tasks" class="course-reset" type="button" title="Задания по схеме">Задания</button>
@@ -74,7 +74,7 @@
       </aside>
     </div>
   </main>
-  <script src="header.js?v=8.9.11"></script>
+  <script src="header.js?v=8.9.12"></script>
   <script src="theme-toggle.shared.js?v=1"></script>
   <script src="map-motion.shared.js?v=6"></script>
   <script src="course.js?v=124"></script>

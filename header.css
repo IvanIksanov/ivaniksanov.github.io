@@ -445,6 +445,19 @@ html[data-theme="dark"] .site-header nav a {
   color: #F1F1F1;
 }
 
+.site-header nav a.is-active,
+.site-header nav a.is-active:hover {
+  background-color: #e8ebee;
+  color: #30363d;
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .site-header nav a.is-active,
+html[data-theme="dark"] .site-header nav a.is-active:hover {
+  background-color: #3a3f45;
+  color: #f3f4f6;
+}
+
 .header-nav-new-badge {
   display: inline-grid;
   place-items: center;
