@@ -1155,7 +1155,7 @@
     if (!source || source === '—' || /ожидает|загружается|ожидание|нет ответа/.test(source)) return '';
     const icon = source.includes('кэш браузера') ? 'files' : source.includes('источник') ? 'storage' : source.includes('CDN') ? 'cdn' : source.includes('сервер') ? 'server' : '';
     if (!icon) return '';
-    return `<span class="course-network__source" tabindex="0" role="img" aria-label="Источник: ${escapeHtml(source)}" data-tooltip="${escapeHtml(source)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons[icon]}</svg></span>`;
+    return `<span class="course-network__source" tabindex="0" role="img" aria-label="Источник ответа: ${escapeHtml(source)}" data-tooltip="Источник ответа: ${escapeHtml(source)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons[icon]}</svg></span>`;
   }
   function renderVisualization(id, host = document.getElementById('course-article-visual')) {
     if (!host || !id) return;
