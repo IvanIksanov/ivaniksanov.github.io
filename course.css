@@ -294,7 +294,7 @@ html[data-theme="dark"] .course-network__session-time.is-expired { color: #f0a69
 .course-network__status.is-pending { color: var(--course-blue); }
 .course-network__status.is-error { color: #bd514c; }
 .course-network__detail { min-width: 0; border: 1px solid var(--map-border); border-radius: .85rem; background: var(--map-bg); overflow: hidden; }
-.course-network__url { display: flex; justify-content: space-between; gap: .4rem; min-width: 0; padding: .65rem .75rem; color: var(--map-text); font-size: .7rem; }
+.course-network__url { display: flex; align-items: center; justify-content: space-between; gap: .4rem; min-width: 0; padding: .25rem .75rem; color: var(--map-text); font-size: .7rem; }
 .course-network__url > .course-network__path { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--map-muted); white-space: nowrap; }
 .course-network__source { position: relative; z-index: 2; display: grid; flex: 0 0 1.5rem; place-items: center; width: 1.5rem; height: 1.5rem; border-radius: .45rem; background: color-mix(in srgb, var(--course-blue) 8%, var(--map-bg)); color: var(--course-blue); }
 .course-network__source svg { width: 1rem; height: 1rem; }
