@@ -279,9 +279,10 @@ html[data-theme="dark"] .course-packet[data-pair="db"] { --packet-pair-color: #c
 .course-application__heading { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .1rem .2rem .45rem; color: var(--map-text); font-size: .74rem; }
 .course-application__heading small { color: var(--map-muted); font-size: .6rem; white-space: nowrap; }
 .course-application__files { display: grid; align-content: start; gap: .42rem; }
-.course-network__split { display: grid; grid-template-columns: minmax(118px, 36%) minmax(0, 1fr); align-items: start; gap: .55rem; margin-top: .65rem; }
+.course-network__split { display: grid; grid-template-columns: minmax(118px, 43%) minmax(0, 1fr); align-items: start; gap: .45rem; margin-top: .65rem; }
 .course-network__requests { display: grid; align-content: start; gap: .35rem; min-width: 0; }
-.course-network__requests button { display: flex; align-items: center; gap: .3rem; width: 100%; min-width: 0; max-width: 100%; padding: .45rem .5rem; border: 1px solid transparent; border-radius: .75rem; background: color-mix(in srgb, var(--map-text) 4%, var(--map-bg)); color: var(--map-text); text-align: left; font: inherit; cursor: pointer; }
+.course-network__requests button { display: flex; align-items: center; gap: .2rem; width: 100%; min-width: 0; max-width: 100%; padding: .45rem .3rem .45rem .22rem; border: 1px solid transparent; border-radius: .75rem; background: color-mix(in srgb, var(--map-text) 4%, var(--map-bg)); color: var(--map-text); text-align: left; font: inherit; cursor: pointer; }
+.course-network__requests .course-method { flex: none; padding: .06em .22em; border-radius: .25rem; font-size: .62rem; }
 .course-network__requests button.is-current { border-color: color-mix(in srgb, var(--course-blue) 40%, var(--map-border)); background: color-mix(in srgb, var(--course-blue) 9%, var(--map-bg)); }
 .course-network__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .72rem; font-weight: 650; }
 .course-network__cookie-line { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; white-space: normal; }
