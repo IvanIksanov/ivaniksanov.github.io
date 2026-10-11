@@ -385,6 +385,9 @@
   let liveRoutes = null;
   let savedPosition = null;
   let savedPanels = null;
+  let expandedTaskId = null;
+  let taskScrollTop = 0;
+  let taskScrollSaveTimer;
   const faults = new Map();
   const taskDefinitions = [
     { id: 'status-200', title: '200 · страница и данные получены', steps: [['client', 'Оставь схему в исходном состоянии или нажми "Сброс", затем нажми "Загрузить страницу".'], ['cookie', 'На схеме нажми на запрос HTTP с названием "API", проверь его статус-код 200 и оба товара.']] },
@@ -412,7 +415,9 @@
   function renderTasks() {
     const host = document.getElementById('course-task-list');
     if (!host) return;
-    const expanded = host.querySelector('.course-task.is-expanded')?.dataset.taskId;
+    const scroll = host.closest('.course-article__scroll');
+    const previousScrollTop = scroll?.scrollTop || 0;
+    const expanded = expandedTaskId;
     host.replaceChildren();
     for (const task of taskDefinitions) {
       const item = document.createElement('div');
@@ -436,10 +441,13 @@
         host.querySelectorAll('.course-task.is-expanded').forEach(other => { other.classList.remove('is-expanded'); other.querySelector('.course-task__heading').setAttribute('aria-expanded', 'false'); });
         item.classList.toggle('is-expanded', open);
         heading.setAttribute('aria-expanded', String(open));
+        expandedTaskId = open ? task.id : null;
+        save();
       });
       item.append(heading, panel);
       host.append(item);
     }
+    if (scroll) scroll.scrollTop = previousScrollTop;
   }
   function evaluateTasks(result) {
     const routes = result.routes;
@@ -473,6 +481,8 @@
     if (saved.panels && typeof saved.panels === 'object') savedPanels = saved.panels;
     if (saved.layout === 5 && Number.isFinite(saved.camera?.x) && Number.isFinite(saved.camera?.y) && Math.abs((saved.camera?.width ?? 0) - window.innerWidth) < 60) savedPosition = saved.camera;
     const knownTasks = new Set(taskDefinitions.map(task => task.id));
+    if (knownTasks.has(saved.taskView?.expandedId)) expandedTaskId = saved.taskView.expandedId;
+    if (Number.isFinite(saved.taskView?.scrollTop) && saved.taskView.scrollTop >= 0) taskScrollTop = saved.taskView.scrollTop;
     if (Array.isArray(saved.completedTasks)) {
       for (const id of saved.completedTasks) if (knownTasks.has(id)) completedTasks.add(id);
     }
@@ -564,8 +574,9 @@
   }
   function syncResetButton() { resetButton.disabled = !hasResettableProgress(); }
   function save() {
+    if (selected === 'tasks' && !article.hidden) taskScrollTop = article.querySelector('.course-article__scroll').scrollTop;
     syncResetButton();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, completedTasks: [...completedTasks], missingProductIdsSeen: [...missingProductIdsSeen], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, apiFormat, sqlDraft, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, taskView: { expandedId: expandedTaskId, scrollTop: taskScrollTop }, completedTasks: [...completedTasks], missingProductIdsSeen: [...missingProductIdsSeen], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, apiFormat, sqlDraft, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
   }
   function activeApp() {
     if (!faults.has('app-a')) return 'app-a';
@@ -1309,7 +1320,7 @@
     renderFeedback('article');
     article.hidden = false;
     workspace.classList.add('has-answer');
-    article.querySelector('.course-article__scroll').scrollTop = 0;
+    article.querySelector('.course-article__scroll').scrollTop = id === 'tasks' ? taskScrollTop : 0;
     update();
     renderActions(id);
     const packet = packets.find(item => item.id === id);
@@ -1674,6 +1685,12 @@
     panel.scrollTop = panelScroll;
   }
   document.getElementById('course-tasks').addEventListener('click', () => showArticle('tasks'));
+  article.querySelector('.course-article__scroll').addEventListener('scroll', event => {
+    if (selected !== 'tasks' || article.hidden) return;
+    taskScrollTop = event.currentTarget.scrollTop;
+    clearTimeout(taskScrollSaveTimer);
+    taskScrollSaveTimer = setTimeout(save, 120);
+  });
   const wait = ms => new Promise(resolve => setTimeout(resolve, Math.round(ms * 1.8)));
   function pulseLocalCache() {
     showPackets(['cache']);
@@ -1906,6 +1923,9 @@
   });
   resetButton.addEventListener('click', () => {
     playRun++;
+    clearTimeout(taskScrollSaveTimer);
+    expandedTaskId = null;
+    taskScrollTop = 0;
     liveNetwork = null;
     pulsedPackets.clear();
     shownPackets.clear();
