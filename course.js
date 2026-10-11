@@ -430,6 +430,7 @@
     { id: 'failover-b', title: 'Продолжи работу через B', steps: [['app-a', 'Сначала перегрузи A предыдущим заданием.'], ['balancer', 'Восстанови балансировщик и обнови страницу.', 'Восстановить балансировщик']] },
     { id: 'overload-b', title: 'Перегрузи сервер B', steps: [['app-a', 'Останови A, оставив B работающим.', 'Остановить сервер'], ['client', 'Выбери 1000 запросов и обнови страницу через балансировщик.']] }
   ];
+  const taskPlaceLabels = { client: 'Клиент', login: 'Network · POST /auth/login', cookie: 'Network · GET /api/products', sql: 'SQL-запрос · сервер приложения', cache: 'Кэш браузера · Application', assets: 'CDN · копии файлов', storage: 'Источник файлов', database: 'База данных', 'app-a': 'Сервер приложения A', 'app-b': 'Сервер приложения B', balancer: 'Балансировщик' };
   function renderTasks() {
     const host = document.getElementById('course-task-list');
     if (!host) return;
@@ -452,7 +453,9 @@
       panel.className = 'course-task__panel';
       panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => {
         const symbol = icons[byId.get(place)?.icon || place] || icons.files;
-        return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place" title="${escapeHtml(place === 'login' ? 'POST /auth/login' : byId.get(place)?.title || articles[place]?.title || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action">${actionIcon(action)}<small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
+        const placeName = taskPlaceLabels[place] || byId.get(place)?.title || articles[place]?.title || place;
+        const actionHint = `Действие · ${placeName}: ${action}`;
+        return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place course-task__hint" tabindex="0" role="img" aria-label="${escapeHtml(placeName)}" data-tooltip="${escapeHtml(placeName)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action"><span class="course-task__action-icon course-task__hint" tabindex="0" role="img" aria-label="${escapeHtml(actionHint)}" data-tooltip="${escapeHtml(actionHint)}">${actionIcon(action)}</span><small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
       }).join('')}</div>`;
       heading.addEventListener('click', () => {
         const open = !item.classList.contains('is-expanded');
