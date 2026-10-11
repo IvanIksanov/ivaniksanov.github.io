@@ -71,7 +71,7 @@ html[data-theme="dark"] .course-page { --course-packet: #303840; --course-resour
 .course-scroller.is-dragging { cursor: grabbing; user-select: none; }
 .course-scroller:focus-visible { outline: 2px solid var(--course-blue); outline-offset: -2px; }
 .course-canvas { position: relative; width: 2900px; height: 1000px; transform-origin: top left; background-image: radial-gradient(color-mix(in srgb, var(--map-border) 36%, transparent) .7px, transparent .7px); background-size: 23px 23px; }
-.course-lines, .course-trace { width: 2900px; height: 1000px; }
+.course-lines { width: 2900px; height: 1000px; }
 .course-lines { transition: opacity .38s ease; }
 .course-lines.is-resetting { opacity: 0; }
 .course-lines path { stroke: var(--map-line); stroke-dasharray: 3 8; }
@@ -93,11 +93,13 @@ html[data-theme="dark"] .course-page { --course-packet: #303840; --course-resour
 .course-lines path.is-resource-route.is-faulty { stroke: #d26e68; }
 .course-lines path.is-flowing-cache { stroke: var(--course-resource); stroke-width: 3; opacity: .95; animation: course-dash 1.4s linear 1; }
 .course-lines path.is-active-route.is-return-route { animation-direction: reverse; }
-.course-trace .course-trace__path { fill: none; stroke: var(--course-blue); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 8 10; animation: course-dash 1.9s linear 1; }
-.course-trace .course-trace__path.is-resource-trace { stroke: var(--course-resource); }
-.course-trace .course-trace__path.is-faulty { stroke: #d26e68; }
-.course-trace .course-trace__path.is-returning { animation-direction: reverse; }
+.course-lines path.is-flowing { stroke: var(--course-blue); stroke-width: 2.5; opacity: .95; stroke-dasharray: 3 8; animation: course-line-flow 1.9s linear 1; animation-direction: normal; }
+.course-lines path.is-flowing.is-flowing-resource { stroke: var(--course-resource); }
+.course-lines path.is-flowing.is-flowing-faulty { stroke: #d26e68; }
+.course-lines path.is-flowing.is-active-route { animation-direction: normal; }
+.course-lines path.is-flowing.is-flowing-back { animation-direction: reverse; }
 @keyframes course-dash { to { stroke-dashoffset: -18; } }
+@keyframes course-line-flow { to { stroke-dashoffset: -44; } }
 .course-node { position: absolute; display: flex; align-items: flex-end; width: 292px; height: 122px; z-index: 1; opacity: 0; transform: translateY(10px) scale(.97); transition: opacity .4s ease, transform .45s cubic-bezier(.2,.8,.2,1), left .55s cubic-bezier(.22,1,.36,1); }
 .course-node[hidden], .course-packet[hidden] { display: none !important; }
 .course-node.is-visible { opacity: 1; transform: none; }
@@ -450,7 +452,7 @@ html[data-theme="dark"] .course-feedback { color: #f1c978; }
 @media (prefers-reduced-motion: reduce) {
   .course-algorithm__step.is-new { animation: none; }
   .course-node, .course-packet, .course-intro { transition: none; }
-  .course-trace .course-trace__path { animation: none; }
+  .course-lines path.is-flowing { animation: none; }
   .course-packet.is-transiting { animation: none; }
   .course-node[data-node="balancer"] .questions-map-card__question::after { animation: none; }
 }

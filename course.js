@@ -279,7 +279,6 @@
   const nodeHost = document.getElementById('course-nodes');
   const packetHost = document.getElementById('course-packets');
   const lines = document.getElementById('course-lines');
-  const trace = document.getElementById('course-trace');
   const article = document.getElementById('course-article');
   let articleCloseTimer;
   const workspace = document.getElementById('course-workspace');
@@ -600,7 +599,16 @@
     return `M ${startX} ${startY} C ${mid} ${startY}, ${mid} ${endY}, ${endX} ${endY}`;
   }
   let lineTracking = 0;
-  const activeTraces = new Set();
+  const activeFlows = new Map();
+  function applyFlow(path, key) {
+    const flow = activeFlows.get(key);
+    if (!flow) return;
+    path.classList.add('is-flowing');
+    if (flow.channel === 'resource') path.classList.add('is-flowing-resource');
+    if (flow.faulty || path.classList.contains('is-faulty')) path.classList.add('is-flowing-faulty');
+    if (flow.reverse) path.classList.add('is-flowing-back');
+    path.style.animationDelay = `${Math.min(0, flow.started - performance.now())}ms`;
+  }
   function trackLines(duration = 600) {
     cancelAnimationFrame(lineTracking);
     const until = performance.now() + duration;
@@ -670,6 +678,7 @@
       if ((source === 'app-a' || source === 'app-b') && !routes.includes(source) && !(source === 'app-b' && target === 'database')) continue;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pathBetween(visualNode(byId.get(source)), visualNode(byId.get(target))));
+      path.dataset.courseRoute = `${source}:${target}`;
       if (faults.has(source) || faults.has(target) || (source === 'client' && target === 'assets' && ['css', 'js'].some(id => assetSource(id).state !== 'ok')) || (source === 'client' && target === 'balancer' && faults.has('html'))) path.classList.add('is-faulty');
       if (source === 'assets' || target === 'assets' || source === 'storage') path.classList.add('is-resource-route');
       if (source === 'assets' && target === 'storage' && !cdnBypass) path.classList.add('is-idle');
@@ -682,6 +691,7 @@
         if (resourcePackets.has(selectedPacketId)) path.classList.add('is-resource-route');
         if (selectedPacket.flow === 'response') path.classList.add('is-return-route');
       }
+      applyFlow(path, path.dataset.courseRoute);
       lines.append(path);
     }
     if (revealed.has('app-a') && revealed.has('app-b')) {
@@ -711,6 +721,7 @@
     if (removed && revealed.has('app-a')) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', pathBetween(visualNode(byId.get('client')), visualNode(byId.get('app-a'))));
+      path.dataset.courseRoute = 'client:app-a';
       path.classList.add('is-direct');
       if (faults.has('app-a') || faults.has('html')) path.classList.add('is-faulty');
       if (selectedPacket?.edge?.[0] === 'client' && selectedPacket.edge[1] === 'app-a') {
@@ -718,6 +729,7 @@
         if (resourcePackets.has(selected)) path.classList.add('is-resource-route');
         if (selectedPacket.flow === 'response') path.classList.add('is-return-route');
       }
+      applyFlow(path, path.dataset.courseRoute);
       lines.append(path);
     }
     if (revealed.has('assets')) {
@@ -746,9 +758,6 @@
     for (const marker of packetHost.querySelectorAll('[data-parallel-packet]')) {
       const item = packets.find(packet => packet.id === marker.dataset.parallelPacket);
       if (item) positionPacket(marker, item, ['app-b', 'database']);
-    }
-    for (const item of activeTraces) {
-      item.path.setAttribute('d', pathBetween(visualNode(byId.get(item.from)), visualNode(byId.get(item.to))));
     }
   }
   function setLiveRoutes(routes) {
@@ -784,19 +793,30 @@
   function pulse(source, target, packetIds = null, channel = 'api') {
     if (packetIds?.length) showPackets(packetIds);
     if (reducedMotion.matches) return;
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     const reverse = edges.some(([from, to]) => from === target && to === source) || (source === 'app-a' && target === 'client');
     const from = reverse ? target : source;
     const to = reverse ? source : target;
-    const active = { path, from, to };
-    activeTraces.add(active);
-    path.setAttribute('d', pathBetween(visualNode(byId.get(from)), visualNode(byId.get(to))));
-    path.classList.add('course-trace__path');
-    if (channel === 'resource') path.classList.add('is-resource-trace');
-    if (faults.has(source) || faults.has(target) || (source === 'client' && target === 'assets' && staticUnavailable())) path.classList.add('is-faulty');
-    if (reverse) path.classList.add('is-returning');
-    trace.append(path);
-    window.setTimeout(() => { path.remove(); activeTraces.delete(active); }, 1900);
+    const key = `${from}:${to}`;
+    const previous = activeFlows.get(key);
+    if (previous) window.clearTimeout(previous.timer);
+    const flow = { channel, reverse, faulty: faults.has(source) || faults.has(target) || (source === 'client' && target === 'assets' && staticUnavailable()), started: performance.now() };
+    activeFlows.set(key, flow);
+    const path = [...lines.querySelectorAll('[data-course-route]')].find(item => item.dataset.courseRoute === key);
+    if (path) {
+      path.classList.remove('is-flowing', 'is-flowing-resource', 'is-flowing-faulty', 'is-flowing-back');
+      path.style.animationDelay = '';
+      void path.getBoundingClientRect();
+      applyFlow(path, key);
+    }
+    flow.timer = window.setTimeout(() => {
+      if (activeFlows.get(key) !== flow) return;
+      activeFlows.delete(key);
+      const current = [...lines.querySelectorAll('[data-course-route]')].find(item => item.dataset.courseRoute === key);
+      if (current) {
+        current.classList.remove('is-flowing', 'is-flowing-resource', 'is-flowing-faulty', 'is-flowing-back');
+        current.style.animationDelay = '';
+      }
+    }, 1900);
     if (target === 'balancer') {
       const run = playRun;
       window.setTimeout(() => {
@@ -1894,8 +1914,8 @@
       marker.classList.remove('is-visible', 'is-hiding', 'is-transiting', 'is-transiting-resource');
     });
     playButton.disabled = false;
-    for (const item of activeTraces) item.path.remove();
-    activeTraces.clear();
+    for (const flow of activeFlows.values()) window.clearTimeout(flow.timer);
+    activeFlows.clear();
     setLiveRoutes(null);
     removed = false;
     rotateSessionToken();
