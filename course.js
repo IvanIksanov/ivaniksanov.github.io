@@ -55,6 +55,7 @@
   ];
   const extraProducts = [];
   const deletedProducts = new Set();
+  const productNames = new Map();
   let sqlDraft = '';
   let sqlFeedback = '';
   let apiFormat = 'json';
@@ -72,12 +73,15 @@
   let selectedSecondProductId = 43;
   const requestedProductIds = () => [selectedProductId, selectedSecondProductId];
   const productsPath = (ids = requestedProductIds()) => `/api/products?ids=${ids.join(',')}`;
-  function productFor(id) { return [...baseProducts, ...extraProducts].find(product => product.id === Number(id) && !deletedProducts.has(product.id)); }
+  function productFor(id) {
+    const product = [...baseProducts, ...extraProducts].find(row => row.id === Number(id) && !deletedProducts.has(row.id));
+    return product && productNames.has(product.id) ? { ...product, name: productNames.get(product.id) } : product;
+  }
   function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
   function rowCountLabel(count) { return `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'строка' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'строки' : 'строк'}`; }
   function requestCountLabel(count) { return `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'запрос' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'запроса' : 'запросов'}`; }
   function productTableMarkup() {
-    const rows = [...baseProducts, ...extraProducts].filter(product => !deletedProducts.has(product.id)).map(product => `<tr class="${requestedProductIds().includes(product.id) ? 'is-current' : ''}"><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('');
+    const rows = [...baseProducts, ...extraProducts].map(product => productFor(product.id)).filter(Boolean).map(product => `<tr class="${requestedProductIds().includes(product.id) ? 'is-current' : ''}"><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('');
     return `<div class="ai-table-shell course-table-shell"><div class="ai-table-wrap"><table class="ai-table"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">price</th><th scope="col">currency</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="course-table-empty">Таблица пуста</td></tr>'}</tbody></table></div></div>`;
   }
 
@@ -258,8 +262,20 @@
     if (remove) {
       const ids = [remove[1], remove[2], remove[3]].filter(Boolean).map(Number);
       const affected = ids.filter(id => productFor(id));
-      affected.forEach(id => deletedProducts.add(id));
+      affected.forEach(id => { deletedProducts.add(id); productNames.delete(id); });
       return `DELETE: удалено ${rowCountLabel(affected.length)}. Обнови страницу и посмотри ответ API.`;
+    }
+    if (/^DELETE\s+FROM\s+products$/i.test(command)) {
+      const remaining = [...baseProducts, ...extraProducts].filter(product => productFor(product.id));
+      remaining.forEach(product => { deletedProducts.add(product.id); productNames.delete(product.id); });
+      return `DELETE: удалено ${rowCountLabel(remaining.length)}. Таблица products пуста; обнови страницу и проверь ответ API.`;
+    }
+    const updateName = command.match(/^UPDATE\s+products\s+SET\s+name\s*=\s*'([^']{1,48})'\s+WHERE\s+id\s*=\s*(\d{1,4})$/i);
+    if (updateName) {
+      const id = Number(updateName[2]);
+      if (!productFor(id)) return `UPDATE: строка с id ${id} не найдена.`;
+      productNames.set(id, updateName[1]);
+      return `UPDATE: название товара ${id} изменено. Обнови страницу и сравни ответ API с таблицей.`;
     }
     const insert = command.match(/^INSERT\s+INTO\s+products\s*\(\s*id\s*,\s*name\s*,\s*price\s*,\s*currency\s*\)\s*VALUES\s*\(\s*(\d{1,4})\s*,\s*'([^']{1,48})'\s*,\s*(\d{1,7})\s*,\s*'RUB'\s*\)$/i);
     if (insert) {
@@ -268,11 +284,11 @@
       if (existing && !deletedProducts.has(id)) return `INSERT: id ${id} уже существует.`;
       if (existing && (existing.name !== insert[2] || existing.price !== Number(insert[3]))) return `INSERT: id ${id} уже занят удалённой строкой. Для неё используй исходные имя и цену.`;
       if (!existing && extraProducts.length >= 12) return 'В модели можно добавить не больше 12 строк.';
-      if (existing) deletedProducts.delete(id);
+      if (existing) { deletedProducts.delete(id); productNames.delete(id); }
       else extraProducts.push({ id, name: insert[2], price: Number(insert[3]), currency: 'RUB' });
       return `INSERT: строка ${id} добавлена. Запроси этот ID и обнови страницу.`;
     }
-    return 'Поддержаны SELECT по двум ID, DELETE по ID или двум ID и INSERT INTO products (id, name, price, currency) VALUES (…);';
+    return 'Поддержаны SELECT по двум ID, DELETE FROM products с WHERE или без него, UPDATE products SET name = … WHERE id = … и INSERT INTO products (id, name, price, currency) VALUES (…);';
   }
 
   const scroller = document.getElementById('course-scroller');
@@ -406,6 +422,8 @@
     { id: 'empty-body', title: '200 · пустое тело ответа', steps: [['cookie', 'В Network посмотри два ID запроса, изначально 42 и 43.'], ['sql', 'Отправь DELETE FROM products WHERE id IN (42, 43);'], ['app-a', 'На сервере включи режим «Пустое тело 200».', 'Пустое тело 200'], ['client', 'Обнови страницу: HTTP 200, но тело API пустое.']] },
     { id: 'body-error', title: '200 · ошибка внутри JSON', steps: [['cookie', 'В Network посмотри оба ID запроса.'], ['sql', 'Отправь DELETE FROM products WHERE id IN (42, 43);'], ['app-a', 'На сервере включи «Ошибка в теле 200».', 'Ошибка в теле 200'], ['client', 'Обнови страницу: HTTP 200, внутри JSON — error.code: 404.']] },
     { id: 'missing-then-add', title: 'Найди товар, добавь строку и повтори запрос', steps: [['cookie', 'В Network замени второй ID на отсутствующий 99 и обнови страницу: в просмотре не будет второй карточки.'], ['sql', "Отправь INSERT INTO products (id, name, price, currency) VALUES (99, 'Товар 99', 5990, 'RUB');"], ['client', 'Обнови страницу ещё раз: карточка товара 99 появится в просмотре HTML.']] },
+    { id: 'update-product', title: 'Переименуй товар через UPDATE', steps: [['sql', "В SQL-запросе отправь UPDATE products SET name = 'QA Book Pro' WHERE id = 42;"], ['database', 'Проверь новое название в строке с id 42.'], ['cookie', 'Убедись, что среди запрашиваемых ID есть 42.'], ['client', 'Обнови страницу: новое название появится в ответе API и в карточке товара.']] },
+    { id: 'delete-all-products', title: 'Удали все строки через DELETE', steps: [['sql', 'В SQL-запросе отправь DELETE FROM products; Здесь нет WHERE, поэтому удалятся все строки.'], ['database', 'Открой таблицу products: она должна быть пустой.'], ['client', 'Обнови страницу и проверь ответ API для прежних ID: HTTP 404.']] },
     { id: 'route-b', title: 'Переведи запрос на сервер B', steps: [['app-a', 'Останови A при работающем балансировщике.', 'Остановить сервер'], ['client', 'Обнови страницу и проверь путь через B.']] },
     { id: 'balanced-load', title: 'Распредели 1000 запросов', steps: [['client', 'В Article клиента выбери 1000 запросов.'], ['balancer', 'Оставь балансировщик и оба сервера включёнными, затем обнови страницу.']] },
     { id: 'overload-a', title: 'Перегрузи сервер A', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['client', 'Выбери 1000 запросов и обнови страницу.']] },
@@ -469,6 +487,8 @@
     if (result.apiSent && result.productMode === 'embedded-error' && lastResponse?.bodyIssue === 'embedded-error') completedTasks.add('body-error');
     if (result.apiSent && result.sessionState === 'ok' && !faults.has('database') && ['200', '404'].includes(result.apiResult?.code)) result.productIds.filter(id => !result.products.some(product => product.id === id)).forEach(id => missingProductIdsSeen.add(id));
     if (result.apiSent && result.productIds.some(id => id >= 47 && missingProductIdsSeen.has(id) && result.products.some(product => product.id === id))) completedTasks.add('missing-then-add');
+    if (result.apiSent && result.apiResult?.code === '200' && !result.apiResult.bodyIssue && result.products.some(product => product.id === 42 && product.name === 'QA Book Pro') && productNames.get(42) === 'QA Book Pro') completedTasks.add('update-product');
+    if (result.apiSent && result.apiResult?.code === '404' && [...baseProducts, ...extraProducts].every(product => deletedProducts.has(product.id))) completedTasks.add('delete-all-products');
     if (result.requestCount === 1000 && result.counts['app-a'] === 500 && result.counts['app-b'] === 500 && !result.overloaded.length) completedTasks.add('balanced-load');
     if (result.requestCount === 1000 && !result.usedBalancer && result.overloaded.includes('app-a')) completedTasks.add('overload-a');
     if (result.requestCount === 1000 && result.overloaded.includes('app-b')) completedTasks.add('overload-b');
@@ -502,6 +522,10 @@
     if (Number.isInteger(saved.selectedSecondProductId) && saved.selectedSecondProductId >= 1 && saved.selectedSecondProductId <= 9999) selectedSecondProductId = saved.selectedSecondProductId;
     if (Array.isArray(saved.extraProducts)) for (const product of saved.extraProducts.slice(0, 12)) {
       if (Number.isInteger(product?.id) && product.id >= 1 && product.id <= 9999 && !baseProducts.some(row => row.id === product.id) && !extraProducts.some(row => row.id === product.id) && typeof product.name === 'string' && Number.isFinite(product.price)) extraProducts.push(product);
+    }
+    if (saved.productNames && typeof saved.productNames === 'object') for (const [key, name] of Object.entries(saved.productNames)) {
+      const id = Number(key);
+      if (Number.isInteger(id) && [...baseProducts, ...extraProducts].some(product => product.id === id) && typeof name === 'string' && name.length > 0 && name.length <= 48) productNames.set(id, name);
     }
     if (Array.isArray(saved.deletedProducts)) {
       for (const id of saved.deletedProducts) if (Number.isInteger(id)) deletedProducts.add(id);
@@ -570,13 +594,13 @@
   let saveTimer;
 
   function hasResettableProgress() {
-    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || apiFormat !== 'json' || sqlDraft || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || extraProducts.length || selectedProductId !== 42 || selectedSecondProductId !== 43 || configuredRequests !== 1 || (selected && !article.hidden) || !document.getElementById('course-network-panel').hidden);
+    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || apiFormat !== 'json' || sqlDraft || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || productNames.size || extraProducts.length || selectedProductId !== 42 || selectedSecondProductId !== 43 || configuredRequests !== 1 || (selected && !article.hidden) || !document.getElementById('course-network-panel').hidden);
   }
   function syncResetButton() { resetButton.disabled = !hasResettableProgress(); }
   function save() {
     if (selected === 'tasks' && !article.hidden) taskScrollTop = article.querySelector('.course-article__scroll').scrollTop;
     syncResetButton();
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, taskView: { expandedId: expandedTaskId, scrollTop: taskScrollTop }, completedTasks: [...completedTasks], missingProductIdsSeen: [...missingProductIdsSeen], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, apiFormat, sqlDraft, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, taskView: { expandedId: expandedTaskId, scrollTop: taskScrollTop }, completedTasks: [...completedTasks], missingProductIdsSeen: [...missingProductIdsSeen], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, apiFormat, sqlDraft, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], productNames: Object.fromEntries(productNames), extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
   }
   function activeApp() {
     if (!faults.has('app-a')) return 'app-a';
@@ -1955,6 +1979,7 @@
     selectedProductId = 42;
     selectedSecondProductId = 43;
     deletedProducts.clear();
+    productNames.clear();
     extraProducts.length = 0;
     missingProductIdsSeen.clear();
     lastResponse = null;
