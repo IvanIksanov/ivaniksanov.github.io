@@ -431,9 +431,41 @@
     { id: 'overload-b', title: 'Перегрузи сервер B', steps: [['app-a', 'Останови A, оставив B работающим.', 'Остановить сервер'], ['client', 'Выбери 1000 запросов и обнови страницу через балансировщик.']] }
   ];
   const taskPlaceLabels = { client: 'Клиент', login: 'Network · POST /auth/login', cookie: 'Network · GET /api/products', sql: 'SQL-запрос · сервер приложения', cache: 'Кэш браузера · Application', assets: 'CDN · копии файлов', storage: 'Источник файлов', database: 'База данных', 'app-a': 'Сервер приложения A', 'app-b': 'Сервер приложения B', balancer: 'Балансировщик' };
+  const taskTooltip = document.createElement('div');
+  taskTooltip.className = 'course-task-tooltip';
+  taskTooltip.hidden = true;
+  document.body.append(taskTooltip);
+  let taskTooltipTimer;
+  function hideTaskTooltip() {
+    clearTimeout(taskTooltipTimer);
+    taskTooltip.hidden = true;
+  }
+  function showTaskTooltip(icon) {
+    if (!icon.isConnected || selected !== 'tasks' || article.hidden) return;
+    taskTooltip.textContent = icon.dataset.tooltip;
+    taskTooltip.hidden = false;
+    const iconRect = icon.getBoundingClientRect();
+    const tooltipRect = taskTooltip.getBoundingClientRect();
+    const preferredLeft = icon.classList.contains('course-task__action-icon') ? iconRect.right - tooltipRect.width : iconRect.left;
+    taskTooltip.style.left = `${Math.max(8, Math.min(preferredLeft, window.innerWidth - tooltipRect.width - 8))}px`;
+    const above = iconRect.top - tooltipRect.height - 6;
+    taskTooltip.style.top = `${above >= 8 ? above : Math.max(8, Math.min(iconRect.bottom + 6, window.innerHeight - tooltipRect.height - 8))}px`;
+  }
+  function bindTaskTooltip(icon) {
+    icon.addEventListener('pointerenter', () => {
+      hideTaskTooltip();
+      taskTooltipTimer = setTimeout(() => showTaskTooltip(icon), 500);
+    });
+    icon.addEventListener('pointerleave', hideTaskTooltip);
+    icon.addEventListener('focus', () => { hideTaskTooltip(); showTaskTooltip(icon); });
+    icon.addEventListener('blur', hideTaskTooltip);
+  }
+  article.querySelector('.course-article__scroll').addEventListener('scroll', hideTaskTooltip);
+  window.addEventListener('resize', hideTaskTooltip);
   function renderTasks() {
     const host = document.getElementById('course-task-list');
     if (!host) return;
+    hideTaskTooltip();
     const scroll = host.closest('.course-article__scroll');
     const previousScrollTop = scroll?.scrollTop || 0;
     const expanded = expandedTaskId;
@@ -457,7 +489,9 @@
         const actionHint = `Действие · ${placeName}: ${action}`;
         return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place course-task__hint" tabindex="0" role="img" aria-label="${escapeHtml(placeName)}" data-tooltip="${escapeHtml(placeName)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action"><span class="course-task__action-icon course-task__hint" tabindex="0" role="img" aria-label="${escapeHtml(actionHint)}" data-tooltip="${escapeHtml(actionHint)}">${actionIcon(action)}</span><small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
       }).join('')}</div>`;
+      panel.querySelectorAll('.course-task__hint').forEach(bindTaskTooltip);
       heading.addEventListener('click', () => {
+        hideTaskTooltip();
         const open = !item.classList.contains('is-expanded');
         host.querySelectorAll('.course-task.is-expanded').forEach(other => { other.classList.remove('is-expanded'); other.querySelector('.course-task__heading').setAttribute('aria-expanded', 'false'); });
         item.classList.toggle('is-expanded', open);
@@ -1288,6 +1322,7 @@
   function showArticle(id, via = null, focus = true) {
     const data = articles[id];
     if (!data) return;
+    hideTaskTooltip();
     const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент' };
     clearTimeout(articleCloseTimer);
     article.classList.remove('is-closing');
@@ -1427,6 +1462,7 @@
   article.querySelector('.course-article__theory').addEventListener('toggle', save);
 
   document.getElementById('course-article-close').addEventListener('click', () => {
+    hideTaskTooltip();
     article.classList.add('is-closing');
     articleCloseTimer = setTimeout(() => { article.hidden = true; article.classList.remove('is-closing'); }, 280);
     workspace.classList.remove('has-answer');
@@ -1950,6 +1986,7 @@
   });
   resetButton.addEventListener('click', () => {
     playRun++;
+    hideTaskTooltip();
     clearTimeout(taskScrollSaveTimer);
     expandedTaskId = null;
     taskScrollTop = 0;
