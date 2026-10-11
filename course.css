@@ -302,7 +302,7 @@ html[data-theme="dark"] .course-network__session-time.is-expired { color: #f0a69
 .course-network__source:is(:hover, :focus-visible)::after { opacity: 1; transform: none; }
 .course-network__source:focus-visible { outline: 2px solid var(--course-blue); outline-offset: 2px; }
 .course-network__tabs { display: flex; gap: .2rem; padding: 0 .45rem; overflow-x: auto; border-bottom: 1px solid var(--map-border); scrollbar-width: none; }
-.course-network__tabs button { flex: none; padding: .55rem .45rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--map-muted); font: inherit; font-size: .72rem; white-space: nowrap; cursor: pointer; }
+.course-network__tabs button { flex: none; padding: .3rem .45rem .45rem; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--map-muted); font: inherit; font-size: .72rem; white-space: nowrap; cursor: pointer; }
 .course-network__tabs button[aria-selected="true"] { border-bottom-color: var(--course-blue); color: var(--map-text); font-weight: 750; }
 .course-network__content { flex: 1; min-height: 0; max-height: none; margin: 0; padding: .6rem; overflow: auto; color: var(--map-text); font-size: .7rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 .course-code__key, .course-code__method, .course-code__path { color: #2878ac; font-weight: 700; }
