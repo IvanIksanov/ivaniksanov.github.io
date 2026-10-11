@@ -234,11 +234,6 @@ h2 {
 .questions-view-switcher *::before,
 .questions-view-switcher *::after { box-sizing: border-box; }
 
-.site-header { view-transition-name: questions-stable-header; }
-
-::view-transition-old(questions-stable-header),
-::view-transition-new(questions-stable-header) { animation: none; }
-
 .questions-view-switcher__label {
   max-width: 7rem;
   padding: 0;

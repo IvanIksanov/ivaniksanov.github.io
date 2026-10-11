@@ -32,7 +32,7 @@ html[data-theme="dark"] .course-page { --course-packet: #303840; --course-resour
 .course-algorithm__result[data-tone="error"] { color: #b95750; }
 .course-algorithm__result[data-tone="resource"] { color: var(--course-resource); }
 .course-algorithm__result[data-tone="api"] { color: var(--course-blue); }
-.course-reset { border: var(--header-glass-border); border-radius: 999px; background: var(--header-glass-bg); box-shadow: var(--header-glass-shadow); backdrop-filter: blur(var(--header-glass-blur)) saturate(var(--header-glass-saturate)); -webkit-backdrop-filter: blur(var(--header-glass-blur)) saturate(var(--header-glass-saturate)); color: var(--map-text); padding: .45rem .8rem; font: inherit; font-size: .72rem; font-weight: 700; cursor: pointer; transition: background-color .2s ease, border-color .2s ease; }
+.course-reset { border: 1px solid var(--map-border); border-radius: 999px; background: var(--map-surface); color: var(--map-text); padding: .45rem .8rem; font: inherit; font-size: .72rem; font-weight: 700; cursor: pointer; transition: background-color .2s ease, border-color .2s ease; }
 .course-reset:hover { background: var(--map-selected-bg); border-color: var(--map-selected-border); }
 .course-reset:disabled { opacity: .55; cursor: default; }
 .course-reset--danger { border-color: color-mix(in srgb, #c65b55 42%, var(--map-border)); color: #bf554f; background: color-mix(in srgb, #c65b55 7%, var(--map-surface)); }
