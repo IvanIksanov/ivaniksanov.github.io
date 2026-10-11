@@ -296,6 +296,8 @@
   const packetHost = document.getElementById('course-packets');
   const lines = document.getElementById('course-lines');
   const article = document.getElementById('course-article');
+  const networkPanel = document.getElementById('course-network-panel');
+  const narrowPanels = window.matchMedia('(max-width: 767px)');
   let articleCloseTimer;
   const workspace = document.getElementById('course-workspace');
   const canvas = document.getElementById('course-canvas');
@@ -1319,9 +1321,25 @@
     }
     host.replaceChildren();
   }
+  function hideArticleForNarrow() {
+    if (selected === 'tasks' && !article.hidden) taskScrollTop = article.querySelector('.course-article__scroll').scrollTop;
+    hideTaskTooltip();
+    clearTimeout(articleCloseTimer);
+    article.hidden = true;
+    article.classList.remove('is-closing');
+    workspace.classList.remove('has-answer');
+    selected = '';
+    selectedVia = null;
+    articleNotice = null;
+  }
   function showArticle(id, via = null, focus = true) {
     const data = articles[id];
     if (!data) return;
+    if (narrowPanels.matches) {
+      networkPanel.hidden = true;
+      networkSelected = '';
+      networkNotice = null;
+    }
     hideTaskTooltip();
     const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент' };
     clearTimeout(articleCloseTimer);
@@ -1395,9 +1413,10 @@
     save();
   }
   function showNetworkPacket(id) {
+    if (narrowPanels.matches) hideArticleForNarrow();
     networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : ['js-get', 'js'].includes(id) ? 'js' : 'css';
     networkTab = ['html', 'json', 'css', 'js'].includes(id) ? 'response' : 'headers';
-    document.getElementById('course-network-panel').hidden = false;
+    networkPanel.hidden = false;
     setNetworkSelection(id);
     renderVisualization('client', document.getElementById('course-network-visual'));
     save();
@@ -2053,6 +2072,12 @@
     focusElement(selected || 'client', false);
     save();
   });
+  narrowPanels.addEventListener('change', () => {
+    if (!narrowPanels.matches || article.hidden || networkPanel.hidden) return;
+    hideArticleForNarrow();
+    update();
+    save();
+  });
 
   if (lastRun) liveRoutes = lastRun.routes.length ? lastRun.routes : lastRun.documentRoute ? [lastRun.documentRoute] : null;
   update();
@@ -2077,9 +2102,10 @@
     }
     const networkState = savedPanels?.network;
     if (networkState && ['login', 'document', 'css', 'js', 'api'].includes(networkState.key)) {
+      if (narrowPanels.matches) hideArticleForNarrow();
       networkKey = networkState.key;
       networkTab = ['headers', 'preview', 'response'].includes(networkState.tab) ? networkState.tab : 'headers';
-      document.getElementById('course-network-panel').hidden = false;
+      networkPanel.hidden = false;
       syncNetworkSelection();
       renderVisualization('client', document.getElementById('course-network-visual'));
       document.querySelector('#course-network-panel .course-network__help').open = networkState.helpOpen === true;
