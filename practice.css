@@ -45,6 +45,14 @@
   display: block;
 }
 
+.practice-thumb--course { display: grid; place-items: center; color: #727b86; background: #f5f7f9; }
+.practice-thumb--course svg { width: 100%; height: 100%; }
+html[data-theme="dark"] .practice-thumb--course { color: #aeb7c1; background: #292d31; }
+
+.practice-thumb--article { position: relative; }
+.practice-card__type { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 999px; background: #f8fafc; color: #475569; font-size: .75rem; font-weight: 700; }
+html[data-theme="dark"] .practice-card__type { border-color: #4b5563; background: #30343a; color: #e5e7eb; }
+
 .practice-cta {
   align-self: flex-start;
   font-weight: 600;
@@ -57,6 +65,10 @@
 
 .practice-card--books {
   --practice-accent: #2fb344;
+}
+
+.practice-card--article {
+  --practice-accent: #dfe4e8;
 }
 
 .practice-card--login {

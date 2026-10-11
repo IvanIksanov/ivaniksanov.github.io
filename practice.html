@@ -13,9 +13,9 @@
         })();
     </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
-    <link rel="stylesheet" href="header.css?v=8.9.11">
+    <link rel="stylesheet" href="header.css?v=8.9.15">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="practice.css">
+    <link rel="stylesheet" href="practice.css?v=2">
     <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
     <script src="metrika.shared.js"></script>
 </head>
@@ -24,11 +24,11 @@
 <div class="site-header">
 <nav>
     <ul>
-        <li style="position: relative;"><a href="hwois.html">Кто такой тестировщик?</a></li>
+        <li style="position: relative;"><a href="course.html">Архитектура</a></li>
         <li style="position: relative;"><a href="roadmap.html">Roadmap</a></li>
         <li style="position: relative;"><a href="questions.html">Вопросы</a></li>
         <li style="position: relative;"><a href="resume.html">Резюме</a></li>
-        <li style="position: relative;"><a href="index.html" style="background-color: #FFA001;">Практика</a></li>
+        <li style="position: relative;"><a class="is-active" href="index.html">Практика</a></li>
     </ul>
 </nav>
 
@@ -69,9 +69,30 @@
 <main>
     <section class="article">
         <h2>Практика</h2>
-        <p>Здесь собраны практические задания и тренажеры, которые помогают закреплять навыки QA на реальных сценариях.</p>
+        <p>Здесь собраны статьи, практические задания и тренажёры для изучения QA.</p>
 
         <div class="practice-grid">
+            <a class="practice-card practice-card--course" href="course.html">
+                <div class="practice-thumb practice-thumb--course" aria-hidden="true">
+                    <svg viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M67 90H130M190 90H251" stroke="currentColor" stroke-width="2" stroke-dasharray="4 7"/>
+                        <rect x="14" y="64" width="100" height="52" rx="26" stroke="currentColor"/><rect x="125" y="64" width="70" height="52" rx="26" stroke="currentColor"/><rect x="206" y="64" width="100" height="52" rx="26" stroke="currentColor"/>
+                        <path d="M52 81h24v16H52zM57 101h14M162 80v20m-10-15h20m-19 16h18M240 80h32v9h-32zM240 94h32v9h-32z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h3>Клиент → Сервер</h3>
+                <p>Визуализация архитектуры: пройди путь запроса от браузера до базы и проверь отказ работы всех систем.</p>
+                <span class="practice-cta">Открыть курс</span>
+            </a>
+            <a class="practice-card practice-card--article" href="hwois.html">
+                <div class="practice-thumb practice-thumb--article">
+                    <img src="img/QA.jpeg" alt="" loading="lazy">
+                    <span class="practice-card__type">Статья</span>
+                </div>
+                <h3>Кто такой тестировщик?</h3>
+                <p>Роль QA в команде и этапы разработки программного обеспечения.</p>
+                <span class="practice-cta">Читать статью</span>
+            </a>
             <a class="practice-card practice-card--books" href="pageBooks.html">
                 <div class="practice-thumb">
                     <img src="img/cover/book_poster.webp" alt="Книжная полка" loading="lazy">
@@ -139,6 +160,6 @@
     })();
 </script>
 
-<script src="header.js?v=8.9.11"></script>
+<script src="header.js?v=8.9.13"></script>
 </body>
 </html>

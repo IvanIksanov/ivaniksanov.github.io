@@ -47,7 +47,6 @@
   const headerNotch = document.getElementById('header-ai-notch');
   const headerNotchIcon = document.getElementById('header-ai-notch-icon');
   const headerNotchText = document.getElementById('header-ai-notch-text');
-  const themeToggle = document.getElementById('theme-toggle');
   const languageFilters = [...document.querySelectorAll('.questions-map-filter')];
   const stateKey = 'qatodev_questions_map_state_v1';
   const dataCacheKey = 'qatodev_questions_map_data_v1';
@@ -164,14 +163,6 @@
       event.preventDefault();
     }
   }, true);
-
-  themeToggle.classList.toggle('active', document.documentElement.dataset.theme === 'dark');
-  themeToggle.addEventListener('click', () => {
-    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    localStorage.setItem('theme', next);
-    themeToggle.classList.toggle('active', next === 'dark');
-  });
 
   function isAllowedQuestion(id) {
     const category = questions.get(id)?.category;
