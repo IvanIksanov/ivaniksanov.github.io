@@ -2,17 +2,7 @@
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
-  const RESUME_NEW_BADGE_VISITS_KEY = 'qa_resume_new_badge_visits_v1';
-  const RESUME_NEW_BADGE_MAX_VISITS = 3;
-  const RESUME_NEW_BADGE_PAGES = new Set([
-    '',
-    'index.html',
-    'hwois.html',
-    'roadmap.html',
-    'questions.html',
-    'resume.html',
-    'practice.html'
-  ]);
+  const ARCHITECTURE_VISITED_KEY = 'qa_architecture_visited_v1';
   const SHARED_ASSET_VERSION = '8.9.4';
   const AUTH_BUTTON_INNER_HTML = `
     <span class="auth-open-btn__icon" aria-hidden="true">
@@ -88,42 +78,27 @@
     return decodeURIComponent(window.location.pathname.split('/').pop() || '');
   }
 
-  function readResumeNewBadgeVisits() {
+  function syncArchitectureNewBadge() {
+    const isArchitecture = getCurrentPageName() === 'course.html';
+    let visited = false;
     try {
-      const value = Number(localStorage.getItem(RESUME_NEW_BADGE_VISITS_KEY));
-      return Number.isInteger(value) && value > 0 ? value : 0;
+      if (isArchitecture) localStorage.setItem(ARCHITECTURE_VISITED_KEY, '1');
+      visited = localStorage.getItem(ARCHITECTURE_VISITED_KEY) === '1';
     } catch {
-      return 0;
+      visited = isArchitecture;
     }
-  }
 
-  function writeResumeNewBadgeVisits(value) {
-    try {
-      localStorage.setItem(RESUME_NEW_BADGE_VISITS_KEY, String(value));
-    } catch {
-      // localStorage can be unavailable in private modes; the badge still renders for this session.
+    const link = document.querySelector('.site-header nav a[href="course.html"], nav a[href="course.html"]');
+    if (visited || isArchitecture) {
+      document.querySelectorAll('.header-nav-new-badge').forEach(badge => badge.remove());
+      return;
     }
-  }
-
-  function updateResumeNewBadge() {
-    const pageName = getCurrentPageName();
-    if (!RESUME_NEW_BADGE_PAGES.has(pageName)) return;
-
-    const visits = Math.min(readResumeNewBadgeVisits() + 1, RESUME_NEW_BADGE_MAX_VISITS);
-    writeResumeNewBadgeVisits(visits);
-    if (visits >= RESUME_NEW_BADGE_MAX_VISITS) return;
-
-    const resumeLink = Array.from(document.querySelectorAll('.site-header nav a')).find((link) => {
-      const href = link.getAttribute('href') || '';
-      return href.includes('resume.html') || link.textContent.trim() === 'Резюме';
-    });
-    if (!resumeLink || resumeLink.querySelector('.header-nav-new-badge')) return;
-
+    if (!link || link.querySelector('.header-nav-new-badge')) return;
     const badge = document.createElement('span');
     badge.className = 'header-nav-new-badge';
     badge.textContent = 'new';
-    badge.setAttribute('aria-label', 'Новое');
-    resumeLink.append(badge);
+    badge.setAttribute('aria-hidden', 'true');
+    link.append(badge);
   }
 
   let ticking = false;
@@ -439,7 +414,11 @@
     document.querySelectorAll('.site-header nav a').forEach((link) => {
       link.addEventListener('click', handleNavClick);
     });
-    updateResumeNewBadge();
+    syncArchitectureNewBadge();
+    window.addEventListener('pageshow', syncArchitectureNewBadge);
+    window.addEventListener('storage', event => {
+      if (event.key === ARCHITECTURE_VISITED_KEY) syncArchitectureNewBadge();
+    });
     setupHeaderLogoHomeLink();
     setupSiteTitleHomeLink();
     ensureAuthModalMarkup();

@@ -1,0 +1,2119 @@
+(() => {
+  'use strict';
+
+  const STORAGE_KEY = 'qatodev_course_client_server_v1';
+  const nodes = [
+    { id: 'client', title: 'Клиент', icon: 'client', x: 640, y: 460, next: ['balancer', 'assets'] },
+    { id: 'balancer', title: 'Балансировщик', icon: 'balance', x: 1170, y: 530, next: ['app-a', 'app-b'] },
+    { id: 'app-a', title: 'Сервер приложения A', icon: 'server', x: 1660, y: 400, next: ['database'] },
+    { id: 'app-b', title: 'Сервер приложения B', icon: 'server', x: 1660, y: 710, next: ['database'] },
+    { id: 'database', title: 'База данных', icon: 'database', x: 2220, y: 570, next: [] },
+    { id: 'assets', title: 'CDN · копии файлов', icon: 'cdn', x: 1260, y: 75, next: ['storage'] },
+    { id: 'storage', title: 'Источник файлов', icon: 'storage', x: 1940, y: 75, next: [] }
+  ];
+  const byId = new Map(nodes.map(node => [node.id, node]));
+  const baseX = new Map(nodes.map(node => [node.id, node.x]));
+  const edges = [
+    ['client', 'balancer'], ['balancer', 'app-a'], ['balancer', 'app-b'],
+    ['app-a', 'database'], ['app-b', 'database'], ['client', 'assets'], ['assets', 'storage']
+  ];
+  const icons = {
+    client: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
+    balance: '<path d="M12 3v18M5 7h14M4 7l-2 5h6l-2-5m12 0-2 5h6l-2-5M2 12c0 2 6 2 6 0m8 0c0 2 6 2 6 0M8 21h8"/>',
+    server: '<rect x="4" y="3" width="16" height="8" rx="2"/><rect x="4" y="13" width="16" height="8" rx="2"/><path d="M8 7h.01M8 17h.01M12 7h5M12 17h5"/>',
+    database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    files: '<path d="M5 3h9l5 5v13H5zM14 3v5h5M8 12h8M8 16h8"/>',
+    cdn: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9a4.5 4.5 0 0 0 1 9Z"/><path d="M9 14h6"/>',
+    storage: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M8 13h8m-8 3h5"/>',
+    cache: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+    login: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/>'
+  };
+  const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
+  const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
+  const packets = [
+    { id: 'request', title: 'HTML', phase: 1, pair: 'html', flow: 'request', edge: ['client', 'balancer'], t: .2, when: 'balancer' },
+    { id: 'html', title: 'HTML', phase: 1, pair: 'html', flow: 'response', edge: ['client', 'balancer'], t: .42, when: 'balancer' },
+    { id: 'cookie', title: 'API', phase: 4, pair: 'api', flow: 'request', edge: ['client', 'balancer'], t: .64, when: 'balancer' },
+    { id: 'json', title: 'JSON', phase: 4, pair: 'api', flow: 'response', edge: ['client', 'balancer'], t: .87, when: 'balancer' },
+    { id: 'sql', title: 'SQL', pair: 'db', flow: 'request', edge: ['app-a', 'database'], t: .25, when: 'database' },
+    { id: 'db-result', title: 'Результат БД', pair: 'db', flow: 'response', edge: ['app-a', 'database'], t: .75, when: 'database' },
+    { id: 'origin', title: 'GET файл', flow: 'request', edge: ['assets', 'storage'], t: .5, when: 'storage' },
+    { id: 'css-get', title: 'CSS', phase: 2, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .27, when: 'assets' },
+    { id: 'js-get', title: 'JS', phase: 3, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .46, when: 'assets' },
+    { id: 'css', title: 'CSS', phase: 2, pair: 'css', flow: 'response', edge: ['client', 'assets'], t: .66, when: 'assets' },
+    { id: 'js', title: 'JS', phase: 3, pair: 'js', flow: 'response', edge: ['client', 'assets'], t: .88, when: 'assets' },
+    { id: 'cache', title: 'Cache', flow: 'local', when: 'assets' }
+  ];
+  const resourcePackets = new Set(['request', 'html', 'origin', 'css-get', 'js-get', 'css', 'js', 'cache']);
+
+  const baseProducts = [
+    { id: 42, name: 'Ноутбук QA Book', price: 79990, currency: 'RUB' },
+    { id: 43, name: 'Смартфон Pixel QA', price: 52990, currency: 'RUB' },
+    { id: 44, name: 'Наушники Studio', price: 12990, currency: 'RUB' },
+    { id: 45, name: 'Монитор View 27', price: 34990, currency: 'RUB' },
+    { id: 46, name: 'Клавиатура Type', price: 6990, currency: 'RUB' }
+  ];
+  const extraProducts = [];
+  const deletedProducts = new Set();
+  const productNames = new Map();
+  let sqlDraft = '';
+  let sqlFeedback = '';
+  let apiFormat = 'json';
+  function setApiPacketTitle(format) {
+    const packet = packets.find(item => item.id === 'json');
+    packet.title = format === 'xml' ? 'XML' : 'JSON';
+    const element = document.querySelector('[data-packet="json"]');
+    if (element) {
+      element.querySelector('.course-packet__title').textContent = packet.title;
+      element.setAttribute('aria-label', `${packet.title}: пара ${packet.phase}, ответ`);
+    }
+    if (networkSelected === 'json') document.getElementById('course-network-selection').textContent = packet.title;
+  }
+  let selectedProductId = 42;
+  let selectedSecondProductId = 43;
+  const requestedProductIds = () => [selectedProductId, selectedSecondProductId];
+  const productsPath = (ids = requestedProductIds()) => `/api/products?ids=${ids.join(',')}`;
+  function productFor(id) {
+    const product = [...baseProducts, ...extraProducts].find(row => row.id === Number(id) && !deletedProducts.has(row.id));
+    return product && productNames.has(product.id) ? { ...product, name: productNames.get(product.id) } : product;
+  }
+  function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]); }
+  function rowCountLabel(count) { return `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'строка' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'строки' : 'строк'}`; }
+  function requestCountLabel(count) { return `${count} ${count % 10 === 1 && count % 100 !== 11 ? 'запрос' : count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14) ? 'запроса' : 'запросов'}`; }
+  function productTableMarkup() {
+    const rows = [...baseProducts, ...extraProducts].map(product => productFor(product.id)).filter(Boolean).map(product => `<tr class="${requestedProductIds().includes(product.id) ? 'is-current' : ''}"><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('');
+    return `<div class="ai-table-shell course-table-shell"><div class="ai-table-wrap"><table class="ai-table"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">price</th><th scope="col">currency</th></tr></thead><tbody>${rows || '<tr><td colspan="4" class="course-table-empty">Таблица пуста</td></tr>'}</tbody></table></div></div>`;
+  }
+
+  // Содержимое главы хранится здесь: структура карты и объяснения не зависят от базы вопросов.
+  const articles = {
+    client: { kicker: '01 / Откуда начинается запрос', title: 'Клиент', body: `
+      <section class="course-load-settings" aria-label="Нагрузочное тестирование">
+        <h3>Нагрузочное тестирование</h3>
+        <p>Выбери число одновременных запросов. Схема покажет один проход по каждому маршруту, а серверы — общую нагрузку.</p>
+        <div class="course-load-settings__choices" role="group" aria-label="Количество запросов">
+          <button type="button" data-request-count="1">1 запрос</button>
+          <button type="button" data-request-count="100">100 запросов</button>
+          <button type="button" data-request-count="500">500 запросов</button>
+          <button type="button" data-request-count="1000">1000 запросов</button>
+        </div>
+        <span class="course-load-settings__progress" id="course-load-progress" role="status" hidden></span>
+      </section>
+      <section class="course-algorithm" id="course-algorithm" aria-label="Алгоритм выполнения запросов">
+        <div class="course-algorithm__heading"><h3>Алгоритм</h3><div class="course-algorithm__pager"><button id="course-algorithm-prev" type="button" aria-label="Предыдущий запуск">‹</button><span id="course-algorithm-count"></span><button id="course-algorithm-next" type="button" aria-label="Следующий запуск">›</button></div></div>
+        <div class="course-algorithm__mode" id="course-algorithm-mode"></div>
+        <ol class="course-algorithm__steps" id="course-algorithm-steps"></ol>
+        <p class="course-algorithm__result" id="course-algorithm-result" hidden></p>
+      </section>` },
+    balancer: { kicker: '02 / Маршрутизация', title: 'Балансировщик', body: `<p>Балансировщик — точка входа перед экземплярами приложения A и B. Это может быть отдельный сервер, облачный сервис или программа на той же машине. На схеме он вынесен отдельно, чтобы было видно, кто выбирает обработчик запроса.</p><p><strong>Реальные примеры:</strong> NGINX и HAProxy как обратные прокси, AWS Application Load Balancer как облачный сервис. Клиент обращается к одному адресу, а балансировщик пересылает запрос выбранному экземпляру приложения.</p><p><strong>Подходы:</strong> round robin — по очереди A, B, A; least connections — серверу с меньшим числом активных соединений; проверки доступности — не отправлять запросы на недоступный сервер. В этой учебной модели один запрос идёт на A, а 1000 делятся поровну между A и B; это упрощение, а не точная симуляция NGINX или HAProxy. Сверху показана нагрузка последнего запуска.</p>` },
+    'app-a': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения A', body: `<p>Сервер A возвращает HTML и данные API. Для защищённого API он проверяет сессию и право чтения товаров, затем обращается к базе. В этой модели экземпляры A и B видят одно состояние сессии.</p><p>Шкала сверху показывает нагрузку последнего запуска. Больше 600 одновременных запросов перегружают один сервер.</p>` },
+    'app-b': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения B', body: `<p>Сервер B — второй экземпляр того же приложения. Он обрабатывает те же запросы, проверяет общее для учебной модели состояние сессии и обращается к той же базе.</p><p>Балансировщик направляет запросы на B при распределении нагрузки или когда A недоступен.</p>` },
+    database: { kicker: '04 / Данные', title: 'База данных', body: `
+      <p>Здесь видны строки таблицы <code>products</code>. SQL вводится в элементе «SQL-запрос» между сервером и базой; база показывает результат изменения. Браузер к базе напрямую не подключается.</p>
+      <p id="course-db-state"></p>
+      <p>База возвращает строки, а HTTP-статус и формат ответа выбирает сервер приложения.</p>` },
+    assets: { kicker: '04 / Доставка файлов', title: 'CDN · копии файлов', body: `<p><strong>CDN</strong> — Content Delivery Network, сеть доставки содержимого. Она хранит копии CSS и JS ближе к пользователю. Сверху показаны копии, доступные в текущем режиме схемы.</p><p>При <strong>cache hit</strong> CDN отвечает сама. При <strong>cache miss</strong> она запрашивает оригинал в источнике. Кэш браузера — отдельное место: если файл уже есть там, запроса к CDN вообще не будет.</p>` },
+    storage: { kicker: '05 / Оригиналы файлов', title: 'Источник файлов', body: `<p>Здесь лежат оригиналы <code>style.css</code> и <code>app.js</code>. Здесь можно удалить, повредить или восстановить каждый оригинал; ответы на линии при этом не редактируются. CDN приходит сюда только при промахе своего кэша. Если источник отключён, готовые копии на CDN всё ещё могут работать.</p>` },
+    origin: { kicker: 'Запрос CDN / к источнику', title: 'Получение файла', body: `<p>При промахе своего кэша CDN запрашивает оригинальный файл у источника. Это отдельный HTTP-запрос CDN → источник, а не запрос сервера приложения A или B. После ответа CDN может сохранить копию и отдать файл браузеру.</p>` },
+    request: { kicker: 'Первый запрос страницы', title: 'HTML-запрос', body: `<p>Браузер отправляет <code>GET /</code> и получает HTML-документ. В Network сверху показан только этот запрос и его ответ.</p><p>В HTML есть адреса CSS и JavaScript, но браузер запрашивает эти файлы отдельно по ветке CDN. Данные товара тоже приходят позже, через отдельный <code>GET /api</code>.</p>` },
+    'css-get': { kicker: 'Запрос браузера / к CDN', title: 'CSS-запрос', body: `<p>Браузер запрашивает <code>style.css</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за JavaScript.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
+    'js-get': { kicker: 'Запрос браузера / к CDN', title: 'JS-запрос', body: `<p>Браузер запрашивает <code>app.js</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за CSS.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
+    cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит два товара одним запросом: <code>GET /api/products?ids=42,43</code>. Оба ID можно изменить в Network. Сессионная cookie, если она есть, передаётся в заголовке этого же запроса.</p><p><strong>REST</strong> здесь означает способ организации API: <code>products</code> — ресурс, а <code>ids</code> выбирает нужные записи. REST не является отдельным запросом на линии.</p><p>Пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. В Network можно удалить или обновить сессию; права этой сессии меняются на сервере. Без сессии API вернёт 401, без прав — 403.</p>` },
+    sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>В учебной модели можно отправить SQL в базу через эту строку. Разрешены конкретные формы <code>SELECT</code>, <code>DELETE</code> и <code>INSERT</code>. В реальном приложении браузер не отправляет SQL напрямую: запрос строит сервер. Значения из API передаются параметрами <code>$1</code> и <code>$2</code>.</p>` },
+    'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает до двух найденных строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
+    json: { kicker: 'Формат данных', title: 'JSON в ответе API', body: `<p><strong>JSON</strong> — текстовый формат обмена данными. В ответе API ключ <code>id</code> означает идентификатор, <code>name</code> — название, <code>price</code> — цену. JavaScript в браузере читает эти значения и показывает товар. JSON не является отдельным сетевым устройством или обязательным дополнительным запросом.</p><p>Сначала смотри <strong>HTTP-статус</strong>, затем тело ответа. <code>200 OK</code> не обещает, что внутри правильный товар: тело может быть пустым или содержать <code>error.code: 404</code>. Этот внутренний код не превращает HTTP 200 в HTTP 404.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>Есть ли тело ответа, совпадают ли типы и значения полей с таблицей <code>products</code>, корректно ли клиент обрабатывает ошибку.</p></div>` },
+    html: { kicker: 'Ответ на GET /', title: 'HTML', body: `<p><strong>HTML</strong> задаёт структуру страницы: заголовки, текст, области для данных и ссылки на другие ресурсы. В этой схеме выбранный балансировщиком сервер возвращает HTML на <code>GET /</code>.</p><p>Посмотри пример ниже: <code>link href</code> указывает браузеру адрес CSS, а <code>script src</code> — адрес JavaScript. Браузер сам запрашивает эти файлы у CDN. Если HTML получен, но CSS недоступен, структура может остаться видимой без оформления.</p><p><code>X-Served-By</code> здесь — условный заголовок для показа сервера A или B; на реальном сайте его может не быть.</p>` },
+    css: { kicker: 'Ресурс страницы', title: 'CSS', body: `<p><strong>CSS</strong> описывает внешний вид HTML: цвета, отступы, размеры и расположение блоков. Браузер загружает <code>style.css</code> по адресу из HTML, здесь — с CDN. Запрос API за товаром от этого не становится запросом CSS.</p><p>Карточка CSS на линии — <strong>ответ с содержимым файла</strong>. Удалить оригинал можно в «Источнике файлов». Это не прерывает текущий запрос: браузер всё ещё может получить старую копию из своего кэша или CDN. Чтобы увидеть ошибку, очисти кэш браузера, включи cache miss на CDN и запусти схему.</p><p>В примере ниже правило <code>.catalog</code> раскладывает карточки по колонкам, а <code>@media</code> меняет раскладку на узком экране.</p>` },
+    js: { kicker: 'Ресурс страницы', title: 'JavaScript', body: `<p><strong>JavaScript</strong> выполняется в браузере и добавляет поведение странице: реагирует на кнопки, запрашивает данные и меняет HTML. В этой модели браузер получает <code>app.js</code> от CDN; затем скрипт отправляет <code>GET /api/products?ids=42,43</code> через балансировщик.</p><p>Карточка JS на линии — <strong>ответ с содержимым файла</strong>. Оригинал app.js удаляется в «Источнике файлов», а не в ответе. Копии браузера и CDN живут отдельно. Если очистить кэш браузера, включить cache miss CDN и удалить оригинал app.js или отключить источник, новый JS не придёт, локальный кэш не пополнится и запрос API не начнётся.</p><p>В примере ниже <code>fetch</code> получает массив товаров. При HTTP 200 с пустым телом <code>response.json()</code> завершится ошибкой разбора. При HTTP 200 с <code>error</code> внутри JSON проверка <code>response.ok</code> пройдёт, но массива <code>products</code> не будет.</p><div class="course-article__note"><strong>Что проверить QA</strong><p>Не только HTTP-статус файла, но и ошибки выполнения скрипта, отображение обоих товаров и поведение при пустом или ошибочном ответе API.</p></div>` },
+    cache: { kicker: 'DevTools / Application', title: 'Application', body: `<p>Это учебная модель <strong>HTTP-кэша</strong>: браузер хранит полученные HTML, CSS и JS и может использовать свежую копию при следующей загрузке. В настоящем Chrome такие ответы проверяют во вкладке <strong>Network</strong>: столбец Size показывает <code>memory cache</code> или <code>disk cache</code>.</p><p>Чтобы очистить именно HTTP-кэш в DevTools, выбери <strong>Network → Clear browser cache</strong> в контекстном меню списка запросов или <strong>Empty Cache and Hard Reload</strong> в меню перезагрузки. <strong>Application → Cache Storage</strong> показывает отдельный Cache API, часто используемый Service Worker; этот список HTML/CSS/JS не является его буквальной копией.</p><p>Повторное использование HTTP-кэша зависит от заголовков ответа и срока свежести. При проверке актуальности сервер может ответить <code>304 Not Modified</code> без повторной передачи файла.</p><p><a href="https://developer.chrome.com/docs/devtools/network/reference/" target="_blank" rel="noopener noreferrer">Как очистить HTTP-кэш в Network</a> · <a href="https://developer.chrome.com/docs/devtools/storage/cache" target="_blank" rel="noopener noreferrer">Что показывает Cache Storage</a></p>` },
+    tasks: { kicker: 'Практика / условия', title: 'Задания', body: `<p>Меняй элементы схемы и запускай запросы. «Сброс» восстанавливает схему, выполненные задания сохраняются. В этой учебной модели один сервер выдерживает до 600 одновременных запросов.</p><div id="course-task-list" class="course-task-list"></div>` }
+  };
+  const examples = {
+    request: ['Запрос браузера → сервер:', 'GET / HTTP/1.1', 'Host: qatodev.ru', 'Accept: text/html', '', 'Ответ сервера → браузер:', 'HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<html>…</html>'],
+    'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.qatodev.ru'],
+    'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.qatodev.ru'],
+    cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products?ids=42,43 HTTP/1.1', 'Cookie: session=demo123'],
+    sql: ['SELECT id, name, price', 'FROM products', 'WHERE id IN ($1, $2);', 'Параметры $1 = 42, $2 = 43'],
+    html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.qatodev.ru/style.css"></head>', '  <body>', '    <header>qa market</header>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.qatodev.ru/app.js"></script>', '  </body>', '</html>'],
+    css: ['body { margin: 0; font: 16px system-ui; }', '#products { display: grid; gap: 16px;', '  grid-template-columns: repeat(2, 1fr); }', '@media (max-width: 700px) {', '  #products { grid-template-columns: 1fr; }', '}'],
+    js: ['const response = await fetch("/api/products?ids=42,43");', 'if (!response.ok) throw new Error(`HTTP ${response.status}`);', 'const { products } = await response.json();', 'renderProductCards(products);'],
+    origin: ['GET /app.js HTTP/1.1', 'Host: origin.qatodev.ru', '', 'CDN запрашивает оригинал после cache miss.'],
+    cache: ['Ключ: GET https://cdn.qatodev.ru/style.css', 'Место: HTTP-кэш браузера (память или диск)', 'Ответ: 200 OK, Cache-Control: public, max-age=3600', 'Повтор: браузер может использовать сохранённую копию.', 'Точный файловый путь определяет браузер, а не сайт.']
+  };
+  function exampleFor(id, run = lastRun) {
+    if (id === 'client' && !run) return null;
+    if (id === 'json' || id === 'client') {
+      if (id === 'client' && !run.apiSent) return { title: 'Запрос API не отправлен', text: run.documentAvailable ? run.assetOutcomes?.js?.state === 'corrupt' ? 'HTML получен, app.js пришёл с HTTP 200, но содержит синтаксическую ошибку. Скрипт не выполнился, поэтому API-запроса не было.' : 'HTML получен, но app.js не загрузился. Код fetch не выполнился, поэтому запроса к API и его HTTP-ответа не было.' : 'HTML не получен. Браузер не дошёл до выполнения JavaScript и не отправил запрос к API.' };
+      const app = selectedVia === 'app-b' || (!selectedVia && run?.routes?.[0] === 'app-b') ? 'B' : 'A';
+      const apiResponse = apiResponseForCurrentState(run);
+      const failed = apiResponse.code !== '200';
+      const error = apiResponse.code === '401' ? 'SESSION_REQUIRED' : apiResponse.code === '403' ? 'ACCESS_DENIED' : apiResponse.code === '404' ? 'PRODUCT_NOT_FOUND' : 'SERVICE_UNAVAILABLE';
+      const title = id === 'client' ? 'Что получил браузер от API' : 'Ответ API · JSON';
+      if (apiResponse.bodyIssue === 'empty') return { title, text: ['HTTP/1.1 200 OK', 'Content-Length: 0'].join('\n') };
+      if (apiResponse.bodyIssue === 'embedded-error') return { title, text: ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ error: { code: 404, message: 'PRODUCT_NOT_FOUND' } }, null, 2)].join('\n') };
+      if (apiResponse.bodyIssue === 'xml') return { title, text: ['HTTP/1.1 200 OK', 'Content-Type: application/xml', '', '<products>', ...(run?.products || []).map(product => `  <product id="${product.id}"><name>${escapeHtml(product.name)}</name><price>${product.price}</price></product>`), '</products>'].join('\n') };
+      return { title, text: failed ? [apiResponse.code === '—' ? 'Ответ HTTP не получен' : 'HTTP/1.1 ' + apiResponse.code, ...(apiResponse.code === '—' ? [] : [...(apiResponse.code === '401' ? ['WWW-Authenticate: Session realm="training"'] : []), 'Content-Type: application/json', '', JSON.stringify({ error, message: apiResponse.label, servedBy: app }, null, 2)])].join('\n') : ['HTTP/1.1 200 OK', 'Content-Type: application/json', '', JSON.stringify({ products: run?.products || requestedProductIds().map(productFor).filter(Boolean), servedBy: app }, null, 2)].join('\n') };
+    }
+    if (!examples[id]) return null;
+    let title = id === 'request' ? 'Запрос страницы и ответ сервера' : ['css-get', 'js-get'].includes(id) ? 'Запрос браузера к CDN' : id === 'origin' ? 'Запрос CDN к источнику' : id === 'cookie' ? 'Обмен заголовками сессии' : id === 'cache' ? 'Как выглядит запись кэша' : id === 'sql' ? sqlDraft.trim() ? 'SQL для учебной базы' : 'SQL, который выполняет сервер' : 'Пример содержимого';
+    let text = examples[id].join('\n');
+    if (id === 'cookie') text = text.replaceAll('demo123', sessionToken).replace('42,43', requestedProductIds().join(','));
+    if (id === 'cache') text = [
+      `HTML: ${cacheCleared ? 'нет копии' : 'копия сохранена после GET /'}`,
+      `style.css: ${hasCachedAsset('css') ? 'есть копия в кэше браузера' : 'нет копии'}`,
+      `app.js: ${hasCachedAsset('js') ? 'есть копия в кэше браузера' : 'нет копии'}`,
+      '',
+      'Место: HTTP-кэш браузера (память или диск).',
+      'Копии CDN здесь не показаны: это другой кэш.'
+    ].join('\n');
+    if (id === 'sql') text = sqlDraft.trim() || text.replace('Параметры $1 = 42, $2 = 43', `Параметры $1 = ${lastRun?.productId || selectedProductId}, $2 = ${lastRun?.secondProductId || selectedSecondProductId}`);
+    if (id === 'js') {
+      text = text.replace('42,43', requestedProductIds().join(','));
+      if (run?.assetOutcomes?.js?.state === 'corrupt') text = ['HTTP/1.1 200 OK', 'Content-Type: text/javascript', '', 'const response = await fetch("/api/products?ids=42,43";', '// SyntaxError: missing ) after argument list', '// Скрипт не выполняется: fetch к API не вызывается.'].join('\n');
+    }
+    if (id === 'cookie' && !hasSession()) text = [`GET ${productsPath()} HTTP/1.1`, 'Cookie: —', '', 'HTTP/1.1 401 Unauthorized', '', 'Чтобы войти повторно:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', `Set-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`].join('\n');
+    if (id === 'cookie' && hasSession() && sessionRestricted) text += '\n\nHTTP/1.1 403 Forbidden — сессия есть, права недостаточны';
+    if (id === 'html' && lastRun && !lastRun.documentAvailable) return { title: 'HTML не получен', text: 'GET / не вернул доступный HTML. Браузер не может прочитать ссылки на CSS и JS из документа.' };
+    if (id === 'html' && lastRun?.documentRoute && !faults.has('html')) text = text.replace('Content-Type: text/html; charset=utf-8', `Content-Type: text/html; charset=utf-8\nX-Served-By: ${lastRun.documentRoute}`);
+    if ((id === 'html' && faults.has('html')) || (['css', 'js'].includes(id) && lastRun?.assetOutcomes?.[id]?.state === 'failed')) {
+      const cached = id === 'html' ? !cacheCleared : hasCachedAsset(id);
+      title = cached ? 'Копия из кэша браузера' : 'Новый файл недоступен';
+      text = cached ? `Браузер использует ранее сохранённый ${id.toUpperCase()}:\n\n${text}` : `${id.toUpperCase()}: ${lastRun?.assetOutcomes?.[id]?.reason === 'файл удалён в источнике' ? '404 Not Found' : '503 Service Unavailable'}\nСодержимое файла не получено.`;
+    }
+    return { title, text };
+  }
+  function renderExample(id) {
+    const host = document.getElementById('course-example');
+    const example = exampleFor(id);
+    if (!host || selected !== id) return;
+    host.hidden = !example;
+    if (!example) return;
+    const heading = host.querySelector('h3');
+    if (heading) heading.textContent = example.title;
+    const code = host.querySelector('code');
+    code.replaceChildren();
+    for (const line of example.text.split('\n')) {
+      const row = document.createElement('span');
+      row.className = 'course-example__line';
+      const method = line.match(/^(GET|POST|PUT|PATCH|DELETE)\b(.*)$/);
+      const status = line.match(/^(HTTP\/\d(?:\.\d)?\s+)(\d{3})(.*)$/);
+      const header = line.match(/^([A-Za-z][A-Za-z-]*:)(.*)$/);
+      const jsonKey = line.match(/^(\s*)("[^"]+":)(.*)$/);
+      if (method) {
+        const badge = document.createElement('span');
+        badge.className = `course-method course-method--${method[1].toLowerCase()}`;
+        badge.textContent = method[1];
+        row.append(badge, document.createTextNode(method[2]));
+      } else if (status) {
+        const badge = document.createElement('span');
+        badge.className = `course-status ${Number(status[2]) >= 400 ? 'is-error' : 'is-ok'}`;
+        badge.textContent = status[2];
+        row.append(document.createTextNode(status[1]), badge, document.createTextNode(status[3]));
+      } else if (header) {
+        const name = document.createElement('span');
+        name.className = 'course-example__header';
+        name.textContent = header[1];
+        row.append(name, document.createTextNode(header[2]));
+      } else if (jsonKey) {
+        const name = document.createElement('span');
+        name.className = 'course-example__json-key';
+        name.textContent = jsonKey[2];
+        row.append(document.createTextNode(jsonKey[1]), name, document.createTextNode(jsonKey[3]));
+      } else if (id === 'sql' && line.startsWith('Параметры ')) {
+        row.classList.add('is-sql-params');
+        const label = document.createElement('span');
+        label.textContent = 'Параметры';
+        row.append(label);
+        for (const [, number, value] of line.matchAll(/\$(\d+)\s*=\s*(\d+)/g)) {
+          const chip = document.createElement('span');
+          chip.className = 'course-example__param';
+          chip.textContent = `$${number} = ${value}`;
+          row.append(chip);
+        }
+      } else if (id === 'sql' && /\b(SELECT|FROM|WHERE|DELETE|INSERT|INTO|VALUES|UPDATE|SET)\b/i.test(line)) {
+        for (const part of line.split(/\b(SELECT|FROM|WHERE|DELETE|INSERT|INTO|VALUES|UPDATE|SET)\b/gi)) {
+          const token = document.createElement('span');
+          if (/^(SELECT|FROM|WHERE|DELETE|INSERT|INTO|VALUES|UPDATE|SET)$/i.test(part)) token.className = 'course-example__keyword';
+          token.textContent = part;
+          row.append(token);
+        }
+      } else {
+        if (line.endsWith(':') && !line.startsWith('{')) row.classList.add('is-caption');
+        row.textContent = line || '\u00a0';
+      }
+      code.append(row);
+    }
+  }
+  function renderProductTables() {
+    document.querySelectorAll('[data-course-product-table]').forEach(host => { host.innerHTML = productTableMarkup(); });
+    const state = document.getElementById('course-db-state');
+    if (state) state.textContent = `Для ID ${requestedProductIds().join(' и ')} база вернёт ${rowCountLabel([...new Set(requestedProductIds())].map(productFor).filter(Boolean).length)}.`;
+  }
+  function applySqlCommand(raw) {
+    const command = raw.trim().replace(/;\s*$/, '').replace(/\s+/g, ' ');
+    if (faults.has('database')) return 'База отключена: SQL-запрос не выполнен.';
+    const select = command.match(/^SELECT\s+id,\s*name,\s*price(?:,\s*currency)?\s+FROM\s+products\s+WHERE\s+id\s+IN\s*\(\s*(\d{1,4})\s*,\s*(\d{1,4})\s*\)$/i);
+    const parameterizedSelect = /^SELECT\s+id,\s*name,\s*price(?:,\s*currency)?\s+FROM\s+products\s+WHERE\s+id\s+IN\s*\(\s*\$1\s*,\s*\$2\s*\)$/i.test(command);
+    if (select || parameterizedSelect) {
+      const ids = select ? [Number(select[1]), Number(select[2])] : requestedProductIds();
+      return `SELECT вернул ${rowCountLabel([...new Set(ids)].map(productFor).filter(Boolean).length)}. Текущее состояние видно в Article базы данных.`;
+    }
+    const remove = command.match(/^DELETE\s+FROM\s+products\s+WHERE\s+id\s*(?:=\s*(\d{1,4})|IN\s*\(\s*(\d{1,4})\s*,\s*(\d{1,4})\s*\))$/i);
+    if (remove) {
+      const ids = [remove[1], remove[2], remove[3]].filter(Boolean).map(Number);
+      const affected = ids.filter(id => productFor(id));
+      affected.forEach(id => { deletedProducts.add(id); productNames.delete(id); });
+      return `DELETE: удалено ${rowCountLabel(affected.length)}. Обнови страницу и посмотри ответ API.`;
+    }
+    if (/^DELETE\s+FROM\s+products$/i.test(command)) {
+      const remaining = [...baseProducts, ...extraProducts].filter(product => productFor(product.id));
+      remaining.forEach(product => { deletedProducts.add(product.id); productNames.delete(product.id); });
+      return `DELETE: удалено ${rowCountLabel(remaining.length)}. Таблица products пуста; обнови страницу и проверь ответ API.`;
+    }
+    const updateName = command.match(/^UPDATE\s+products\s+SET\s+name\s*=\s*'([^']{1,48})'\s+WHERE\s+id\s*=\s*(\d{1,4})$/i);
+    if (updateName) {
+      const id = Number(updateName[2]);
+      if (!productFor(id)) return `UPDATE: строка с id ${id} не найдена.`;
+      productNames.set(id, updateName[1]);
+      return `UPDATE: название товара ${id} изменено. Обнови страницу и сравни ответ API с таблицей.`;
+    }
+    const insert = command.match(/^INSERT\s+INTO\s+products\s*\(\s*id\s*,\s*name\s*,\s*price\s*,\s*currency\s*\)\s*VALUES\s*\(\s*(\d{1,4})\s*,\s*'([^']{1,48})'\s*,\s*(\d{1,7})\s*,\s*'RUB'\s*\)$/i);
+    if (insert) {
+      const id = Number(insert[1]);
+      const existing = [...baseProducts, ...extraProducts].find(row => row.id === id);
+      if (existing && !deletedProducts.has(id)) return `INSERT: id ${id} уже существует.`;
+      if (existing && (existing.name !== insert[2] || existing.price !== Number(insert[3]))) return `INSERT: id ${id} уже занят удалённой строкой. Для неё используй исходные имя и цену.`;
+      if (!existing && extraProducts.length >= 12) return 'В модели можно добавить не больше 12 строк.';
+      if (existing) { deletedProducts.delete(id); productNames.delete(id); }
+      else extraProducts.push({ id, name: insert[2], price: Number(insert[3]), currency: 'RUB' });
+      return `INSERT: строка ${id} добавлена. Запроси этот ID и обнови страницу.`;
+    }
+    return 'Поддержаны SELECT по двум ID, DELETE FROM products с WHERE или без него, UPDATE products SET name = … WHERE id = … и INSERT INTO products (id, name, price, currency) VALUES (…);';
+  }
+
+  const scroller = document.getElementById('course-scroller');
+  const nodeHost = document.getElementById('course-nodes');
+  const packetHost = document.getElementById('course-packets');
+  const lines = document.getElementById('course-lines');
+  const article = document.getElementById('course-article');
+  const networkPanel = document.getElementById('course-network-panel');
+  const narrowPanels = window.matchMedia('(max-width: 767px)');
+  let articleCloseTimer;
+  const workspace = document.getElementById('course-workspace');
+  const canvas = document.getElementById('course-canvas');
+  const resetButton = document.getElementById('course-reset');
+  const algorithmRuns = [];
+  let algorithmIndex = -1;
+  function renderAlgorithm() {
+    const panel = document.getElementById('course-algorithm');
+    if (!panel) return;
+    const run = algorithmRuns[algorithmIndex];
+    const steps = panel.querySelector('#course-algorithm-steps');
+    const result = panel.querySelector('#course-algorithm-result');
+    panel.querySelector('#course-algorithm-count').textContent = run ? `${algorithmIndex + 1} / ${algorithmRuns.length}` : '0 / 0';
+    panel.querySelector('#course-algorithm-prev').disabled = algorithmIndex <= 0;
+    panel.querySelector('#course-algorithm-next').disabled = algorithmIndex < 0 || algorithmIndex >= algorithmRuns.length - 1;
+    panel.querySelector('#course-algorithm-mode').textContent = run?.mode || 'Ожидание запуска';
+    steps.replaceChildren();
+    for (const step of run?.steps || []) {
+      const item = document.createElement('li');
+      item.className = 'course-algorithm__step';
+      item.dataset.tone = step.tone;
+      item.textContent = step.text;
+      steps.append(item);
+    }
+    if (!run) {
+      const hint = document.createElement('li');
+      hint.className = 'course-algorithm__step is-idle';
+      hint.textContent = 'Загрузи страницу — здесь появится путь запроса и ответа.';
+      steps.append(hint);
+    }
+    result.hidden = !run?.result;
+    if (run?.result) {
+      result.textContent = run.result.text;
+      result.dataset.tone = run.result.tone;
+    }
+  }
+  function resetAlgorithm() {
+    algorithmRuns.length = 0;
+    algorithmIndex = -1;
+    renderAlgorithm();
+  }
+  function startAlgorithm(mode) {
+    algorithmRuns.push({ mode, steps: [], result: null });
+    if (algorithmRuns.length > 10) algorithmRuns.shift();
+    algorithmIndex = algorithmRuns.length - 1;
+    renderAlgorithm();
+    save();
+  }
+  function algorithmStep(tone, message) {
+    algorithmRuns.at(-1).steps.push({ tone, text: message });
+    const steps = document.getElementById('course-algorithm-steps');
+    if (steps && algorithmIndex === algorithmRuns.length - 1) {
+      steps.querySelector('.is-idle')?.remove();
+      const item = document.createElement('li');
+      item.className = 'course-algorithm__step is-new';
+      item.dataset.tone = tone;
+      item.textContent = message;
+      steps.append(item);
+    }
+    save();
+  }
+  function finishAlgorithm(code, label, tone) {
+    algorithmRuns.at(-1).result = { text: `Итог: ${code} · ${label}`, tone };
+    renderAlgorithm();
+    save();
+  }
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const revealed = new Set(nodes.map(node => node.id));
+  const shownPackets = new Set();
+  let selected = '';
+  let networkSelected = '';
+  let articleNotice = null;
+  let networkNotice = null;
+  let selectedVia = null;
+  let removed = false;
+  const SESSION_MS = 5 * 60 * 1000;
+  let sessionExpiresAt = Date.now() + SESSION_MS;
+  let sessionToken = 'demo123';
+  let sessionRestricted = false;
+  function hasSession() { return sessionExpiresAt > Date.now(); }
+  function rotateSessionToken() {
+    let suffix;
+    do { suffix = String(crypto.getRandomValues(new Uint16Array(1))[0] % 1000).padStart(3, '0'); }
+    while (`demo${suffix}` === sessionToken);
+    sessionToken = `demo${suffix}`;
+  }
+  let cacheCleared = true;
+  const cachedAssets = new Map();
+  const ASSET_CACHE_MS = 60 * 60 * 1000;
+  function hasCachedAsset(id) { return (cachedAssets.get(id) || 0) > Date.now(); }
+  let cdnBypass = false;
+  let productMode = 'normal';
+  let lastResponse = null;
+  let lastRun = null;
+  let liveNetwork = null;
+  const LOAD_OPTIONS = new Set([1, 100, 500, 1000]);
+  let configuredRequests = 1;
+  let remainingRequests = null;
+  let pageLoaded = false;
+  const runHistory = [];
+  const completedTasks = new Set();
+  const missingProductIdsSeen = new Set();
+  let liveRoutes = null;
+  let savedPosition = null;
+  let savedPanels = null;
+  let expandedTaskId = null;
+  let taskScrollTop = 0;
+  let taskScrollSaveTimer;
+  const faults = new Map();
+  const taskDefinitions = [
+    { id: 'status-200', title: '200 · страница и данные получены', steps: [['client', 'Оставь схему в исходном состоянии или нажми "Сброс", затем нажми "Загрузить страницу".'], ['cookie', 'На схеме нажми на запрос HTTP с названием "API", проверь его статус-код 200 и оба товара.']] },
+    { id: 'status-401', title: '401 · нет действующей сессии', steps: [['client', 'Сначала загрузи страницу (кнопка "Загрузить страницу" изменилась на "Обновить страницу".'], ['login', 'В строке POST /auth/login удали сессию и обнови страницу: API ответит 401.', 'Удалить сессию']] },
+    { id: 'status-403', title: '403 · доступ запрещён', steps: [['app-a', 'На сервере ограничь права активной сессии.', 'Ограничить права'], ['client', 'Обнови страницу и проверь 403 в Network.']] },
+    { id: 'status-404', title: '404 · ресурс не найден', steps: [['cookie', 'В Network в запросе /api/products укажи два отсутствующих ID, например 98 и 99.'], ['app-a', 'Если на сервере включён ошибочный формат ответа, верни обычный ответ.', 'Обычный ответ'], ['client', 'Нажми "Обновить страницу": API вернёт HTTP 404.']] },
+    { id: 'status-503', title: '503 · API недоступен', steps: [['database', 'Отключи базу данных.', 'Отключить базу'], ['client', 'С действующей сессией обнови страницу и проверь 503 у API.']] },
+    { id: 'status-none', title: 'Нет HTTP-ответа', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['app-a', 'Останови сервер A и обнови страницу.', 'Остановить сервер']] },
+    { id: 'status-cache', title: '200 · файлы из кэша браузера', steps: [['client', 'Загрузи страницу, чтобы CSS и JS сохранились.'], ['assets', 'Отключи CDN, затем обнови страницу, не очищая кэш браузера.', 'Отключить CDN']] },
+    { id: 'first-css', title: 'Запроси CSS у CDN', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['client', 'Загрузи страницу: в Network появится GET style.css.']] },
+    { id: 'css-cache', title: 'Загрузи CSS из кэша браузера', steps: [['client', 'Загрузи страницу один раз.'], ['assets', 'Отключи CDN и обнови страницу, не очищая локальный кэш.', 'Отключить CDN']] },
+    { id: 'origin-miss', title: 'Получи CSS и JS из источника', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'В CDN включи cache miss.', 'Сымитировать cache miss'], ['client', 'Обнови страницу: CDN запросит оба оригинала у источника.']] },
+    { id: 'missing-js', title: 'Найди пропавший JavaScript', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'Включи cache miss.', 'Сымитировать cache miss'], ['storage', 'Удали app.js в строке источника и обнови страницу.', 'Удалить app.js']] },
+    { id: 'cdn-copy', title: 'Получи JS из копии CDN', steps: [['storage', 'Удали app.js из источника.', 'Удалить app.js'], ['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'Верни cache hit и обнови страницу.', 'Вернуть cache hit']] },
+    { id: 'origin-offline', title: 'Проверь недоступный источник', steps: [['cache', 'Очисти кэш браузера.', 'Очистить кэш'], ['assets', 'Включи cache miss.', 'Сымитировать cache miss'], ['storage', 'Отключи источник и обнови страницу.', 'Отключить источник']] },
+    { id: 'empty-body', title: '200 · пустое тело ответа', steps: [['cookie', 'В Network посмотри два ID запроса, изначально 42 и 43.'], ['sql', 'В SQL-запросе отправь DELETE FROM products WHERE id IN (42, 43);'], ['app-a', 'На сервере включи режим «Пустое тело 200».', 'Пустое тело 200'], ['client', 'Обнови страницу: HTTP 200, но тело API пустое.']] },
+    { id: 'body-error', title: '200 · ошибка внутри JSON', steps: [['cookie', 'В Network посмотри оба ID запроса.'], ['sql', 'Отправь DELETE FROM products WHERE id IN (42, 43);'], ['app-a', 'На сервере включи «Ошибка в теле 200».', 'Ошибка в теле 200'], ['client', 'Обнови страницу: HTTP 200, внутри JSON — error.code: 404.']] },
+    { id: 'missing-then-add', title: 'Найди товар, добавь строку и повтори запрос', steps: [['cookie', 'В Network замени второй ID на отсутствующий 99 и обнови страницу: в просмотре не будет второй карточки.'], ['sql', "Отправь INSERT INTO products (id, name, price, currency) VALUES (99, 'Наушники Rizen BlackShark v2 X', 5990, 'RUB');"], ['client', 'Обнови страницу ещё раз: карточка товара 99 появится в просмотре HTML.']] },
+    { id: 'update-product', title: 'Переименуй товар через UPDATE', steps: [['sql', "В SQL-запросе отправь UPDATE products SET name = 'QA Book Pro' WHERE id = 42;"], ['database', 'Проверь новое название в строке с id 42.'], ['cookie', 'Убедись, что среди запрашиваемых ID есть 42.'], ['client', 'Обнови страницу: новое название появится в ответе API и в карточке товара.']] },
+    { id: 'delete-all-products', title: 'Удали все строки через DELETE', steps: [['sql', 'В SQL-запросе отправь DELETE FROM products; Здесь нет WHERE, поэтому удалятся все строки.'], ['database', 'Открой таблицу products: она должна быть пустой.'], ['client', 'Обнови страницу и проверь ответ API для прежних ID: HTTP 404.']] },
+    { id: 'route-b', title: 'Переведи запрос на сервер B', steps: [['app-a', 'Останови A при работающем балансировщике.', 'Остановить сервер'], ['client', 'Обнови страницу и проверь путь через B.']] },
+    { id: 'balanced-load', title: 'Распредели 1000 запросов', steps: [['client', 'В Article клиента выбери 1000 запросов.'], ['balancer', 'Оставь балансировщик и оба сервера включёнными, затем обнови страницу.']] },
+    { id: 'overload-a', title: 'Перегрузи сервер A', steps: [['balancer', 'Отключи балансировщик.', 'Отключить балансировщик'], ['client', 'Выбери 1000 запросов и обнови страницу.']] },
+    { id: 'failover-b', title: 'Продолжи работу через B', steps: [['app-a', 'Сначала перегрузи A предыдущим заданием.'], ['balancer', 'Восстанови балансировщик и обнови страницу.', 'Восстановить балансировщик']] },
+    { id: 'overload-b', title: 'Перегрузи сервер B', steps: [['app-a', 'Останови A, оставив B работающим.', 'Остановить сервер'], ['client', 'Выбери 1000 запросов и обнови страницу через балансировщик.']] }
+  ];
+  const taskPlaceLabels = { client: 'Клиент', login: 'Network · POST /auth/login', cookie: 'Network · GET /api/products', sql: 'SQL-запрос · сервер приложения', cache: 'Кэш браузера · Application', assets: 'CDN · копии файлов', storage: 'Источник файлов', database: 'База данных', 'app-a': 'Сервер приложения A', 'app-b': 'Сервер приложения B', balancer: 'Балансировщик' };
+  const taskTooltip = document.createElement('div');
+  taskTooltip.className = 'course-task-tooltip';
+  taskTooltip.hidden = true;
+  document.body.append(taskTooltip);
+  let taskTooltipTimer;
+  function hideTaskTooltip() {
+    clearTimeout(taskTooltipTimer);
+    taskTooltip.hidden = true;
+  }
+  function showTaskTooltip(icon) {
+    if (!icon.isConnected || selected !== 'tasks' || article.hidden) return;
+    taskTooltip.textContent = icon.dataset.tooltip;
+    taskTooltip.hidden = false;
+    const iconRect = icon.getBoundingClientRect();
+    const tooltipRect = taskTooltip.getBoundingClientRect();
+    const preferredLeft = icon.classList.contains('course-task__action-icon') ? iconRect.right - tooltipRect.width : iconRect.left;
+    taskTooltip.style.left = `${Math.max(8, Math.min(preferredLeft, window.innerWidth - tooltipRect.width - 8))}px`;
+    const above = iconRect.top - tooltipRect.height - 6;
+    taskTooltip.style.top = `${above >= 8 ? above : Math.max(8, Math.min(iconRect.bottom + 6, window.innerHeight - tooltipRect.height - 8))}px`;
+  }
+  function bindTaskTooltip(icon) {
+    icon.addEventListener('pointerenter', () => {
+      hideTaskTooltip();
+      taskTooltipTimer = setTimeout(() => showTaskTooltip(icon), 500);
+    });
+    icon.addEventListener('pointerleave', hideTaskTooltip);
+    icon.addEventListener('focus', () => { hideTaskTooltip(); showTaskTooltip(icon); });
+    icon.addEventListener('blur', hideTaskTooltip);
+  }
+  article.querySelector('.course-article__scroll').addEventListener('scroll', hideTaskTooltip);
+  window.addEventListener('resize', hideTaskTooltip);
+  function renderTasks() {
+    const host = document.getElementById('course-task-list');
+    if (!host) return;
+    hideTaskTooltip();
+    const scroll = host.closest('.course-article__scroll');
+    const previousScrollTop = scroll?.scrollTop || 0;
+    const expanded = expandedTaskId;
+    host.replaceChildren();
+    for (const task of taskDefinitions) {
+      const item = document.createElement('div');
+      item.className = 'course-task';
+      item.dataset.taskId = task.id;
+      item.classList.toggle('is-complete', completedTasks.has(task.id));
+      item.classList.toggle('is-expanded', expanded === task.id);
+      const heading = document.createElement('button');
+      heading.type = 'button';
+      heading.className = 'course-task__heading';
+      heading.setAttribute('aria-expanded', expanded === task.id ? 'true' : 'false');
+      heading.innerHTML = `<span class="course-task__mark">${completedTasks.has(task.id) ? '✓' : ''}</span><strong>${escapeHtml(task.title)}</strong><span class="course-task__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+      const panel = document.createElement('div');
+      panel.className = 'course-task__panel';
+      panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => {
+        const symbol = icons[byId.get(place)?.icon || place] || icons.files;
+        const placeName = taskPlaceLabels[place] || byId.get(place)?.title || articles[place]?.title || place;
+        const actionHint = `Действие · ${placeName}: ${action}`;
+        return `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place course-task__hint" tabindex="0" role="img" aria-label="${escapeHtml(placeName)}" data-tooltip="${escapeHtml(placeName)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${symbol}</svg></span><span class="course-task__copy"><span>${escapeHtml(instruction)}</span>${action ? `<span class="course-task__action"><span class="course-task__action-icon course-task__hint" tabindex="0" role="img" aria-label="${escapeHtml(actionHint)}" data-tooltip="${escapeHtml(actionHint)}">${actionIcon(action)}</span><small>${escapeHtml(action)}</small></span>` : ''}</span></div>`;
+      }).join('')}</div>`;
+      panel.querySelectorAll('.course-task__hint').forEach(bindTaskTooltip);
+      heading.addEventListener('click', () => {
+        hideTaskTooltip();
+        const open = !item.classList.contains('is-expanded');
+        host.querySelectorAll('.course-task.is-expanded').forEach(other => { other.classList.remove('is-expanded'); other.querySelector('.course-task__heading').setAttribute('aria-expanded', 'false'); });
+        item.classList.toggle('is-expanded', open);
+        heading.setAttribute('aria-expanded', String(open));
+        expandedTaskId = open ? task.id : null;
+        save();
+      });
+      item.append(heading, panel);
+      host.append(item);
+    }
+    if (scroll) scroll.scrollTop = previousScrollTop;
+  }
+  function evaluateTasks(result) {
+    const routes = result.routes;
+    if (lastResponse?.code === '200' && lastResponse.mode === 'ok' && !lastResponse.bodyIssue && result.apiSent && result.productIds.every(id => result.products.some(product => product.id === id))) completedTasks.add('status-200');
+    if (lastResponse?.code === '401') completedTasks.add('status-401');
+    if (lastResponse?.code === '403') completedTasks.add('status-403');
+    if (lastResponse?.code === '404') completedTasks.add('status-404');
+    if (lastResponse?.code === '503' && result.apiSent && result.apiResult?.code === '503') completedTasks.add('status-503');
+    if (lastResponse?.code === '—' && !result.usedBalancer && faults.has('app-a')) completedTasks.add('status-none');
+    if (lastResponse?.code === '200' && ['css', 'js'].every(file => result.assetOutcomes?.[file]?.source === 'browser') && result.assetsOffline) completedTasks.add('status-cache');
+    if (result.usedBalancer && routes.length === 1 && routes[0] === 'app-b') completedTasks.add('route-b');
+    if (result.documentAvailable && result.assetOutcomes?.css?.source === 'cdn') completedTasks.add('first-css');
+    if (result.documentAvailable && result.assetOutcomes?.css?.source === 'browser' && result.assetsOffline) completedTasks.add('css-cache');
+    if (result.documentAvailable && ['css', 'js'].every(id => result.assetOutcomes?.[id]?.source === 'origin' && result.assetOutcomes[id].state === 'ok')) completedTasks.add('origin-miss');
+    if (result.documentAvailable && result.assetOutcomes?.js?.state === 'failed' && faults.get('js') === 'missing' && result.originMiss) completedTasks.add('missing-js');
+    if (result.documentAvailable && result.assetOutcomes?.js?.source === 'cdn' && faults.get('js') === 'missing') completedTasks.add('cdn-copy');
+    if (result.originOffline && Object.values(result.assetOutcomes || {}).some(outcome => outcome.state === 'failed')) completedTasks.add('origin-offline');
+    if (result.apiSent && result.productMode === 'empty' && lastResponse?.bodyIssue === 'empty') completedTasks.add('empty-body');
+    if (result.apiSent && result.productMode === 'embedded-error' && lastResponse?.bodyIssue === 'embedded-error') completedTasks.add('body-error');
+    if (result.apiSent && result.sessionState === 'ok' && !faults.has('database') && ['200', '404'].includes(result.apiResult?.code)) result.productIds.filter(id => !result.products.some(product => product.id === id)).forEach(id => missingProductIdsSeen.add(id));
+    if (result.apiSent && result.productIds.some(id => id >= 47 && missingProductIdsSeen.has(id) && result.products.some(product => product.id === id))) completedTasks.add('missing-then-add');
+    if (result.apiSent && result.apiResult?.code === '200' && !result.apiResult.bodyIssue && result.products.some(product => product.id === 42 && product.name === 'QA Book Pro') && productNames.get(42) === 'QA Book Pro') completedTasks.add('update-product');
+    if (result.apiSent && result.apiResult?.code === '404' && [...baseProducts, ...extraProducts].every(product => deletedProducts.has(product.id))) completedTasks.add('delete-all-products');
+    if (result.requestCount === 1000 && result.counts['app-a'] === 500 && result.counts['app-b'] === 500 && !result.overloaded.length) completedTasks.add('balanced-load');
+    if (result.requestCount === 1000 && !result.usedBalancer && result.overloaded.includes('app-a')) completedTasks.add('overload-a');
+    if (result.requestCount === 1000 && result.overloaded.includes('app-b')) completedTasks.add('overload-b');
+    if (routes.includes('app-b') && runHistory.slice(0, -1).some(previous => previous.overloaded.includes('app-a'))) completedTasks.add('failover-b');
+    renderTasks();
+    save();
+  }
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    if (saved.panels && typeof saved.panels === 'object') savedPanels = saved.panels;
+    if (saved.layout === 5 && Number.isFinite(saved.camera?.x) && Number.isFinite(saved.camera?.y) && Math.abs((saved.camera?.width ?? 0) - window.innerWidth) < 60) savedPosition = saved.camera;
+    const knownTasks = new Set(taskDefinitions.map(task => task.id));
+    if (knownTasks.has(saved.taskView?.expandedId)) expandedTaskId = saved.taskView.expandedId;
+    if (Number.isFinite(saved.taskView?.scrollTop) && saved.taskView.scrollTop >= 0) taskScrollTop = saved.taskView.scrollTop;
+    if (Array.isArray(saved.completedTasks)) {
+      for (const id of saved.completedTasks) if (knownTasks.has(id)) completedTasks.add(id);
+    }
+    for (const [id, expiry] of Object.entries(saved.cachedAssets || {})) {
+      if (['css', 'js'].includes(id) && Number.isFinite(expiry) && expiry > Date.now()) cachedAssets.set(id, expiry);
+    }
+    cacheCleared = !saved.htmlCached;
+    removed = !!saved.removed;
+    sessionExpiresAt = Number.isFinite(saved.sessionExpiresAt) ? saved.sessionExpiresAt : saved.cookieCleared ? 0 : sessionExpiresAt;
+    if (typeof saved.sessionToken === 'string' && /^demo\d{3}$/.test(saved.sessionToken)) sessionToken = saved.sessionToken;
+    sessionRestricted = !!saved.sessionRestricted;
+    if (saved.apiFormat === 'xml') apiFormat = 'xml';
+    if (typeof saved.sqlDraft === 'string') sqlDraft = saved.sqlDraft.slice(0, 220);
+    cdnBypass = !!saved.cdnBypass;
+    if (['empty', 'embedded-error'].includes(saved.productMode)) productMode = saved.productMode;
+    if (Number.isInteger(saved.selectedProductId) && saved.selectedProductId >= 1 && saved.selectedProductId <= 9999) selectedProductId = saved.selectedProductId;
+    if (Number.isInteger(saved.selectedSecondProductId) && saved.selectedSecondProductId >= 1 && saved.selectedSecondProductId <= 9999) selectedSecondProductId = saved.selectedSecondProductId;
+    if (Array.isArray(saved.extraProducts)) for (const product of saved.extraProducts.slice(0, 12)) {
+      if (Number.isInteger(product?.id) && product.id >= 1 && product.id <= 9999 && !baseProducts.some(row => row.id === product.id) && !extraProducts.some(row => row.id === product.id) && typeof product.name === 'string' && Number.isFinite(product.price)) extraProducts.push(product);
+    }
+    if (saved.productNames && typeof saved.productNames === 'object') for (const [key, name] of Object.entries(saved.productNames)) {
+      const id = Number(key);
+      if (Number.isInteger(id) && [...baseProducts, ...extraProducts].some(product => product.id === id) && typeof name === 'string' && name.length > 0 && name.length <= 48) productNames.set(id, name);
+    }
+    if (Array.isArray(saved.deletedProducts)) {
+      for (const id of saved.deletedProducts) if (Number.isInteger(id)) deletedProducts.add(id);
+    } else if (saved.productMode && saved.productMode !== 'normal') deletedProducts.add(42);
+    if (Array.isArray(saved.missingProductIdsSeen)) for (const id of saved.missingProductIdsSeen) {
+      if (Number.isInteger(id) && id >= 1 && id <= 9999) missingProductIdsSeen.add(id);
+    }
+    configuredRequests = LOAD_OPTIONS.has(saved.configuredRequests) ? saved.configuredRequests : 1;
+    pageLoaded = saved.pageLoaded === true;
+    if (Array.isArray(saved.faults)) for (const [id, value] of saved.faults) {
+      if (byId.has(id) || ['html', 'css', 'js'].includes(id)) faults.set(id, value);
+    }
+    if (saved.lastResponse && typeof saved.lastResponse.code === 'string') lastResponse = saved.lastResponse;
+    if (saved.lastRun && Array.isArray(saved.lastRun.routes) && Array.isArray(saved.lastRun.overloaded)) lastRun = saved.lastRun;
+    setApiPacketTitle(lastRun?.apiResult?.bodyIssue === 'xml' ? 'xml' : 'json');
+    if (Array.isArray(saved.shownPackets)) {
+      for (const id of saved.shownPackets) if (packets.some(packet => packet.id === id)) shownPackets.add(id);
+      // Older progress stored the replies but may lack the newly separated requests.
+      for (const file of ['css', 'js']) {
+        if (saved.shownPackets.includes('asset-get') || shownPackets.has(file)) shownPackets.add(`${file}-get`);
+      }
+    } else if (lastRun) {
+      // Existing courses predate per-packet visibility; keep their explored map intact.
+      for (const packet of packets) shownPackets.add(packet.id);
+    }
+    if (Array.isArray(saved.runHistory)) runHistory.push(...saved.runHistory.filter(item => item && Array.isArray(item.overloaded)).slice(-10));
+    if (Array.isArray(saved.algorithm)) {
+      for (const run of saved.algorithm.slice(-10)) {
+        if (typeof run?.mode !== 'string' || !Array.isArray(run.steps)) continue;
+        algorithmRuns.push({ mode: run.mode, steps: run.steps.filter(step => typeof step?.text === 'string').map(step => ({ tone: step.tone, text: step.text })), result: typeof run.result?.text === 'string' ? run.result : null });
+      }
+    } else if (Array.isArray(saved.algorithm?.steps)) {
+      // Старый общий журнал делим по заголовкам запусков.
+      for (const step of saved.algorithm.steps) {
+        if (typeof step?.text !== 'string') continue;
+        if (step.kind === 'heading') algorithmRuns.push({ mode: step.text, steps: [], result: null });
+        else if (step.kind === 'result' && algorithmRuns.length) algorithmRuns.at(-1).result = { text: step.text, tone: step.tone };
+        else if (step.kind === 'step') {
+          if (!algorithmRuns.length) algorithmRuns.push({ mode: 'Предыдущий запуск', steps: [], result: null });
+          algorithmRuns.at(-1).steps.push({ tone: step.tone, text: step.text });
+        }
+      }
+      if (algorithmRuns.length && saved.algorithm.result) algorithmRuns.at(-1).result = saved.algorithm.result;
+      if (algorithmRuns.length > 10) algorithmRuns.splice(0, algorithmRuns.length - 10);
+    }
+    algorithmIndex = algorithmRuns.length - 1;
+  } catch {}
+
+  const motion = window.createMapMotion({
+    viewport: scroller,
+    canvas,
+    getContentBounds: () => {
+      const visible = nodes.filter(node => revealed.has(node.id));
+      return {
+        left: Math.min(540, ...visible.map(node => node.x)),
+        top: Math.min(190, ...visible.map(node => node.y)),
+        right: Math.max(950, ...visible.map(node => node.x + 292)),
+        bottom: Math.max(810, ...visible.map(node => node.y + 122))
+      };
+    },
+    onChange: () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(save, 220);
+    }
+  });
+  let saveTimer;
+
+  function hasResettableProgress() {
+    return !!(pageLoaded || lastRun || lastResponse || runHistory.length || algorithmRuns.length || faults.size || removed || sessionRestricted || apiFormat !== 'json' || sqlDraft || !hasSession() || !cacheCleared || cachedAssets.size || cdnBypass || productMode !== 'normal' || deletedProducts.size || productNames.size || extraProducts.length || selectedProductId !== 42 || selectedSecondProductId !== 43 || configuredRequests !== 1 || (selected && !article.hidden) || !document.getElementById('course-network-panel').hidden);
+  }
+  function syncResetButton() { resetButton.disabled = !hasResettableProgress(); }
+  function save() {
+    if (selected === 'tasks' && !article.hidden) taskScrollTop = article.querySelector('.course-article__scroll').scrollTop;
+    syncResetButton();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ layout: 5, camera: { ...motion.snapshot(), width: window.innerWidth }, panels: { article: selected && !article.hidden ? { id: selected, via: selectedVia, helpOpen: article.querySelector('.course-article__theory').open, notice: articleNotice } : null, network: !document.getElementById('course-network-panel').hidden ? { key: networkKey, tab: networkTab, helpOpen: !!document.querySelector('#course-network-panel .course-network__help')?.open, notice: networkNotice } : null }, taskView: { expandedId: expandedTaskId, scrollTop: taskScrollTop }, completedTasks: [...completedTasks], missingProductIdsSeen: [...missingProductIdsSeen], shownPackets: [...shownPackets], cachedAssets: Object.fromEntries(cachedAssets), htmlCached: !cacheCleared, removed, sessionExpiresAt, sessionToken, sessionRestricted, apiFormat, sqlDraft, cdnBypass, productMode, selectedProductId, selectedSecondProductId, deletedProducts: [...deletedProducts], productNames: Object.fromEntries(productNames), extraProducts, configuredRequests, pageLoaded, faults: [...faults], lastResponse, lastRun, runHistory: runHistory.slice(-10), algorithm: algorithmRuns.slice(-10) })); } catch {}
+  }
+  function activeApp() {
+    if (!faults.has('app-a')) return 'app-a';
+    return !removed && !faults.has('app-b') ? 'app-b' : null;
+  }
+  function staticUnavailable() { return faults.has('assets') || (cdnBypass && faults.has('storage')); }
+  function assetSource(file) {
+    if (hasCachedAsset(file)) return { state: 'ok', source: 'browser' };
+    if (faults.has('assets')) return { state: 'failed', source: 'cdn', reason: 'CDN отключён' };
+    if (!cdnBypass) return { state: 'ok', source: 'cdn' };
+    if (faults.has('storage')) return { state: 'failed', source: 'origin', reason: 'источник отключён' };
+    if (faults.has(file)) return faults.get(file) === 'corrupt' ? { state: 'corrupt', source: 'origin', reason: `в ${file === 'js' ? 'app.js синтаксическая ошибка' : 'style.css повреждено правило'}` } : { state: 'failed', source: 'origin', reason: 'файл удалён в источнике' };
+    return { state: 'ok', source: 'origin' };
+  }
+  function displayRoutes() { return liveRoutes === null ? [activeApp()].filter(Boolean) : liveRoutes; }
+  function syncPacketRoutes() {
+    const route = displayRoutes()[0];
+    for (const id of ['request', 'html', 'cookie', 'json']) packets.find(packet => packet.id === id).edge = ['client', removed ? 'app-a' : 'balancer'];
+    if (!route) return;
+    for (const packet of packets) {
+      if (packet.id === 'sql' || packet.id === 'db-result') packet.edge = [route, 'database'];
+    }
+  }
+  function packetVisible(packet) {
+    return shownPackets.has(packet.id) && (!packet.edge || packet.edge.every(id => revealed.has(id)));
+  }
+  function pathBetween(from, to) {
+    const startX = from.x + 284, startY = from.y + 91;
+    const endX = to.x + 8, endY = to.y + 91;
+    const mid = (startX + endX) / 2;
+    return `M ${startX} ${startY} C ${mid} ${startY}, ${mid} ${endY}, ${endX} ${endY}`;
+  }
+  let lineTracking = 0;
+  const activeFlows = new Map();
+  function applyFlow(path, key) {
+    const flow = activeFlows.get(key);
+    if (!flow) return;
+    path.classList.add('is-flowing');
+    if (flow.channel === 'resource') path.classList.add('is-flowing-resource');
+    if (flow.faulty || path.classList.contains('is-faulty')) path.classList.add('is-flowing-faulty');
+    if (flow.reverse) path.classList.add('is-flowing-back');
+    path.style.animationDelay = `${Math.min(0, flow.started - performance.now())}ms`;
+  }
+  function trackLines(duration = 600) {
+    cancelAnimationFrame(lineTracking);
+    const until = performance.now() + duration;
+    function tick() {
+      if (!lines.classList.contains('is-resetting')) drawLines();
+      if (performance.now() < until) lineTracking = requestAnimationFrame(tick);
+      else lineTracking = 0;
+    }
+    lineTracking = requestAnimationFrame(tick);
+  }
+  function layoutNodes() {
+    const requiredGap = (source, target) => {
+      const baseGap = baseX.get(target) - baseX.get(source) - 292;
+      const visible = packets.filter(packet => packet.edge?.[0] === source && packet.edge?.[1] === target);
+      const width = visible.reduce((sum, packet) => sum + Math.max(66, packet.title.length * 7 + 16), 0);
+      return Math.max(0, width + Math.max(0, visible.length - 1) * 24 + (visible.length ? 48 : 0) - baseGap,
+        source === 'client' && target === 'balancer' && revealed.has('balancer') && !removed ? 280 - baseGap : 0);
+    };
+    const first = requiredGap('client', 'balancer');
+    const route = displayRoutes()[0] || 'app-a';
+    const second = requiredGap('balancer', route);
+    const staticGap = Math.max(requiredGap('client', 'assets'), 450 - (baseX.get('assets') - baseX.get('client') - 292));
+    const shift = { client: 0, balancer: first, 'app-a': first + second, 'app-b': first + second,
+      database: first + second, assets: staticGap, storage: staticGap };
+    let moved = false;
+    for (const node of nodes) {
+      const next = baseX.get(node.id) + shift[node.id];
+      if (node.x === next) continue;
+      node.x = next;
+      nodeHost.querySelector(`[data-node="${node.id}"]`).style.left = `${next}px`;
+      moved = true;
+    }
+    if (moved) trackLines();
+  }
+  function visualNode(node) {
+    const element = nodeHost.querySelector(`[data-node="${node.id}"]`);
+    return { ...node, x: element ? parseFloat(getComputedStyle(element).left) : node.x };
+  }
+  function positionPacket(marker, item, edge) {
+    const geometry = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    geometry.setAttribute('d', pathBetween(visualNode(byId.get(edge[0])), visualNode(byId.get(edge[1]))));
+    const length = geometry.getTotalLength();
+    const point = geometry.getPointAtLength(length * item.t);
+    marker.style.left = `${point.x - marker.offsetWidth / 2}px`;
+    marker.style.top = `${point.y - marker.offsetHeight / 2}px`;
+    const arrow = marker.querySelector('.course-packet__arrow');
+    if (!arrow) return;
+    const arrowT = Math.max(.02, Math.min(.98, item.t + (item.flow === 'response' ? -.12 : .12)));
+    const arrowPoint = geometry.getPointAtLength(length * arrowT);
+    const before = geometry.getPointAtLength(length * Math.max(0, arrowT - .01));
+    const after = geometry.getPointAtLength(length * Math.min(1, arrowT + .01));
+    const angle = Math.atan2(after.y - before.y, after.x - before.x) * 180 / Math.PI + (item.flow === 'response' ? 180 : 0);
+    arrow.style.left = `${arrowPoint.x - parseFloat(marker.style.left) - 9.5}px`;
+    arrow.style.top = `${arrowPoint.y - parseFloat(marker.style.top) - 9.5}px`;
+    arrow.style.setProperty('--packet-angle', `${angle}deg`);
+  }
+  function drawLines() {
+    lines.replaceChildren();
+    const selectedPacketId = networkSelected || selected;
+    const selectedPacket = packets.find(packet => packet.id === selectedPacketId);
+    const routes = displayRoutes();
+    for (const [source, target] of edges) {
+      if (!revealed.has(source) || !revealed.has(target)) continue;
+      if (removed && source === 'client' && target === 'balancer') continue;
+      if (removed && source === 'balancer') continue;
+      if (source === 'balancer' && !routes.includes(target)) continue;
+      if ((source === 'app-a' || source === 'app-b') && !routes.includes(source) && !(source === 'app-b' && target === 'database')) continue;
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathBetween(visualNode(byId.get(source)), visualNode(byId.get(target))));
+      path.dataset.courseRoute = `${source}:${target}`;
+      if (faults.has(source) || faults.has(target) || (source === 'client' && target === 'assets' && ['css', 'js'].some(id => assetSource(id).state !== 'ok')) || (source === 'client' && target === 'balancer' && faults.has('html'))) path.classList.add('is-faulty');
+      if (source === 'assets' || target === 'assets' || source === 'storage') path.classList.add('is-resource-route');
+      if (source === 'assets' && target === 'storage' && !cdnBypass) path.classList.add('is-idle');
+      if (source === 'app-b' && target === 'database' && !routes.includes('app-b')) path.classList.add('is-available-route');
+      const selectedEdge = !networkSelected && selectedVia === 'app-b' && selectedPacket?.edge && selectedPacket.edge.includes('app-a')
+        ? selectedPacket.edge.map(id => id === 'app-a' ? 'app-b' : id)
+        : selectedPacket?.edge;
+      if (selectedEdge?.[0] === source && selectedEdge[1] === target) {
+        path.classList.add('is-active-route');
+        if (resourcePackets.has(selectedPacketId)) path.classList.add('is-resource-route');
+        if (selectedPacket.flow === 'response') path.classList.add('is-return-route');
+      }
+      applyFlow(path, path.dataset.courseRoute);
+      lines.append(path);
+    }
+    if (revealed.has('app-a') && revealed.has('app-b')) {
+      const serverA = visualNode(byId.get('app-a'));
+      const serverB = visualNode(byId.get('app-b'));
+      const x = serverA.x + 266;
+      const top = serverA.y + 122;
+      const bottom = serverB.y + 56;
+      const middle = (top + bottom) / 2;
+      const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.classList.add('course-no-link');
+      const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      title.textContent = 'Серверы A и B не обмениваются запросами напрямую';
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      line.classList.add('course-no-link__line');
+      line.setAttribute('d', `M ${x} ${top} L ${x} ${bottom}`);
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', x);
+      circle.setAttribute('cy', middle);
+      circle.setAttribute('r', 12);
+      const cross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      cross.classList.add('course-no-link__cross');
+      cross.setAttribute('d', `M ${x - 4} ${middle - 4} L ${x + 4} ${middle + 4} M ${x + 4} ${middle - 4} L ${x - 4} ${middle + 4}`);
+      group.append(title, line, circle, cross);
+      lines.append(group);
+    }
+    if (removed && revealed.has('app-a')) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', pathBetween(visualNode(byId.get('client')), visualNode(byId.get('app-a'))));
+      path.dataset.courseRoute = 'client:app-a';
+      path.classList.add('is-direct');
+      if (faults.has('app-a') || faults.has('html')) path.classList.add('is-faulty');
+      if (selectedPacket?.edge?.[0] === 'client' && selectedPacket.edge[1] === 'app-a') {
+        path.classList.add('is-active-route');
+        if (resourcePackets.has(selected)) path.classList.add('is-resource-route');
+        if (selectedPacket.flow === 'response') path.classList.add('is-return-route');
+      }
+      applyFlow(path, path.dataset.courseRoute);
+      lines.append(path);
+    }
+    if (revealed.has('assets')) {
+      const client = visualNode(byId.get('client'));
+      const cache = packetHost.querySelector('[data-packet="cache"]');
+      const cacheCenterX = client.x - 60;
+      const cacheCenterY = client.y + 87;
+      cache.style.left = `${cacheCenterX - cache.offsetWidth / 2}px`;
+      cache.style.top = `${cacheCenterY - cache.offsetHeight / 2}px`;
+      if (!cacheCleared || hasCachedAsset('css') || hasCachedAsset('js')) {
+        const localPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const cacheRight = cacheCenterX + cache.offsetWidth / 2;
+        localPath.setAttribute('d', `M ${cacheRight} ${cacheCenterY} C ${cacheRight + 12} ${cacheCenterY}, ${client.x - 12} ${client.y + 91}, ${client.x} ${client.y + 91}`);
+        localPath.classList.add('is-local', 'is-resource-route');
+        localPath.dataset.courseLocalCache = '';
+        if (selected === 'cache') localPath.classList.add('is-active-route');
+        lines.append(localPath);
+      }
+    }
+    for (const item of packets) {
+      if (!item.edge) continue;
+      const marker = packetHost.querySelector(`[data-packet="${item.id}"]`);
+      if (!marker) continue;
+      positionPacket(marker, item, item.edge);
+    }
+    for (const marker of packetHost.querySelectorAll('[data-parallel-packet]')) {
+      const item = packets.find(packet => packet.id === marker.dataset.parallelPacket);
+      if (item) positionPacket(marker, item, ['app-b', 'database']);
+    }
+  }
+  function setLiveRoutes(routes) {
+    packetHost.querySelectorAll('[data-parallel-packet]').forEach(marker => marker.remove());
+    if (!routes?.length || routes.length < 2) selectedVia = null;
+    liveRoutes = routes;
+    if (routes?.length === 2) {
+      for (const id of ['sql', 'db-result']) {
+        const original = packetHost.querySelector(`[data-packet="${id}"]`);
+        const copy = original.cloneNode(true);
+        copy.removeAttribute('data-packet');
+        copy.dataset.parallelPacket = id;
+        copy.hidden = !shownPackets.has(id);
+        copy.classList.toggle('is-visible', shownPackets.has(id));
+        copy.classList.remove('is-selected');
+        copy.addEventListener('click', () => showArticle(id, 'app-b'));
+        packetHost.append(copy);
+      }
+    }
+    update();
+    save();
+  }
+  function showPackets(ids) {
+    let changed = false;
+    for (const id of ids) {
+      if (shownPackets.has(id)) continue;
+      shownPackets.add(id);
+      changed = true;
+    }
+    if (changed) { update(); save(); }
+  }
+  const pulsedPackets = new Set();
+  function pulse(source, target, packetIds = null, channel = 'api') {
+    if (packetIds?.length) showPackets(packetIds);
+    if (reducedMotion.matches) return;
+    const reverse = edges.some(([from, to]) => from === target && to === source) || (source === 'app-a' && target === 'client');
+    const from = reverse ? target : source;
+    const to = reverse ? source : target;
+    const key = `${from}:${to}`;
+    const previous = activeFlows.get(key);
+    if (previous) window.clearTimeout(previous.timer);
+    const flow = { channel, reverse, faulty: faults.has(source) || faults.has(target) || (source === 'client' && target === 'assets' && staticUnavailable()), started: performance.now() };
+    activeFlows.set(key, flow);
+    const path = [...lines.querySelectorAll('[data-course-route]')].find(item => item.dataset.courseRoute === key);
+    if (path) {
+      path.classList.remove('is-flowing', 'is-flowing-resource', 'is-flowing-faulty', 'is-flowing-back');
+      path.style.animationDelay = '';
+      void path.getBoundingClientRect();
+      applyFlow(path, key);
+    }
+    flow.timer = window.setTimeout(() => {
+      if (activeFlows.get(key) !== flow) return;
+      activeFlows.delete(key);
+      const current = [...lines.querySelectorAll('[data-course-route]')].find(item => item.dataset.courseRoute === key);
+      if (current) {
+        current.classList.remove('is-flowing', 'is-flowing-resource', 'is-flowing-faulty', 'is-flowing-back');
+        current.style.animationDelay = '';
+      }
+    }, 1900);
+    if (target === 'balancer') {
+      const run = playRun;
+      window.setTimeout(() => {
+        if (run !== playRun) return;
+        const card = nodeHost.querySelector('[data-node="balancer"] .questions-map-card__question');
+        card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource');
+        void card.offsetWidth;
+        if (channel === 'resource') card.classList.add('is-flowing-resource');
+        card.classList.add(source === 'client' ? 'is-flowing-forward' : 'is-flowing-back');
+        window.setTimeout(() => card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource'), 760);
+      }, source === 'client' ? 300 : 200);
+    }
+    for (const packet of packets) {
+      if (packetIds && !packetIds.includes(packet.id)) continue;
+      if (!packet.edge || !((packet.edge[0] === source && packet.edge[1] === target && packet.flow === 'request') || (packet.edge[0] === target && packet.edge[1] === source && packet.flow === 'response'))) continue;
+      if ((packet.id === 'html' && faults.has('html')) || (['css', 'js'].includes(packet.id) && assetSource(packet.id).state === 'failed')) continue;
+      if (pulsedPackets.has(packet.id)) continue;
+      const element = packetHost.querySelector(`[data-packet="${packet.id}"]`);
+      if (!element || element.hidden) continue;
+      pulsedPackets.add(packet.id);
+      element.classList.remove('is-transiting', 'is-transiting-resource');
+      void element.offsetWidth;
+      element.classList.add('is-transiting');
+      if (channel === 'resource') element.classList.add('is-transiting-resource');
+      window.setTimeout(() => element.classList.remove('is-transiting', 'is-transiting-resource'), 1100);
+    }
+    for (const marker of packetHost.querySelectorAll('[data-parallel-packet]')) {
+      const packet = packets.find(item => item.id === marker.dataset.parallelPacket);
+      if (packetIds && !packetIds.includes(packet.id)) continue;
+      const edge = ['app-b', 'database'];
+      if (!((edge[0] === source && edge[1] === target && packet.flow === 'request') || (edge[0] === target && edge[1] === source && packet.flow === 'response'))) continue;
+      if (pulsedPackets.has(`${packet.id}:app-b`)) continue;
+      pulsedPackets.add(`${packet.id}:app-b`);
+      marker.classList.remove('is-transiting');
+      void marker.offsetWidth;
+      marker.classList.add('is-transiting');
+      window.setTimeout(() => marker.classList.remove('is-transiting'), 1100);
+    }
+  }
+  function centerOn(ids, smooth = true) {
+    const targets = ids.map(id => nodeHost.querySelector(`[data-node="${id}"]`)).filter(Boolean);
+    if (!targets.length) return;
+    const x = targets.reduce((sum, node) => { const pill = node.querySelector('.questions-map-card__question'); return sum + node.offsetLeft + pill.offsetLeft + pill.offsetWidth / 2; }, 0) / targets.length;
+    const y = targets.reduce((sum, node) => { const pill = node.querySelector('.questions-map-card__question'); return sum + node.offsetTop + pill.offsetTop + pill.offsetHeight / 2; }, 0) / targets.length;
+    focusMapPoint(x, y, smooth);
+  }
+  function focusMapPoint(x, y, smooth) {
+    const coveredWidth = !article.hidden && window.innerWidth > 767 ? article.getBoundingClientRect().width : 0;
+    motion.focus(x + coveredWidth / (2 * motion.snapshot().scale), y, smooth);
+  }
+  function focusElement(id, smooth = true) {
+    if (byId.has(id)) { centerOn([id], smooth); return; }
+    const packet = selectedVia === 'app-b'
+      ? packetHost.querySelector(`[data-parallel-packet="${id}"]`)
+      : packetHost.querySelector(`[data-packet="${id}"]`);
+    if (!packet || packet.hidden) return;
+    focusMapPoint(packet.offsetLeft + packet.offsetWidth / 2, packet.offsetTop + packet.offsetHeight / 2, smooth);
+  }
+  function update() {
+    syncPacketRoutes();
+    layoutNodes();
+    for (const node of nodes) {
+      const element = nodeHost.querySelector(`[data-node="${node.id}"]`);
+      const visible = revealed.has(node.id);
+      if (visible) element.hidden = false;
+      else if (!element.hidden) {
+        element.classList.add('is-hiding');
+        window.setTimeout(() => {
+          if (!revealed.has(node.id)) element.hidden = true;
+          element.classList.remove('is-hiding');
+        }, 380);
+      }
+      element.classList.toggle('is-visible', visible);
+      element.classList.toggle('is-selected', selected === node.id);
+      element.classList.toggle('is-removed', node.id === 'balancer' && removed);
+      element.classList.toggle('is-cache-miss', node.id === 'assets' && cdnBypass);
+      element.classList.toggle('is-faulty', faults.has(node.id) || (node.id === 'assets' && ['css', 'js'].some(id => assetSource(id).state !== 'ok')));
+      element.classList.toggle('is-overloaded', faults.get(node.id) === 'overload');
+    }
+    for (const item of packets) {
+      const element = packetHost.querySelector(`[data-packet="${item.id}"]`);
+      const visible = packetVisible(item);
+      if (visible) element.hidden = false;
+      else if (!element.hidden) {
+        element.classList.add('is-hiding');
+        window.setTimeout(() => {
+          if (!packetVisible(item)) element.hidden = true;
+          element.classList.remove('is-hiding');
+        }, 380);
+      }
+      element.classList.toggle('is-visible', visible);
+      element.classList.toggle('is-selected', (selected === item.id && selectedVia !== 'app-b') || networkSelected === item.id);
+      element.classList.toggle('is-faulty', (['css', 'js'].includes(item.id) ? assetSource(item.id).state !== 'ok' : faults.has(item.id)) || (item.id === 'origin' && faults.has('storage')));
+      element.classList.toggle('is-empty-cache', item.id === 'cache' && !hasCachedAsset('css') && !hasCachedAsset('js'));
+      element.classList.toggle('is-partial-cache', item.id === 'cache' && hasCachedAsset('css') !== hasCachedAsset('js'));
+    }
+    packetHost.querySelectorAll('[data-parallel-packet]').forEach(element => {
+      const visible = shownPackets.has(element.dataset.parallelPacket);
+      element.hidden = !visible;
+      element.classList.toggle('is-visible', visible);
+      element.classList.toggle('is-selected', selected === element.dataset.parallelPacket && selectedVia === 'app-b');
+    });
+    renderClientPreview();
+    if (selected) renderExample(selected);
+    if (!lines.classList.contains('is-resetting')) drawLines();
+  }
+  function responseForCurrentState() {
+    const cached = !cacheCleared;
+    const staticFailure = staticUnavailable();
+    const failedFile = ['js', 'css'].find(file => ['failed', 'corrupt'].includes(lastRun?.assetOutcomes?.[file]?.state));
+    if (failedFile && lastRun?.documentAvailable) {
+      const outcome = lastRun.assetOutcomes[failedFile];
+      const fileName = failedFile === 'js' ? 'app.js' : 'style.css';
+      const code = outcome.state === 'corrupt' ? '200' : outcome.reason === 'файл удалён в источнике' ? '404' : outcome.source === 'cdn' ? '—' : '503';
+      return { code, label: outcome.state === 'corrupt' ? `${fileName} повреждён` : failedFile === 'js' ? 'JavaScript не загружен' : 'CSS не загружен', mode: failedFile === 'js' ? 'partial' : 'unstyled', detail: outcome.state === 'corrupt' ? `${fileName} получен с HTTP 200, но ${outcome.reason}. ${failedFile === 'js' ? 'Скрипт не выполнился, API-запрос не отправлен.' : 'Браузер не применил повреждённое правило.'}` : `${fileName} не получен: ${outcome.reason}. ${failedFile === 'js' ? 'Запрос API не отправлен.' : 'HTML виден без оформления.'} В локальный кэш этот файл не записан.` };
+    }
+    if (faults.has('html')) {
+      if (cached) return { code: '200', label: 'HTML из кэша', mode: 'cached', detail: 'Исходный HTML недоступен или повреждён, но браузер показывает сохранённую копию. После очистки кэша понадобится новый сетевой ответ.' };
+      if (faults.get('html') === 'missing') return { code: '404', label: 'Нет страницы', mode: 'broken', detail: 'HTML-файл удалён и копии в кэше нет. Запрос документа получает 404, поэтому страница не строится.' };
+      return { code: '200', label: 'HTML повреждён', mode: 'broken', detail: 'Сервер прислал HTML с кодом 200, но повреждённая разметка отображается неправильно. Успешный HTTP-статус не гарантирует исправный экран.' };
+    }
+    if (removed && faults.has('app-a')) return { code: '—', label: 'Нет ответа', mode: 'broken', detail: 'Балансировщик отключён, а единственный маршрут ведёт к упавшему серверу A. Ответ HTTP не пришёл: браузер видит ошибку соединения или тайм-аут. Сохранённая страница может оставаться на экране.' };
+    if (!removed && faults.has('app-a') && faults.has('app-b')) return { code: '503', label: 'Нет приложения', mode: 'broken', detail: 'Оба сервера приложения недоступны. В этой учебной модели балансировщик возвращает 503; сохранённые файлы интерфейса не делают API рабочим.' };
+    if (lastRun?.apiSent && lastRun.routes.length && lastRun.routes.every(id => lastRun.overloaded.includes(id) && faults.get(id) === 'overload')) return lastRun.usedBalancer
+      ? { code: '503', label: 'Сервер перегружен', mode: 'broken', detail: 'Все серверы, получившие этот запрос API, перегружены. В учебной модели балансировщик возвращает 503.' }
+      : { code: '—', label: 'Нет ответа API', mode: 'broken', detail: 'Запрос API ушёл напрямую на перегруженный сервер A и не получил HTTP-ответ.' };
+    if (lastRun?.apiSent && lastRun.sessionState === 'missing') return { code: '401', label: 'Сессия истекла', mode: 'partial', detail: 'HTML страницы загрузился, но защищённый API не получил действующую сессию и вернул 401. Получи сессию и повтори запрос.' };
+    if (lastRun?.apiSent && lastRun.sessionState === 'forbidden') return { code: '403', label: 'Нет права доступа', mode: 'partial', detail: 'Сессия действительна, но права на ресурс недостаточны. Защищённый API вернул 403; продление сессии само по себе прав не добавит.' };
+    if (faults.has('database')) return { code: '503', label: 'Нет данных API', mode: 'partial', detail: 'База отключена: приложение не может получить данные для API. В этой модели API возвращает 503, хотя HTML страницы может загрузиться с кодом 200.' };
+    if (lastRun?.apiSent && lastRun.productMissing && lastRun.productMode === 'empty') return { code: '200', label: 'Пустой ответ API', mode: 'partial', bodyIssue: 'empty', detail: `GET ${productsPath(lastRun.productIds)} получил HTTP 200, но тело ответа пустое: SQL вернул 0 строк, а приложение ошибочно сообщило об успехе.` };
+    if (lastRun?.apiSent && lastRun.productMissing && lastRun.productMode === 'embedded-error') return { code: '200', label: 'Ошибка внутри ответа', mode: 'partial', bodyIssue: 'embedded-error', detail: `GET ${productsPath(lastRun.productIds)} получил HTTP 200, но внутри JSON находится error.code: 404 · PRODUCT_NOT_FOUND. Число в теле не заменяет HTTP-статус.` };
+    if (lastRun?.apiSent && lastRun.responseFormat === 'xml' && !lastRun.productMissing) return { code: '200', label: 'XML вместо JSON', mode: 'partial', bodyIssue: 'xml', detail: 'Сервер ответил HTTP 200 и прислал XML. Скрипт вызывает response.json(), поэтому не может разобрать тело и не показывает товары.' };
+    if (lastRun?.apiSent && lastRun.productMissing) return { code: '404', label: 'Товары не найдены', mode: 'partial', detail: `GET ${productsPath(lastRun.productIds)}: в базе нет строк с этими ID, API вернул HTTP 404.` };
+    for (const file of ['css', 'js']) {
+      if (!faults.has(file) || !lastRun?.assetOutcomes?.[file]) continue;
+      const source = lastRun.assetOutcomes[file].source;
+      return { code: '200', label: `${file.toUpperCase()} из ${source === 'browser' ? 'кэша браузера' : 'копии CDN'}`, mode: 'cached', detail: `Оригинал ${file.toUpperCase()} в источнике удалён или повреждён, но браузер получил пригодную копию из ${source === 'browser' ? 'своего кэша' : 'CDN'}. После cache miss и очистки локального кэша проблема проявится.` };
+    }
+    if (staticFailure && hasCachedAsset('css') && hasCachedAsset('js')) return { code: '200', label: 'Файлы из кэша', mode: 'cached', detail: 'Браузер использует свежие копии CSS и JS из локального кэша и не обращается к CDN. После очистки кэша эти файлы понадобятся из сети.' };
+    return { code: '200', label: 'Страница работает', mode: 'ok', detail: 'HTML и необходимые ресурсы доступны, приложение получило данные. Код 200 относится к успешному запросу; содержимое всё равно стоит проверить отдельно.' };
+  }
+  function apiResponseForCurrentState(run = lastRun) {
+    if (run?.apiResult) return run.apiResult;
+    if (run && !run.apiSent) return { code: '—', label: 'Запрос API не отправлен' };
+    if (removed && faults.has('app-a')) return { code: '—', label: 'Нет ответа API' };
+    if (!removed && faults.has('app-a') && faults.has('app-b')) return { code: '503', label: 'Серверы приложения недоступны' };
+    if (run?.apiSent && run.routes.length && run.routes.every(id => run.overloaded.includes(id) && faults.get(id) === 'overload')) return { code: run.usedBalancer ? '503' : '—', label: 'Сервер перегружен' };
+    if (run?.apiSent && run.sessionState === 'missing') return { code: '401', label: 'Сессия отсутствует или истекла' };
+    if (run?.apiSent && run.sessionState === 'forbidden') return { code: '403', label: 'Недостаточно прав' };
+    if (faults.has('database')) return { code: '503', label: 'База данных недоступна' };
+    if (run?.productMissing && run.productMode === 'empty') return { code: '200', label: 'OK · пустое тело', bodyIssue: 'empty' };
+    if (run?.productMissing && run.productMode === 'embedded-error') return { code: '200', label: 'OK · ошибка в теле', bodyIssue: 'embedded-error' };
+    if (run?.productMissing) return { code: '404', label: 'Товар не найден' };
+    if (run?.responseFormat === 'xml') return { code: '200', label: 'OK · XML вместо JSON', bodyIssue: 'xml' };
+    return { code: '200', label: 'OK' };
+  }
+  function renderLoadControls() {
+    document.querySelectorAll('[data-request-count]').forEach(button => {
+      const active = Number(button.dataset.requestCount) === configuredRequests;
+      button.classList.toggle('is-selected', active);
+      button.setAttribute('aria-pressed', String(active));
+      button.disabled = remainingRequests !== null;
+    });
+    const progress = document.getElementById('course-load-progress');
+    if (progress) {
+      progress.hidden = remainingRequests === null || configuredRequests === 1;
+      if (!progress.hidden) progress.textContent = `Осталось отправить: ${remainingRequests} из ${configuredRequests}`;
+    }
+  }
+  function renderClientPreview() {
+    const preview = nodeHost.querySelector('.course-client-preview');
+    if (!preview) return;
+    preview.dataset.mode = lastResponse?.mode || 'waiting';
+    preview.querySelector('.course-client-preview__code').textContent = lastResponse?.code || '';
+    const explanation = document.getElementById('course-client-explanation');
+    if (explanation) explanation.textContent = lastResponse?.detail || 'Нажми «Загрузить страницу»: здесь появится причина кода внутри иконки клиента.';
+  }
+  function receiveResponse() {
+    lastResponse = responseForCurrentState();
+    renderClientPreview();
+    if (selected === 'client') renderExample('client');
+    return `${lastResponse.code} · ${lastResponse.detail}`;
+  }
+  const browserPacketIds = new Set(['request', 'html', 'cookie', 'json', 'css-get', 'js-get', 'css', 'js']);
+  const networkArticles = new Set(['client', ...browserPacketIds]);
+  let networkKey = 'document';
+  let networkTab = 'headers';
+  const previewProductIcons = {
+    42: '<rect x="3" y="5" width="18" height="12" rx="1.5"/><path d="M2 20h20l-1-3H3z"/>',
+    43: '<rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 5h4m-2 14h.01"/>',
+    44: '<path d="M4 13v-2a8 8 0 0 1 16 0v2M4 13h3v7H5a2 2 0 0 1-2-2v-3a2 2 0 0 1 1-2Zm16 0h-3v7h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-1-2Z"/>',
+    45: '<rect x="2" y="3" width="20" height="15" rx="2"/><path d="M12 18v3m-5 0h10"/>',
+    46: '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M5 10h.01M9 10h.01M13 10h.01M17 10h.01M5 13h.01M9 13h.01M13 13h.01M17 13h.01M7 16h10"/>'
+  };
+  function htmlPagePreview() {
+    const run = liveNetwork || lastRun;
+    const css = run?.assetOutcomes?.css;
+    const js = run?.assetOutcomes?.js;
+    const documentPending = !!liveNetwork && !run.documentFinished;
+    const documentFailed = !!run && !documentPending && !run.documentAvailable;
+    const htmlFault = run?.documentRoute ? (run.htmlFault === undefined ? faults.get('html') : run.htmlFault) : null;
+    const cssFailed = css?.state === 'failed' || css?.state === 'corrupt';
+    const jsFailed = js?.state === 'failed' || js?.state === 'corrupt';
+    const api = run?.apiResult;
+    const products = run?.apiFinished !== false && run?.apiSent && api?.code === '200' && !api.bodyIssue ? (run.products || [run.product].filter(Boolean)) : [];
+    const productPending = !!liveNetwork && !run.apiFinished && !jsFailed;
+    const legacyRun = !!run && !Array.isArray(run.productIds);
+    const previewIds = run?.productIds || (run?.productId ? [run.productId, selectedSecondProductId] : requestedProductIds());
+    let message = 'Загрузка товара…';
+    if (run) {
+      if (jsFailed) message = js?.state === 'corrupt' ? 'app.js получен, но не выполнился: SyntaxError' : 'JavaScript не загрузился';
+      else if (liveNetwork && !run.assetStarted.js) message = 'Ожидаем app.js…';
+      else if (liveNetwork && !run.assetFinished.js) message = 'Загрузка app.js…';
+      else if (run.apiFinished && !run.apiSent) message = 'Запрос API не отправлен';
+      else if (run.apiSent && !run.apiFinished) message = 'Ждём ответ API…';
+      else if (js?.state === 'ok' && run.apiFinished === false) message = 'JavaScript готов · загрузка товара…';
+      else if (api?.bodyIssue === 'empty') message = 'Ответ 200, но данных о товаре нет';
+      else if (api?.bodyIssue === 'embedded-error') message = 'Ответ 200 содержит ошибку товара';
+      else if (api?.bodyIssue === 'xml') message = 'Пришёл XML: скрипт ожидал JSON';
+      else if (api?.code === '404') message = 'Товар не найден';
+      else if (api?.code !== '200') message = `Данные товара не получены${api?.code && api.code !== '—' ? ` · ${api.code}` : ''}`;
+    }
+    const productMarkup = products.length
+      ? previewIds.map(id => {
+        const product = products.find(item => item.id === id);
+        const icon = previewProductIcons[id] || '<path d="M3 7h18v13H3zM3 7l4-4h10l4 4M8 13h8"/>';
+        return product
+          ? `<article class="course-page-preview__product"><span class="course-page-preview__product-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${icon}</svg></span><span class="course-page-preview__product-copy"><strong>${escapeHtml(product.name)}</strong><small>${product.id} · ${product.price.toLocaleString('ru-RU')} ₽</small></span></article>`
+          : `<article class="course-page-preview__product course-page-preview__product--empty"><span class="course-page-preview__product-icon">${legacyRun ? '···' : '!'}</span><span class="course-page-preview__product-copy"><strong>${legacyRun ? 'Обновите страницу' : `Товар ${id} не найден`}</strong><small>${legacyRun ? `Товар ${id} ещё не запрошен` : 'Нет в ответе API'}</small></span></article>`;
+      }).join('')
+      : `<article class="course-page-preview__product ${productPending ? 'course-page-preview__product--pending' : 'course-page-preview__product--empty'}"><span class="course-page-preview__product-icon">${!run || productPending ? '···' : '!'}</span><span class="course-page-preview__product-copy"><strong>${escapeHtml(message)}</strong><small>${jsFailed ? 'Товар недоступен' : 'Каталог'}</small></span></article>`;
+    const state = !run || documentPending ? 'pending' : documentFailed ? 'document-error' : css?.state === 'ok' ? 'styled' : 'unstyled';
+    const summary = documentPending ? 'Браузер ожидает HTML' : documentFailed ? htmlFault === 'corrupt' ? 'HTML повреждён — страница отображается неправильно' : 'HTML не получен — страницу нельзя построить' : cssFailed || !css ? 'HTML без CSS' : jsFailed ? 'HTML загружен, но JavaScript недоступен' : products.length ? `Страница с товарами ${products.map(item => item.name).join(' и ')}` : message;
+    const page = documentPending
+      ? '<div class="course-page-preview__document-wait"><strong>Ожидаем HTML…</strong><span>Браузер отправил GET /.</span></div>'
+      : documentFailed
+      ? `<div class="course-page-preview__document-error"><strong>${htmlFault === 'corrupt' ? 'Разметка повреждена' : 'Страница не загрузилась'}</strong><span>${htmlFault === 'corrupt' ? 'Сервер ответил 200, но HTML нельзя правильно построить.' : 'Браузер не получил HTML.'}</span></div>`
+      : `<div class="course-page-preview__page"><header><span class="course-page-preview__brand">qa market</span><span class="course-page-preview__nav">Каталог</span><span class="course-page-preview__avatar" aria-label="Профиль">●</span></header><main><div class="course-page-preview__products" aria-label="Список товаров" tabindex="0">${productMarkup}</div><div class="course-page-preview__extras" aria-hidden="true"><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Характеристики</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--short"></span></div><div class="course-page-preview__extra"><span class="course-page-preview__extra-title">Описание</span><span class="course-page-preview__placeholder"></span><span class="course-page-preview__placeholder course-page-preview__placeholder--medium"></span></div></div></main></div>`;
+    return `<div class="course-page-preview course-page-preview--${state}${products[0] ? ` course-page-preview--product-${products[0].id}` : ''}${products[1] ? ` course-page-preview--product-secondary-${products[1].id}` : ''}" role="img" aria-label="${escapeHtml(summary)}">${page}</div>`;
+  }
+  function setNetworkSelection(id) {
+    networkSelected = id;
+    activeActionId = id;
+    const packet = packets.find(item => item.id === id);
+    document.getElementById('course-network-selection').textContent = packet?.title || id;
+    document.getElementById('course-network-flow').textContent = packet?.flow === 'response' ? 'ответ' : 'запрос';
+    if (networkNotice?.key !== networkKey) networkNotice = null;
+    renderFeedback('network');
+    renderActions(id);
+    update();
+  }
+  function syncNetworkSelection() {
+    if (networkKey === 'login') {
+      networkSelected = '';
+      activeActionId = 'login';
+      document.getElementById('course-network-selection').textContent = 'Авторизация';
+      document.getElementById('course-network-flow').textContent = networkTab === 'headers' ? 'запрос' : 'ответ';
+      if (networkNotice?.key !== networkKey) networkNotice = null;
+      renderFeedback('network');
+      renderActions('login');
+      update();
+      return;
+    }
+    const request = { document: 'request', css: 'css-get', js: 'js-get', api: 'cookie' };
+    const response = { document: 'html', css: 'css', js: 'js', api: 'json' };
+    setNetworkSelection((networkTab === 'headers' ? request : response)[networkKey]);
+  }
+  function networkEntries(id) {
+    const run = liveNetwork || lastRun;
+    const live = !!liveNetwork;
+    const productIds = requestedProductIds();
+    const pendingApi = !run || productIds.some((value, index) => value !== (run.productIds || [run.productId])[index]);
+    const api = pendingApi ? { code: '—', label: '—' } : run.apiResult || { code: '—', label: 'Ожидание ответа' };
+    const login = { key: 'login', method: 'POST', name: '/auth/login', path: 'https://qatodev.ru/auth/login', status: '200', source: 'сервер авторизации',
+      headers: `POST /auth/login HTTP/1.1\nHost: qatodev.ru\nContent-Type: application/json\n\n{"login":"student","password":"••••"}\n\nHTTP/1.1 200 OK\nContent-Type: application/json\nSet-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`,
+      preview: 'Вход выполнен до начала упражнения. Сервер выдал сессионную cookie; этот прошлый запрос не показан на карте.',
+      response: '{\n  "user": "student",\n  "authenticated": true\n}' };
+    const fileEntry = file => {
+      const outcome = run?.assetOutcomes?.[file];
+      const loadingSource = run?.assetSources?.[file];
+      const name = file === 'css' ? 'style.css' : 'app.js';
+      const started = !!run?.documentAvailable && (!live || run.assetStarted[file]);
+      const finished = started && (!live || run.assetFinished[file]);
+      const status = !run || !run.documentAvailable || !started ? '—' : !finished ? '…' : ['ok', 'corrupt'].includes(outcome?.state) ? '200' : outcome?.reason === 'файл удалён в источнике' ? '404' : outcome?.source === 'cdn' ? '—' : '503';
+      const source = !run || !run.documentAvailable || !started ? 'ожидает запроса' : !finished ? loadingSource === 'browser' ? 'кэш браузера' : 'загружается' : outcome?.source === 'browser' ? 'кэш браузера' : outcome?.source === 'cdn' ? 'CDN' : 'источник через CDN';
+      return { key: file, name, path: `https://cdn.qatodev.ru/${name}`, status, source,
+        headers: `GET /${name} HTTP/1.1\nHost: cdn.qatodev.ru${loadingSource === 'browser' || outcome?.source === 'browser' ? '\nИсточник: HTTP-кэш браузера\nСетевого запроса к CDN нет' : ''}\n\n${status === '—' ? 'Ответа пока нет' : status === '…' ? 'Ожидание ответа' : `Статус: ${status}\nContent-Type: ${file === 'css' ? 'text/css' : 'text/javascript'}`}`,
+        preview: !run ? 'Нажми «Загрузить страницу».' : !started ? 'Запрос ещё не отправлен.' : !finished ? `${name} загружается…` : outcome?.state === 'failed' ? `${name} не получен: ${outcome.reason}.` : outcome?.state === 'corrupt' ? `${name}: HTTP 200, но ${outcome.reason}.` : `${name} получен: ${source}.`,
+        response: finished && outcome?.state === 'corrupt' ? file === 'js' ? 'HTTP/1.1 200 OK\nContent-Type: text/javascript\n\nconst response = await fetch("/api/products?ids=42,43";\n// SyntaxError: missing ) after argument list' : 'HTTP/1.1 200 OK\nContent-Type: text/css\n\n#products { display: grid; /* нет закрывающей скобки */' : finished && outcome?.state === 'ok' ? examples[file].join('\n').replace('42,43', productIds.join(',')) : finished && outcome?.state === 'failed' ? `${status} · ${outcome.reason}` : 'Ответ ещё не пришёл.' };
+    };
+    const documentStarted = !!run && (!live || run.documentStarted);
+    const documentFinished = !!run && (!live || run.documentFinished);
+    const documentStatus = !run || !documentStarted ? '—' : !documentFinished ? '…' : run.documentAvailable || (run.documentRoute && run.htmlFault === 'corrupt') ? '200' : run.documentRoute && run.htmlFault === 'missing' ? '404' : '—';
+    const documentHeaders = `GET / HTTP/1.1\nHost: qatodev.ru\nAccept: text/html${documentFinished ? documentStatus === '—' ? '\n\nОтвет не получен' : `\n\nHTTP/1.1 ${documentStatus}\nContent-Type: text/html; charset=utf-8` : '\n\nОжидание ответа'}`;
+    const document = { key: 'document', name: 'HTML', path: 'https://qatodev.ru/', status: documentStatus, source: !run || !documentStarted ? 'ожидает запроса' : !documentFinished ? 'загружается' : run.cachedFiles?.includes('html') ? 'кэш браузера' : run.documentRoute ? `сервер ${run.documentRoute === 'app-b' ? 'B' : 'A'}` : 'нет ответа',
+      headers: documentHeaders,
+      preview: run?.documentAvailable ? 'HTML содержит ссылки на style.css и app.js.' : 'HTML ещё не получен.',
+      response: documentFinished && run?.documentAvailable ? examples.html.join('\n') : documentFinished && run?.documentRoute && run.htmlFault === 'corrupt' ? 'HTTP/1.1 200 OK\nContent-Type: text/html\n\n<html><main><h1>Каталог</main>…' : documentFinished && run ? 'Ответ HTML не получен.' : 'Ответ ещё не пришёл.' };
+    const apiStarted = !!run?.apiSent;
+    const apiFinished = !!run && (!live || run.apiFinished);
+    const apiStatus = pendingApi || !apiStarted ? '—' : !apiFinished ? '…' : api.code;
+    const apiEntry = { key: 'api', name: productsPath(), path: `https://qatodev.ru${productsPath()}`, status: apiStatus, source: pendingApi || !apiStarted ? '—' : !apiFinished ? 'ожидание ответа' : run.routes?.length ? `сервер ${run.routes[0] === 'app-b' ? 'B' : 'A'}` : 'нет ответа',
+      headers: `GET ${productsPath()} HTTP/1.1\nHost: qatodev.ru\nAccept: application/json\nCookie: session=${sessionToken}\n\nHTTP: ${apiStatus === '…' ? 'ожидание' : apiStatus}${apiFinished && api.bodyIssue === 'xml' ? '\nContent-Type: application/xml' : ''}`,
+      preview: pendingApi ? '—' : !apiStarted ? apiFinished ? 'JavaScript не отправил запрос API.' : 'JavaScript ещё не отправил запрос API.' : !apiFinished ? 'Ожидаем ответ API…' : api.bodyIssue === 'empty' ? 'Тело ответа пустое.' : api.bodyIssue === 'embedded-error' ? 'В JSON есть error.code: 404 при HTTP 200.' : api.bodyIssue === 'xml' ? 'Сервер прислал XML; response.json() завершился ошибкой разбора.' : api.code === '200' ? (run.products || [run.product].filter(Boolean)).map(product => `${product.name} · ${product.price.toLocaleString('ru-RU')} ₽`).join('\n') : api.label,
+      response: pendingApi ? '—' : !apiFinished ? 'Ответ ещё не пришёл.' : exampleFor('client', run)?.text || '—' };
+    const entries = { login, document, css: fileEntry('css'), js: fileEntry('js'), api: apiEntry };
+    const keys = ['request', 'html'].includes(id) ? ['document'] : ['cookie', 'json'].includes(id) ? ['api'] : ['css-get', 'css'].includes(id) ? ['css'] : ['js-get', 'js'].includes(id) ? ['js'] : ['document', 'css', 'js', 'api'];
+    return ['login', ...keys].map(key => entries[key]);
+  }
+  function codeSpan(kind, value) { return `<span class="course-code__${kind}">${escapeHtml(value)}</span>`; }
+  function highlightParts(line, pattern, classify) {
+    let result = '', position = 0;
+    for (const match of line.matchAll(pattern)) {
+      result += escapeHtml(line.slice(position, match.index));
+      result += codeSpan(classify(match[0], match.index, line), match[0]);
+      position = match.index + match[0].length;
+    }
+    return result + escapeHtml(line.slice(position));
+  }
+  function highlightHeaders(line) {
+    const request = line.match(/^(GET|POST|PUT|PATCH|DELETE) (\S+) (HTTP\/\d(?:\.\d)?)$/);
+    if (request) return `${codeSpan('method', request[1])} ${codeSpan('path', request[2])} ${codeSpan('muted', request[3])}`;
+    const response = line.match(/^(HTTP\/\d(?:\.\d)?) (\d{3})(.*)$/);
+    if (response) return `${codeSpan('muted', response[1])} ${codeSpan(Number(response[2]) >= 400 ? 'error' : 'success', response[2])}${escapeHtml(response[3])}`;
+    const header = line.match(/^([^:\s][^:]*:)(\s*)(.*)$/);
+    if (header) return `${codeSpan('key', header[1])}${escapeHtml(header[2])}${codeSpan('value', header[3])}`;
+    return escapeHtml(line);
+  }
+  function highlightMarkup(line) {
+    let result = '', position = 0;
+    for (const match of line.matchAll(/<[^>]+>/g)) {
+      const before = line.slice(position, match.index);
+      result += before.trim() ? codeSpan('value', before) : escapeHtml(before);
+      const tag = match[0].match(/^(<\/?!?)([A-Za-z][\w:-]*)([\s\S]*?)(\/?>)$/);
+      result += tag ? `${codeSpan('muted', tag[1])}${codeSpan('tag', tag[2])}${highlightParts(tag[3], /[A-Za-z_:][\w:.-]*(?=\s*=)|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'/g, token => token.startsWith('"') || token.startsWith("'") ? 'string' : 'key')}${codeSpan('muted', tag[4])}` : codeSpan('tag', match[0]);
+      position = match.index + match[0].length;
+    }
+    const after = line.slice(position);
+    return result + (after.trim() ? codeSpan('value', after) : escapeHtml(after));
+  }
+  function highlightNetworkLine(line, entry, tab, isXml) {
+    if (tab === 'headers' || /^(?:HTTP\/\d|(?:GET|POST|PUT|PATCH|DELETE) \S+ HTTP\/|(?:Content-Type|Content-Length|Host|Accept|Cookie|Set-Cookie):)/.test(line)) return highlightHeaders(line);
+    if (tab !== 'response') return escapeHtml(line);
+    if (line.includes('SyntaxError')) return codeSpan('error', line);
+    if ((entry.key === 'api' && isXml) || entry.key === 'document') return highlightMarkup(line);
+    if (entry.key === 'api' || entry.key === 'login') return highlightParts(line, /"(?:\\.|[^"\\])*"(?=\s*:)|"(?:\\.|[^"\\])*"|-?\b\d+(?:\.\d+)?\b|\b(?:true|false|null)\b|[{}\[\]:,]/g, (token, index, source) => token.startsWith('"') ? /^\s*:/.test(source.slice(index + token.length)) ? 'key' : 'string' : /^-?\d|^(true|false|null)$/.test(token) ? 'number' : 'muted');
+    if (entry.key === 'css') return highlightParts(line, /\/\*.*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|#[\w-]+|@[a-z-]+|\b[a-z-]+(?=\s*:)|-?\b\d+(?:\.\d+)?(?:px|rem|em|%|vh|vw)?\b|[{}();:,]/g, (token, index, source) => token.startsWith('/*') ? 'comment' : /^['"]/.test(token) ? 'string' : /^-?\d|^#[\da-f]{3,8}$/i.test(token) ? 'number' : /^@/.test(token) ? 'keyword' : /^\w/.test(token) && /^\s*:/.test(source.slice(index + token.length)) ? 'key' : /^[{}();:,]$/.test(token) ? 'muted' : 'tag');
+    if (entry.key === 'js') return highlightParts(line, /\/\/.*$|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:const|let|var|await|if|throw|new|return|function|async|true|false|null)\b|\b\d+(?:\.\d+)?\b|[{}()\[\];,.=]/g, token => token.startsWith('//') ? 'comment' : /^["'`]/.test(token) ? 'string' : /^\d/.test(token) ? 'number' : /^(const|let|var|await|if|throw|new|return|function|async|true|false|null)$/.test(token) ? 'keyword' : 'muted');
+    return escapeHtml(line);
+  }
+  function highlightNetworkContent(content, entry, tab) {
+    const isXml = entry.key === 'api' && content.includes('Content-Type: application/xml');
+    return content.split('\n').map(line => highlightNetworkLine(line, entry, tab, isXml)).join('\n');
+  }
+  function networkSourceIcon(source) {
+    if (!source || source === '—' || /ожидает|загружается|ожидание|нет ответа/.test(source)) return '';
+    const icon = source.includes('кэш браузера') ? 'files' : source.includes('источник') ? 'storage' : source.includes('CDN') ? 'cdn' : source.includes('сервер') ? 'server' : '';
+    if (!icon) return '';
+    return `<span class="course-network__source" tabindex="0" role="img" aria-label="Источник ответа: ${escapeHtml(source)}" data-tooltip="Источник ответа: ${escapeHtml(source)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${icons[icon]}</svg></span>`;
+  }
+  function renderVisualization(id, host = document.getElementById('course-article-visual')) {
+    if (!host || !id) return;
+    if (id === 'client' && host.id === 'course-article-visual') { host.replaceChildren(); return; }
+    if (id === 'cache') {
+      const files = [['index.html', !cacheCleared], ['style.css', hasCachedAsset('css')], ['app.js', hasCachedAsset('js')]];
+      host.innerHTML = `<section class="course-application" aria-label="Учебная модель HTTP-кэша"><div class="course-application__heading"><strong>HTTP-кэш браузера</strong><small>учебная модель</small></div><div class="course-application__files">${files.map(([name, available]) => `<div class="course-file ${available ? '' : 'is-missing'}"><span>▧</span><strong>${name}</strong><small>${available ? 'сохранён' : 'нет копии'}</small></div>`).join('')}</div></section>`;
+      return;
+    }
+    if (networkArticles.has(id)) {
+      const entries = networkEntries(id);
+      if (!entries.some(entry => entry.key === networkKey)) networkKey = entries[0].key;
+      const entry = entries.find(item => item.key === networkKey);
+      const content = networkTab === 'headers' ? entry.headers : networkTab === 'preview' ? entry.preview : entry.response;
+      const pagePreview = entry.key === 'document' && networkTab === 'preview';
+      const contentMarkup = pagePreview ? htmlPagePreview() : networkTab === 'headers'
+        ? content.split('\n').map(line => line.startsWith('Cookie: ') || line.startsWith('Set-Cookie: ')
+          ? `<span class="course-network__cookie-line"><span class="course-code__key">${line.startsWith('Set-Cookie: ') ? 'Set-Cookie:' : 'Cookie:'}</span> <span class="course-code__value" ${line.startsWith('Set-Cookie: ') ? 'data-session-set-cookie-value' : 'data-session-cookie-value'}>${escapeHtml(line.slice(line.indexOf(':') + 2))}</span><span class="course-network__session-time" data-session-remaining></span></span>`
+          : highlightHeaders(line)).join('\n')
+        : highlightNetworkContent(content, entry, networkTab);
+      const pairNames = { login: 'Вход · запрос → cookie', document: 'HTML · запрос → ответ', css: 'CSS · запрос → ответ', js: 'JS · запрос → ответ', api: `API · запрос → ${entry.response.includes('Content-Type: application/xml') ? 'XML' : 'JSON'}` };
+      const help = { login: '<p>Это отдельный учебный POST-запрос, выполненный до начала схемы. Сервер возвращает HTTP 200 и заголовок Set-Cookie с сессией на пять минут. Браузер сохраняет cookie и добавляет заголовок Cookie к следующему запросу API. Сессия не продлевается автоматически.</p>', document: articles.request.body + articles.html.body, css: articles['css-get'].body + articles.css.body, js: articles['js-get'].body + articles.js.body, api: articles.cookie.body + articles.json.body };
+      const urlMarkup = `<span class="course-network__path">${escapeHtml(entry.key === 'api' ? productsPath() : entry.path)}</span>`;
+      host.innerHTML = `<section class="course-viz course-network" aria-label="Учебный Network"><div class="course-network__split"><div class="course-network__requests">${entries.map(item => `<button type="button" data-network-key="${item.key}" class="${item.key === networkKey ? 'is-current' : ''}"><span class="course-method course-method--${(item.method || 'GET').toLowerCase()}">${item.method || 'GET'}</span><span class="course-network__name">${escapeHtml(item.name)}</span><span class="course-network__status ${item.status === '200' ? 'is-ok' : item.status === '…' ? 'is-pending' : item.status !== '—' ? 'is-error' : ''}">${item.status}</span></button>`).join('')}</div><div class="course-network__detail"><div class="course-network__url">${urlMarkup}${networkSourceIcon(entry.source)}</div><div class="course-network__tabs" role="tablist">${[['headers','Заголовки'],['preview','Просмотр'],['response','Ответ']].map(([key,label]) => `<button type="button" role="tab" aria-selected="${networkTab === key}" data-network-tab="${key}">${label}</button>`).join('')}</div>${pagePreview ? `<div class="course-network__content course-network__content--page">${contentMarkup}</div>` : `<pre class="course-network__content">${contentMarkup}</pre>`}</div></div><details class="course-network__help"><summary>Как это работает</summary><div><strong class="course-network__help-title">${pairNames[entry.key]}</strong>${help[entry.key]}</div></details></section>`;
+      renderFeedback('network');
+      refreshSessionDisplay();
+      host.querySelectorAll('[data-network-key]').forEach(button => button.addEventListener('click', () => { networkKey = button.dataset.networkKey; networkTab = 'headers'; syncNetworkSelection(); renderVisualization(id, host); save(); }));
+      host.querySelectorAll('[data-network-tab]').forEach(button => button.addEventListener('click', () => { networkTab = button.dataset.networkTab; syncNetworkSelection(); renderVisualization(id, host); save(); }));
+      host.querySelector('.course-network__help').addEventListener('toggle', save);
+      return;
+    }
+    if (id === 'database') {
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}</section>`;
+      return;
+    }
+    if (id === 'db-result') {
+      const rows = lastRun?.dbResult;
+      const caption = !lastRun ? 'Ожидает запуска' : rows === null || rows === undefined ? 'Ответа нет' : rowCountLabel(rows.length);
+      const table = Array.isArray(rows) ? `<div class="ai-table-shell course-table-shell"><div class="ai-table-wrap"><table class="ai-table"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">price</th><th scope="col">currency</th></tr></thead><tbody>${rows.length ? rows.map(product => `<tr><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('') : '<tr><td colspan="4" class="course-table-empty">0 строк</td></tr>'}</tbody></table></div></div>` : '';
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>Результат SELECT</strong><span class="course-viz__caption">${caption}</span></div>${table}<p class="course-viz__foot">${!lastRun ? 'Запусти схему, чтобы увидеть ответ базы.' : Array.isArray(rows) ? 'Драйвер передал серверу набор строк и столбцов. Приложение создаст HTTP-ответ отдельно.' : 'База не вернула результат: проверь сессию, сервер и доступность базы.'}</p></section>`;
+      return;
+    }
+    if (id === 'balancer' || id === 'app-a' || id === 'app-b') {
+      const countA = lastRun?.counts?.['app-a'] || 0, countB = lastRun?.counts?.['app-b'] || 0;
+      const server = id === 'app-a' ? 'A' : 'B';
+      const bars = id === 'balancer' ? [['A', countA], ['B', countB]] : [[server, server === 'A' ? countA : countB]];
+      const htmlState = faults.get('html');
+      const htmlRow = id === 'balancer' ? '' : `<div class="course-files"><div class="course-file ${htmlState ? 'is-missing' : ''}"><span>▧</span><strong>index.html</strong><small>${htmlState === 'missing' ? 'удалён' : htmlState === 'corrupt' ? 'повреждён' : 'формируется'}</small><div class="course-file__actions" data-file-actions="html"></div></div><div class="course-file"><span>⇄</span><strong title="GET ${productsPath()}">GET ${productsPath()}</strong><small>${apiFormat === 'xml' ? 'application/xml' : 'application/json'}</small></div></div>`;
+      const sessionRow = id === 'balancer' ? '' : `<div class="course-server-session"><strong>Сессии · student</strong><span data-session-cookie>Cookie: session=${sessionToken}</span><span class="course-network__session-time" data-session-remaining></span><small data-session-access>${!hasSession() ? 'Нет доступа · 401' : sessionRestricted ? 'Товары: доступ ограничен · 403' : 'Товары: чтение разрешено'}</small></div>`;
+      const heading = id === 'balancer' ? `<div class="course-viz__heading"><span class="course-viz__icon">⇄</span><strong>Распределение запросов</strong><span class="course-viz__caption">${lastRun ? requestCountLabel(lastRun.requestCount) : 'Ожидает запуска'}</span></div>` : '';
+      const foot = id === 'balancer' && removed ? 'Балансировщик отключён: запросы идут напрямую на A.' : id !== 'balancer' && faults.has(id) ? 'Сервер сейчас остановлен.' : '';
+      host.innerHTML = `<section class="course-viz${id === 'balancer' ? '' : ' course-viz--server'}">${heading}${bars.map(([name,count]) => `<div class="course-load"><span>Сервер ${name}</span><div class="course-load__track"><span class="${count > 600 ? 'is-overload' : ''}" style="width:${Math.min(100, count / 600 * 100)}%"></span></div><strong>${count} / 600</strong></div>`).join('')}${sessionRow}${htmlRow}${foot ? `<p class="course-viz__foot">${foot}</p>` : ''}</section>`;
+      renderFileRowActions(host, id);
+      refreshSessionDisplay();
+      return;
+    }
+    if (['assets', 'storage', 'cache', 'origin'].includes(id)) {
+      const isBrowser = id === 'cache', isOrigin = id === 'storage' || id === 'origin';
+      const title = isBrowser ? 'Кэш браузера' : isOrigin ? 'Источник файлов' : 'Копии CDN';
+      const files = [...(isBrowser ? [['HTML', !cacheCleared]] : []), ['style.css', isBrowser ? hasCachedAsset('css') : isOrigin ? !faults.has('storage') && !faults.has('css') : !faults.has('assets') && !cdnBypass], ['app.js', isBrowser ? hasCachedAsset('js') : isOrigin ? !faults.has('storage') && !faults.has('js') : !faults.has('assets') && !cdnBypass]];
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▤</span><strong>${title}</strong><span class="course-viz__caption">${id === 'assets' && cdnBypass ? 'cache miss' : ''}</span></div><div class="course-files">${files.map(([name,available]) => {
+        const file = name === 'style.css' ? 'css' : name === 'app.js' ? 'js' : '';
+        const state = isOrigin && file ? faults.get(file) : null;
+        const status = state === 'missing' ? 'удалён' : state === 'corrupt' ? 'повреждён' : available ? 'доступен' : isOrigin ? 'недоступен' : 'нет копии';
+        return `<div class="course-file ${available ? '' : 'is-missing'}"><span>▧</span><strong>${name}</strong><small>${status}</small>${id === 'storage' && file ? `<div class="course-file__actions" data-file-actions="${file}"></div>` : ''}</div>`;
+      }).join('')}</div><p class="course-viz__foot">${isBrowser ? 'Кэш браузера не равен копии CDN.' : isOrigin ? 'CDN обращается сюда только при cache miss.' : 'Браузер запрашивает файлы у CDN отдельно от API.'}</p></section>`;
+      renderFileRowActions(host, id);
+      return;
+    }
+    host.replaceChildren();
+  }
+  function hideArticleForNarrow() {
+    if (selected === 'tasks' && !article.hidden) taskScrollTop = article.querySelector('.course-article__scroll').scrollTop;
+    hideTaskTooltip();
+    clearTimeout(articleCloseTimer);
+    article.hidden = true;
+    article.classList.remove('is-closing');
+    workspace.classList.remove('has-answer');
+    selected = '';
+    selectedVia = null;
+    articleNotice = null;
+  }
+  function showArticle(id, via = null, focus = true) {
+    const data = articles[id];
+    if (!data) return;
+    if (narrowPanels.matches) {
+      networkPanel.hidden = true;
+      networkSelected = '';
+      networkNotice = null;
+    }
+    hideTaskTooltip();
+    const shortTitles = { 'app-a': 'Сервер A', 'app-b': 'Сервер B', assets: 'CDN', storage: 'Источник', database: 'База данных', client: 'Клиент' };
+    clearTimeout(articleCloseTimer);
+    article.classList.remove('is-closing');
+    article.dataset.article = id;
+    selected = id;
+    activeActionId = id;
+    selectedVia = via;
+    document.getElementById('course-article-kicker').textContent = data.kicker.includes('/') ? data.kicker.split('/')[0].trim() : data.kicker.split(' ')[0];
+    document.getElementById('course-article-title').textContent = shortTitles[id] || data.title;
+    document.getElementById('course-article-devtools-icon').hidden = id !== 'cache';
+    const subtitle = document.getElementById('course-article-subtitle');
+    subtitle.hidden = id !== 'cache';
+    subtitle.textContent = id === 'cache' ? 'Вкладка DevTools' : '';
+    document.getElementById('course-article-body').innerHTML = data.body;
+    const primary = document.getElementById('course-article-primary');
+    primary.replaceChildren();
+    for (const selector of ['.course-load-settings', '.course-algorithm', '#course-task-list']) {
+      const block = document.querySelector(`#course-article-body ${selector}`);
+      if (block) primary.append(block);
+    }
+    renderProductTables();
+    if (!networkArticles.has(id) && exampleFor(id) && !document.getElementById('course-example')) document.getElementById('course-article-body').insertAdjacentHTML('beforeend', `<section class="course-example${id === 'sql' ? ' course-example--sql' : ''}" id="course-example">${id === 'sql' ? '' : '<h3></h3>'}<pre><code></code></pre></section>`);
+    renderExample(id);
+    if (id === 'sql') {
+      primary.append(document.getElementById('course-example'));
+      const example = document.getElementById('course-example');
+      example.insertAdjacentHTML('beforeend', `<form class="course-sql-command" aria-label="SQL для учебной базы"><input type="text" name="sql" autocomplete="off" spellcheck="false" maxlength="220" value="${escapeHtml(sqlDraft)}" placeholder="INSERT INTO products (id, name, price, currency) VALUES (99, 'Товар 99', 5990, 'RUB');" aria-label="SQL-запрос" ${playButton.disabled ? 'disabled' : ''}><button type="submit" ${playButton.disabled ? 'disabled' : ''}>Отправить</button></form><p class="course-sql-feedback" role="status">${escapeHtml(sqlFeedback)}</p>`);
+      const form = example.querySelector('.course-sql-command');
+      const sqlInput = form.elements.namedItem('sql');
+      sqlInput.addEventListener('input', () => { sqlDraft = sqlInput.value; sqlFeedback = ''; example.querySelector('.course-sql-feedback').textContent = ''; renderExample('sql'); save(); });
+      form.addEventListener('submit', event => {
+        event.preventDefault();
+        if (playButton.disabled || !sqlDraft.trim()) return;
+        sqlFeedback = applySqlCommand(sqlDraft);
+        example.querySelector('.course-sql-feedback').textContent = sqlFeedback;
+        renderProductTables();
+        update();
+        save();
+      });
+    }
+    renderVisualization(id);
+    refreshSessionDisplay();
+    if (id === 'tasks') renderTasks();
+    if (id === 'client') {
+      document.querySelectorAll('[data-request-count]').forEach(button => button.addEventListener('click', () => {
+        configuredRequests = Number(button.dataset.requestCount);
+        renderLoadControls();
+        save();
+      }));
+      renderLoadControls();
+      renderClientPreview();
+      renderAlgorithm();
+      document.getElementById('course-algorithm-prev').addEventListener('click', () => { algorithmIndex--; renderAlgorithm(); });
+      document.getElementById('course-algorithm-next').addEventListener('click', () => { algorithmIndex++; renderAlgorithm(); });
+    }
+    articleNotice = null;
+    renderFeedback('article');
+    article.hidden = false;
+    workspace.classList.add('has-answer');
+    article.querySelector('.course-article__scroll').scrollTop = id === 'tasks' ? taskScrollTop : 0;
+    update();
+    renderActions(id);
+    const packet = packets.find(item => item.id === id);
+    if (packet && id !== 'sql' && id !== 'cache') {
+      const edge = via === 'app-b' && packet.edge?.includes('app-a') ? packet.edge.map(node => node === 'app-a' ? 'app-b' : node) : packet.edge;
+      report(id === 'cookie' ? 'Это один API-запрос; сессия передаётся в его заголовке Cookie.' : packet.flow === 'local' ? 'Локальные данные браузера: они не проходят по сетевой линии.' : `${packet.flow === 'request' ? 'Запрос' : 'Ответ'}: ${byId.get(edge[packet.flow === 'response' ? 1 : 0]).title} → ${byId.get(edge[packet.flow === 'response' ? 0 : 1]).title}. Стрелка на карте показывает направление.`);
+    }
+    if (faults.get(id) === 'overload') report('Сервер упал из-за нагрузки: в этой учебной модели его предел — 600 одновременных запросов. Восстанови сервер или нажми «Сброс».');
+    if (focus) requestAnimationFrame(() => focusElement(id));
+    save();
+  }
+  function showNetworkPacket(id) {
+    if (narrowPanels.matches) hideArticleForNarrow();
+    networkKey = ['request', 'html'].includes(id) ? 'document' : ['cookie', 'json'].includes(id) ? 'api' : ['js-get', 'js'].includes(id) ? 'js' : 'css';
+    networkTab = ['html', 'json', 'css', 'js'].includes(id) ? 'response' : 'headers';
+    networkPanel.hidden = false;
+    setNetworkSelection(id);
+    renderVisualization('client', document.getElementById('course-network-visual'));
+    save();
+  }
+  for (const node of nodes) {
+    const element = document.createElement('div');
+    element.className = 'questions-map-card course-node';
+    element.dataset.node = node.id;
+    element.style.left = `${node.x}px`;
+    element.style.top = `${node.y}px`;
+    element.hidden = true;
+    element.innerHTML = `${node.id === 'client' ? `<button class="course-node__icon course-client-preview" type="button" aria-label="Открыть результат запроса"><svg viewBox="0 0 24 24" aria-hidden="true">${icons[node.icon]}</svg><span class="course-client-preview__code" aria-live="polite"></span></button>` : `<span class="course-node__icon" aria-hidden="true"><svg viewBox="0 0 24 24">${icons[node.icon]}</svg></span>`}<button class="questions-map-card__question" type="button"><span class="course-node__title"></span></button>`;
+    element.querySelector('.course-node__title').textContent = node.title;
+    element.querySelector('.questions-map-card__question').addEventListener('click', () => showArticle(node.id));
+    if (node.id === 'client') element.querySelector('.course-client-preview').addEventListener('click', () => showArticle('client'));
+    nodeHost.append(element);
+  }
+  for (const item of packets) {
+    const element = document.createElement('button');
+    element.type = 'button';
+    element.className = 'course-packet';
+    element.dataset.packet = item.id;
+    if (item.pair) element.dataset.pair = item.pair;
+    if (resourcePackets.has(item.id)) element.classList.add('is-resource');
+    if (Number.isFinite(item.x)) element.style.left = `${item.x}px`;
+    if (Number.isFinite(item.y)) element.style.top = `${item.y}px`;
+    element.hidden = true;
+    const numbers = item.phase ? [item.phase] : [];
+    element.innerHTML = `${numbers.length ? `<span class="course-packet__numbers" aria-hidden="true">${numbers.map(number => `<span data-number="${number}">${number}</span>`).join('')}</span>` : ''}${packetIcon}<span class="course-packet__title"></span><small class="course-packet__flow"></small>${item.edge ? `<span class="course-packet__arrow" aria-hidden="true">${directionIcon}</span>` : ''}`;
+    element.querySelector('.course-packet__title').textContent = item.title;
+    const flowLabel = item.flow === 'request' ? 'запрос' : item.flow === 'response' ? 'ответ' : 'локально';
+    element.querySelector('.course-packet__flow').textContent = flowLabel;
+    element.setAttribute('aria-label', `${item.title}: ${item.phase ? `пара ${item.phase}, ${flowLabel}` : flowLabel}`);
+    element.addEventListener('click', () => browserPacketIds.has(item.id) ? showNetworkPacket(item.id) : showArticle(item.id));
+    packetHost.append(element);
+  }
+  let lastSessionValidity = hasSession();
+  function refreshSessionDisplay() {
+    const seconds = Math.max(0, Math.ceil((sessionExpiresAt - Date.now()) / 1000));
+    const remaining = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    const inactiveLabel = sessionExpiresAt === 0 ? 'удалена' : 'истекла';
+    document.querySelectorAll('[data-session-cookie]').forEach(label => { label.textContent = `Cookie: session=${sessionToken}`; });
+    document.querySelectorAll('[data-session-set-cookie]').forEach(label => { label.textContent = `Set-Cookie: session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`; });
+    document.querySelectorAll('[data-session-cookie-value]').forEach(label => { label.textContent = `session=${sessionToken}`; });
+    document.querySelectorAll('[data-session-set-cookie-value]').forEach(label => { label.textContent = `session=${sessionToken}; Max-Age=300; Secure; HttpOnly; SameSite=Lax`; });
+    document.querySelectorAll('[data-session-remaining]').forEach(badge => {
+      badge.textContent = seconds ? remaining : inactiveLabel;
+      badge.classList.toggle('is-expired', !seconds);
+    });
+    document.querySelectorAll('[data-session-access]').forEach(label => { label.textContent = !seconds ? 'Нет доступа · 401' : sessionRestricted ? 'Товары: доступ ограничен · 403' : 'Товары: чтение разрешено'; });
+    if (lastSessionValidity !== !!seconds) {
+      lastSessionValidity = !!seconds;
+      if (selected === 'cookie') renderActions(selected);
+      if (networkSelected === 'cookie') renderActions(networkSelected);
+      if (networkKey === 'login' && !document.getElementById('course-network-panel').hidden) renderActions('login');
+      if (selected === 'app-a' || selected === 'app-b') renderActions(selected);
+      syncResetButton();
+    }
+  }
+  refreshSessionDisplay();
+  window.setInterval(refreshSessionDisplay, 1000);
+  article.querySelector('.course-article__theory').addEventListener('toggle', save);
+
+  document.getElementById('course-article-close').addEventListener('click', () => {
+    hideTaskTooltip();
+    article.classList.add('is-closing');
+    articleCloseTimer = setTimeout(() => { article.hidden = true; article.classList.remove('is-closing'); }, 280);
+    workspace.classList.remove('has-answer');
+    selected = '';
+    selectedVia = null;
+    articleNotice = null;
+    update();
+    save();
+  });
+  document.getElementById('course-network-close').addEventListener('click', () => {
+    networkSelected = '';
+    networkNotice = null;
+    document.getElementById('course-network-panel').hidden = true;
+    update();
+    save();
+  });
+  let activeActionId = '';
+
+  function renderFeedback(scope) {
+    const details = scope === 'network' ? document.querySelector('#course-network-panel .course-network__help') : article.querySelector('.course-article__theory');
+    if (!details) return;
+    details.querySelector('.course-feedback')?.remove();
+    details.querySelector('.course-feedback-detail')?.remove();
+    const notice = scope === 'network' ? networkNotice : articleNotice;
+    const summary = details.querySelector('summary');
+    summary.firstChild.textContent = notice?.message ? '' : 'Как это работает';
+    summary.setAttribute('aria-label', notice?.message ? 'Подробнее об уведомлении' : 'Как это работает');
+    if (!notice?.message) return;
+    const chip = document.createElement('span');
+    chip.className = 'course-feedback';
+    chip.setAttribute('role', 'status');
+    chip.title = notice.message;
+    chip.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 21h20L12 3Zm0 6v5m0 3h.01"/></svg>';
+    const label = document.createElement('span');
+    label.className = 'course-feedback__text';
+    label.textContent = notice.short;
+    chip.append(label);
+    summary.append(chip);
+    const explanation = document.createElement('div');
+    explanation.className = 'course-feedback-detail';
+    explanation.textContent = notice.message;
+    summary.after(explanation);
+  }
+  function report(message, short) {
+    const scope = (activeActionId === 'login' || browserPacketIds.has(activeActionId)) && !document.getElementById('course-network-panel').hidden ? 'network' : 'article';
+    const firstSentence = message.split(/[.!?](?:\s|$)/)[0];
+    const compact = short || (firstSentence.length > 72 ? `${firstSentence.slice(0, 69).trimEnd()}…` : firstSentence);
+    const notice = message ? { message, short: compact, ...(scope === 'network' ? { key: networkKey } : {}) } : null;
+    if (scope === 'network') networkNotice = notice;
+    else articleNotice = notice;
+    renderFeedback(scope);
+    save();
+  }
+  function actionIcon(label) {
+    const paths = {
+      remove: '<path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 10v7m4-7v7"/>',
+      restore: '<path d="M5 11a7 7 0 1 1 2 6M5 5v6h6"/>',
+      damage: '<path d="m13 2-8 11h6l-1 9 9-12h-6z"/>',
+      powerOn: '<path d="M12 3v9M7 5a9 9 0 1 0 10 0"/>',
+      powerOff: '<path d="M12 3v7M7 5a9 9 0 0 0 10 14M17 5a9 9 0 0 1 3 10M3 21 21 3"/>',
+      start: '<path d="m8 5 11 7-11 7V5Z"/>',
+      stop: '<rect x="6" y="6" width="12" height="12" rx="2"/>',
+      add: '<path d="M12 4v16M4 12h16"/>',
+      switch: '<path d="M4 7h16m-4-4 4 4-4 4M20 17H4m4-4-4 4 4 4"/>',
+      sessionRenew: '<path fill="currentColor" stroke="none" d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.93 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35Z"/>',
+      restrict: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+      allow: '<rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0"/>',
+      cacheMiss: '<path d="M6 18a4 4 0 0 1-.5-8A7 7 0 0 1 19 11a3.5 3.5 0 0 1-.5 7H17M12 11v8m-3-3 3 3 3-3"/>',
+      cacheHit: '<path d="M6 18a4 4 0 0 1-.5-8A7 7 0 0 1 19 11a3.5 3.5 0 0 1-.5 7H17m-8-2 2 2 4-4"/>',
+      emptyBody: '<path d="M6 3h8l4 4v14H6zM14 3v5h4M9 15h6"/>',
+      bodyError: '<path d="M6 3h8l4 4v14H6zM14 3v5h4M12 11v5m0 2h.01"/>'
+    };
+    const kind = [
+      [/^Обновить сессию/, 'sessionRenew'],
+      [/^Ограничить права/, 'restrict'],
+      [/^Вернуть право доступа/, 'allow'],
+      [/^Сымитировать cache miss/, 'cacheMiss'],
+      [/^Вернуть cache hit/, 'cacheHit'],
+      [/^Пустое тело 200/, 'emptyBody'],
+      [/^Ошибка в теле 200/, 'bodyError'],
+      [/^Удалить|^Очистить|^Кэш пуст/, 'remove'],
+      [/^Восстановить/, 'restore'],
+      [/^Повредить/, 'damage'],
+      [/^Запустить/, 'start'],
+      [/^Остановить/, 'stop'],
+      [/^Включить/, 'powerOn'],
+      [/^Отключить/, 'powerOff'],
+      [/^Добавить/, 'add']
+    ].find(([pattern]) => pattern.test(label))?.[1] || 'switch';
+    return `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[kind]}</svg>`;
+  }
+  function renderFileRowActions(host, ownerId) {
+    host.querySelectorAll('[data-file-actions]').forEach(container => {
+      const file = container.dataset.fileActions;
+      const name = file === 'html' ? 'HTML' : file === 'css' ? 'style.css' : 'app.js';
+      const place = file === 'html' ? 'на серверах приложения' : 'в источнике файлов';
+      const actions = faults.has(file) ? [['Восстановить', null]] : [['Удалить', 'missing'], ['Повредить', 'corrupt']];
+      actions.forEach(([verb, state]) => {
+        const label = `${verb} ${name}`;
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.innerHTML = actionIcon(label);
+        button.setAttribute('aria-label', label);
+        button.dataset.tooltip = label;
+        button.classList.toggle('is-destructive', !!state);
+        button.addEventListener('click', () => {
+          activeActionId = ownerId;
+          if (playButton.disabled) { report('Дождись завершения запуска.'); return; }
+          if (state) faults.set(file, state);
+          else faults.delete(file);
+          setLiveRoutes(null);
+          renderVisualization(ownerId);
+          const effect = state === 'missing' ? `${name} удалён ${place}. Копии браузера и CDN остаются доступными до очистки кэша.`
+            : state === 'corrupt' ? `${name} повреждён ${place}. Запусти схему, чтобы проверить результат.`
+              : `${name} восстановлен ${place}. Запусти схему, чтобы проверить результат.`;
+          report(effect);
+        });
+        container.append(button);
+      });
+    });
+  }
+  function fitNetworkActions() {
+    const container = document.getElementById('course-network-action-buttons');
+    if (!container.clientWidth || !container.childElementCount) return;
+    if (container.querySelector('[data-product-id-index]')) { container.classList.remove('is-compact'); return; }
+    container.classList.remove('is-compact');
+    const buttons = [...container.children];
+    buttons.forEach(button => { button.textContent = button.dataset.actionLabel; });
+    const gap = parseFloat(getComputedStyle(container).columnGap) || 0;
+    const requiredWidth = buttons.reduce((width, button) => width + button.getBoundingClientRect().width, 0) + gap * (buttons.length - 1);
+    if (requiredWidth <= container.clientWidth) return;
+    container.classList.add('is-compact');
+    buttons.forEach(button => { button.innerHTML = actionIcon(button.dataset.actionLabel); });
+  }
+  function renderActions(id) {
+    const networkAction = id === 'login' || browserPacketIds.has(id);
+    const actionButtons = document.getElementById(networkAction ? 'course-network-action-buttons' : 'course-action-buttons');
+    actionButtons.replaceChildren();
+    if (networkAction) actionButtons.classList.remove('is-compact');
+    function add(label, handler, destructive = false, disabled = false) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.disabled = disabled;
+      if (networkAction) {
+        button.textContent = label;
+        button.dataset.actionLabel = label;
+        button.dataset.tooltip = label;
+        button.setAttribute('aria-label', label);
+      }
+      else {
+        button.innerHTML = actionIcon(label);
+        button.setAttribute('aria-label', label);
+        button.dataset.tooltip = label;
+      }
+      button.classList.toggle('is-destructive', destructive);
+      button.addEventListener('click', () => {
+        activeActionId = id;
+        if (playButton.disabled) { report('Дождись завершения запуска.'); return; }
+        handler();
+        if (networkAction) renderVisualization('client', document.getElementById('course-network-visual'));
+        else renderVisualization(selected);
+      });
+      actionButtons.append(button);
+    }
+    function toggleFault(target) {
+      const active = faults.has(target);
+      if (active) faults.delete(target);
+      else faults.set(target, 'offline');
+      setLiveRoutes(null);
+      renderActions(id);
+      report(active ? `${byId.get(target).title} снова доступен.` : `${byId.get(target).title} отключён. Запусти схему, чтобы проверить новый маршрут.`);
+    }
+    if (id === 'balancer') {
+      add(removed ? 'Восстановить балансировщик' : 'Отключить балансировщик', () => {
+        removed = !removed;
+        setLiveRoutes(null);
+        renderActions(id);
+        report(removed ? 'Прямой маршрут ведёт только к серверу A. Запусти модель, чтобы увидеть результат.' : 'Балансировщик снова распределяет запросы между доступными серверами.');
+      }, !removed);
+    } else if (id === 'app-a' || id === 'app-b') {
+      add(faults.has(id) ? 'Запустить сервер' : 'Остановить сервер', () => toggleFault(id), !faults.has(id));
+      if (hasSession()) add(sessionRestricted ? 'Вернуть право доступа' : 'Ограничить права', () => {
+        sessionRestricted = !sessionRestricted;
+        renderActions(id);
+        update();
+        report(sessionRestricted ? 'Активная сессия сохранена, но сервер запретит доступ к товарам: следующий API-запрос вернёт 403.' : 'Право чтения товаров возвращено: следующий API-запрос может вернуть 200.');
+      }, !sessionRestricted);
+      add(apiFormat === 'xml' ? 'Вернуть JSON' : 'Подменить JSON на XML', () => {
+        apiFormat = apiFormat === 'xml' ? 'json' : 'xml';
+        renderActions(id);
+        report(apiFormat === 'xml' ? 'Следующий успешный ответ API будет XML. Скрипт ожидает JSON и не покажет товары.' : 'Следующий успешный ответ API снова будет JSON.');
+      });
+      for (const [mode, label] of [['empty', 'Пустое тело 200'], ['embedded-error', 'Ошибка в теле 200']]) {
+        if (productMode === 'normal' || productMode === mode) add(productMode === mode ? 'Обычный ответ' : label, () => {
+          productMode = productMode === mode ? 'normal' : mode;
+          renderActions(id);
+          report(productMode === 'normal' ? 'Сервер снова выбирает обычный HTTP-ответ.' : `Сервер применит режим «${label}», когда база не найдёт запрошенные строки.`);
+        });
+      }
+    } else if (id === 'database') {
+      add(faults.has('database') ? 'Включить базу' : 'Отключить базу', () => toggleFault('database'), !faults.has('database'));
+    } else if (id === 'assets') {
+      add(faults.has('assets') ? 'Включить CDN' : 'Отключить CDN', () => toggleFault('assets'), !faults.has('assets'));
+      add(cdnBypass ? 'Вернуть cache hit' : 'Сымитировать cache miss', () => {
+        cdnBypass = !cdnBypass;
+        update();
+        save();
+        renderActions(id);
+        report(cdnBypass ? 'Если браузер обратится к CDN, тот запросит файл у источника. Для проверки очисти локальный кэш.' : 'CDN снова отдаёт сохранённую копию без обращения к источнику.');
+      });
+    } else if (id === 'storage') {
+      add(faults.has('storage') ? 'Включить источник' : 'Отключить источник', () => toggleFault('storage'), !faults.has('storage'));
+    } else if (id === 'cookie') {
+      actionButtons.innerHTML = `<div class="course-network__id-controls" role="group" aria-label="ID товаров в API-запросе"><span>ID</span><input class="course-network__id-chip" data-product-id-index="0" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedProductId}" aria-label="ID первого товара" ${liveNetwork ? 'disabled' : ''}><span>,</span><input class="course-network__id-chip" data-product-id-index="1" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" value="${selectedSecondProductId}" aria-label="ID второго товара" ${liveNetwork ? 'disabled' : ''}></div>`;
+      actionButtons.querySelectorAll('[data-product-id-index]').forEach(input => {
+        input.addEventListener('input', () => {
+          if (liveNetwork || !/^[1-9]\d{0,3}$/.test(input.value)) return;
+          if (input.dataset.productIdIndex === '0') selectedProductId = Number(input.value);
+          else selectedSecondProductId = Number(input.value);
+          renderProductTables();
+          if (selected === 'app-a' || selected === 'app-b') renderVisualization(selected);
+          refreshLiveNetwork();
+          save();
+        });
+        input.addEventListener('blur', () => {
+          if (!/^[1-9]\d{0,3}$/.test(input.value)) input.value = input.dataset.productIdIndex === '0' ? selectedProductId : selectedSecondProductId;
+        });
+        input.addEventListener('keydown', event => { if (event.key === 'Enter') input.blur(); });
+      });
+    } else if (id === 'login') {
+      const applySessionAction = (message, short) => {
+        refreshSessionDisplay();
+        update();
+        renderActions(id);
+        if (selected === id) renderExample(id);
+        if (selected === 'app-a' || selected === 'app-b') { renderVisualization(selected); renderActions(selected); }
+        save();
+        report(message, short);
+      };
+      if (hasSession()) add('Удалить сессию', () => {
+        sessionExpiresAt = 0;
+        applySessionAction('Сессия удалена. Следующий запрос к защищённому API вернёт 401; HTML страницы останется доступен.');
+      }, true);
+      else add('Обновить сессию', () => {
+        rotateSessionToken();
+        sessionExpiresAt = Date.now() + SESSION_MS;
+        sessionRestricted = false;
+        applySessionAction('Новая сессия получена на пять минут.');
+      });
+    } else if (id === 'cache') {
+      const empty = cacheCleared && !hasCachedAsset('css') && !hasCachedAsset('js');
+      add(empty ? 'Кэш пуст' : 'Очистить кэш', () => { cacheCleared = true; cachedAssets.clear(); setLiveRoutes(null); renderActions(id); report(''); }, false, empty);
+    }
+    if (networkAction) fitNetworkActions();
+    else actionButtons.closest('.course-article__actions').hidden = !actionButtons.childElementCount;
+  }
+  new ResizeObserver(fitNetworkActions).observe(document.getElementById('course-network-panel'));
+  let playRun = 0;
+  const playButton = document.getElementById('course-play');
+  function syncPlayButton() {
+    const label = pageLoaded ? '▶ Обновить страницу' : '▶ Загрузить страницу';
+    playButton.textContent = label;
+    playButton.title = label.slice(2);
+  }
+  function refreshLiveApplication() {
+    if (selected !== 'cache' || article.hidden) return;
+    renderVisualization('cache');
+    renderActions('cache');
+  }
+  function refreshLiveNetwork() {
+    const panel = document.getElementById('course-network-panel');
+    if (panel.hidden) return;
+    const visual = document.getElementById('course-network-visual');
+    const helpOpen = !!visual.querySelector('.course-network__help')?.open;
+    const panelScroll = panel.scrollTop;
+    const detailScroll = visual.querySelector('.course-network__content')?.scrollTop || 0;
+    renderVisualization('client', visual);
+    const help = visual.querySelector('.course-network__help');
+    if (help) help.open = helpOpen;
+    const detail = visual.querySelector('.course-network__content');
+    if (detail) detail.scrollTop = detailScroll;
+    panel.querySelectorAll('#course-network-action-buttons [data-product-id-index]').forEach(input => { input.disabled = !!liveNetwork; });
+    panel.scrollTop = panelScroll;
+  }
+  document.getElementById('course-tasks').addEventListener('click', () => showArticle('tasks'));
+  article.querySelector('.course-article__scroll').addEventListener('scroll', event => {
+    if (selected !== 'tasks' || article.hidden) return;
+    taskScrollTop = event.currentTarget.scrollTop;
+    clearTimeout(taskScrollSaveTimer);
+    taskScrollSaveTimer = setTimeout(save, 120);
+  });
+  const wait = ms => new Promise(resolve => setTimeout(resolve, Math.round(ms * 1.8)));
+  function pulseLocalCache() {
+    showPackets(['cache']);
+    if (pulsedPackets.has('cache')) return;
+    pulsedPackets.add('cache');
+    const marker = packetHost.querySelector('[data-packet="cache"]');
+    const path = lines.querySelector('[data-course-local-cache]');
+    for (const element of [marker, path]) {
+      if (!element) continue;
+      element.classList.remove(element === marker ? 'is-transiting' : 'is-flowing-cache');
+      void element.offsetWidth;
+      const name = element === marker ? 'is-transiting' : 'is-flowing-cache';
+      element.classList.add(name);
+      window.setTimeout(() => element.classList.remove(name), element === marker ? 1100 : 1450);
+    }
+  }
+  playButton.addEventListener('click', async () => {
+    const run = ++playRun;
+    pulsedPackets.clear();
+    const loadPage = true;
+    playButton.disabled = true;
+    const requestCount = configuredRequests;
+    const productId = selectedProductId;
+    const secondProductId = selectedSecondProductId;
+    const productIds = [productId, secondProductId];
+    const products = productIds.map(productFor).filter(Boolean);
+    const dbRows = [...new Set(productIds)].map(productFor).filter(Boolean);
+    const product = products[0] || null;
+    const productMissing = products.length === 0;
+    configuredRequests = requestCount;
+    remainingRequests = requestCount;
+    renderLoadControls();
+    const usedBalancer = !removed;
+    const available = usedBalancer ? ['app-a', 'app-b'].filter(id => !faults.has(id)) : (faults.has('app-a') ? [] : ['app-a']);
+    const routes = available.length === 2 && requestCount > 1 ? available : available.slice(0, 1);
+    const counts = { 'app-a': 0, 'app-b': 0 };
+    if (routes.length === 2) {
+      counts['app-a'] = Math.ceil(requestCount / 2);
+      counts['app-b'] = Math.floor(requestCount / 2);
+    } else if (routes.length) counts[routes[0]] = requestCount;
+    const overloaded = routes.filter(id => counts[id] > 600);
+    const assetOutcomes = Object.fromEntries(['css', 'js'].map(file => [file, assetSource(file)]));
+    const originMiss = loadPage && Object.values(assetOutcomes).some(outcome => outcome.source === 'origin');
+    const originOffline = originMiss && faults.has('storage');
+    const cachedFiles = loadPage ? [...(faults.has('html') && !cacheCleared ? ['html'] : []), ...['css', 'js'].filter(hasCachedAsset)] : [];
+    const documentRoute = routes[0];
+    const documentAvailable = !loadPage || (!!documentRoute && (!faults.has('html') || !cacheCleared));
+    const scriptAvailable = !loadPage || (documentAvailable && assetOutcomes.js.state === 'ok');
+    const apiRoutes = scriptAvailable ? routes : [];
+    const apiOverloaded = scriptAvailable ? overloaded : [];
+    let sessionState = 'missing';
+    liveNetwork = {
+      documentStarted: true, documentFinished: false, documentAvailable: false, documentRoute,
+      htmlFault: faults.get('html') || null, cachedFiles, assetOutcomes: {},
+      assetSources: {},
+      assetStarted: { css: false, js: false }, assetFinished: { css: false, js: false },
+      apiSent: false, apiFinished: false, apiResult: null, sessionState,
+      requestCount, usedBalancer, routes: [...apiRoutes], overloaded: [...apiOverloaded],
+      productId, secondProductId, productIds, product, products, productMissing, productMode, responseFormat: apiFormat
+    };
+    refreshLiveNetwork();
+    startAlgorithm(pageLoaded ? 'Обновление страницы' : 'Первый запуск');
+    if (loadPage && !pageLoaded) algorithmStep(hasSession() ? 'api' : 'error', hasSession()
+      ? 'До загрузки: пользователь уже вошёл через POST /auth/login; сервер ранее выдал сессию на пять минут. Сброс начал упражнение с этого состояния.'
+      : 'До загрузки: ранее выданная сессия удалена или истекла; для защищённого API потребуется новый вход.');
+    setLiveRoutes(routes);
+    if (loadPage) {
+      algorithmStep('resource', 'Браузер отправил GET / за HTML.');
+      pulse('client', usedBalancer ? 'balancer' : 'app-a', ['request'], 'resource');
+      await wait(430);
+      if (run !== playRun) return;
+      if (usedBalancer && documentRoute) {
+        pulse('balancer', documentRoute, [], 'resource');
+        algorithmStep('resource', `Балансировщик передал запрос серверу ${documentRoute === 'app-a' ? 'A' : 'B'}.`);
+      } else if (!usedBalancer && documentRoute) algorithmStep('resource', 'Без балансировщика GET / отправлен напрямую серверу A.');
+      else algorithmStep('error', 'Доступного сервера для HTML нет.');
+      await wait(400);
+      if (run !== playRun) return;
+      if (documentRoute && !faults.has('html')) {
+        pulse(documentRoute, usedBalancer ? 'balancer' : 'client', [], 'resource');
+        if (usedBalancer) {
+          await wait(320);
+          if (run !== playRun) return;
+          pulse('balancer', 'client', ['html'], 'resource');
+        } else pulse('app-a', 'client', ['html'], 'resource');
+        cacheCleared = false;
+        showPackets(['cache']);
+        save();
+        liveNetwork.documentAvailable = true;
+        liveNetwork.documentFinished = true;
+        refreshLiveNetwork();
+        algorithmStep('resource', `HTML получен от сервера ${documentRoute === 'app-a' ? 'A' : 'B'}.`);
+        refreshLiveApplication();
+      }
+      await wait(460);
+      if (run !== playRun) return;
+      if (documentAvailable && faults.has('html') && !cacheCleared) {
+        liveNetwork.documentAvailable = true;
+        liveNetwork.documentFinished = true;
+        refreshLiveNetwork();
+        algorithmStep('resource', 'HTML недоступен в сети; взята сохранённая копия.');
+        pulseLocalCache();
+      } else if (!documentAvailable) {
+        liveNetwork.documentFinished = true;
+        refreshLiveNetwork();
+        if (faults.has('html')) showPackets(['html']);
+        algorithmStep('error', 'HTML не получен — браузер не загрузил страницу.');
+      }
+      if (documentAvailable) {
+        algorithmStep('resource', 'Браузер нашёл в HTML ссылки на CSS и JS.');
+        for (const file of ['css', 'js']) {
+          if (run !== playRun) return;
+          const fileName = file === 'css' ? 'style.css' : 'app.js';
+          const outcome = assetOutcomes[file];
+          liveNetwork.assetSources[file] = outcome.source;
+          liveNetwork.assetStarted[file] = true;
+          refreshLiveNetwork();
+          if (outcome.source === 'browser') {
+            algorithmStep('resource', `${fileName} взят из локального кэша; CDN не запрашивали.`);
+            pulseLocalCache();
+            await wait(420);
+            if (run !== playRun) return;
+            liveNetwork.assetOutcomes[file] = outcome;
+            liveNetwork.assetFinished[file] = true;
+            refreshLiveNetwork();
+            continue;
+          }
+          algorithmStep('resource', `Браузер запросил ${fileName} у CDN.`);
+          pulse('client', 'assets', [file === 'css' ? 'css-get' : 'js-get'], 'resource');
+          await wait(350);
+          if (run !== playRun) return;
+          if (outcome.source === 'origin') {
+            pulse('assets', 'storage', ['origin'], 'resource');
+            algorithmStep(outcome.state === 'failed' ? 'error' : 'resource', outcome.state === 'failed' ? `CDN не нашёл ${fileName}; ${outcome.reason}.` : `CDN не нашёл ${fileName} и обратился к источнику.`);
+            await wait(300);
+            if (run !== playRun) return;
+            if (outcome.state !== 'failed') pulse('storage', 'assets', [], 'resource');
+          }
+          if (outcome.state === 'ok') {
+            pulse('assets', 'client', [file], 'resource');
+            algorithmStep('resource', `${fileName} получен ${outcome.source === 'cdn' ? 'из копии CDN' : 'из источника через CDN'} и сохранён в кэше браузера.`);
+            cachedAssets.set(file, Date.now() + ASSET_CACHE_MS);
+            save();
+            update();
+            refreshLiveApplication();
+          } else if (outcome.state === 'corrupt') {
+            pulse('assets', 'client', [file], 'resource');
+            algorithmStep('error', `${fileName} пришёл с HTTP 200, но ${outcome.reason}. ${file === 'js' ? 'Скрипт не запускается и не отправляет API-запрос.' : 'Правило оформления не применяется.'}`);
+          } else {
+            showPackets([file]);
+            algorithmStep('error', `${fileName} не удалось загрузить: ${outcome.reason}. Кэш браузера не заполняется.`);
+          }
+          liveNetwork.assetOutcomes[file] = outcome;
+          liveNetwork.assetFinished[file] = true;
+          refreshLiveNetwork();
+          await wait(350);
+        }
+      }
+    }
+    if (run !== playRun) return;
+    if (scriptAvailable) {
+      sessionState = !hasSession() ? 'missing' : sessionRestricted ? 'forbidden' : 'ok';
+      liveNetwork.sessionState = sessionState;
+      liveNetwork.apiSent = true;
+      refreshLiveNetwork();
+      algorithmStep('api', `JavaScript отправил ${requestCount === 1 ? `GET ${productsPath(productIds)}` : `${requestCount} запросов ${productsPath(productIds)}`}.`);
+      algorithmStep(sessionState === 'missing' ? 'error' : 'api', sessionState === 'missing' ? 'Сессионная cookie отсутствует или её срок истёк.' : 'Идентификатор сессии включён в заголовок этого же запроса.');
+      pulse('client', usedBalancer ? 'balancer' : 'app-a', ['cookie']);
+      await wait(400);
+      if (run !== playRun) return;
+      remainingRequests = Math.ceil(requestCount * .65);
+      renderLoadControls();
+      if (usedBalancer) {
+        for (const id of routes) pulse('balancer', id, []);
+        if (routes.length === 2) algorithmStep('api', `Балансировщик распределил запросы: A — ${counts['app-a']}, B — ${counts['app-b']}.`);
+        else if (routes.length === 1) algorithmStep('api', `Балансировщик направил запросы серверу ${routes[0] === 'app-a' ? 'A' : 'B'}.`);
+        else algorithmStep('error', 'Балансировщик не нашёл доступного сервера.');
+        await wait(430);
+        if (run !== playRun) return;
+      } else algorithmStep(routes.length ? 'api' : 'error', routes.length ? 'Без балансировщика API-запросы идут напрямую на сервер A.' : 'Прямой маршрут к серверу A недоступен.');
+      remainingRequests = Math.ceil(requestCount * .3);
+      renderLoadControls();
+      for (const id of routes) {
+        if (!overloaded.includes(id) && sessionState === 'ok') pulse(id, 'database', ['sql']);
+      }
+      for (const id of overloaded) algorithmStep('error', `Сервер ${id === 'app-a' ? 'A' : 'B'} перегружен и не ответил.`);
+      if (routes.length && !overloaded.length) algorithmStep(sessionState !== 'ok' || faults.has('database') || productMissing ? 'error' : 'api', sessionState === 'missing' ? 'Сервер отклонил запрос с кодом 401; SQL не выполнялся.' : sessionState === 'forbidden' ? 'Сервер отклонил запрос с кодом 403; SQL не выполнялся.' : faults.has('database') ? 'База данных отключена: SQL не выполнен.' : productMissing ? `SQL выполнен, но товары ${productIds.join(' и ')} не найдены: база вернула 0 строк.` : `Сервер получил из базы ${rowCountLabel(products.length)} для товаров ${productIds.join(' и ')}.`);
+      await wait(500);
+      if (run !== playRun) return;
+      for (const id of overloaded) faults.set(id, 'overload');
+      update();
+      if (sessionState === 'ok' && !faults.has('database')) for (const id of routes.filter(item => !overloaded.includes(item))) pulse('database', id, ['db-result']);
+      await wait(400);
+      if (run !== playRun) return;
+      for (const id of routes.filter(item => !overloaded.includes(item))) pulse(id, usedBalancer ? 'balancer' : 'client', usedBalancer ? [] : ['json']);
+      await wait(400);
+      if (run !== playRun) return;
+      if (usedBalancer && routes.some(id => !overloaded.includes(id))) pulse('balancer', 'client', ['json']);
+      liveNetwork.apiResult = apiResponseForCurrentState(liveNetwork);
+      setApiPacketTitle(liveNetwork.apiResult.bodyIssue === 'xml' ? 'xml' : 'json');
+      liveNetwork.apiFinished = true;
+      refreshLiveNetwork();
+    } else {
+      liveNetwork.apiFinished = true;
+      refreshLiveNetwork();
+      algorithmStep('error', documentAvailable ? 'JavaScript недоступен — запрос API не отправлен.' : 'Без HTML браузер не запустил JavaScript и API.');
+    }
+    remainingRequests = null;
+    renderLoadControls();
+    playButton.disabled = false;
+    const sqlAttempted = scriptAvailable && sessionState === 'ok' && apiRoutes.some(id => !apiOverloaded.includes(id));
+    lastRun = { requestCount, usedBalancer, routes: [...apiRoutes], documentRoute, counts, overloaded: apiOverloaded, cachedFiles, htmlFault: faults.get('html') || null, assetOutcomes, assetsOffline: faults.has('assets'), originMiss: originMiss && documentAvailable, originOffline, documentAvailable, apiSent: scriptAvailable, sessionState, productMode, responseFormat: apiFormat, productId, secondProductId, productIds, product, products, productMissing, dbResult: sqlAttempted && !faults.has('database') ? dbRows : null };
+    lastRun.apiResult = apiResponseForCurrentState();
+    liveNetwork = null;
+    if (loadPage) {
+      pageLoaded = documentAvailable;
+    }
+    syncPlayButton();
+    runHistory.push(lastRun);
+    if (runHistory.length > 10) runHistory.shift();
+    receiveResponse();
+    renderVisualization(selected);
+    if (selected) renderActions(selected);
+    refreshLiveNetwork();
+    if (networkSelected) renderActions(networkSelected);
+    const apiResponse = apiResponseForCurrentState();
+    if (scriptAvailable) algorithmStep(apiResponse.code === '200' && !apiResponse.bodyIssue ? 'api' : 'error', `Ответ API: ${apiResponse.code} · ${apiResponse.label}.`);
+    finishAlgorithm(lastResponse.code, lastResponse.label, ['broken', 'partial', 'unstyled'].includes(lastResponse.mode) || lastResponse.code === '—' ? 'error' : loadPage ? 'resource' : 'api');
+    evaluateTasks(lastRun);
+  });
+  resetButton.addEventListener('click', () => {
+    playRun++;
+    hideTaskTooltip();
+    clearTimeout(taskScrollSaveTimer);
+    expandedTaskId = null;
+    taskScrollTop = 0;
+    liveNetwork = null;
+    pulsedPackets.clear();
+    shownPackets.clear();
+    packetHost.querySelectorAll('[data-packet]').forEach(marker => {
+      marker.hidden = true;
+      marker.classList.remove('is-visible', 'is-hiding', 'is-transiting', 'is-transiting-resource');
+    });
+    playButton.disabled = false;
+    for (const flow of activeFlows.values()) window.clearTimeout(flow.timer);
+    activeFlows.clear();
+    setLiveRoutes(null);
+    removed = false;
+    rotateSessionToken();
+    sessionExpiresAt = Date.now() + SESSION_MS;
+    sessionRestricted = false;
+    apiFormat = 'json';
+    setApiPacketTitle('json');
+    sqlDraft = '';
+    sqlFeedback = '';
+    refreshSessionDisplay();
+    cacheCleared = true;
+    cachedAssets.clear();
+    pageLoaded = false;
+    syncPlayButton();
+    cdnBypass = false;
+    productMode = 'normal';
+    selectedProductId = 42;
+    selectedSecondProductId = 43;
+    deletedProducts.clear();
+    productNames.clear();
+    extraProducts.length = 0;
+    missingProductIdsSeen.clear();
+    lastResponse = null;
+    lastRun = null;
+    networkSelected = '';
+    networkNotice = null;
+    document.getElementById('course-network-panel').hidden = true;
+    networkKey = 'document';
+    networkTab = 'headers';
+    clearTimeout(articleCloseTimer);
+    article.hidden = true;
+    article.classList.remove('is-closing');
+    workspace.classList.remove('has-answer');
+    selected = '';
+    articleNotice = null;
+    selectedVia = null;
+    configuredRequests = 1;
+    remainingRequests = null;
+    renderLoadControls();
+    runHistory.length = 0;
+    faults.clear();
+    resetAlgorithm();
+    update();
+    renderTasks();
+    save();
+  });
+  let viewportWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (Math.abs(window.innerWidth - viewportWidth) < 60) return;
+    viewportWidth = window.innerWidth;
+    focusElement(selected || 'client', false);
+    save();
+  });
+  narrowPanels.addEventListener('change', () => {
+    if (!narrowPanels.matches || article.hidden || networkPanel.hidden) return;
+    hideArticleForNarrow();
+    update();
+    save();
+  });
+
+  if (lastRun) liveRoutes = lastRun.routes.length ? lastRun.routes : lastRun.documentRoute ? [lastRun.documentRoute] : null;
+  update();
+  if (liveRoutes?.length === 2) setLiveRoutes(liveRoutes);
+  syncPlayButton();
+  syncResetButton();
+  window.addEventListener('pagehide', save);
+  requestAnimationFrame(() => {
+    if (savedPosition) motion.restore(savedPosition);
+    else {
+      const scale = .8;
+      motion.restore({ x: scroller.clientWidth / 2 - 760 * scale, y: scroller.clientHeight / 2 + 60 - 475 * scale, scale });
+    }
+    const articleState = savedPanels?.article;
+    if (articleState && Object.prototype.hasOwnProperty.call(articles, articleState.id)) {
+      showArticle(articleState.id, articleState.via === 'app-b' ? 'app-b' : null, false);
+      article.querySelector('.course-article__theory').open = articleState.helpOpen === true;
+      if (typeof articleState.notice?.message === 'string' && typeof articleState.notice?.short === 'string') {
+        articleNotice = articleState.notice;
+        renderFeedback('article');
+      }
+    }
+    const networkState = savedPanels?.network;
+    if (networkState && ['login', 'document', 'css', 'js', 'api'].includes(networkState.key)) {
+      if (narrowPanels.matches) hideArticleForNarrow();
+      networkKey = networkState.key;
+      networkTab = ['headers', 'preview', 'response'].includes(networkState.tab) ? networkState.tab : 'headers';
+      networkPanel.hidden = false;
+      syncNetworkSelection();
+      renderVisualization('client', document.getElementById('course-network-visual'));
+      document.querySelector('#course-network-panel .course-network__help').open = networkState.helpOpen === true;
+      if (typeof networkState.notice?.message === 'string' && typeof networkState.notice?.short === 'string') {
+        networkNotice = networkState.notice;
+        renderFeedback('network');
+      }
+    }
+    if (articleState || networkState) save();
+  });
+})();
