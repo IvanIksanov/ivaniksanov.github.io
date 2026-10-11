@@ -422,6 +422,11 @@ html[data-theme="dark"] .site-header .site-title {
   margin-right: calc(6px * var(--header-desktop-scale));
 }
 
+.site-header nav li:first-child {
+  position: relative;
+  z-index: 2;
+}
+
 .site-header nav a {
   display: inline-flex;
   align-items: center;

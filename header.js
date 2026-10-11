@@ -2,6 +2,7 @@
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
+  const ARCHITECTURE_VISITED_KEY = 'qa_architecture_visited_v1';
   const SHARED_ASSET_VERSION = '8.9.4';
   const AUTH_BUTTON_INNER_HTML = `
     <span class="auth-open-btn__icon" aria-hidden="true">
@@ -75,6 +76,29 @@
 
   function getCurrentPageName() {
     return decodeURIComponent(window.location.pathname.split('/').pop() || '');
+  }
+
+  function syncArchitectureNewBadge() {
+    const isArchitecture = getCurrentPageName() === 'course.html';
+    let visited = false;
+    try {
+      if (isArchitecture) localStorage.setItem(ARCHITECTURE_VISITED_KEY, '1');
+      visited = localStorage.getItem(ARCHITECTURE_VISITED_KEY) === '1';
+    } catch {
+      visited = isArchitecture;
+    }
+
+    const link = document.querySelector('.site-header nav a[href="course.html"], nav a[href="course.html"]');
+    if (visited || isArchitecture) {
+      document.querySelectorAll('.header-nav-new-badge').forEach(badge => badge.remove());
+      return;
+    }
+    if (!link || link.querySelector('.header-nav-new-badge')) return;
+    const badge = document.createElement('span');
+    badge.className = 'header-nav-new-badge';
+    badge.textContent = 'new';
+    badge.setAttribute('aria-hidden', 'true');
+    link.append(badge);
   }
 
   let ticking = false;
@@ -389,6 +413,11 @@
     window.addEventListener('scroll', onScroll, { passive: true });
     document.querySelectorAll('.site-header nav a').forEach((link) => {
       link.addEventListener('click', handleNavClick);
+    });
+    syncArchitectureNewBadge();
+    window.addEventListener('pageshow', syncArchitectureNewBadge);
+    window.addEventListener('storage', event => {
+      if (event.key === ARCHITECTURE_VISITED_KEY) syncArchitectureNewBadge();
     });
     setupHeaderLogoHomeLink();
     setupSiteTitleHomeLink();
