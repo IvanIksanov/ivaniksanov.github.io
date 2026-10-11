@@ -83,11 +83,11 @@ header {
 :root {
   --site-header-height: 90px;
   --header-desktop-scale: 1;
-  --header-glass-bg: rgba(255, 255, 255, 0.22);
-  --header-glass-border: 1px solid rgba(0, 0, 0, 0.05);
-  --header-glass-shadow: 0 2px 6px rgba(0, 0, 0, 0.055);
-  --header-glass-blur: 3px;
-  --header-glass-saturate: 90%;
+  --header-glass-bg: rgba(255, 255, 255, 0.78);
+  --header-glass-border: 1px solid rgba(0, 0, 0, 0.08);
+  --header-glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.09);
+  --header-glass-blur: 12px;
+  --header-glass-saturate: 120%;
   --header-title-color: #181818;
 }
 
@@ -130,7 +130,7 @@ html[data-theme="dark"] body {
 }
 
 html[data-theme="dark"] {
-  --header-glass-bg: rgba(18, 18, 18, 0.2);
+  --header-glass-bg: rgba(24, 24, 24, 0.76);
   --header-glass-border: 1px solid rgba(255, 255, 255, 0.12);
   --header-glass-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
   --header-title-color: #f3f4f6;
@@ -138,7 +138,7 @@ html[data-theme="dark"] {
 
 @media (prefers-color-scheme: dark) {
   html:not([data-theme]) {
-    --header-glass-bg: rgba(18, 18, 18, 0.2);
+    --header-glass-bg: rgba(24, 24, 24, 0.76);
     --header-glass-border: 1px solid rgba(255, 255, 255, 0.12);
     --header-glass-shadow: 0 2px 8px rgba(0, 0, 0, 0.24);
     --header-title-color: #f3f4f6;
