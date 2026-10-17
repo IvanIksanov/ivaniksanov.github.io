@@ -9,7 +9,9 @@
   <link rel="stylesheet" href="header.css?v=8.9.15">
   <link rel="stylesheet" href="questions.css?v=8.9.26">
   <link rel="stylesheet" href="questions-map.css?v=1.0.12">
-  <link rel="stylesheet" href="course.css?v=111">
+  <link rel="stylesheet" href="course.css?v=116">
+  <link rel="stylesheet" href="course-microservices.css?v=19">
+  <link rel="stylesheet" href="course-infrastructure.css?v=12">
   <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
 </head>
 <body class="questions-map-page course-page">
@@ -43,11 +45,22 @@
     </div>
   </div>
 
+  <nav class="course-chapters" aria-label="Главы курса">
+    <a href="course.html" data-course-chapter="1" aria-label="Глава 1: клиент — сервер"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="9" width="6" height="6" rx="1"/><rect x="16" y="9" width="6" height="6" rx="1"/><path d="M8 12h8"/></svg><span aria-hidden="true">Клиент — сервер</span></a>
+    <a href="course.html?chapter=2" data-course-chapter="2" aria-label="Глава 2: микросервисы"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="15" y="3" width="7" height="7" rx="1"/><rect x="9" y="15" width="7" height="7" rx="1"/><path d="M9 6.5h6M5.5 10v4l7 1M18.5 10v4l-6 1"/></svg><span aria-hidden="true">Микросервисы</span></a>
+    <a href="course.html?chapter=3" data-course-chapter="3" aria-label="Глава 3: инфраструктура"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><span aria-hidden="true">Инфраструктура</span></a>
+  </nav>
   <main class="course-main">
     <div class="questions-map-workspace course-workspace" id="course-workspace">
       <section class="course-scroller" id="course-scroller" aria-label="Интерактивная схема клиент-серверного взаимодействия" tabindex="0">
         <div class="course-canvas" id="course-canvas">
           <svg id="course-lines" class="questions-map-lines course-lines" viewBox="0 0 2900 1000" aria-hidden="true"></svg>
+          <div id="course-integrations" class="course-micro-boundaries" aria-hidden="true">
+            <div class="course-micro-boundary course-micro-boundary--identity"><span>Внешняя авторизация</span></div>
+            <div class="course-micro-boundary course-micro-boundary--payments"><span>Внешняя оплата</span></div>
+            <div class="course-infra-cluster"><span>Kubernetes · production</span></div>
+            <div class="course-infra-services"><span>Микросервисы · логическая группа</span><i class="course-infra-services__anchor course-infra-services__anchor--metrics"></i><i class="course-infra-services__anchor course-infra-services__anchor--events"></i></div>
+          </div>
           <div class="course-intro">
             <span class="course-eyebrow">Вводный курс · глава 01</span>
             <h1>Клиент → Сервер</h1>
@@ -57,6 +70,28 @@
           </div>
           <div id="course-nodes"></div>
           <div id="course-packets"></div>
+          <div id="course-tools" class="course-tools" aria-label="Связанные инструменты и инфраструктура">
+            <svg class="course-tools__links" viewBox="0 0 3100 1100" aria-hidden="true">
+              <path data-infra-kind="deploy" data-infra-route="developer:bitbucket" d="M 1245 115 L 1360 115"><title>Разработчик отправляет commit в Bitbucket</title></path>
+              <path data-infra-kind="deploy" data-infra-route="bitbucket:jenkins" d="M 1450 115 L 1590 115"><title>Изменение запускает pipeline Jenkins</title></path>
+              <path data-infra-kind="deploy" data-infra-route="jenkins:kubernetes" d="M 1675 115 C 1730 115, 1750 225, 1790 225"><title>Jenkins инициирует выпуск через API Kubernetes</title></path>
+              <path data-infra-kind="deploy" data-infra-route="kubernetes:app-a" d="M 1835 245 C 1835 305, 1806 325, 1806 365"><title>Kubernetes обновляет Pod на узле A</title></path>
+              <path data-infra-kind="deploy" data-infra-route="kubernetes:app-b" d="M 1790 225 C 1640 240, 1570 330, 1570 500 L 1570 826 L 1660 826"><title>Kubernetes обновляет Pod на узле B</title></path>
+              <path data-infra-kind="monitor" data-infra-route="grafana:prometheus" d="M 2270 115 L 2170 115"><title>Grafana запрашивает показатели у Prometheus</title></path>
+              <path data-infra-kind="monitor" data-infra-route="prometheus:services" d="M 2120 135 C 2155 195, 2177 260, 2177 325"><title>Логическая связь: Prometheus собирает настроенные метрики микросервисов; это не один общий сетевой запрос</title></path>
+              <path data-infra-kind="event" data-infra-route="services:rabbitmq" d="M 2177 885 C 2230 930, 2280 980, 2342 985"><title>Логическая связь: отдельные сервисы могут публиковать события в RabbitMQ; получают их только подписчики</title></path>
+              <path data-infra-kind="service" d="M 2802 651 C 2840 651, 2820 575, 2850 575"><title>pgAdmin подключается к PostgreSQL</title></path>
+            </svg>
+            <button class="course-tool" data-tool="developer" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/></svg></span><strong>Разработчик</strong><small>компьютер</small></button>
+            <button class="course-tool" data-tool="bitbucket" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>Bitbucket</strong><small>Git</small></button>
+            <button class="course-tool" data-tool="jenkins" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>Jenkins</strong><small>CI/CD</small></button>
+            <button class="course-tool" data-tool="kubernetes" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>Kubernetes</strong><small>deploy</small></button>
+            <button class="course-tool" data-tool="prometheus" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>Сбор метрик</strong><small>Prometheus</small></button>
+            <button class="course-tool" data-tool="grafana" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>Grafana</strong><small>дашборд</small></button>
+            <button class="course-tool" data-tool="rabbitmq" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>RabbitMQ</strong><small>события</small></button>
+            <button class="course-tool" data-tool="pgadmin" type="button"><span class="course-tool__icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7a5 5 0 0 1-6 5L7 19a2 2 0 0 1-3-3l7-7a5 5 0 0 1 6-6l-3 3 4 4z"/></svg></span><strong>pgAdmin</strong><small>SQL</small></button>
+            <div class="course-infra-legend" aria-label="Цвета связей"><span data-kind="deploy">Выпуск</span><span data-kind="request">Запросы и зависимости</span><span data-kind="event">Событие</span><span data-kind="monitor">Метрики</span></div>
+          </div>
         </div>
       </section>
       <aside class="course-network-panel" id="course-network-panel" aria-label="Запросы браузера" hidden>
@@ -76,7 +111,11 @@
   </main>
   <script src="header.js?v=8.9.13"></script>
   <script src="theme-toggle.shared.js?v=1"></script>
-  <script src="map-motion.shared.js?v=6"></script>
-  <script src="course.js?v=125"></script>
+  <script src="map-motion.shared.js?v=7"></script>
+  <script>const requestedChapter = new URLSearchParams(location.search).get('chapter'); document.body.dataset.chapter = ['2', '3'].includes(requestedChapter) ? requestedChapter : '1'; document.querySelectorAll('[data-course-chapter]').forEach(link => { if (link.dataset.courseChapter === document.body.dataset.chapter) link.setAttribute('aria-current', 'page'); });</script>
+  <script src="course-chapter-transition.js?v=16"></script>
+  <script src="course.js?v=133"></script>
+  <script src="course-microservices.js?v=12"></script>
+  <script src="course-infrastructure.js?v=9"></script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 (() => {
   'use strict';
+  if (document.body.dataset.chapter !== '1') return;
 
   const STORAGE_KEY = 'qatodev_course_client_server_v1';
   const nodes = [
@@ -616,6 +617,7 @@
   const motion = window.createMapMotion({
     viewport: scroller,
     canvas,
+    touchPanGain: 1.25,
     getContentBounds: () => {
       const visible = nodes.filter(node => revealed.has(node.id));
       return {
@@ -630,6 +632,7 @@
       saveTimer = setTimeout(save, 220);
     }
   });
+  window.courseMapMotion = motion;
   let saveTimer;
 
   function hasResettableProgress() {
@@ -864,7 +867,29 @@
     if (changed) { update(); save(); }
   }
   const pulsedPackets = new Set();
-  function pulse(source, target, packetIds = null, channel = 'api') {
+  const nodeAnimationTimers = new Map();
+  function animateNode(id, mode, channel, delay = 0) {
+    if (reducedMotion.matches || faults.has(id)) return;
+    const run = playRun;
+    window.setTimeout(() => {
+      if (run !== playRun) return;
+      const card = nodeHost.querySelector(`[data-node="${id}"] .questions-map-card__question`);
+      if (!card) return;
+      window.clearTimeout(nodeAnimationTimers.get(id));
+      card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource', 'is-processing', 'is-processing-resource');
+      void card.offsetWidth;
+      if (mode === 'processing') card.classList.add(channel === 'resource' ? 'is-processing-resource' : 'is-processing');
+      else {
+        if (channel === 'resource') card.classList.add('is-flowing-resource');
+        card.classList.add(mode === 'back' ? 'is-flowing-back' : 'is-flowing-forward');
+      }
+      nodeAnimationTimers.set(id, window.setTimeout(() => {
+        card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource', 'is-processing', 'is-processing-resource');
+        nodeAnimationTimers.delete(id);
+      }, mode === 'processing' ? 920 : 760));
+    }, delay);
+  }
+  function pulse(source, target, packetIds = null, channel = 'api', targetMode = 'processing') {
     if (packetIds?.length) showPackets(packetIds);
     if (reducedMotion.matches) return;
     const reverse = edges.some(([from, to]) => from === target && to === source) || (source === 'app-a' && target === 'client');
@@ -891,18 +916,10 @@
         current.style.animationDelay = '';
       }
     }, 1900);
-    if (target === 'balancer') {
-      const run = playRun;
-      window.setTimeout(() => {
-        if (run !== playRun) return;
-        const card = nodeHost.querySelector('[data-node="balancer"] .questions-map-card__question');
-        card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource');
-        void card.offsetWidth;
-        if (channel === 'resource') card.classList.add('is-flowing-resource');
-        card.classList.add(source === 'client' ? 'is-flowing-forward' : 'is-flowing-back');
-        window.setTimeout(() => card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource'), 760);
-      }, source === 'client' ? 300 : 200);
-    }
+    if (target === 'balancer') animateNode(target, source === 'client' ? 'forward' : 'back', channel, source === 'client' ? 300 : 200);
+    else if (target === 'assets' && source === 'storage') animateNode(target, 'back', channel, 200);
+    else if (target !== source) animateNode(target, targetMode, channel, 300);
+    if (channel === 'resource' && (source === 'app-a' || source === 'app-b') && (target === 'balancer' || target === 'client')) animateNode(source, 'back', channel);
     for (const packet of packets) {
       if (packetIds && !packetIds.includes(packet.id)) continue;
       if (!packet.edge || !((packet.edge[0] === source && packet.edge[1] === target && packet.flow === 'request') || (packet.edge[0] === target && packet.edge[1] === source && packet.flow === 'response'))) continue;
@@ -1292,8 +1309,8 @@
       const caption = !currentRun ? 'Ожидает запуска' : waiting ? 'Ожидаем ответ' : rows === null || rows === undefined ? 'Ответа нет' : rowCountLabel(rows.length);
       const wireRows = Array.isArray(rows) ? rows.map((product, index) => `<div class="course-pg__message"><span>DataRow ${index + 1}</span><code>${[product.id, product.name, product.price, product.currency].map(value => escapeHtml(JSON.stringify(String(value)))).join(' · ')}</code></div>`).join('') : '';
       const decodedRows = Array.isArray(rows) ? rows.map(product => `<div>{ id: <span class="course-code__number">${product.id}</span>, name: <span class="course-code__string">${escapeHtml(JSON.stringify(product.name))}</span>, price: <span class="course-code__number">${product.price}</span>, currency: <span class="course-code__string">${escapeHtml(JSON.stringify(product.currency))}</span> }</div>`).join('') : '';
-      const messages = Array.isArray(rows) ? `<div class="course-pg__section-label">PostgreSQL → драйвер <small>значения: text</small></div><div class="course-pg__messages"><div class="course-pg__message"><span>RowDescription</span><code>id:int4 · name:text · price:int4 · currency:text</code></div>${wireRows}<div class="course-pg__message"><span>CommandComplete</span><code>SELECT ${rows.length}</code></div><div class="course-pg__message"><span>ReadyForQuery</span><code>цикл завершён</code></div></div><div class="course-pg__section-label">Драйвер → сервер приложения <small>пример после декодирования</small></div><div class="course-pg__decoded"><span>rows = [</span>${decodedRows}<span>]</span></div>` : `<p class="course-pg__empty">${!currentRun ? 'Запусти схему, чтобы увидеть ответ PostgreSQL.' : waiting ? 'SQL ещё не вернул ответ PostgreSQL.' : 'SQL не выполнен или PostgreSQL недоступна: сообщений ответа нет.'}</p>`;
-      host.innerHTML = `<section class="course-viz course-pg"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>Ответ на SELECT</strong><span class="course-viz__caption">${caption}</span></div>${messages}</section>`;
+      const messages = Array.isArray(rows) ? `<div class="course-pg__section-label">PostgreSQL → драйвер <small>${caption} · text</small></div><div class="course-pg__messages"><div class="course-pg__message"><span>RowDescription</span><code>id:int4 · name:text · price:int4 · currency:text</code></div>${wireRows}<div class="course-pg__message"><span>CommandComplete</span><code>SELECT ${rows.length}</code></div><div class="course-pg__message"><span>ReadyForQuery</span><code>цикл завершён</code></div></div><div class="course-pg__section-label">Драйвер → сервер <small>после декодирования</small></div><div class="course-pg__decoded"><span>rows = [</span>${decodedRows}<span>]</span></div>` : `<p class="course-pg__empty">${!currentRun ? 'Запусти схему, чтобы увидеть ответ PostgreSQL.' : waiting ? 'SQL ещё не вернул ответ PostgreSQL.' : 'SQL не выполнен или PostgreSQL недоступна: сообщений ответа нет.'}</p>`;
+      host.innerHTML = `<section class="course-viz course-pg">${messages}</section>`;
       return;
     }
     if (id === 'balancer' || id === 'app-a' || id === 'app-b') {
@@ -1906,7 +1923,7 @@
             continue;
           }
           algorithmStep('resource', `Браузер запросил ${fileName} у CDN.`);
-          pulse('client', 'assets', [file === 'css' ? 'css-get' : 'js-get'], 'resource');
+          pulse('client', 'assets', [file === 'css' ? 'css-get' : 'js-get'], 'resource', outcome.source === 'origin' ? 'forward' : 'processing');
           await wait(350);
           if (run !== playRun) return;
           if (outcome.source === 'origin') {
@@ -1945,13 +1962,13 @@
       refreshLiveNetwork();
       algorithmStep('api', `JavaScript отправил ${requestCount === 1 ? `GET ${productsPath(productIds)}` : `${requestCount} запросов ${productsPath(productIds)}`}.`);
       algorithmStep(sessionState === 'missing' ? 'error' : 'api', sessionState === 'missing' ? 'Сессионная cookie отсутствует или её срок истёк.' : 'Идентификатор сессии включён в заголовок этого же запроса.');
-      pulse('client', usedBalancer ? 'balancer' : 'app-a', ['cookie']);
+      pulse('client', usedBalancer ? 'balancer' : 'app-a', ['cookie'], 'api', sessionState === 'ok' && !overloaded.includes('app-a') ? 'forward' : 'processing');
       await wait(400);
       if (run !== playRun) return;
       remainingRequests = Math.ceil(requestCount * .65);
       renderLoadControls();
       if (usedBalancer) {
-        for (const id of routes) pulse('balancer', id, []);
+        for (const id of routes) pulse('balancer', id, [], 'api', sessionState === 'ok' && !overloaded.includes(id) ? 'forward' : 'processing');
         if (routes.length === 2) algorithmStep('api', `Балансировщик распределил запросы: A — ${counts['app-a']}, B — ${counts['app-b']}.`);
         else if (routes.length === 1) algorithmStep('api', `Балансировщик направил запросы серверу ${routes[0] === 'app-a' ? 'A' : 'B'}.`);
         else algorithmStep('error', 'Балансировщик не нашёл доступного сервера.');
@@ -1971,7 +1988,7 @@
       update();
       if (sessionState === 'ok' && !faults.has('database') && routes.some(id => !overloaded.includes(id))) {
         liveNetwork.dbResult = dbRows;
-        for (const id of routes.filter(item => !overloaded.includes(item))) pulse('database', id, ['db-result']);
+        for (const id of routes.filter(item => !overloaded.includes(item))) pulse('database', id, ['db-result'], 'api', 'back');
       }
       liveNetwork.dbFinished = true;
       if (selected === 'db-result') renderVisualization(selected);
@@ -2015,6 +2032,9 @@
   });
   resetButton.addEventListener('click', () => {
     playRun++;
+    for (const timer of nodeAnimationTimers.values()) window.clearTimeout(timer);
+    nodeAnimationTimers.clear();
+    nodeHost.querySelectorAll('.course-node .questions-map-card__question').forEach(card => card.classList.remove('is-flowing-forward', 'is-flowing-back', 'is-flowing-resource', 'is-processing', 'is-processing-resource'));
     hideTaskTooltip();
     clearTimeout(taskScrollSaveTimer);
     expandedTaskId = null;
@@ -2096,7 +2116,8 @@
   syncResetButton();
   window.addEventListener('pagehide', save);
   requestAnimationFrame(() => {
-    if (savedPosition) motion.restore(savedPosition);
+    if (window.courseChapterEntryCamera) motion.restore(window.courseChapterEntryCamera);
+    else if (savedPosition) motion.restore(savedPosition);
     else {
       const scale = .8;
       motion.restore({ x: scroller.clientWidth / 2 - 760 * scale, y: scroller.clientHeight / 2 + 60 - 475 * scale, scale });
@@ -2125,5 +2146,6 @@
       }
     }
     if (articleState || networkState) save();
+    document.body.classList.add('course-ready');
   });
 })();

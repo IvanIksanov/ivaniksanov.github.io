@@ -1,6 +1,6 @@
 // Механика камеры для схем: сопротивление у границ, инерция жеста и плавный возврат.
 // Формулы движения совпадают с картой вопросов; содержимое и допустимую область задаёт страница.
-window.createMapMotion = function createMapMotion({ viewport, canvas, getContentBounds, onChange }) {
+window.createMapMotion = function createMapMotion({ viewport, canvas, getContentBounds, onChange, touchPanGain = 1 }) {
   const camera = { x: 0, y: 0, scale: 1 };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -188,7 +188,8 @@ window.createMapMotion = function createMapMotion({ viewport, canvas, getContent
     pointerMotion.vy = pointerMotion.vy * .45 + dy / elapsed * .55;
     pointerMotion.travel += Math.hypot(dx, dy);
     pointerMotion.x = event.clientX; pointerMotion.y = event.clientY; pointerMotion.at = now;
-    move(dx, dy, event.pointerType !== 'mouse');
+    const isTouch = event.pointerType === 'touch';
+    move(dx * (isTouch ? touchPanGain : 1), dy * (isTouch ? touchPanGain : 1), !isTouch && event.pointerType !== 'mouse');
   });
   function release(event) {
     pointers.delete(event.pointerId);
