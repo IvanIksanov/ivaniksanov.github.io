@@ -4,7 +4,7 @@
   const cameraKey = 'qatodev_course_chapter_camera';
   const firstLayoutKey = 'qatodev_course_chapter_first_layout';
   const chapter = document.body.dataset.chapter;
-  const current = chapter === '3' ? 2 : chapter === '2' ? 1 : 0;
+  const current = chapter === '4' ? 3 : chapter === '3' ? 2 : chapter === '2' ? 1 : 0;
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const links = [...document.querySelectorAll('[data-course-chapter]')];
   const viewport = document.getElementById('course-scroller');
@@ -14,6 +14,7 @@
 
   const icons = {
     client: '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8m-4-4v4"/>',
+    mobile: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 5h4m-3 14h2"/>',
     balance: '<path d="M12 3v18M5 7h14M4 7l-2 5h6l-2-5m12 0-2 5h6l-2-5M2 12c0 2 6 2 6 0m8 0c0 2 6 2 6 0M8 21h8"/>',
     server: '<rect x="4" y="3" width="16" height="8" rx="2"/><rect x="4" y="13" width="16" height="8" rx="2"/><path d="M8 7h.01M8 17h.01M12 7h5M12 17h5"/>',
     database: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
@@ -48,6 +49,8 @@
     'ext-gateway': { x: 2480, y: 830, w: 170, title: 'Платёжный API' },
     'ext-bank': { x: 2765, y: 830, w: 155, title: 'Банк / эквайер' }
   };
+  const fourth = { ...second, mobile: { x: 640, y: 735, w: 292, title: 'Android · тестовый клиент' }, client: { ...second.client, title: 'Браузер · тестовый клиент' }, database: { ...second.database, title: 'PostgreSQL' }, 'ext-keycloak': { ...second['ext-keycloak'], title: 'Keycloak' }, 'ext-gateway': { ...second['ext-gateway'], title: 'WireMock · оплата' } };
+  delete fourth['ext-bank'];
   const firstEdges = [
     ['client', 'balancer'], ['balancer', 'app-a'], ['balancer', 'app-b'],
     ['app-a', 'database'], ['app-b', 'database'], ['client', 'assets'], ['assets', 'storage']
@@ -55,7 +58,8 @@
   function secondEdges() {
     return [['client', 'balancer'], ['balancer', 'app-a'], ['balancer', 'app-b'], ['app-a', 'svc-auth'], ['app-a', 'svc-catalog'], ['app-a', 'svc-payment'], ['app-b', 'svc-auth'], ['app-b', 'svc-catalog'], ['app-b', 'svc-payment'], ['svc-catalog', 'database'], ['svc-auth', 'ext-keycloak'], ['svc-payment', 'ext-gateway'], ['ext-gateway', 'ext-bank']];
   }
-  const allIds = [...new Set([...Object.keys(first), ...Object.keys(second)])];
+  const fourthEdges = [...secondEdges().filter(([, to]) => to !== 'ext-bank'), ['mobile', 'balancer']];
+  const allIds = [...new Set([...Object.keys(first), ...Object.keys(second), ...Object.keys(fourth)])];
   const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
   const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
 
@@ -68,7 +72,7 @@
   let navigating = false;
 
   function closeSavedPanels() {
-    const key = chapter === '1' ? 'qatodev_course_client_server_v1' : chapter === '2' ? 'qatodev_course_microservices_v1' : 'qatodev_course_infrastructure_v2';
+    const key = chapter === '1' ? 'qatodev_course_client_server_v1' : chapter === '2' ? 'qatodev_course_microservices_v1' : chapter === '3' ? 'qatodev_course_infrastructure_v2' : 'qatodev_course_autotests_v1';
     try {
       const saved = JSON.parse(localStorage.getItem(key) || 'null');
       if (!saved || typeof saved !== 'object') return;
@@ -196,6 +200,19 @@
       card.className = 'questions-map-card course-node is-visible';
       card.innerHTML = `<span class="course-node__icon" aria-hidden="true"><svg viewBox="0 0 24 24">${icons[id === 'balancer' ? 'balance' : id.startsWith('app-') ? 'server' : id]}</svg></span><button class="questions-map-card__question" type="button"><span class="course-node__title"></span></button>`;
     }
+    if (['ext-keycloak', 'database', 'ext-gateway'].includes(id) && !card.querySelector('.course-test-badge')) {
+      const badge = document.createElement('span');
+      badge.className = 'course-test-badge';
+      badge.setAttribute('aria-hidden', 'true');
+      badge.textContent = 'TEST';
+      card.append(badge);
+    }
+    if (fourth[id] && second[id] && fourth[id].title !== second[id].title) {
+      const twin = document.createElement('span');
+      twin.className = 'course-node__title course-node__title--test';
+      twin.textContent = fourth[id].title;
+      card.querySelector('.course-node__title')?.after(twin);
+    }
     card.hidden = false;
     card.classList.add('is-visible');
     card.dataset.node = id;
@@ -259,7 +276,7 @@
     }
     copy.dataset.stageChapter = String(model);
     copy.querySelector('.course-eyebrow').textContent = `Вводный курс · глава 0${model}`;
-    copy.querySelector('h1').textContent = model === 1 ? 'Клиент → Сервер' : model === 2 ? 'Микросервисы' : 'Инфраструктура';
+    copy.querySelector('h1').textContent = model === 1 ? 'Клиент → Сервер' : model === 2 ? 'Микросервисы' : model === 3 ? 'Инфраструктура' : 'Автотесты и нагрузка';
     if (model !== 2) copy.querySelector('#course-checkout')?.remove();
     if (model === 2 && !copy.querySelector('#course-checkout')) {
       const button = document.createElement('button');
@@ -270,7 +287,9 @@
     const play = copy.querySelector('#course-play');
     if (play) {
       try {
-        if (model === 3) {
+        if (model === 4) {
+          play.textContent = '▶ Запустить Web UI';
+        } else if (model === 3) {
           const saved = JSON.parse(localStorage.getItem('qatodev_course_infrastructure_v2') || 'null');
           play.textContent = `▶ Выпустить v${saved?.pendingVersion || (saved?.productionVersion || 2) + 1}`;
         } else {
@@ -306,18 +325,24 @@
       toolsLayer.querySelectorAll('button').forEach(button => { button.tabIndex = -1; });
       canvas.append(toolsLayer);
     }
+    const testLayer = sourceCanvas.querySelector('#course-test-tools')?.cloneNode(true);
+    if (testLayer) {
+      testLayer.removeAttribute('id');
+      testLayer.querySelectorAll('button').forEach(button => { button.tabIndex = -1; });
+      canvas.append(testLayer);
+    }
     const peer = document.createElementNS(svgNs, 'g');
     peer.classList.add('course-micro-peer-link');
     peer.innerHTML = '<path class="course-micro-peer-link__line"/><circle r="12"/><path class="course-micro-peer-link__check"/>';
     svg.append(peer);
     const edges = new Map();
     const otherEdges = secondEdges();
-    for (const [from, to] of [...firstEdges, ...otherEdges]) {
+    for (const [from, to] of [...firstEdges, ...otherEdges, ...fourthEdges]) {
       const key = `${from}:${to}`;
       if (edges.has(key)) continue;
       const path = document.createElementNS(svgNs, 'path');
       svg.append(path);
-      edges.set(key, { from, to, first: firstEdges.some(edge => edge[0] === from && edge[1] === to), second: otherEdges.some(edge => edge[0] === from && edge[1] === to), path });
+      edges.set(key, { from, to, first: firstEdges.some(edge => edge[0] === from && edge[1] === to), second: otherEdges.some(edge => edge[0] === from && edge[1] === to), fourth: fourthEdges.some(edge => edge[0] === from && edge[1] === to), path });
     }
     const cards = new Map();
     for (const id of allIds) {
@@ -330,12 +355,14 @@
     const intro1 = makeIntro(1);
     const intro2 = makeIntro(2);
     const intro3 = makeIntro(3);
-    canvas.append(intro1, intro2, intro3);
+    const intro4 = makeIntro(4);
+    canvas.append(intro1, intro2, intro3, intro4);
     root.append(canvas);
     viewport.append(root);
     document.body.classList.add('course-chapter-switching');
     let microFallback = chapter === '2' && !!sourceNodes.querySelector('[data-node="app-a"][data-offline="true"]');
     let infraFallback = chapter === '3' && sourceCanvas.dataset.fallbackRoute === 'true';
+    let testFallback = chapter === '4' && !!sourceNodes.querySelector('[data-node="app-a"][data-offline="true"]');
     let microPrimary = !microFallback;
     let infraPrimary = chapter === '3' ? sourceCanvas.dataset.primaryRoute !== 'false' : true;
     try {
@@ -345,15 +372,19 @@
         infraPrimary = infraNodes?.a !== false;
         infraFallback = infraNodes?.a === false && infraNodes?.b !== false;
       }
+      if (chapter !== '4') {
+        const testNodes = JSON.parse(localStorage.getItem('qatodev_course_autotests_v1') || 'null')?.online;
+        testFallback = testNodes?.a === false && testNodes?.b !== false;
+      }
       microPrimary = !microFallback;
     } catch {}
-    stage = { root, canvas, cards, packets, edges, boundary, toolsLayer, peer, intro1, intro2, intro3, camera, anchor, microFallback, infraFallback, microPrimary, infraPrimary };
+    stage = { root, canvas, cards, packets, edges, boundary, toolsLayer, testLayer, peer, intro1, intro2, intro3, intro4, camera, anchor, microFallback, infraFallback, testFallback, microPrimary, infraPrimary };
     render();
   }
 
   function position(id) {
-    const from = first[id] || second[id];
-    const to = second[id] || first[id];
+    const from = first[id] || second[id] || fourth[id];
+    const to = second[id] || first[id] || fourth[id];
     const layout = Math.min(1, progress);
     return {
       x: from.x + (to.x - from.x) * layout,
@@ -366,7 +397,9 @@
   function render() {
     if (!stage) return;
     const layout = Math.min(1, progress);
-    const tools = Math.max(0, progress - 1);
+    const infraEntered = Math.max(0, Math.min(1, progress - 1));
+    const test = Math.max(0, Math.min(1, progress - 2));
+    const tools = infraEntered * (1 - test);
     if (stage.camera) {
       const camera = cameraAt(stage.camera, stage.anchor, progress);
       stage.canvas.style.transform = `translate3d(${camera.x}px, ${camera.y}px, 0) scale(${camera.scale})`;
@@ -377,22 +410,28 @@
       card.style.top = `${point.y}px`;
       card.style.width = `${point.w}px`;
       card.style.height = `${point.h}px`;
-      card.style.opacity = first[id] && second[id] ? '1' : String(first[id] ? 1 - layout : layout);
-      const title = layout < .5 ? first[id]?.title || second[id].title : second[id]?.title || first[id].title;
-      card.querySelector('.course-node__title').textContent = title;
+      card.style.opacity = id === 'mobile' ? String(test) : progress > 2 && !fourth[id] ? String(1 - test) : first[id] && second[id] ? '1' : String(first[id] ? 1 - layout : layout);
+      const title = layout < .5 ? first[id]?.title || second[id]?.title || fourth[id]?.title : second[id]?.title || first[id]?.title || fourth[id]?.title;
+      const mainTitle = card.querySelector('.course-node__title:not(.course-node__title--test)');
+      mainTitle.textContent = title;
+      if (card.querySelector('.course-node__title--test')) mainTitle.style.opacity = String(1 - test);
+      const testTitle = card.querySelector('.course-node__title--test');
+      if (testTitle) testTitle.style.opacity = String(test);
       const version = card.querySelector('.course-infra-version');
       if (version) version.style.opacity = String(tools);
       const serviceVersion = card.querySelector('.course-infra-service-version');
       if (serviceVersion) serviceVersion.style.opacity = String(tools);
       const detail = card.querySelector('.course-infra-node-detail');
       if (detail) detail.style.opacity = String(tools);
+      const badge = card.querySelector('.course-test-badge');
+      if (badge) badge.style.opacity = String(test);
       if (id.startsWith('app-')) card.querySelector('.course-node__title').style.transform = `translateY(${-11 * tools}px)`;
     }
     for (const packet of stage.packets) {
       const cacheOpacity = packet.classList.contains('is-empty-cache') ? .32 : packet.classList.contains('is-partial-cache') ? .65 : 1;
       packet.style.opacity = String(cacheOpacity * (1 - layout));
     }
-    for (const { from, to, first: inFirst, second: inSecond, path } of stage.edges.values()) {
+    for (const { from, to, first: inFirst, second: inSecond, fourth: inFourth, path } of stage.edges.values()) {
       const a = position(from);
       const b = position(to);
       const x1 = a.x + a.w;
@@ -402,8 +441,10 @@
       const bend = Math.max(35, Math.abs(x2 - x1) * .42);
       path.setAttribute('d', `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`);
       let opacity = (inFirst ? 1 - layout : 0) + (inSecond ? layout : 0);
-      if (from === 'app-b' && to.startsWith('svc-')) opacity *= (stage.microFallback ? 1 : .28) * (1 - tools) + (stage.infraFallback ? 1 : 0) * tools;
-      if (from === 'app-a' && to.startsWith('svc-')) opacity *= (stage.microPrimary ? 1 : 0) * (1 - tools) + (stage.infraPrimary ? 1 : 0) * tools;
+      if (progress > 2) opacity = inFourth ? 1 : inSecond ? 1 - test : 0;
+      if (from === 'mobile') opacity = test;
+      if (from === 'app-b' && to.startsWith('svc-')) opacity *= ((stage.microFallback ? 1 : .28) * (1 - infraEntered) + (stage.infraFallback ? 1 : 0) * infraEntered) * (1 - test) + (stage.testFallback ? 1 : 0) * test;
+      if (from === 'app-a' && to.startsWith('svc-')) opacity *= ((stage.microPrimary ? 1 : 0) * (1 - infraEntered) + (stage.infraPrimary ? 1 : 0) * infraEntered) * (1 - test) + (stage.testFallback ? 0 : 1) * test;
       path.style.opacity = String(opacity);
     }
     const a = position('app-a');
@@ -420,9 +461,11 @@
     if (stage.boundary) stage.boundary.style.opacity = String(layout);
     stage.boundary?.querySelectorAll('.course-infra-cluster, .course-infra-services').forEach(item => { item.style.opacity = String(tools); });
     if (stage.toolsLayer) stage.toolsLayer.style.opacity = String(tools);
+    if (stage.testLayer) stage.testLayer.style.opacity = String(test);
     stage.intro1.style.opacity = String(1 - layout);
-    stage.intro2.style.opacity = String(layout * (1 - tools));
+    stage.intro2.style.opacity = String(layout * (1 - infraEntered));
     stage.intro3.style.opacity = String(tools);
+    stage.intro4.style.opacity = String(test);
   }
 
   function cleanup() {
