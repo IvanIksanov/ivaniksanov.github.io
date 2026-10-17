@@ -36,7 +36,7 @@
     { id: 'cookie', title: 'API', phase: 4, pair: 'api', flow: 'request', edge: ['client', 'balancer'], t: .64, when: 'balancer' },
     { id: 'json', title: 'JSON', phase: 4, pair: 'api', flow: 'response', edge: ['client', 'balancer'], t: .87, when: 'balancer' },
     { id: 'sql', title: 'SQL', pair: 'db', flow: 'request', edge: ['app-a', 'database'], t: .25, when: 'database' },
-    { id: 'db-result', title: 'Результат БД', pair: 'db', flow: 'response', edge: ['app-a', 'database'], t: .75, when: 'database' },
+    { id: 'db-result', title: 'PostgreSQL', pair: 'db', flow: 'response', edge: ['app-a', 'database'], t: .75, when: 'database' },
     { id: 'origin', title: 'GET файл', flow: 'request', edge: ['assets', 'storage'], t: .5, when: 'storage' },
     { id: 'css-get', title: 'CSS', phase: 2, pair: 'css', flow: 'request', edge: ['client', 'assets'], t: .27, when: 'assets' },
     { id: 'js-get', title: 'JS', phase: 3, pair: 'js', flow: 'request', edge: ['client', 'assets'], t: .46, when: 'assets' },
@@ -109,7 +109,7 @@
     'app-a': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения A', body: `<p>Сервер A возвращает HTML и данные API. Для защищённого API он проверяет сессию и право чтения товаров, затем обращается к базе. В этой модели экземпляры A и B видят одно состояние сессии.</p><p>Шкала сверху показывает нагрузку последнего запуска. Больше 600 одновременных запросов перегружают один сервер.</p>` },
     'app-b': { kicker: '03 / Бизнес-логика', title: 'Сервер приложения B', body: `<p>Сервер B — второй экземпляр того же приложения. Он обрабатывает те же запросы, проверяет общее для учебной модели состояние сессии и обращается к той же базе.</p><p>Балансировщик направляет запросы на B при распределении нагрузки или когда A недоступен.</p>` },
     database: { kicker: '04 / Данные', title: 'База данных', body: `
-      <p>Здесь видны строки таблицы <code>products</code>. SQL вводится в элементе «SQL-запрос» между сервером и базой; база показывает результат изменения. Браузер к базе напрямую не подключается.</p>
+      <p>Здесь показана учебная таблица <code>products</code> в PostgreSQL. SQL вводится в элементе «SQL-запрос» между сервером и базой; здесь видно состояние таблицы после изменений. Браузер к базе напрямую не подключается.</p>
       <p id="course-db-state"></p>
       <p>База возвращает строки, а HTTP-статус и формат ответа выбирает сервер приложения.</p>` },
     assets: { kicker: '04 / Доставка файлов', title: 'CDN · копии файлов', body: `<p><strong>CDN</strong> — Content Delivery Network, сеть доставки содержимого. Она хранит копии CSS и JS ближе к пользователю. Сверху показаны копии, доступные в текущем режиме схемы.</p><p>При <strong>cache hit</strong> CDN отвечает сама. При <strong>cache miss</strong> она запрашивает оригинал в источнике. Кэш браузера — отдельное место: если файл уже есть там, запроса к CDN вообще не будет.</p>` },
@@ -120,7 +120,7 @@
     'js-get': { kicker: 'Запрос браузера / к CDN', title: 'JS-запрос', body: `<p>Браузер запрашивает <code>app.js</code> по адресу из HTML. Это отдельный запрос к CDN, не часть запроса за CSS.</p><p>Если свежая копия уже есть в кэше браузера, запрос к CDN не нужен. При cache miss CDN идёт за оригиналом в источник.</p>` },
     cookie: { kicker: 'Второй запрос браузера', title: 'API-запрос', body: `<p>После загрузки страницы JavaScript просит два товара одним запросом: <code>GET /api/products?ids=42,43</code>. Оба ID можно изменить в Network. Сессионная cookie, если она есть, передаётся в заголовке этого же запроса.</p><p><strong>REST</strong> здесь означает способ организации API: <code>products</code> — ресурс, а <code>ids</code> выбирает нужные записи. REST не является отдельным запросом на линии.</p><p>Пользователь вошёл раньше через <code>POST /auth/login</code> и получил сессию на пять минут. Она не продлевается автоматически. В Network можно удалить или обновить сессию; права этой сессии меняются на сервере. Без сессии API вернёт 401, без прав — 403.</p>` },
     sql: { kicker: 'Обращение к хранилищу', title: 'SQL-запрос', body: `<p>В учебной модели можно отправить SQL в базу через эту строку. Разрешены конкретные формы <code>SELECT</code>, <code>DELETE</code> и <code>INSERT</code>. В реальном приложении браузер не отправляет SQL напрямую: запрос строит сервер. Значения из API передаются параметрами <code>$1</code> и <code>$2</code>.</p>` },
-    'db-result': { kicker: 'Ответ базы / серверу', title: 'Результат SQL', body: `<p>Драйвер базы получает <strong>набор строк и столбцов</strong>. Конкретный формат обмена зависит от СУБД; здесь результат показан таблицей для чтения. Это ещё не HTTP-ответ и не JSON для браузера.</p><p>Сервер приложения получает до двух найденных строк, затем сам выбирает HTTP-статус и формирует JSON для клиента.</p>` },
+    'db-result': { kicker: 'PostgreSQL / серверу', title: 'Ответ PostgreSQL', body: `<p>Здесь показан <strong>учебный разбор</strong> ответа PostgreSQL на <code>SELECT</code>, а не копия таблицы. По соединению идут сообщения протокола: <code>RowDescription</code> описывает столбцы, отдельное <code>DataRow</code> несёт каждую найденную строку, <code>CommandComplete</code> сообщает число строк. После завершения цикла приходит <code>ReadyForQuery</code>.</p><p>Сообщения имеют двоичное обрамление; значения столбцов в этом примере передаются в текстовом формате. Драйвер декодирует их и отдаёт приложению строки как объекты. Приложение уже само формирует HTTP-статус и JSON или XML для браузера. <a href="https://www.postgresql.org/docs/current/protocol-flow.html" target="_blank" rel="noopener noreferrer">Протокол PostgreSQL ↗</a></p>` },
     json: { kicker: 'Формат данных', title: 'JSON в ответе API', body: `<p><strong>JSON</strong> — текстовый формат обмена данными. В ответе API ключ <code>id</code> означает идентификатор, <code>name</code> — название, <code>price</code> — цену. JavaScript в браузере читает эти значения и показывает товар. JSON не является отдельным сетевым устройством или обязательным дополнительным запросом.</p><p>Сначала смотри <strong>HTTP-статус</strong>, затем тело ответа. <code>200 OK</code> не обещает, что внутри правильный товар: тело может быть пустым или содержать <code>error.code: 404</code>. Этот внутренний код не превращает HTTP 200 в HTTP 404.</p><div class="course-article__note"><strong>Что проверять QA</strong><p>Есть ли тело ответа, совпадают ли типы и значения полей с таблицей <code>products</code>, корректно ли клиент обрабатывает ошибку.</p></div>` },
     html: { kicker: 'Ответ на GET /', title: 'HTML', body: `<p><strong>HTML</strong> задаёт структуру страницы: заголовки, текст, области для данных и ссылки на другие ресурсы. В этой схеме выбранный балансировщиком сервер возвращает HTML на <code>GET /</code>.</p><p>Посмотри пример ниже: <code>link href</code> указывает браузеру адрес CSS, а <code>script src</code> — адрес JavaScript. Браузер сам запрашивает эти файлы у CDN. Если HTML получен, но CSS недоступен, структура может остаться видимой без оформления.</p><p><code>X-Served-By</code> здесь — условный заголовок для показа сервера A или B; на реальном сайте его может не быть.</p>` },
     css: { kicker: 'Ресурс страницы', title: 'CSS', body: `<p><strong>CSS</strong> описывает внешний вид HTML: цвета, отступы, размеры и расположение блоков. Браузер загружает <code>style.css</code> по адресу из HTML, здесь — с CDN. Запрос API за товаром от этого не становится запросом CSS.</p><p>Карточка CSS на линии — <strong>ответ с содержимым файла</strong>. Удалить оригинал можно в «Источнике файлов». Это не прерывает текущий запрос: браузер всё ещё может получить старую копию из своего кэша или CDN. Чтобы увидеть ошибку, очисти кэш браузера, включи cache miss на CDN и запусти схему.</p><p>В примере ниже правило <code>.catalog</code> раскладывает карточки по колонкам, а <code>@media</code> меняет раскладку на узком экране.</p>` },
@@ -133,7 +133,7 @@
     'css-get': ['GET /style.css HTTP/1.1', 'Host: cdn.qatodev.ru'],
     'js-get': ['GET /app.js HTTP/1.1', 'Host: cdn.qatodev.ru'],
     cookie: ['Ранее, до начала упражнения:', 'POST /auth/login HTTP/1.1', 'Content-Type: application/json', '{"login":"student","password":"••••"}', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Ручное продление до истечения срока:', 'POST /auth/refresh HTTP/1.1', 'Cookie: session=demo123', '', 'HTTP/1.1 200 OK', 'Set-Cookie: session=demo123; Max-Age=300; Secure; HttpOnly; SameSite=Lax', '', 'Следующий запрос к защищённому API:', 'GET /api/products?ids=42,43 HTTP/1.1', 'Cookie: session=demo123'],
-    sql: ['SELECT id, name, price', 'FROM products', 'WHERE id IN ($1, $2);', 'Параметры $1 = 42, $2 = 43'],
+    sql: ['SELECT id, name, price, currency', 'FROM products', 'WHERE id IN ($1, $2);', 'Параметры $1 = 42, $2 = 43'],
     html: ['HTTP/1.1 200 OK', 'Content-Type: text/html; charset=utf-8', '', '<!doctype html>', '<html lang="ru">', '  <head><link rel="stylesheet" href="https://cdn.qatodev.ru/style.css"></head>', '  <body>', '    <header>qa market</header>', '    <main id="products">Загрузка товаров…</main>', '    <script defer src="https://cdn.qatodev.ru/app.js"></script>', '  </body>', '</html>'],
     css: ['body { margin: 0; font: 16px system-ui; }', '#products { display: grid; gap: 16px;', '  grid-template-columns: repeat(2, 1fr); }', '@media (max-width: 700px) {', '  #products { grid-template-columns: 1fr; }', '}'],
     js: ['const response = await fetch("/api/products?ids=42,43");', 'if (!response.ok) throw new Error(`HTTP ${response.status}`);', 'const { products } = await response.json();', 'renderProductCards(products);'],
@@ -1282,14 +1282,18 @@
       return;
     }
     if (id === 'database') {
-      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}</section>`;
+      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>PostgreSQL · products</strong><span class="course-viz__caption">${rowCountLabel([...baseProducts, ...extraProducts].length - deletedProducts.size)}</span></div>${productTableMarkup()}</section>`;
       return;
     }
     if (id === 'db-result') {
-      const rows = lastRun?.dbResult;
-      const caption = !lastRun ? 'Ожидает запуска' : rows === null || rows === undefined ? 'Ответа нет' : rowCountLabel(rows.length);
-      const table = Array.isArray(rows) ? `<div class="ai-table-shell course-table-shell"><div class="ai-table-wrap"><table class="ai-table"><thead><tr><th scope="col">id</th><th scope="col">name</th><th scope="col">price</th><th scope="col">currency</th></tr></thead><tbody>${rows.length ? rows.map(product => `<tr><td>${product.id}</td><td>${escapeHtml(product.name)}</td><td>${product.price.toLocaleString('ru-RU')}</td><td>${product.currency}</td></tr>`).join('') : '<tr><td colspan="4" class="course-table-empty">0 строк</td></tr>'}</tbody></table></div></div>` : '';
-      host.innerHTML = `<section class="course-viz"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>Результат SELECT</strong><span class="course-viz__caption">${caption}</span></div>${table}<p class="course-viz__foot">${!lastRun ? 'Запусти схему, чтобы увидеть ответ базы.' : Array.isArray(rows) ? 'Драйвер передал серверу набор строк и столбцов. Приложение создаст HTTP-ответ отдельно.' : 'База не вернула результат: проверь сессию, сервер и доступность базы.'}</p></section>`;
+      const currentRun = liveNetwork || lastRun;
+      const rows = currentRun?.dbResult;
+      const waiting = !!liveNetwork && !liveNetwork.dbFinished;
+      const caption = !currentRun ? 'Ожидает запуска' : waiting ? 'Ожидаем ответ' : rows === null || rows === undefined ? 'Ответа нет' : rowCountLabel(rows.length);
+      const wireRows = Array.isArray(rows) ? rows.map((product, index) => `<div class="course-pg__message"><span>DataRow ${index + 1}</span><code>${[product.id, product.name, product.price, product.currency].map(value => escapeHtml(JSON.stringify(String(value)))).join(' · ')}</code></div>`).join('') : '';
+      const decodedRows = Array.isArray(rows) ? rows.map(product => `<div>{ id: <span class="course-code__number">${product.id}</span>, name: <span class="course-code__string">${escapeHtml(JSON.stringify(product.name))}</span>, price: <span class="course-code__number">${product.price}</span>, currency: <span class="course-code__string">${escapeHtml(JSON.stringify(product.currency))}</span> }</div>`).join('') : '';
+      const messages = Array.isArray(rows) ? `<div class="course-pg__section-label">PostgreSQL → драйвер <small>значения: text</small></div><div class="course-pg__messages"><div class="course-pg__message"><span>RowDescription</span><code>id:int4 · name:text · price:int4 · currency:text</code></div>${wireRows}<div class="course-pg__message"><span>CommandComplete</span><code>SELECT ${rows.length}</code></div><div class="course-pg__message"><span>ReadyForQuery</span><code>цикл завершён</code></div></div><div class="course-pg__section-label">Драйвер → сервер приложения <small>пример после декодирования</small></div><div class="course-pg__decoded"><span>rows = [</span>${decodedRows}<span>]</span></div>` : `<p class="course-pg__empty">${!currentRun ? 'Запусти схему, чтобы увидеть ответ PostgreSQL.' : waiting ? 'SQL ещё не вернул ответ PostgreSQL.' : 'SQL не выполнен или PostgreSQL недоступна: сообщений ответа нет.'}</p>`;
+      host.innerHTML = `<section class="course-viz course-pg"><div class="course-viz__heading"><span class="course-viz__icon">▦</span><strong>Ответ на SELECT</strong><span class="course-viz__caption">${caption}</span></div>${messages}</section>`;
       return;
     }
     if (id === 'balancer' || id === 'app-a' || id === 'app-b') {
@@ -1829,10 +1833,11 @@
       htmlFault: faults.get('html') || null, cachedFiles, assetOutcomes: {},
       assetSources: {},
       assetStarted: { css: false, js: false }, assetFinished: { css: false, js: false },
-      apiSent: false, apiFinished: false, apiResult: null, sessionState,
+      apiSent: false, apiFinished: false, apiResult: null, dbResult: null, dbFinished: false, sessionState,
       requestCount, usedBalancer, routes: [...apiRoutes], overloaded: [...apiOverloaded],
       productId, secondProductId, productIds, product, products, productMissing, productMode, responseFormat: apiFormat
     };
+    if (selected === 'db-result') renderVisualization(selected);
     refreshLiveNetwork();
     startAlgorithm(pageLoaded ? 'Обновление страницы' : 'Первый запуск');
     if (loadPage && !pageLoaded) algorithmStep(hasSession() ? 'api' : 'error', hasSession()
@@ -1964,7 +1969,12 @@
       if (run !== playRun) return;
       for (const id of overloaded) faults.set(id, 'overload');
       update();
-      if (sessionState === 'ok' && !faults.has('database')) for (const id of routes.filter(item => !overloaded.includes(item))) pulse('database', id, ['db-result']);
+      if (sessionState === 'ok' && !faults.has('database') && routes.some(id => !overloaded.includes(id))) {
+        liveNetwork.dbResult = dbRows;
+        for (const id of routes.filter(item => !overloaded.includes(item))) pulse('database', id, ['db-result']);
+      }
+      liveNetwork.dbFinished = true;
+      if (selected === 'db-result') renderVisualization(selected);
       await wait(400);
       if (run !== playRun) return;
       for (const id of routes.filter(item => !overloaded.includes(item))) pulse(id, usedBalancer ? 'balancer' : 'client', usedBalancer ? [] : ['json']);
