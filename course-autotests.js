@@ -37,9 +37,9 @@
   const projectForTool = { playwright: 'web', selenium: 'web', java: 'web', appium: 'mobile', 'appium-ios': 'mobile', 'android-studio': 'mobile', espresso: 'mobile', rest: 'api', jdbc: 'api', jmeter: 'load' };
   const toolForKind = { web: 'playwright', selenium: 'selenium', mobile: 'appium', 'mobile-ios': 'appium-ios', espresso: 'espresso', api: 'rest', 'api-negative': 'rest', patch: 'rest', 'payment-api': 'rest', sql: 'jdbc', 'sql-negative': 'jdbc', load: 'jmeter' };
   const projectScenarios = {
-    web: [{ kind: 'web', label: 'Playwright', stack: 'TypeScript · Playwright' }, { kind: 'selenium', label: 'Selenium + JUnit', stack: 'Java · Selenium WebDriver · JUnit' }],
+    web: [{ kind: 'web', label: 'Playwright', stack: 'TypeScript · Playwright' }, { kind: 'selenium', label: 'Selenium · Java', stack: 'Java · Selenium WebDriver · JUnit 5 или TestNG' }],
     mobile: [{ kind: 'mobile', label: 'Appium · Android', stack: 'Java · Appium · UiAutomator2' }, { kind: 'mobile-ios', label: 'Appium · iOS', stack: 'Java · Appium · XCUITest' }, { kind: 'espresso', label: 'Espresso · Android', stack: 'Android Studio · Kotlin · Espresso' }],
-    api: [{ kind: 'api', label: 'GET товара', stack: 'Java · REST Assured · JUnit' }, { kind: 'api-negative', label: 'GET → 404', stack: 'Java · REST Assured · JUnit' }, { kind: 'patch', label: 'PATCH товара', stack: 'Java · REST Assured · JUnit' }, { kind: 'payment-api', label: 'Оплата', stack: 'Java · REST Assured · JUnit' }, { kind: 'sql', label: 'SQL: есть строка', stack: 'Java · JDBC · PostgreSQL' }, { kind: 'sql-negative', label: 'SQL: 0 строк', stack: 'Java · JDBC · PostgreSQL' }],
+    api: [{ kind: 'api', label: 'GET товара', stack: 'Java · REST Assured · JUnit 5 или TestNG' }, { kind: 'api-negative', label: 'GET → 404', stack: 'Java · REST Assured · JUnit 5 или TestNG' }, { kind: 'patch', label: 'PATCH товара', stack: 'Java · REST Assured · JUnit 5 или TestNG' }, { kind: 'payment-api', label: 'Оплата', stack: 'Java · REST Assured · JUnit 5 или TestNG' }, { kind: 'sql', label: 'SQL: есть строка', stack: 'Java · JDBC · PostgreSQL' }, { kind: 'sql-negative', label: 'SQL: 0 строк', stack: 'Java · JDBC · PostgreSQL' }],
     load: [{ kind: 'load', label: 'Нагрузка', stack: 'Java · JMeter · Groovy · Stepping Thread Group' }]
   };
   const testLinks = [
@@ -100,9 +100,9 @@
     database: ['PostgreSQL · test', 'Только тестовая база. Меняй таблицу SQL-командами и затем сравни ответ GET с JDBC SELECT. DELETE создаёт отрицательный сценарий с HTTP 404.'],
     'ext-keycloak': ['Keycloak · test', 'В учебном сценарии выдаёт новый токен для входа через Web UI и Mobile UI. При отключении новый вход не проходит; отдельная API-проверка использует заранее выданный тестовый токен.'],
     'ext-gateway': ['WireMock · оплата', 'WireMock на тестовом стенде имитирует внешний HTTP API оплаты. Стаб сопоставляет POST /gateway/payments и возвращает заданный HTTP-статус и JSON без обращения к банку. Переключи ответ с 200 на 503, чтобы проверить обработку отказа оплаты.'],
-    'project-web': ['Web UI · проект', 'Один проект браузерных автотестов с двумя вариантами стека: TypeScript + Playwright или Java + Selenium WebDriver + JUnit. Оба управляют браузером; само приложение отправляет HTTP-запросы.'],
+    'project-web': ['Web UI · проект', 'Один проект браузерных автотестов с двумя вариантами стека: TypeScript + Playwright или Java + Selenium WebDriver. В Java-примере тесты запускает JUnit 5; вместо него можно выбрать TestNG.'],
     'project-mobile': ['Mobile UI · проект', 'Appium с Java проверяет Android через UiAutomator2 и iOS через XCUITest. Kotlin + Espresso — отдельный Android-вариант.'],
-    'project-api': ['API + SQL · проект', 'Java + REST Assured + JUnit проверяет HTTP API. JDBC в том же тестовом проекте отдельно читает тестовую PostgreSQL после изменения данных; он не проходит через балансировщик.'],
+    'project-api': ['API + SQL · проект', 'Java + REST Assured проверяет HTTP API. В примере тесты запускает JUnit 5, альтернативой может быть TestNG. JDBC отдельно читает тестовую PostgreSQL после изменения данных.'],
     'project-load': ['Нагрузка · проект', 'JMeter поднимает 50 или 100 пользователей по 10 запросов. В этом тестовом стенде A настроен передавать половину потока B; порог каждой копии — 600. При отказе балансировщика JMeter переключается на отдельно настроенный прямой адрес A. Обычные UI/API-клиенты через сломанный балансировщик получат 503.']
   };
   const tasks = [
@@ -459,6 +459,7 @@
       addAction(`Запустить · ${project === 'load' ? `${state.loadCount} запросов` : selected.label}`, actionIcon.run, () => run(selected.kind));
       visual.innerHTML = `<div class="course-test-project__choices" role="group" aria-label="${project === 'load' ? 'Количество запросов' : 'Сценарий проекта'}">${project === 'load' ? [500, 1000].map(count => `<button type="button" data-load-count="${count}" aria-pressed="${state.loadCount === count}">${count} запросов</button>`).join('') : scenarios.map(option => `<button type="button" data-project-scenario="${option.kind}" aria-pressed="${option.kind === selected.kind}">${esc(option.label)}</button>`).join('')}</div><div class="course-test-project__stack" aria-label="Стек: ${esc(selected.stack)}">${scenarioIcons[selected.kind].map(name => `<span class="course-test-project__tech">${techIcon(name)}<span>${esc(name)}</span></span>`).join('')}</div>${project === 'load' ? `<div class="course-test-project__profile"><strong>Stepping Thread Group</strong><span>+10 пользователей / 5 с → ${state.loadCount / 10} · Loop Controller ×10</span></div>` : ''}`;
       if (selected.kind === 'mobile-ios') visual.insertAdjacentHTML('beforeend', `<div class="course-test-project__note">${techIcon('Swift')}<span>SwiftAppium · сторонняя альтернатива для Swift</span></div>`);
+      if (selected.kind === 'selenium' || project === 'api' && !selected.kind.startsWith('sql')) visual.insertAdjacentHTML('beforeend', '<div class="course-test-project__note">Раннер в примере: JUnit 5 · альтернатива: TestNG</div>');
       visual.querySelectorAll('[data-project-scenario]').forEach(button => button.addEventListener('click', () => {
         if (busy) return;
         state.projectScenario[project] = button.dataset.projectScenario;
@@ -693,7 +694,7 @@
     selectedRouteCleanup();
     selectedRouteCleanup = () => {};
     const run = ++runId;
-    const name = { web: 'Web UI · Playwright', selenium: 'Web UI · Selenium + Java/JUnit', mobile: 'Mobile UI · Appium Android', 'mobile-ios': 'Mobile UI · Appium iOS', espresso: 'Mobile UI · Android Studio + Espresso', api: 'API + SQL · GET', 'api-negative': 'API + SQL · GET → 404', 'payment-api': 'API + SQL · оплата', patch: 'API + SQL · PATCH', sql: 'API + SQL · JDBC SELECT', 'sql-negative': 'API + SQL · JDBC: 0 строк', load: 'Нагрузка · JMeter' }[kind];
+    const name = { web: 'Web UI · Playwright', selenium: 'Web UI · Selenium + Java', mobile: 'Mobile UI · Appium Android', 'mobile-ios': 'Mobile UI · Appium iOS', espresso: 'Mobile UI · Android Studio + Espresso', api: 'API + SQL · GET', 'api-negative': 'API + SQL · GET → 404', 'payment-api': 'API + SQL · оплата', patch: 'API + SQL · PATCH', sql: 'API + SQL · JDBC SELECT', 'sql-negative': 'API + SQL · JDBC: 0 строк', load: 'Нагрузка · JMeter' }[kind];
     const mobile = kind === 'mobile' || kind === 'mobile-ios' || kind === 'espresso';
     const platform = kind === 'mobile-ios' ? 'iOS' : 'Android';
     const web = kind === 'web' || kind === 'selenium';
