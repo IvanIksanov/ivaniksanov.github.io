@@ -103,6 +103,8 @@
   let busy = false;
   let runId = 0;
   let saveTimer = 0;
+  let replayId = 0;
+  let replayCleanup = () => {};
   const readyNodes = () => ['a', 'b'].filter(id => state.healthy && state.nodeOnline[id]);
   const serviceFor = { 'svc-auth': 'auth', 'svc-catalog': 'catalog', 'svc-payment': 'payment', database: 'database', 'ext-keycloak': 'keycloak', 'ext-gateway': 'gateway', 'tool-rabbitmq': 'rabbitmq', 'tool-prometheus': 'prometheus', 'tool-grafana': 'grafana' };
 
@@ -362,17 +364,81 @@
     const emptyTitle = state.lastRun?.type === 'infrastructure' ? 'Состояние узла' : 'Как проходит выпуск';
     const emptyDetail = state.lastRun?.type === 'infrastructure' ? `${state.lastRun.message}. После обнаружения сбоя проверь новый запрос клиента и маршрут к готовому Pod.` : 'Разработчик отправит изменение в Bitbucket, Jenkins выполнит сборку и тесты, Kubernetes обновит production, затем клиент отправит контрольный GET.';
     $('#course-network-visual').innerHTML = `<div class="course-infra-network"><div class="course-infra-network__list">${steps.length ? steps.map(step => `<button type="button" data-step="${escapeHtml(step.id)}" data-tone="${step.status === 'error' ? 'error' : step.status === 'done' ? 'ok' : ''}" class="${selected?.id === step.id ? 'is-current' : ''}"><span>${escapeHtml(step.title)}</span><small>${step.status === 'error' ? 'сбой' : step.status === 'done' ? 'готово' : 'идёт'}</small></button>`).join('') : `<span class="course-infra-note">${state.lastRun?.type === 'infrastructure' ? 'Отправь новый запрос клиента.' : 'Запусти выпуск версии.'}</span>`}</div><div class="course-infra-network__detail"><strong>${escapeHtml(selected?.title || emptyTitle)}</strong><p>${escapeHtml(selected?.detail || emptyDetail)}</p></div></div>`;
-    $('#course-network-visual').querySelectorAll('[data-step]').forEach(button => button.addEventListener('click', () => { state.selectedStep = button.dataset.step; renderJournal(); save(); }));
+    highlightJournalStep(selected);
+    $('#course-network-visual').querySelectorAll('[data-step]').forEach(button => button.addEventListener('click', () => {
+      state.selectedStep = button.dataset.step;
+      renderJournal(); save();
+      if (!busy) replayStep(state.lastRun.steps.find(step => step.id === state.selectedStep));
+    }));
   }
   function openJournal() {
-    if (matchMedia('(max-width: 767px)').matches) { article.hidden = true; state.article = ''; refreshMap(); }
+    replayId++;
+    replayCleanup(); replayCleanup = () => {};
+    article.hidden = true;
+    state.article = '';
+    refreshMap();
     journal.hidden = false;
     renderJournal();
     save();
   }
   const sleep = ms => new Promise(resolve => setTimeout(resolve, reducedMotion.matches ? 0 : ms));
+  function routePath(route) { return toolHost.querySelector(`[data-infra-route="${route}"]`) || lineHost.querySelector(`[data-infra-route="${route}"]`); }
+  function highlightJournalStep(step) {
+    toolHost.querySelectorAll('.is-journal-selected').forEach(item => item.classList.remove('is-journal-selected'));
+    lineHost.querySelectorAll('.is-journal-selected').forEach(item => item.classList.remove('is-journal-selected'));
+    if (!step || journal.hidden) return;
+    const routes = step.id === 'change' ? [] : step.routes?.length ? step.routes : step.route ? [step.route] : legacyStepRoutes(step);
+    routes.forEach(route => routePath(route)?.classList.add('is-journal-selected'));
+    const toolName = step.tool || { change: 'developer', tests: 'jenkins', 'catalog-deployment': 'kubernetes' }[step.id];
+    if (toolName) toolHost.querySelector(`[data-tool="${toolName}"]`)?.classList.add('is-journal-selected');
+  }
+  function legacyStepRoutes(step) {
+    const simple = { push: 'developer:bitbucket', build: 'bitbucket:jenkins', deploy: 'jenkins:kubernetes', rollback: 'kubernetes:app-a' };
+    if (simple[step.id]) return [simple[step.id]];
+    if (step.id !== 'smoke') return [];
+    const route = state.response.route?.toLowerCase();
+    const service = { catalog: 'svc-catalog', auth: 'svc-auth', payment: 'svc-payment' }[state.response.kind];
+    const dependency = { catalog: 'database', auth: 'ext-keycloak', payment: 'ext-gateway' }[state.response.kind];
+    return ['client:balancer', ...(route ? [`balancer:app-${route}`, `app-${route}:${service}`, `${service}:${dependency}`] : [])];
+  }
+  async function replayStep(step) {
+    if (!step) return;
+    const ticket = ++replayId;
+    replayCleanup();
+    replayCleanup = () => {};
+    const routes = step.id === 'change' ? [] : step.routes?.length ? step.routes : step.route ? [step.route] : legacyStepRoutes(step);
+    const toolName = step.tool || { change: 'developer', tests: 'jenkins', 'catalog-deployment': 'kubernetes' }[step.id];
+    const tool = toolName && toolHost.querySelector(`[data-tool="${toolName}"]`);
+    if (!routes.length && tool) {
+      motion.focus(tool.offsetLeft + tool.offsetWidth / 2, tool.offsetTop + tool.offsetHeight / 2, true);
+      tool.classList.add('is-processing');
+      replayCleanup = () => tool.classList.remove('is-processing');
+      await sleep(650);
+      if (ticket === replayId) { replayCleanup(); replayCleanup = () => {}; }
+      return;
+    }
+    for (const route of routes) {
+      if (ticket !== replayId) return;
+      const path = routePath(route);
+      if (!path) continue;
+      const midpoint = path.getPointAtLength(path.getTotalLength() / 2);
+      const panelWidth = matchMedia('(max-width: 767px)').matches ? 0 : journal.getBoundingClientRect().width;
+      motion.focus(midpoint.x + panelWidth / (2 * motion.snapshot().scale), midpoint.y, true);
+      path.classList.remove('is-replaying');
+      void path.getBoundingClientRect();
+      path.classList.add('is-replaying');
+      tool?.classList.add('is-processing');
+      const destination = route.split(':')[1];
+      const node = nodeHost.querySelector(`[data-node="${destination}"] .questions-map-card__question`);
+      node?.classList.add('is-processing');
+      replayCleanup = () => { path.classList.remove('is-replaying'); tool?.classList.remove('is-processing'); node?.classList.remove('is-processing'); };
+      await sleep(700);
+      if (ticket !== replayId) return;
+      replayCleanup(); replayCleanup = () => {};
+    }
+  }
   async function animateRoute(route, tool, run) {
-    const path = toolHost.querySelector(`[data-infra-route="${route}"]`) || lineHost.querySelector(`[data-infra-route="${route}"]`);
+    const path = route ? routePath(route) : null;
     const card = tool && toolHost.querySelector(`[data-tool="${tool}"]`);
     const group = route === 'services:rabbitmq' ? $('.course-infra-services') : null;
     path?.classList.add('is-deploying');
@@ -384,8 +450,8 @@
     group?.classList.remove('is-processing-event');
     return run === runId;
   }
-  function pushStep(id, title, detail) {
-    const step = { id, title, detail, status: 'running' };
+  function pushStep(id, title, detail, route = '', tool = '') {
+    const step = { id, title, detail, route, tool, status: 'running' };
     state.lastRun.steps.push(step);
     state.selectedStep = id;
     state.lastRun.message = title;
@@ -393,8 +459,8 @@
     return step;
   }
   async function perform(id, title, detail, route, tool, run, failed = false) {
-    const step = pushStep(id, title, detail);
-    if (route) await animateRoute(route, tool, run);
+    const step = pushStep(id, title, detail, route, tool);
+    if (route || tool) await animateRoute(route, tool, run);
     else await sleep(420);
     if (run !== runId) return false;
     step.status = failed ? 'error' : 'done';
@@ -425,17 +491,19 @@
     const serviceVersion = state.serviceVersions[kind];
     const detail = code === 200 ? `${label} попал в Pod ${route} (v${version}); ${articles[service][0]} ответил из Pod v${serviceVersion}${serviceVersion < version ? ' — образ сервиса не обновлён' : ''}.` : `${label}: 503 · ${cause}. ${route ? `Входной Pod ${route} доступен, но зависимость не работает.` : 'Маршрут к приложению недоступен.'}`;
     const step = pushStep('smoke', `Клиент · ${label}`, detail);
+    step.routes = [];
+    const travel = async routeId => { step.routes.push(routeId); return animateRoute(routeId, null, run); };
     lineHost.querySelectorAll('.is-active-route').forEach(path => path.classList.remove('is-active-route'));
-    await animateRoute('client:balancer', null, run);
+    await travel('client:balancer');
     if (route) {
-      await animateRoute(`balancer:app-${route.toLowerCase()}`, null, run);
-      await animateRoute(`app-${route.toLowerCase()}:${service}`, null, run);
-      if (state.serviceOnline[serviceFor[service]]) await animateRoute(`${service}:${dependency === 'database' ? 'database' : dependency === 'keycloak' ? 'ext-keycloak' : 'ext-gateway'}`, null, run);
+      await travel(`balancer:app-${route.toLowerCase()}`);
+      await travel(`app-${route.toLowerCase()}:${service}`);
+      if (state.serviceOnline[serviceFor[service]]) await travel(`${service}:${dependency === 'database' ? 'database' : dependency === 'keycloak' ? 'ext-keycloak' : 'ext-gateway'}`);
     }
     if (run !== runId) return false;
     if (code === 200 && kind === 'payment') {
       state.lastEvent = state.serviceOnline.rabbitmq ? 'PaymentSucceeded → exchange → очередь подписчика' : 'Не отправлено · RabbitMQ недоступен';
-      if (state.serviceOnline.rabbitmq) await animateRoute('services:rabbitmq', 'rabbitmq', run);
+      if (state.serviceOnline.rabbitmq) { step.routes.push('services:rabbitmq'); await animateRoute('services:rabbitmq', 'rabbitmq', run); }
     }
     if (run !== runId) return false;
     state.response = { code, version, route, kind, body: code === 200 ? { status: 'ok', version: `v${version}`, service: kind, serviceVersion: `v${serviceVersion}` } : { error: cause || 'SERVICE_UNAVAILABLE', service: kind } };
@@ -480,6 +548,8 @@
     if (!online.length) { if (await smoke(run)) markOutcome('rollout-failed', `Rollout v${version} не прошёл · клиент 503`, 'rollout'); return; }
     for (const member of online) {
       if (!await animateRoute(`kubernetes:app-${member}`, null, run)) return;
+      state.lastRun.steps.find(step => step.id === 'deploy').routes ||= ['jenkins:kubernetes'];
+      state.lastRun.steps.find(step => step.id === 'deploy').routes.push(`kubernetes:app-${member}`);
       state.podVersions[member] = version;
       refreshMap(); refreshArticle(); save();
     }
@@ -494,7 +564,7 @@
       if (!state.skipCatalogRollout) state.serviceVersions.catalog = version;
       state.staleCatalogSeen = false;
       state.catalogFixedAfterStale = false;
-      if (!await perform('catalog-deployment', 'Deployment каталога', state.skipCatalogRollout ? `Новый образ v${version} собран, но шаблон Deployment каталога не изменился: Pod остался на v${state.serviceVersions.catalog}.` : `Образ каталога обновлён до v${version}; Kubernetes заменил его Pod.`, null, null, run, state.skipCatalogRollout)) return;
+      if (!await perform('catalog-deployment', 'Deployment каталога', state.skipCatalogRollout ? `Новый образ v${version} собран, но шаблон Deployment каталога не изменился: Pod остался на v${state.serviceVersions.catalog}.` : `Образ каталога обновлён до v${version}; Kubernetes заменил его Pod.`, null, 'kubernetes', run, state.skipCatalogRollout)) return;
     }
     refreshMap();
     if (!await smoke(run)) return;
@@ -508,6 +578,7 @@
     openJournal(); syncButtons();
     if (!await perform('rollback', 'Kubernetes · откат', `Возврат к последней рабочей версии v${state.lastHealthyVersion}.`, 'kubernetes:app-a', 'kubernetes', run)) return;
     if (!await animateRoute('kubernetes:app-b', null, run)) return;
+    state.lastRun.steps.find(step => step.id === 'rollback').routes = ['kubernetes:app-a', 'kubernetes:app-b'];
     state.productionVersion = state.lastHealthyVersion;
     for (const member of ['a', 'b']) if (state.nodeOnline[member]) state.podVersions[member] = state.lastHealthyVersion;
     state.serviceVersions = { ...state.lastHealthyServiceVersions };
@@ -527,6 +598,8 @@
   playButton.addEventListener('click', release);
   resetButton.addEventListener('click', () => {
     runId++;
+    replayId++;
+    replayCleanup(); replayCleanup = () => {};
     state = initial();
     completed.clear();
     busy = false;
@@ -539,7 +612,7 @@
   });
   $('#course-tasks').addEventListener('click', () => showArticle('tasks'));
   $('#course-article-close').addEventListener('click', () => { hideTooltip(); article.hidden = true; state.article = ''; refreshMap(); save(); });
-  $('#course-network-close').addEventListener('click', () => { journal.hidden = true; save(); });
+  $('#course-network-close').addEventListener('click', () => { replayId++; replayCleanup(); replayCleanup = () => {}; journal.hidden = true; highlightJournalStep(null); save(); });
   nodeHost.querySelector('[data-node="client"] .course-client-preview').addEventListener('click', openJournal);
   toolHost.querySelectorAll('[data-tool]').forEach(tool => tool.addEventListener('click', () => showArticle(`tool-${tool.dataset.tool}`)));
   $('#course-article-body').addEventListener('click', event => { if (event.target.closest('a')) event.stopPropagation(); });
