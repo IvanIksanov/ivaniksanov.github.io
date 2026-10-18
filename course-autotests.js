@@ -90,7 +90,7 @@
   const edges = [['client', 'balancer'], ['mobile', 'balancer'], ['balancer', 'app-a'], ['balancer', 'app-b'], ['app-a', 'svc-auth'], ['app-a', 'svc-catalog'], ['app-a', 'svc-payment'], ['app-b', 'svc-auth'], ['app-b', 'svc-catalog'], ['app-b', 'svc-payment'], ['svc-catalog', 'database'], ['svc-auth', 'ext-keycloak'], ['svc-payment', 'ext-gateway']];
   const descriptions = {
     client: ['Браузер · тестовый клиент', 'Playwright или Selenium управляет браузером и проверяет UI. Страница делает реальные для учебной модели HTTP-запросы к тестовому стенду; это не production.'],
-    mobile: ['Android / iOS · тестовый клиент', 'Appium проверяет Android через UiAutomator2 и iOS через XCUITest. Espresso работает только с Android. Здесь прогоны Appium написаны на Java; SwiftAppium существует как отдельный сторонний клиент для Swift.'],
+    mobile: ['Android / iOS · тестовый клиент', 'Appium проверяет Android через UiAutomator2 и iOS через XCUITest. Espresso работает только с Android. Здесь прогоны Appium написаны на Java.'],
     balancer: ['Балансировщик · test', 'Обычные клиенты идут через балансировщик. У JMeter отдельно настроен резервный прямой адрес сервера A: при сбое балансировщика только нагрузочный прогон может дойти до A.'],
     'app-a': ['Сервер A · test', 'В этой учебной конфигурации A также работает как прокси для нагрузки: принимает поток и передаёт часть на B по связи с галочкой. Это настроенный механизм, а не автоматическое свойство сервера.'],
     'app-b': ['Сервер B · test', 'При нагрузочном прогоне A передаёт B половину запросов. Если передача отключена или B недоступен, A ограничен 600 запросами за прогон.'],
@@ -101,7 +101,7 @@
     'ext-keycloak': ['Keycloak · test', 'В учебном сценарии выдаёт новый токен для входа через Web UI и Mobile UI. При отключении новый вход не проходит; отдельная API-проверка использует заранее выданный тестовый токен.'],
     'ext-gateway': ['WireMock · оплата', 'WireMock на тестовом стенде имитирует внешний HTTP API оплаты. Стаб сопоставляет POST /gateway/payments и возвращает заданный HTTP-статус и JSON без обращения к банку. Переключи ответ с 200 на 503, чтобы проверить обработку отказа оплаты.'],
     'project-web': ['Web UI · проект', 'Один проект браузерных автотестов с двумя вариантами стека: TypeScript + Playwright или Java + Selenium WebDriver + JUnit. Оба управляют браузером; само приложение отправляет HTTP-запросы.'],
-    'project-mobile': ['Mobile UI · проект', 'Appium с Java проверяет Android через UiAutomator2 и iOS через XCUITest. Kotlin + Espresso — отдельный Android-вариант. SwiftAppium — альтернативный сторонний клиент, а не часть Java-теста.'],
+    'project-mobile': ['Mobile UI · проект', 'Appium с Java проверяет Android через UiAutomator2 и iOS через XCUITest. Kotlin + Espresso — отдельный Android-вариант.'],
     'project-api': ['API + SQL · проект', 'Java + REST Assured + JUnit проверяет HTTP API. JDBC в том же тестовом проекте отдельно читает тестовую PostgreSQL после изменения данных; он не проходит через балансировщик.'],
     'project-load': ['Нагрузка · проект', 'JMeter поднимает 50 или 100 пользователей по 10 запросов. В этом тестовом стенде A настроен передавать половину потока B; порог каждой копии — 600. При отказе балансировщика JMeter переключается на отдельно настроенный прямой адрес A. Обычные UI/API-клиенты через сломанный балансировщик получат 503.']
   };
@@ -458,7 +458,7 @@
       const selected = scenarios.find(option => option.kind === state.projectScenario[project]) || scenarios[0];
       addAction(`Запустить · ${project === 'load' ? `${state.loadCount} запросов` : selected.label}`, actionIcon.run, () => run(selected.kind));
       visual.innerHTML = `<div class="course-test-project__choices" role="group" aria-label="${project === 'load' ? 'Количество запросов' : 'Сценарий проекта'}">${project === 'load' ? [500, 1000].map(count => `<button type="button" data-load-count="${count}" aria-pressed="${state.loadCount === count}">${count} запросов</button>`).join('') : scenarios.map(option => `<button type="button" data-project-scenario="${option.kind}" aria-pressed="${option.kind === selected.kind}">${esc(option.label)}</button>`).join('')}</div><div class="course-test-project__stack" aria-label="Стек: ${esc(selected.stack)}">${scenarioIcons[selected.kind].map(name => `<span class="course-test-project__tech">${techIcon(name)}<span>${esc(name)}</span></span>`).join('')}</div>${project === 'load' ? `<div class="course-test-project__profile"><strong>Stepping Thread Group</strong><span>+10 пользователей / 5 с → ${state.loadCount / 10} · Loop Controller ×10</span></div>` : ''}`;
-      if (project === 'mobile') visual.insertAdjacentHTML('beforeend', `<div class="course-test-project__note">${techIcon('Swift')}<span>SwiftAppium · сторонняя альтернатива для Swift</span></div>`);
+      if (selected.kind === 'mobile-ios') visual.insertAdjacentHTML('beforeend', `<div class="course-test-project__note">${techIcon('Swift')}<span>SwiftAppium · сторонняя альтернатива для Swift</span></div>`);
       visual.querySelectorAll('[data-project-scenario]').forEach(button => button.addEventListener('click', () => {
         if (busy) return;
         state.projectScenario[project] = button.dataset.projectScenario;
