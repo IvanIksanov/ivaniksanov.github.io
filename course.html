@@ -3,7 +3,40 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Как работает веб-приложение — вводный курс QAtoDev</title>
+  <title>Архитектура для QA: микросервисы, CI/CD и автотесты | QAtoDev</title>
+    <meta name="description" content="Интерактивный курс для QA: клиент-серверная архитектура, микросервисы, инфраструктура и путь кода до прода, виды автотестов и нагрузочное тестирование.">
+  <script>
+    (() => {
+      const chapterMetadata = {
+  "1": {
+    "title": "Клиент-серверная архитектура — тренажёр для QA | QAtoDev",
+    "description": "Проследите путь HTTP-запроса от браузера до сервера и базы данных. Изучайте кэш, CDN и балансировщик, моделируйте сбои и выполняйте задания."
+  },
+  "2": {
+    "title": "Микросервисная архитектура — практика для QA | QAtoDev",
+    "description": "Изучайте взаимодействие микросервисов авторизации, каталога и оплаты. Моделируйте отказы, проверяйте HTTP-статусы и повторную оплату без второго списания."
+  },
+  "3": {
+    "title": "CI/CD и инфраструктура — путь кода до прода | QAtoDev",
+    "description": "Проследите путь изменений от компьютера разработчика через Bitbucket и Jenkins до Kubernetes в production. Изучайте сборку, проверки и выпуск приложения."
+  },
+  "4": {
+    "title": "Виды автотестов и нагрузочное тестирование | QAtoDev",
+    "description": "Изучайте Web UI, мобильные и API-автотесты, проверки SQL и нагрузку JMeter. Разбирайте работу тестовых проектов и моделируйте поведение системы."
+  }
+};
+      const requestedChapter = new URLSearchParams(location.search).get('chapter');
+      const chapter = Object.hasOwn(chapterMetadata, requestedChapter) ? requestedChapter : '1';
+      const canonical = document.createElement('link');
+      canonical.rel = 'canonical';
+      canonical.href = `https://qatodev.ru/course.html?chapter=${chapter}`;
+      document.head.appendChild(canonical);
+      const metadata = Object.hasOwn(chapterMetadata, requestedChapter) ? chapterMetadata[requestedChapter] : null;
+      if (!metadata) return;
+      document.title = metadata.title;
+      document.querySelector('meta[name="description"]').setAttribute('content', metadata.description);
+    })();
+  </script>
   <script>try { const theme = localStorage.getItem('theme'); if (theme === 'dark' || theme === 'light') document.documentElement.dataset.theme = theme; } catch {}</script>
   <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
   <link rel="stylesheet" href="header.css?v=8.9.15">
