@@ -331,6 +331,7 @@
     layer.querySelectorAll('[data-test-project]').forEach(card => {
       card.classList.toggle('is-selected', state.article === `project-${card.dataset.testProject}`);
       card.classList.toggle('is-test-failed', ['stale', 'error'].includes(state.projectResults[card.dataset.testProject]));
+      card.classList.toggle('is-test-passed', state.projectResults[card.dataset.testProject] === 'success');
     });
     lineHost.querySelectorAll('[data-test-route]').forEach(path => {
       const [from, to] = path.dataset.testRoute.split(':');

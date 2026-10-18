@@ -51,6 +51,8 @@ body[data-chapter="4"] #course-packets { position: absolute; z-index: 4; inset: 
 .course-test-tool:is(:hover, :focus-visible, .is-selected) { border-color: var(--course-blue); }
 .course-test-tool.is-test-failed, .course-test-tool.is-test-failed:is(:hover, :focus-visible, .is-selected) { border-color: #c45b55; background: color-mix(in srgb, #c45b55 10%, var(--map-surface)); box-shadow: 0 0 0 2px color-mix(in srgb, #c45b55 16%, transparent); }
 .course-test-tool.is-test-failed strong, .course-test-tool.is-test-failed small { color: #bb514c; }
+.course-test-tool.is-test-passed, .course-test-tool.is-test-passed:is(:hover, :focus-visible, .is-selected) { border-color: #2b9369; background: color-mix(in srgb, #2b9369 10%, var(--map-surface)); box-shadow: 0 0 0 2px color-mix(in srgb, #2b9369 16%, transparent); }
+.course-test-tool.is-test-passed strong, .course-test-tool.is-test-passed small { color: #23865e; }
 .course-test-tool:focus-visible { outline: 2px solid var(--course-blue); outline-offset: 3px; }
 .course-test-tool strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .68rem; font-weight: 750; }
 .course-test-tool small { color: var(--map-muted); font-size: .47rem; font-weight: 650; }
@@ -71,6 +73,7 @@ body[data-chapter="4"] .course-node.is-test-processing .questions-map-card__ques
 body[data-chapter="4"] .course-node.is-test-replaying .questions-map-card__question, .course-test-tool.is-test-replaying { border-color: var(--course-blue); box-shadow: 0 0 0 4px color-mix(in srgb, var(--course-blue) 16%, transparent); }
 body[data-chapter="4"] .course-node.is-journal-selected .questions-map-card__question, .course-test-tool.is-journal-selected { border-color: var(--course-blue); box-shadow: 0 0 0 2px color-mix(in srgb, var(--course-blue) 12%, transparent); }
 .course-test-tool.is-test-failed:is(.is-journal-selected, .is-test-replaying) { border-color: #c45b55; box-shadow: 0 0 0 3px color-mix(in srgb, #c45b55 20%, transparent); }
+.course-test-tool.is-test-passed:is(.is-journal-selected, .is-test-replaying) { border-color: #2b9369; box-shadow: 0 0 0 3px color-mix(in srgb, #2b9369 20%, transparent); }
 .course-test-viz { display: grid; align-content: start; gap: .4rem; min-height: 0; margin: .28rem 0 .2rem; padding: .55rem; border: 1px solid var(--map-border); border-radius: 13px; background: color-mix(in srgb, var(--course-blue) 4%, var(--map-bg)); }
 .course-test-viz__label { display: flex; justify-content: space-between; align-items: center; color: var(--map-muted); font-size: .66rem; font-weight: 700; }
 .course-test-viz__label span { padding: .15rem .3rem; border-radius: 5px; background: color-mix(in srgb, var(--course-blue) 11%, var(--map-bg)); color: var(--course-blue); font-size: .51rem; font-weight: 850; }
