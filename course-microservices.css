@@ -93,8 +93,6 @@ body[data-chapter="2"] #course-lines path.is-micro-route.is-offline-app-route { 
 .course-chapter-stage .course-intro[data-stage-chapter="1"] { width: 340px; left: 610px; }
 .course-chapter-stage .course-intro[data-stage-chapter="2"] { width: 420px; left: 575px; }
 .course-chapter-stage .course-intro[data-stage-chapter="3"] { width: 420px; left: 575px; }
-body.course-chapter-arriving .course-canvas { transition: opacity .2s ease; }
-body.course-chapter-arriving:not(.course-chapter-entered) .course-canvas { opacity: 0; }
 body.course-page .course-article, body.course-page .course-network-panel { transition: opacity .18s ease; }
 body.course-chapter-switching .course-article, body.course-chapter-switching .course-network-panel { opacity: 0; pointer-events: none; transition: opacity .18s ease; }
 @media (max-width: 700px) { .course-chapters { top: calc(var(--site-header-height) + 6px); left: 9px; } }

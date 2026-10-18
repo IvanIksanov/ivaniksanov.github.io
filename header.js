@@ -88,7 +88,7 @@
       visited = isArchitecture;
     }
 
-    const link = document.querySelector('.site-header nav a[href="course.html"], nav a[href="course.html"]');
+    const link = document.querySelector('.site-header nav a[href^="course.html"], nav a[href^="course.html"]');
     if (visited || isArchitecture) {
       document.querySelectorAll('.header-nav-new-badge').forEach(badge => badge.remove());
       return;
