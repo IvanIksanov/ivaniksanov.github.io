@@ -63,11 +63,9 @@
   const packetIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h7l5 5v15H7zM14 2v5h5"/></svg>';
   const directionIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6"/></svg>';
 
-  let progress = current;
   let target = current;
   let stage = null;
   let frame = 0;
-  let lastFrame = 0;
   let commitTimer = 0;
   let navigating = false;
 
@@ -88,17 +86,6 @@
     if (pending?.to === chapter && Date.now() - pending.at < 15000) {
       if (Number.isFinite(pending.camera?.x) && Number.isFinite(pending.camera?.y)) window.courseChapterEntryCamera = pending.camera;
       if (pending.closePanels) closeSavedPanels();
-      if (!reducedMotion.matches) {
-        document.body.classList.add('course-chapter-arriving');
-        const reveal = () => {
-          if (!document.body.classList.contains('course-ready')) { requestAnimationFrame(reveal); return; }
-          requestAnimationFrame(() => {
-            document.body.classList.add('course-chapter-entered');
-            setTimeout(() => document.body.classList.remove('course-chapter-arriving', 'course-chapter-entered'), 240);
-          });
-        };
-        requestAnimationFrame(reveal);
-      }
     }
   } catch {}
 
@@ -379,76 +366,114 @@
       microPrimary = !microFallback;
     } catch {}
     stage = { root, canvas, cards, packets, edges, boundary, toolsLayer, testLayer, peer, intro1, intro2, intro3, intro4, camera, anchor, microFallback, infraFallback, testFallback, microPrimary, infraPrimary };
-    render();
+    stage.visual = stateFor(current);
+    render(stage.visual);
   }
 
-  function position(id) {
-    const from = first[id] || second[id] || fourth[id];
-    const to = second[id] || first[id] || fourth[id];
-    const layout = Math.min(1, progress);
+  function pointFor(id, index) {
+    const point = (index === 0 ? first[id] : index === 3 ? fourth[id] : second[id]) || second[id] || first[id] || fourth[id];
+    return { x: point.x, y: point.y, w: point.w, h: id.startsWith('ext-') ? 72 : id.startsWith('svc-') ? 94 : 122 };
+  }
+
+  function edgeOpacity(edge, index) {
+    let opacity = index === 0 ? Number(edge.first) : index === 3 ? Number(edge.fourth) : Number(edge.second);
+    if (!opacity || index === 0 || !edge.to.startsWith('svc-')) return opacity;
+    if (edge.from === 'app-b') return index === 1 ? stage.microFallback ? 1 : .28 : index === 2 ? Number(stage.infraFallback) : Number(stage.testFallback);
+    if (edge.from === 'app-a') return index === 1 ? Number(stage.microPrimary) : index === 2 ? Number(stage.infraPrimary) : Number(!stage.testFallback);
+    return opacity;
+  }
+
+  function stateFor(index) {
+    const layout = Number(index !== 0);
+    const tools = Number(index === 2);
+    const test = Number(index === 3);
+    const cards = new Map();
+    for (const id of stage.cards.keys()) {
+      const exists = index === 0 ? !!first[id] : index === 3 ? !!fourth[id] : !!second[id];
+      const twin = !!stage.cards.get(id).querySelector('.course-node__title--test');
+      cards.set(id, {
+        point: pointFor(id, index), opacity: Number(exists),
+        title: (index === 0 ? first[id]?.title : index === 3 ? fourth[id]?.title : second[id]?.title) || first[id]?.title || second[id]?.title || fourth[id]?.title,
+        mainOpacity: twin ? 1 - test : 1, testOpacity: test, detailOpacity: tools, badgeOpacity: test, shift: -11 * tools
+      });
+    }
     return {
-      x: from.x + (to.x - from.x) * layout,
-      y: from.y + (to.y - from.y) * layout,
-      w: from.w + (to.w - from.w) * layout,
-      h: id.startsWith('ext-') ? 72 : id.startsWith('svc-') ? 94 : 122
+      camera: stage.camera ? cameraAt(stage.camera, stage.anchor, index) : null,
+      cards, edges: new Map([...stage.edges].map(([key, edge]) => [key, edgeOpacity(edge, index)])),
+      layout, tools, test, intros: [Number(index === 0), Number(index === 1), Number(index === 2), Number(index === 3)]
     };
   }
 
-  function render() {
-    if (!stage) return;
-    const layout = Math.min(1, progress);
-    const infraEntered = Math.max(0, Math.min(1, progress - 1));
-    const test = Math.max(0, Math.min(1, progress - 2));
-    const tools = infraEntered * (1 - test);
-    if (stage.camera) {
-      const camera = cameraAt(stage.camera, stage.anchor, progress);
-      stage.canvas.style.transform = `translate3d(${camera.x}px, ${camera.y}px, 0) scale(${camera.scale})`;
+  function between(a, b, amount) { return a + (b - a) * amount; }
+
+  function blendState(from, to, amount) {
+    const cards = new Map();
+    for (const [id, start] of from.cards) {
+      const end = to.cards.get(id);
+      cards.set(id, {
+        point: Object.fromEntries(Object.keys(start.point).map(key => [key, between(start.point[key], end.point[key], amount)])),
+        opacity: between(start.opacity, end.opacity, amount),
+        title: amount < .5 ? start.title : end.title,
+        mainOpacity: between(start.mainOpacity, end.mainOpacity, amount),
+        testOpacity: between(start.testOpacity, end.testOpacity, amount),
+        detailOpacity: between(start.detailOpacity, end.detailOpacity, amount),
+        badgeOpacity: between(start.badgeOpacity, end.badgeOpacity, amount),
+        shift: between(start.shift, end.shift, amount)
+      });
     }
+    return {
+      camera: from.camera && to.camera ? { ...from.camera, x: between(from.camera.x, to.camera.x, amount), y: between(from.camera.y, to.camera.y, amount) } : to.camera,
+      cards, edges: new Map([...from.edges].map(([key, opacity]) => [key, between(opacity, to.edges.get(key), amount)])),
+      layout: between(from.layout, to.layout, amount),
+      tools: between(from.tools, to.tools, amount),
+      test: between(from.test, to.test, amount),
+      intros: from.intros.map((opacity, index) => between(opacity, to.intros[index], amount))
+    };
+  }
+
+  function render(visual) {
+    if (!stage) return;
+    if (visual.camera) stage.canvas.style.transform = `translate3d(${visual.camera.x}px, ${visual.camera.y}px, 0) scale(${visual.camera.scale})`;
     for (const [id, card] of stage.cards) {
-      const point = position(id);
+      const state = visual.cards.get(id);
+      const point = state.point;
       card.style.left = `${point.x}px`;
       card.style.top = `${point.y}px`;
       card.style.width = `${point.w}px`;
       card.style.height = `${point.h}px`;
-      card.style.opacity = id === 'mobile' ? String(test) : progress > 2 && !fourth[id] ? String(1 - test) : first[id] && second[id] ? '1' : String(first[id] ? 1 - layout : layout);
-      const title = layout < .5 ? first[id]?.title || second[id]?.title || fourth[id]?.title : second[id]?.title || first[id]?.title || fourth[id]?.title;
+      card.style.opacity = String(state.opacity);
       const mainTitle = card.querySelector('.course-node__title:not(.course-node__title--test)');
-      mainTitle.textContent = title;
-      if (card.querySelector('.course-node__title--test')) mainTitle.style.opacity = String(1 - test);
+      mainTitle.textContent = state.title;
+      mainTitle.style.opacity = String(state.mainOpacity);
       const testTitle = card.querySelector('.course-node__title--test');
-      if (testTitle) testTitle.style.opacity = String(test);
+      if (testTitle) testTitle.style.opacity = String(state.testOpacity);
       const version = card.querySelector('.course-infra-version');
-      if (version) version.style.opacity = String(tools);
+      if (version) version.style.opacity = String(state.detailOpacity);
       const serviceVersion = card.querySelector('.course-infra-service-version');
-      if (serviceVersion) serviceVersion.style.opacity = String(tools);
+      if (serviceVersion) serviceVersion.style.opacity = String(state.detailOpacity);
       const detail = card.querySelector('.course-infra-node-detail');
-      if (detail) detail.style.opacity = String(tools);
+      if (detail) detail.style.opacity = String(state.detailOpacity);
       const badge = card.querySelector('.course-test-badge');
-      if (badge) badge.style.opacity = String(test);
-      if (id.startsWith('app-')) card.querySelector('.course-node__title').style.transform = `translateY(${-11 * tools}px)`;
+      if (badge) badge.style.opacity = String(state.badgeOpacity);
+      if (id.startsWith('app-')) mainTitle.style.transform = `translateY(${state.shift}px)`;
     }
     for (const packet of stage.packets) {
       const cacheOpacity = packet.classList.contains('is-empty-cache') ? .32 : packet.classList.contains('is-partial-cache') ? .65 : 1;
-      packet.style.opacity = String(cacheOpacity * (1 - layout));
+      packet.style.opacity = String(cacheOpacity * (1 - visual.layout));
     }
-    for (const { from, to, first: inFirst, second: inSecond, fourth: inFourth, path } of stage.edges.values()) {
-      const a = position(from);
-      const b = position(to);
+    for (const [key, { from, to, path }] of stage.edges) {
+      const a = visual.cards.get(from).point;
+      const b = visual.cards.get(to).point;
       const x1 = a.x + a.w;
       const y1 = a.y + (from.startsWith('ext-') ? 48 : from.startsWith('svc-') ? 62 : 91);
       const x2 = b.x;
       const y2 = b.y + (to.startsWith('ext-') ? 48 : to.startsWith('svc-') ? 62 : 91);
       const bend = Math.max(35, Math.abs(x2 - x1) * .42);
       path.setAttribute('d', `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`);
-      let opacity = (inFirst ? 1 - layout : 0) + (inSecond ? layout : 0);
-      if (progress > 2) opacity = inFourth ? 1 : inSecond ? 1 - test : 0;
-      if (from === 'mobile') opacity = test;
-      if (from === 'app-b' && to.startsWith('svc-')) opacity *= ((stage.microFallback ? 1 : .28) * (1 - infraEntered) + (stage.infraFallback ? 1 : 0) * infraEntered) * (1 - test) + (stage.testFallback ? 1 : 0) * test;
-      if (from === 'app-a' && to.startsWith('svc-')) opacity *= ((stage.microPrimary ? 1 : 0) * (1 - infraEntered) + (stage.infraPrimary ? 1 : 0) * infraEntered) * (1 - test) + (stage.testFallback ? 0 : 1) * test;
-      path.style.opacity = String(opacity);
+      path.style.opacity = String(visual.edges.get(key));
     }
-    const a = position('app-a');
-    const b = position('app-b');
+    const a = visual.cards.get('app-a').point;
+    const b = visual.cards.get('app-b').point;
     const peerX = a.x + 266;
     const peerTop = a.y + 122;
     const peerBottom = b.y + 56;
@@ -457,21 +482,17 @@
     stage.peer.querySelector('circle').setAttribute('cx', peerX);
     stage.peer.querySelector('circle').setAttribute('cy', peerMiddle);
     stage.peer.querySelector('.course-micro-peer-link__check').setAttribute('d', `m ${peerX - 5} ${peerMiddle} 3 3 7 -7`);
-    stage.peer.style.opacity = String(layout);
-    if (stage.boundary) stage.boundary.style.opacity = String(layout);
-    stage.boundary?.querySelectorAll('.course-infra-cluster, .course-infra-services').forEach(item => { item.style.opacity = String(tools); });
-    if (stage.toolsLayer) stage.toolsLayer.style.opacity = String(tools);
-    if (stage.testLayer) stage.testLayer.style.opacity = String(test);
-    stage.intro1.style.opacity = String(1 - layout);
-    stage.intro2.style.opacity = String(layout * (1 - infraEntered));
-    stage.intro3.style.opacity = String(tools);
-    stage.intro4.style.opacity = String(test);
+    stage.peer.style.opacity = String(visual.layout);
+    if (stage.boundary) stage.boundary.style.opacity = String(visual.layout);
+    stage.boundary?.querySelectorAll('.course-infra-cluster, .course-infra-services').forEach(item => { item.style.opacity = String(visual.tools); });
+    if (stage.toolsLayer) stage.toolsLayer.style.opacity = String(visual.tools);
+    if (stage.testLayer) stage.testLayer.style.opacity = String(visual.test);
+    [stage.intro1, stage.intro2, stage.intro3, stage.intro4].forEach((intro, index) => { intro.style.opacity = String(visual.intros[index]); });
   }
 
   function cleanup() {
     cancelAnimationFrame(frame);
     frame = 0;
-    lastFrame = 0;
     clearTimeout(commitTimer);
     commitTimer = 0;
     stage?.root.remove();
@@ -481,26 +502,27 @@
   }
 
   function commit() {
-    if (target === current || progress !== target || navigating) return;
+    if (target === current || !stage?.complete || navigating) return;
     navigating = true;
     const to = String(target + 1);
-    rememberCamera(to, stage?.camera ? cameraAt(stage.camera, stage.anchor, progress) : undefined);
+    rememberCamera(to, stage.visual.camera || undefined);
     location.assign(links.find(link => link.dataset.courseChapter === to).href);
   }
 
   function tick(now) {
     frame = 0;
-    const delta = lastFrame ? Math.min(now - lastFrame, 50) : 16;
-    lastFrame = now;
-    const step = delta / 760;
-    progress = target > progress ? Math.min(target, progress + step) : Math.max(target, progress - step);
-    render();
-    if (Math.abs(progress - target) > .001) {
+    if (!stage.startedAt) stage.startedAt = now;
+    const fraction = Math.min(1, (now - stage.startedAt) / 760);
+    const eased = fraction * fraction * (3 - 2 * fraction);
+    stage.visual = blendState(stage.from, stage.to, eased);
+    render(stage.visual);
+    if (fraction < 1) {
       frame = requestAnimationFrame(tick);
     } else if (target === current) {
       cleanup();
     } else {
-      commitTimer = setTimeout(commit, 140);
+      stage.complete = true;
+      commitTimer = setTimeout(commit, 0);
     }
   }
 
@@ -522,9 +544,13 @@
     clearTimeout(commitTimer);
     commitTimer = 0;
     if (!stage) createStage();
+    stage.from = stage.visual;
+    stage.to = stateFor(next);
+    stage.startedAt = 0;
+    stage.complete = false;
     target = next;
     setSelected(next);
-    if (!frame) { lastFrame = 0; frame = requestAnimationFrame(tick); }
+    if (!frame) frame = requestAnimationFrame(tick);
   }));
 
   window.addEventListener('pagehide', () => {

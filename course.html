@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="questions.css?v=8.9.26">
   <link rel="stylesheet" href="questions-map.css?v=1.0.12">
   <link rel="stylesheet" href="course.css?v=116">
-  <link rel="stylesheet" href="course-microservices.css?v=19">
+  <link rel="stylesheet" href="course-microservices.css?v=20">
   <link rel="stylesheet" href="course-infrastructure.css?v=12">
   <link rel="stylesheet" href="course-autotests.css?v=17">
   <link rel="icon" href="img/QAtoDev_PageIcon.png" sizes="32x32" type="image/png">
@@ -47,10 +47,10 @@
   </div>
 
   <nav class="course-chapters" aria-label="Главы курса">
-    <a href="course.html" data-course-chapter="1" aria-label="Глава 1: клиент — сервер"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="9" width="6" height="6" rx="1"/><rect x="16" y="9" width="6" height="6" rx="1"/><path d="M8 12h8"/></svg><span aria-hidden="true">Клиент — сервер</span></a>
-    <a href="course.html?chapter=2" data-course-chapter="2" aria-label="Глава 2: микросервисы"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="15" y="3" width="7" height="7" rx="1"/><rect x="9" y="15" width="7" height="7" rx="1"/><path d="M9 6.5h6M5.5 10v4l7 1M18.5 10v4l-6 1"/></svg><span aria-hidden="true">Микросервисы</span></a>
-    <a href="course.html?chapter=3" data-course-chapter="3" aria-label="Глава 3: инфраструктура"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><span aria-hidden="true">Инфраструктура</span></a>
-    <a href="course.html?chapter=4" data-course-chapter="4" aria-label="Глава 4: автотесты и нагрузка"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-13 5 2 2-2 2m6 0h4"/></svg><span aria-hidden="true">Автотесты и нагрузка</span></a>
+    <a href="course.html?chapter=1&amp;v=20261018" data-course-chapter="1" aria-label="Глава 1: клиент — сервер"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="9" width="6" height="6" rx="1"/><rect x="16" y="9" width="6" height="6" rx="1"/><path d="M8 12h8"/></svg><span aria-hidden="true">Клиент — сервер</span></a>
+    <a href="course.html?chapter=2&amp;v=20261018" data-course-chapter="2" aria-label="Глава 2: микросервисы"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="7" height="7" rx="1"/><rect x="15" y="3" width="7" height="7" rx="1"/><rect x="9" y="15" width="7" height="7" rx="1"/><path d="M9 6.5h6M5.5 10v4l7 1M18.5 10v4l-6 1"/></svg><span aria-hidden="true">Микросервисы</span></a>
+    <a href="course.html?chapter=3&amp;v=20261018" data-course-chapter="3" aria-label="Глава 3: инфраструктура"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><span aria-hidden="true">Инфраструктура</span></a>
+    <a href="course.html?chapter=4&amp;v=20261018" data-course-chapter="4" aria-label="Глава 4: автотесты и нагрузка"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18m-13 5 2 2-2 2m6 0h4"/></svg><span aria-hidden="true">Автотесты и нагрузка</span></a>
   </nav>
   <main class="course-main">
     <div class="questions-map-workspace course-workspace" id="course-workspace">
@@ -112,11 +112,11 @@
       </aside>
     </div>
   </main>
-  <script src="header.js?v=8.9.13"></script>
+  <script src="header.js?v=8.9.14"></script>
   <script src="theme-toggle.shared.js?v=1"></script>
   <script src="map-motion.shared.js?v=7"></script>
   <script>const requestedChapter = new URLSearchParams(location.search).get('chapter'); document.body.dataset.chapter = ['2', '3', '4'].includes(requestedChapter) ? requestedChapter : '1'; document.querySelectorAll('[data-course-chapter]').forEach(link => { if (link.dataset.courseChapter === document.body.dataset.chapter) link.setAttribute('aria-current', 'page'); });</script>
-  <script src="course-chapter-transition.js?v=19"></script>
+  <script src="course-chapter-transition.js?v=20"></script>
   <script src="course.js?v=133"></script>
   <script src="course-microservices.js?v=12"></script>
   <script src="course-infrastructure.js?v=9"></script>
