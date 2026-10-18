@@ -43,6 +43,11 @@
     api: [{ kind: 'api', label: 'GET товара', stack: 'Java · REST Assured · JUnit / TestNG' }, { kind: 'api-negative', label: 'GET → 404', stack: 'Java · REST Assured · JUnit / TestNG' }, { kind: 'patch', label: 'PATCH товара', stack: 'Java · REST Assured · JUnit / TestNG' }, { kind: 'payment-api', label: 'Оплата', stack: 'Java · REST Assured · JUnit / TestNG' }, { kind: 'sql', label: 'SQL: есть строка', stack: 'Java · JDBC · PostgreSQL' }, { kind: 'sql-negative', label: 'SQL: 0 строк', stack: 'Java · JDBC · PostgreSQL' }],
     load: [{ kind: 'load', label: 'Нагрузка', stack: 'Java · JMeter · Groovy · Stepping Thread Group' }]
   };
+  const loadTargets = {
+    catalog: { label: 'Каталог', request: 'GET /api/products/42', host: 'catalog.test.qatodev.ru', service: 'svc-catalog', limit: 1200 },
+    auth: { label: 'Авторизация', request: 'POST /auth/login', host: 'auth.test.qatodev.ru', service: 'svc-auth', limit: 700 },
+    payment: { label: 'Оплата', request: 'POST /payments', host: 'pay.test.qatodev.ru', service: 'svc-payment', limit: 700 }
+  };
   const testLinks = [
     { id: 'web:client', d: 'M 465 409 C 550 425, 620 480, 640 551' },
     { id: 'mobile:mobile', d: 'M 465 904 C 550 900, 620 860, 670 826' },
@@ -105,7 +110,7 @@
     'project-web': ['Web UI · проект', 'Один проект браузерных автотестов с двумя вариантами стека: TypeScript + Playwright или Java + Selenium WebDriver.'],
     'project-mobile': ['Mobile UI · проект', 'Appium с Java проверяет Android через UiAutomator2 и iOS через XCUITest. Kotlin + Espresso — отдельный Android-вариант.'],
     'project-api': ['API + SQL · проект', 'Java + REST Assured проверяет HTTP API. JDBC отдельно читает тестовую PostgreSQL после изменения данных.'],
-    'project-load': ['Нагрузка · проект', 'JMeter поднимает 50 или 100 пользователей по 10 запросов. В этом тестовом стенде A настроен передавать половину потока B; порог каждой копии — 600. При отказе балансировщика браузерные, мобильные, API- и нагрузочные тесты используют прямой адрес A.']
+    'project-load': ['Нагрузка · проект', 'JMeter поднимает 50 или 100 пользователей по 10 запросов. Выбери каталог, авторизацию или оплату и следи за маршрутом до зависимости сервиса. В учебной модели A передаёт половину потока B; неверный Host оставляет нагрузку на серверах приложения.']
   };
   const tasks = [
     { id: 'web', title: 'Web UI: покупка в браузере', steps: [['project-web', 'Выбери Playwright и запусти вход → каталог → WireMock.', 'Запустить Web UI'], ['client', 'Проследи путь браузер → балансировщик → сервисы.', 'Открыть клиент'], ['ext-gateway', 'Проверь ответ мока оплаты и итоговый 200.', 'Открыть WireMock']] },
@@ -122,6 +127,11 @@
     { id: 'db-offline', title: 'PostgreSQL недоступна', steps: [['database', 'Отключи тестовую базу.', 'Отключить'], ['project-api', 'GET вернёт 503, а JDBC-проверка не установит соединение.', 'Проверить GET и SQL'], ['database', 'Включи базу и повтори проверки.', 'Включить']] },
     { id: 'balancer', title: 'Резервный вход при отказе балансировщика', steps: [['balancer', 'Отключи общую точку входа.', 'Отключить'], ['project-web', 'Запусти Web UI: браузер направит запросы прямо на A.', 'Запустить Web UI'], ['project-mobile', 'Запусти Android или iOS: мобильный клиент тоже обойдёт балансировщик.', 'Запустить Mobile UI'], ['project-api', 'Запусти GET: API-тест дойдёт до A напрямую и получит товар.', 'Проверить GET'], ['project-load', 'Отправь 1000 запросов через прямой тестовый адрес A. A передаст половину на B: ожидаются 1000 × 200.', 'Запустить 1000'], ['balancer', 'Включи общую точку входа.', 'Включить']] },
     { id: 'peer-forward', title: 'Передача нагрузки с A на B', steps: [['app-a', 'Открой A и отключи «Передачу на B».', 'Отключить передачу'], ['project-load', 'Запусти 1000 запросов: A обработает 600, ещё 400 получат 503.', 'Запустить 1000'], ['app-a', 'Верни передачу на B.', 'Включить передачу'], ['project-load', 'Повтори прогон: зелёная волна A → B покажет распределение 500/500.', 'Запустить 1000']] },
+    { id: 'stale-web', title: 'Устаревший Web UI-тест', steps: [['project-web', 'Выбери Playwright и действие «Сделать тест неактуальным»: ожидаемый текст изменится, а ответ приложения останется прежним.', 'Сделать тест неактуальным'], ['project-web', 'Запусти проверку и сравни код теста с фактическим результатом в журнале.', 'Запустить Web UI'], ['project-web', 'Актуализируй ожидание и запусти повторно.', 'Актуализировать тест']] },
+    { id: 'stale-api', title: 'Устаревшее ожидание API', steps: [['project-api', 'Выбери GET товара и сделай проверку неактуальной: тест ждёт 201 вместо фактического 200.', 'Сделать тест неактуальным'], ['project-api', 'Запусти GET и убедись, что сервис исправен, а падает именно проверка.', 'Проверить GET'], ['project-api', 'Актуализируй тест и повтори GET.', 'Актуализировать тест']] },
+    { id: 'load-host', title: 'Неверный Host нагружает приложение', steps: [['project-load', 'Выбери каталог и 500 запросов. Подмени Host на app.test.qatodev.ru.', 'Подменить Host'], ['project-load', 'Запусти прогон: часть запросов получит 503, а каталог — 0 запросов.', 'Запустить 500'], ['project-load', 'Исправь Host и повтори, чтобы увидеть нагрузку на каталоге.', 'Исправить Host']] },
+    { id: 'load-auth', title: 'Нагрузка на авторизацию', steps: [['project-load', 'Выбери цель «Авторизация» и 500 запросов.', 'Выбрать авторизацию'], ['project-load', 'Запусти JMeter; проследи POST /auth/login через A и B до Keycloak.', 'Запустить 500']] },
+    { id: 'load-payment', title: 'Нагрузка на платёжный сервис', steps: [['project-load', 'Выбери цель «Оплата» и 500 запросов.', 'Выбрать оплату'], ['project-load', 'Запусти JMeter; проверь путь POST /payments к WireMock и число запросов.', 'Запустить 500']] },
     { id: 'server-b', title: 'Нагрузка после отказа B', steps: [['project-load', 'Выбери 1000 запросов.', 'Выбрать 1000'], ['app-b', 'Отключи B и направь весь поток на A.', 'Отключить'], ['project-load', 'Запусти прогон и сравни ошибки с двумя доступными копиями.', 'Запустить 1000'], ['app-b', 'Включи B.', 'Включить']] },
     { id: 'auth', title: 'Вход зависит от авторизации', steps: [['svc-auth', 'Отключи сервис авторизации.', 'Отключить'], ['project-web', 'Запусти Web UI: вход остановится до каталога с 503.', 'Запустить Web UI'], ['svc-auth', 'Включи авторизацию и повтори проверку.', 'Включить']] },
     { id: 'keycloak', title: 'Keycloak и уже выданный токен', steps: [['ext-keycloak', 'Отключи Keycloak: новый вход станет недоступен.', 'Отключить'], ['project-mobile', 'Запусти Mobile UI и проверь новый вход.', 'Запустить Mobile UI'], ['project-api', 'Выбери GET с заранее выданным тестовым токеном.', 'Проверить GET API'], ['ext-keycloak', 'Включи Keycloak и повтори вход.', 'Включить']] }
@@ -133,7 +143,7 @@
     { id: 45, name: 'Монитор View 27', price: 34990, currency: 'RUB' },
     { id: 46, name: 'Клавиатура Type', price: 6990, currency: 'RUB' }
   ];
-  const initial = () => ({ online: { balancer: true, a: true, b: true, peer: true, auth: true, keycloak: true, catalog: true, database: true }, paymentStubStatus: 200, products: defaultProducts(), catalogVersion: 2, sqlDraft: '', sqlFeedback: '', sqlChanged: false, sqlApiVerified: false, sawDbGetFailure: false, sawPeerOverload: false, taskProgress: {}, loadCount: 500, lastRun: null, selectedStep: '', article: '', codeTab: 'code', projectScenario: { web: 'web', mobile: 'mobile', api: 'api', load: 'load' }, journalOpen: false, expandedTask: '', completed: [], camera: null, sawPaymentFailure: false, sawLoadFailure: false, sawLoad1000Failure: false, sawAuthWebFailure: false, sawKeycloakMobileFailure: false, apiAfterKeycloakFailure: false, apiChanged: false, apiVerified: false });
+  const initial = () => ({ online: { balancer: true, a: true, b: true, peer: true, auth: true, keycloak: true, catalog: true, database: true }, paymentStubStatus: 200, products: defaultProducts(), catalogVersion: 2, sqlDraft: '', sqlFeedback: '', sqlChanged: false, sqlApiVerified: false, sawDbGetFailure: false, sawPeerOverload: false, taskProgress: {}, loadCount: 500, loadTarget: 'catalog', loadWrongHost: false, outdatedTests: {}, projectResults: {}, lastRun: null, selectedStep: '', article: '', codeTab: 'code', projectScenario: { web: 'web', mobile: 'mobile', api: 'api', load: 'load' }, journalOpen: false, expandedTask: '', completed: [], camera: null, sawPaymentFailure: false, sawLoadFailure: false, sawLoad1000Failure: false, sawAuthWebFailure: false, sawKeycloakMobileFailure: false, apiAfterKeycloakFailure: false, apiChanged: false, apiVerified: false });
   const codeExamples = {
     'tool-playwright': { language: 'TypeScript · Playwright', code: ["test('покупка в браузере', async ({ page }) => {", '  await page.goto(TEST_URL);', "  await page.getByRole('button', { name: 'Войти' }).click();", "  await expect(page.getByText('Каталог')).toBeVisible();", "  await page.getByRole('button', { name: 'Оплатить' }).click();", "  await expect(page.getByText('Заказ оплачен')).toBeVisible();", '});'], lines: { runner: 2, client: 2, auth: 3, identity: 3, catalog: 4, db: 4, payment: 5, gateway: 5, bank: 6, assert: 6 }, checks: ['Вход открыл каталог', 'Кнопка оплаты доступна', 'Итоговый статус виден в UI'] },
     'tool-selenium': { language: 'Java · Selenium + JUnit', code: ['@Test void purchase() {', '  driver.get(TEST_URL);', '  driver.findElement(By.id("login")).click();', '  assertTrue(driver.findElement(By.id("catalog")).isDisplayed());', '  driver.findElement(By.id("pay")).click();', '  var status = driver.findElement(By.id("status"));', '  assertEquals("Заказ оплачен", status.getText());', '}'], lines: { prepare: 1, runner: 2, client: 2, auth: 3, identity: 3, catalog: 4, db: 4, payment: 5, gateway: 5, bank: 7, assert: 7 }, checks: ['Вход через WebDriver', 'Каталог отображается', 'JUnit сравнивает итоговый статус'] },
@@ -155,11 +165,30 @@
     if (run.kind === 'load') {
       const count = run.loadCount || state.loadCount;
       const users = count / 10;
-      const original = codeExamples['tool-jmeter'];
-      return { ...original, code: original.code.map(line => line.replace('50 users', `${users} users`)), checks: [`Плагин Stepping Thread Group: +10 пользователей каждые 5 секунд до ${users}`, `Loop Controller: 10 циклов на пользователя, всего ${count} запросов`, ...original.checks.slice(2)] };
+      const target = loadTargets[run.loadTarget] || loadTargets.catalog;
+      const host = run.wrongHost ? 'app.test.qatodev.ru' : target.host;
+      return { language: 'JMeter .jmx · JSR223 Groovy', code: [`Stepping Thread Group: ${users} users`, '  +10 users every 5 s', 'Loop Controller: 10 iterations', `HTTP Header Manager: Host: ${host}`, `HTTP Request: ${target.request}`, 'JSR223 Assertion (Groovy):', '  def code = prev.getResponseCode()', "  if (code != '200') {", '    AssertionResult.setFailure(true)', '    AssertionResult.setFailureMessage("HTTP " + code)', '  }'], lines: { runner: 1, route: 5, 'host-route': 4, catalog: 5, auth: 5, payment: 5, 'peer-forward': 5, 'catalog-b': 5, 'auth-b': 5, 'payment-b': 5, db: 5, identity: 5, gateway: 5, response: 7, assert: 8 }, checks: [`${count} запросов: +10 пользователей / 5 с, 10 циклов`, `Цель: ${target.label} · ${target.request}`, `Host: ${host}${run.wrongHost ? ' · неверная цель' : ''}`, `Лимит ${target.label.toLowerCase()}: ${target.limit} запросов за прогон`] };
     }
-    if (runExamples[run.kind]) return runExamples[run.kind];
-    return codeExamples[`tool-${run.tool}`] || null;
+    const original = runExamples[run.kind] || codeExamples[`tool-${run.tool}`];
+    if (!original || !run.outdated) return original || null;
+    const code = original.code.map(line => {
+      if (['web', 'selenium', 'mobile', 'mobile-ios', 'espresso'].includes(run.kind)) return line.replaceAll('Заказ оплачен', 'Заказ оформлен');
+      if (run.kind === 'sql') return line;
+      if (run.kind === 'sql-negative') return line.replace('assertFalse(rows.next())', 'assertTrue(rows.next())');
+      return line.replace('.statusCode(200)', '.statusCode(201)').replace('.statusCode(404)', '.statusCode(410)');
+    });
+    if (run.kind === 'sql') { code[code.length - 1] = code.at(-1).replace(';', ''); code.push("AND name = 'Старое название';"); }
+    return { ...original, code, lines: run.kind === 'sql' ? { ...original.lines, assert: code.length } : original.lines, checks: [...(original.checks || []), 'Ожидание теста устарело; проверяй фактический ответ отдельно'] };
+  }
+  function staleComparison(kind) {
+    if (['web', 'selenium', 'mobile', 'mobile-ios', 'espresso'].includes(kind)) return { expected: 'Заказ оформлен', actual: 'Заказ оплачен' };
+    if (kind === 'api-negative') return { expected: 'HTTP 410', actual: 'HTTP 404' };
+    if (kind === 'sql') return { expected: 'Старое название', actual: productById(42)?.name || 'строка отсутствует' };
+    if (kind === 'sql-negative') return { expected: '1 строка', actual: '0 строк' };
+    return { expected: 'HTTP 201', actual: 'HTTP 200' };
+  }
+  function comparisonMarkup(comparison) {
+    return comparison ? `<div class="course-test-comparison"><div><span>Expected</span><code>${esc(comparison.expected)}</code></div><div><span>Actual</span><code>${esc(comparison.actual)}</code></div></div>` : '';
   }
   function lineForStep(example, item) {
     if (!example || !item) return 0;
@@ -199,6 +228,10 @@
   } catch {}
   if (![200, 503].includes(state.paymentStubStatus)) state.paymentStubStatus = 200;
   if (!state.taskProgress || typeof state.taskProgress !== 'object') state.taskProgress = {};
+  if (!state.outdatedTests || typeof state.outdatedTests !== 'object') state.outdatedTests = {};
+  if (!state.projectResults || typeof state.projectResults !== 'object') state.projectResults = {};
+  if (!loadTargets[state.loadTarget]) state.loadTarget = 'catalog';
+  state.loadWrongHost = state.loadWrongHost === true;
   if (!Array.isArray(state.products)) state.products = defaultProducts();
   state.products = state.products.filter(row => Number.isInteger(row.id) && row.id > 0 && row.id <= 9999 && typeof row.name === 'string' && Number.isFinite(row.price) && row.currency === 'RUB').slice(0, 17);
   if (![500, 1000].includes(state.loadCount)) state.loadCount = 500;
@@ -295,7 +328,10 @@
       card.classList.toggle('is-faulty', (offline && id !== 'balancer') || (id === 'ext-gateway' && state.paymentStubStatus === 503));
       card.dataset.offline = String(offline);
     }
-    layer.querySelectorAll('[data-test-project]').forEach(card => card.classList.toggle('is-selected', state.article === `project-${card.dataset.testProject}`));
+    layer.querySelectorAll('[data-test-project]').forEach(card => {
+      card.classList.toggle('is-selected', state.article === `project-${card.dataset.testProject}`);
+      card.classList.toggle('is-test-failed', ['stale', 'error'].includes(state.projectResults[card.dataset.testProject]));
+    });
     lineHost.querySelectorAll('[data-test-route]').forEach(path => {
       const [from, to] = path.dataset.testRoute.split(':');
       const directUi = path.classList.contains('is-direct');
@@ -315,7 +351,7 @@
     play.disabled = busy;
     const original = defaultProducts();
     const changedProducts = state.products.length !== original.length || state.products.some((row, index) => ['id', 'name', 'price', 'currency'].some(key => row[key] !== original[index]?.[key]));
-    reset.disabled = busy || !(state.lastRun || completed.size || changedProducts || state.paymentStubStatus !== 200 || state.loadCount !== 500 || Object.values(state.online).some(value => !value) || Object.entries(state.projectScenario).some(([project, kind]) => kind !== projectScenarios[project][0].kind) || state.sqlDraft || state.sqlFeedback);
+    reset.disabled = busy || !(state.lastRun || completed.size || changedProducts || state.paymentStubStatus !== 200 || state.loadCount !== 500 || state.loadTarget !== 'catalog' || state.loadWrongHost || Object.values(state.outdatedTests).some(Boolean) || Object.values(state.online).some(value => !value) || Object.entries(state.projectScenario).some(([project, kind]) => kind !== projectScenarios[project][0].kind) || state.sqlDraft || state.sqlFeedback);
     launcher.querySelectorAll('[data-test-project]').forEach(button => { button.disabled = busy; button.classList.toggle('is-running', busy && projectForKind[state.lastRun?.kind] === button.dataset.testProject); });
     article.querySelectorAll('#course-action-buttons button, [data-project-scenario]').forEach(button => { button.disabled = busy; });
   }
@@ -414,7 +450,7 @@
       heading.innerHTML = `<span class="course-task__mark">${completed.has(task.id) ? '✓' : ''}</span><strong>${esc(task.title)}</strong><span class="course-task__chevron" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
       const panel = document.createElement('div');
       panel.className = 'course-task__panel';
-      panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place course-task__hint" tabindex="0" role="img" aria-label="${esc(descriptions[place]?.[0] || place)}" data-tooltip="${esc(descriptions[place]?.[0] || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${taskIcons[place] || icons[byId.get(place)?.icon] || icons.client}</svg></span><span class="course-task__copy">${esc(instruction)} <span class="course-task__action"><span class="course-task__action-icon course-task__hint" tabindex="0" role="img" aria-label="Действие · ${esc(action)}" data-tooltip="Действие · ${esc(descriptions[place]?.[0] || place)}: ${esc(action)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${/Отключить|Включить/.test(action) ? actionIcon.power : /Вернуть/.test(action) ? actionIcon.response : /Изменить/.test(action) ? actionIcon.edit : actionIcon.run}</svg></span><small>${esc(action)}</small></span></span></div>`).join('')}</div>`;
+      panel.innerHTML = `<div class="course-task__steps">${task.steps.map(([place, instruction, action], index) => `<div class="course-task__step"><span class="course-task__number">${index + 1}.</span><span class="course-task__place course-task__hint" tabindex="0" role="img" aria-label="${esc(descriptions[place]?.[0] || place)}" data-tooltip="${esc(descriptions[place]?.[0] || place)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${taskIcons[place] || icons[byId.get(place)?.icon] || icons.client}</svg></span><span class="course-task__copy">${esc(instruction)} <span class="course-task__action"><span class="course-task__action-icon course-task__hint" tabindex="0" role="img" aria-label="Действие · ${esc(action)}" data-tooltip="Действие · ${esc(descriptions[place]?.[0] || place)}: ${esc(action)}"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${/Отключить|Включить/.test(action) ? actionIcon.power : /Вернуть/.test(action) ? actionIcon.response : /Изменить|неактуальным|Актуализировать|Host/.test(action) ? actionIcon.edit : actionIcon.run}</svg></span><small>${esc(action)}</small></span></span></div>`).join('')}</div>`;
       heading.addEventListener('click', () => { state.expandedTask = state.expandedTask === task.id ? '' : task.id; renderTasks(); save(); });
       item.append(heading, panel);
       host.append(item);
@@ -427,18 +463,18 @@
     if (!projectScenarios[project]) return;
     const selectedKind = state.projectScenario[project];
     const run = state.lastRun;
-    const relevant = run && run.kind === selectedKind && (selectedKind !== 'load' || run.loadCount === state.loadCount);
-    const example = exampleForRun(relevant ? run : { kind: selectedKind, tool: toolForKind[selectedKind] });
+    const relevant = run && run.kind === selectedKind && (selectedKind === 'load' ? run.loadCount === state.loadCount && run.loadTarget === state.loadTarget && run.wrongHost === state.loadWrongHost : run.outdated === Boolean(state.outdatedTests[selectedKind]));
+    const example = exampleForRun(relevant ? run : { kind: selectedKind, tool: toolForKind[selectedKind], loadCount: state.loadCount, loadTarget: state.loadTarget, wrongHost: state.loadWrongHost, outdated: Boolean(state.outdatedTests[selectedKind]) });
     if (!example) return;
     const tab = ['code', 'checks', 'result'].includes(state.codeTab) ? state.codeTab : 'code';
     const current = relevant ? run.steps.find(item => item.id === state.selectedStep) || run.steps.at(-1) : null;
     const currentLine = relevant ? lineForStep(example, current) : 0;
-    const status = relevant ? current?.status === 'error' ? 'Ошибка' : run.result === 'выполняется' ? 'Выполняется' : run.result === 'ошибка' ? 'Ошибка' : run.result === 'успех' ? 'Успех' : 'Ожидание' : 'Ожидание';
+    const status = relevant ? run.result === 'устарел' ? 'Устарел' : current?.status === 'error' ? 'Ошибка' : run.result === 'выполняется' ? 'Выполняется' : run.result === 'ошибка' ? 'Ошибка' : run.result === 'успех' ? 'Успех' : 'Ожидание' : 'Ожидание';
     const body = tab === 'code'
-      ? `<div class="course-test-code__language">${esc(example.language)}<span class="course-test-code__status" data-status="${status === 'Ошибка' ? 'error' : status === 'Успех' ? 'success' : status === 'Выполняется' ? 'running' : 'idle'}">${status}</span></div><pre class="course-test-code__source"><code>${sourceLines(example, currentLine)}</code></pre>`
+      ? `<div class="course-test-code__language">${esc(example.language)}<span class="course-test-code__status" data-status="${status === 'Ошибка' ? 'error' : status === 'Устарел' ? 'stale' : status === 'Успех' ? 'success' : status === 'Выполняется' ? 'running' : 'idle'}">${status}</span></div><pre class="course-test-code__source"><code>${sourceLines(example, currentLine)}</code></pre>`
       : tab === 'checks'
         ? `<div class="course-test-code__checks">${(example.checks || codeExamples[`tool-${toolForKind[selectedKind]}`]?.checks || []).map(check => `<div><span aria-hidden="true">✓</span>${esc(check)}</div>`).join('')}</div>`
-        : `<div class="course-test-code__result"><strong>${status}</strong><p>${esc(relevant ? current?.detail || run.result : 'Запусти выбранный сценарий, чтобы увидеть результат проекта.')}</p></div>`;
+        : `<div class="course-test-code__result"><strong>${status}</strong><p>${esc(relevant ? current?.detail || run.result : 'Запусти выбранный сценарий, чтобы увидеть результат проекта.')}</p>${relevant && run.result === 'устарел' ? comparisonMarkup(run.comparison) : ''}</div>`;
     host.innerHTML = `<div class="course-test-code"><div class="course-test-code__tabs" role="tablist" aria-label="Пример автотеста"><button type="button" role="tab" data-code-tab="code" aria-selected="${tab === 'code'}">Код</button><button type="button" role="tab" data-code-tab="checks" aria-selected="${tab === 'checks'}">Проверки</button><button type="button" role="tab" data-code-tab="result" aria-selected="${tab === 'result'}">Результат</button></div><div class="course-test-code__body" role="tabpanel">${body}</div></div>`;
     host.querySelectorAll('[data-code-tab]').forEach(button => button.addEventListener('click', () => { state.codeTab = button.dataset.codeTab; renderCodePanel(); save(); }));
   }
@@ -469,7 +505,9 @@
       const scenarios = projectScenarios[project];
       const selected = scenarios.find(option => option.kind === state.projectScenario[project]) || scenarios[0];
       addAction(`Запустить · ${project === 'load' ? `${state.loadCount} запросов` : selected.label}`, actionIcon.run, () => run(selected.kind));
-      visual.innerHTML = `<div class="course-test-project__choices" role="group" aria-label="${project === 'load' ? 'Количество запросов' : 'Сценарий проекта'}">${project === 'load' ? [500, 1000].map(count => `<button type="button" data-load-count="${count}" aria-pressed="${state.loadCount === count}">${count} запросов</button>`).join('') : scenarios.map(option => `<button type="button" data-project-scenario="${option.kind}" aria-pressed="${option.kind === selected.kind}">${esc(option.label)}</button>`).join('')}</div><div class="course-test-project__stack" aria-label="Стек: ${esc(selected.stack)}">${scenarioIcons[selected.kind].map(name => name === 'JUnit' ? `<span class="course-test-project__runner-pair"><span class="course-test-project__tech">${techIcon('JUnit')}<span>JUnit</span></span><span aria-hidden="true">/</span><span class="course-test-project__tech">${techIcon('TestNG')}<span>TestNG</span></span></span>` : `<span class="course-test-project__tech">${techIcon(name)}<span>${esc(name)}</span></span>`).join('')}</div>${project === 'load' ? `<div class="course-test-project__profile"><strong>Stepping Thread Group</strong><span>+10 пользователей / 5 с → ${state.loadCount / 10} · Loop Controller ×10</span></div>` : ''}`;
+      if (project === 'load') addAction(state.loadWrongHost ? 'Исправить Host' : 'Подменить Host', actionIcon.edit, () => { state.loadWrongHost = !state.loadWrongHost; renderArticle(); save(); }, !state.loadWrongHost);
+      else addAction(state.outdatedTests[selected.kind] ? 'Актуализировать тест' : 'Сделать тест неактуальным', actionIcon.edit, () => { state.outdatedTests[selected.kind] = !state.outdatedTests[selected.kind]; renderArticle(); save(); }, !state.outdatedTests[selected.kind]);
+      visual.innerHTML = `<div class="course-test-project__choices" role="group" aria-label="${project === 'load' ? 'Количество запросов' : 'Сценарий проекта'}">${project === 'load' ? [500, 1000].map(count => `<button type="button" data-load-count="${count}" aria-pressed="${state.loadCount === count}">${count} запросов</button>`).join('') : scenarios.map(option => `<button type="button" data-project-scenario="${option.kind}" aria-pressed="${option.kind === selected.kind}">${esc(option.label)}</button>`).join('')}</div>${project === 'load' ? `<div class="course-test-project__choices course-test-project__targets" role="group" aria-label="Цель нагрузки">${Object.entries(loadTargets).map(([key, target]) => `<button type="button" data-load-target="${key}" aria-pressed="${state.loadTarget === key}">${esc(target.label)}</button>`).join('')}</div>` : ''}<div class="course-test-project__stack" aria-label="Стек: ${esc(selected.stack)}">${scenarioIcons[selected.kind].map(name => name === 'JUnit' ? `<span class="course-test-project__runner-pair"><span class="course-test-project__tech">${techIcon('JUnit')}<span>JUnit</span></span><span aria-hidden="true">/</span><span class="course-test-project__tech">${techIcon('TestNG')}<span>TestNG</span></span></span>` : `<span class="course-test-project__tech">${techIcon(name)}<span>${esc(name)}</span></span>`).join('')}</div>${project === 'load' ? `<div class="course-test-project__profile"><strong>Stepping Thread Group</strong><span>+10 пользователей / 5 с → ${state.loadCount / 10} · Loop Controller ×10</span><span>Host: ${esc(state.loadWrongHost ? 'app.test.qatodev.ru' : loadTargets[state.loadTarget].host)}</span></div>` : ''}`;
       if (selected.kind === 'mobile-ios') visual.insertAdjacentHTML('beforeend', `<div class="course-test-project__note">${techIcon('Swift')}<span>SwiftAppium · сторонняя альтернатива для Swift</span></div>`);
       visual.querySelectorAll('[data-project-scenario]').forEach(button => button.addEventListener('click', () => {
         if (busy) return;
@@ -478,6 +516,7 @@
         renderArticle(); save();
       }));
       visual.querySelectorAll('[data-load-count]').forEach(button => button.addEventListener('click', () => { if (busy) return; state.loadCount = Number(button.dataset.loadCount); renderArticle(); save(); }));
+      visual.querySelectorAll('[data-load-target]').forEach(button => button.addEventListener('click', () => { if (busy) return; state.loadTarget = button.dataset.loadTarget; renderArticle(); save(); }));
       renderCodePanel();
       return;
     }
@@ -513,6 +552,7 @@
         : id === 'svc-payment'
           ? [['Внешний API', 'WireMock · HTTP-мок'], ['POST /payments', state.paymentStubStatus === 200 ? '200 · paid' : '503 · отказ мока']]
           : [['Контур', source], ['Последний прогон', state.lastRun?.result || 'ещё не запускался'], ...(id === 'app-a' || id === 'app-b' ? [['Нагрузка', `${state.lastRun?.serverLoads?.[id === 'app-a' ? 'a' : 'b'] || 0} / 600 запросов`]] : []), ...(id === 'app-a' ? [['Передача на B', state.online.peer ? 'включена' : 'отключена']] : []), ['Маршрут', !state.online.balancer ? 'UI, API и JMeter → напрямую к A' : state.online.a ? 'через сервер A' : state.online.b ? 'через сервер B' : 'нет доступных серверов']];
+    if (id.startsWith('svc-') && state.lastRun?.kind === 'load') rows.push(['Последняя нагрузка', `${state.lastRun.serviceLoads?.[id.slice(4)] || 0} запросов`]);
     visual.innerHTML = `<div class="course-test-viz__label">${esc(source)} <span>TEST</span></div>${rows.map(([label, value]) => `<div class="course-test-viz__row"><strong>${esc(label)}</strong><small>${esc(value)}</small></div>`).join('')}`;
     renderCodePanel();
     $('#course-article-actions').hidden = !$('#course-action-buttons').childElementCount;
@@ -545,7 +585,7 @@
     $('#course-network-selection').textContent = state.lastRun?.title || 'Автотесты';
     $('#course-network-flow').textContent = 'тестовый стенд · ход проверки';
     $('#course-network-action-buttons').replaceChildren();
-    $('#course-network-visual').innerHTML = `<div class="course-infra-network course-test-journal"><div class="course-infra-network__list">${steps.length ? steps.map(step => `<button type="button" data-step="${esc(step.id)}" data-tone="${step.status === 'error' ? 'error' : step.status === 'done' ? 'ok' : ''}" class="${selected?.id === step.id ? 'is-current' : ''}" aria-current="${selected?.id === step.id ? 'step' : 'false'}"><span>${esc(step.title)}</span><small>${step.status === 'error' ? 'сбой' : step.status === 'done' ? 'готово' : 'идёт'}</small></button>`).join('') : '<span class="course-infra-note">Выбери инструмент и запусти проверку.</span>'}</div><div class="course-infra-network__detail"><div class="course-test-journal__heading"><span class="course-test-journal__tag" data-tone="${selected?.status === 'error' ? 'error' : selected?.returning ? 'reply' : 'request'}">${esc(type || 'Ход проверки')}</span><strong>${esc(selected?.title || 'Что проверяем')}</strong></div><p>${esc(selected?.detail || 'Запусти Web UI, Mobile UI, API, SQL или нагрузку на тестовом стенде.')}</p>${example ? `<div class="course-test-journal__code-title"><span>Код теста</span><small>${esc(example.language)}</small></div><pre class="course-test-code__source course-test-journal__source"><code>${sourceLines(example, currentLine)}</code></pre>` : ''}</div></div>`;
+    $('#course-network-visual').innerHTML = `<div class="course-infra-network course-test-journal"><div class="course-infra-network__list">${steps.length ? steps.map(step => `<button type="button" data-step="${esc(step.id)}" data-tone="${step.status === 'error' ? 'error' : step.status === 'stale' ? 'stale' : step.status === 'done' ? 'ok' : ''}" class="${selected?.id === step.id ? 'is-current' : ''}" aria-current="${selected?.id === step.id ? 'step' : 'false'}"><span>${esc(step.title)}</span><small>${step.status === 'error' ? 'сбой' : step.status === 'stale' ? 'устарел' : step.status === 'done' ? 'готово' : 'идёт'}</small></button>`).join('') : '<span class="course-infra-note">Выбери инструмент и запусти проверку.</span>'}</div><div class="course-infra-network__detail"><div class="course-test-journal__heading"><span class="course-test-journal__tag" data-tone="${selected?.status === 'error' ? 'error' : selected?.status === 'stale' ? 'stale' : selected?.returning ? 'reply' : 'request'}">${esc(type || 'Ход проверки')}</span><strong>${esc(selected?.title || 'Что проверяем')}</strong></div><p>${esc(selected?.detail || 'Запусти Web UI, Mobile UI, API, SQL или нагрузку на тестовом стенде.')}</p>${selected?.status === 'stale' ? comparisonMarkup(state.lastRun?.comparison) : ''}${example ? `<div class="course-test-journal__code-title"><span>Код теста</span><small>${esc(example.language)}</small></div><pre class="course-test-code__source course-test-journal__source"><code>${sourceLines(example, currentLine)}</code></pre>` : ''}</div></div>`;
     const list = $('#course-network-visual .course-infra-network__list');
     list.scrollTop = listScroll;
     if (busy && !reviewingStep) {
@@ -717,8 +757,10 @@
     const clientId = mobile ? 'mobile' : 'client';
     const clientRoute = `${clientId}:${directUi ? 'app-a' : 'balancer'}`;
     const tool = toolForKind[kind];
-    const firstRequest = web || mobile ? 'POST /auth/login' : kind === 'payment-api' ? 'POST /payments' : kind === 'patch' ? 'PATCH /api/products/42' : kind === 'load' ? `${state.loadCount} × GET /api/products/42` : kind === 'sql' || kind === 'sql-negative' ? 'SQL SELECT' : 'GET /api/products/42';
-    state.lastRun = { title: name, kind, tool, project: projectForKind[kind], steps: [], result: 'выполняется', flowLabel: firstRequest, replyCode: 200, loadCount: kind === 'load' ? state.loadCount : undefined, serverLoads: { a: 0, b: 0 }, finalRoute: kind === 'sql' || kind === 'sql-negative' ? 'api:database' : '' };
+    const loadTarget = loadTargets[state.loadTarget];
+    const firstRequest = web || mobile ? 'POST /auth/login' : kind === 'payment-api' ? 'POST /payments' : kind === 'patch' ? 'PATCH /api/products/42' : kind === 'load' ? `${state.loadCount} × ${loadTarget.request}` : kind === 'sql' || kind === 'sql-negative' ? 'SQL SELECT' : 'GET /api/products/42';
+    state.lastRun = { title: kind === 'load' ? `${name} · ${loadTarget.label}` : name, kind, tool, project: projectForKind[kind], steps: [], result: 'выполняется', flowLabel: firstRequest, replyCode: 200, loadCount: kind === 'load' ? state.loadCount : undefined, loadTarget: kind === 'load' ? state.loadTarget : undefined, wrongHost: kind === 'load' ? state.loadWrongHost : undefined, outdated: kind !== 'load' && Boolean(state.outdatedTests[kind]), serverLoads: { a: 0, b: 0 }, serviceLoads: { auth: 0, catalog: 0, payment: 0 }, finalRoute: kind === 'sql' || kind === 'sql-negative' ? 'api:database' : '' };
+    delete state.projectResults[state.lastRun.project];
     openJournal(); renderCodePanel(); syncButtons();
     let failed = false;
     let detail = '';
@@ -733,7 +775,7 @@
         if (!row && kind === 'sql-negative' && !state.products.length) { state.taskProgress.dbEmptySql = true; state.taskProgress.dbEmpty = !!state.taskProgress.dbEmptyApi; }
       }
       if (!await animate('api:database', run, tool, true)) return;
-      if (!failed && state.apiChanged && state.apiVerified) completed.add('api-sql');
+      if (!failed && !state.lastRun.outdated && state.apiChanged && state.apiVerified) completed.add('api-sql');
     } else {
       const startRoute = web ? 'web:client' : mobile ? 'mobile:mobile' : directLoad ? 'load:app-a' : directApi ? 'api:app-a' : `${projectForKind[kind]}:balancer`;
       state.lastRun.finalRoute = startRoute;
@@ -761,7 +803,34 @@
           }
         }
       }
-      if (!failed && kind !== 'payment-api') {
+      if (!failed && kind === 'load') {
+        const chosen = loadTargets[state.lastRun.loadTarget];
+        const forwarded = target === 'app-a' && state.online.b && state.online.peer;
+        const serviceRoute = `${target}:${chosen.service}`;
+        const actualHost = state.lastRun.wrongHost ? 'app.test.qatodev.ru' : chosen.host;
+        if (!await step('host-route', `Host: ${actualHost}`, state.lastRun.wrongHost ? `Маршрут не совпал с ${chosen.host}: поток остался на серверах приложения, до ${chosen.label.toLowerCase()} не дошёл.` : `Маршрут ${chosen.host} ведёт в сервис «${chosen.label}».`, '', run)) return;
+        if (state.lastRun.wrongHost) {
+          if (forwarded && !await step('peer-forward', 'A → B · передача', 'Половина ошибочно направленного потока передана B; целевой микросервис не задействован.', 'app-a:app-b', run)) return;
+        } else {
+          const serviceStep = step(chosen.service === 'svc-auth' ? 'auth' : chosen.service === 'svc-payment' ? 'payment' : 'catalog', `${chosen.request} · ${chosen.label}`, `JMeter направляет нагрузку в ${chosen.label.toLowerCase()} через Host ${chosen.host}.`, serviceRoute, run, '', false, forwarded ? 550 : 0);
+          if (forwarded) {
+            if (!await step('peer-forward', 'A → B · передача', 'A передаёт половину потока B; оба обращаются к выбранному микросервису.', 'app-a:app-b', run)) { await serviceStep; return; }
+            const otherStep = step(chosen.service === 'svc-auth' ? 'auth-b' : chosen.service === 'svc-payment' ? 'payment-b' : 'catalog-b', `${chosen.label} · сервер B`, 'B параллельно направляет свою часть в тот же микросервис.', `app-b:${chosen.service}`, run);
+            if ((await Promise.all([serviceStep, otherStep])).some(value => !value)) return;
+          } else if (!await serviceStep) return;
+          lastService = chosen.service;
+          state.lastRun.serviceLoads[state.lastRun.loadTarget] = state.lastRun.loadCount;
+          if (chosen.service === 'svc-auth' && !state.online.auth) { failed = true; detail = '503: сервис авторизации отключён.'; markStepFailure('auth', detail); }
+          if (chosen.service === 'svc-catalog' && !state.online.catalog) { failed = true; detail = '503: сервис каталога отключён.'; markStepFailure('catalog', detail); }
+          if (!failed) {
+            const dependency = { catalog: ['database', 'db', 'PostgreSQL · SELECT'], auth: ['ext-keycloak', 'identity', 'Keycloak · токен'], payment: ['ext-gateway', 'gateway', 'WireMock · POST /gateway/payments'] }[state.lastRun.loadTarget];
+            if (!await step(dependency[1], dependency[2], `Сервис «${chosen.label}» обращается к зависимости тестового стенда.`, `${chosen.service}:${dependency[0]}`, run)) return;
+            if (dependency[0] === 'database' && !state.online.database || dependency[0] === 'ext-keycloak' && !state.online.keycloak || dependency[0] === 'ext-gateway' && state.paymentStubStatus === 503) { failed = true; detail = `503: зависимость сервиса «${chosen.label}» недоступна.`; markStepFailure(dependency[1], detail); }
+            if (!failed && !await animate(`${chosen.service}:${dependency[0]}`, run, '', true)) return;
+          }
+        }
+      }
+      if (!failed && kind !== 'payment-api' && kind !== 'load') {
         if (web || mobile) {
           if (!directUi && !await animate(`balancer:${target}`, run, '', true)) return;
           if (!await animate(clientRoute, run, '', true)) return;
@@ -803,7 +872,7 @@
         const row = productById(42);
         state.lastRun.replyCode = row ? 200 : 404;
         failed = kind === 'api' ? !row : !!row;
-        if (kind === 'api' && row) { state.apiVerified = state.apiChanged; if (state.sqlChanged) state.sqlApiVerified = true; }
+        if (kind === 'api' && row && !state.lastRun.outdated) { state.apiVerified = state.apiChanged; if (state.sqlChanged) state.sqlApiVerified = true; }
         if (kind === 'api' && state.sawKeycloakMobileFailure && !state.online.keycloak) state.apiAfterKeycloakFailure = true;
         detail = row ? `GET /api/products/42 → 200; JSON.name = «${row.name}». ${kind === 'api-negative' ? 'Ожидали 404: негативный тест не прошёл.' : 'Тест использует заранее выданный токен.'}` : `GET /api/products/42 → 404; JSON.error = not_found. ${kind === 'api' ? 'Ожидали 200: позитивный тест не прошёл.' : 'Ожидали 404: негативный тест прошёл.'}`;
         if (!row && kind === 'api-negative') { state.taskProgress.dbNegative = true; if (!state.products.length) { state.taskProgress.dbEmptyApi = true; state.taskProgress.dbEmpty = !!state.taskProgress.dbEmptySql; } }
@@ -823,11 +892,11 @@
         if (state.paymentStubStatus === 503) { failed = true; detail = kind === 'payment-api' ? 'POST /payments → 503; WireMock вернул отказ.' : '503: мок оплаты вернул отказ; UI-автотест обнаружил ошибку.'; state.sawPaymentFailure = true; markStepFailure('gateway', detail); }
         else {
           detail = kind === 'payment-api' ? 'POST /payments → 200; JSON.status = paid (ответ WireMock: approved).' : `${mobile ? `Нативный ${platform} UI` : 'Web UI'}: вход, каталог и мок оплаты прошли; HTTP 200.`;
-          if (kind === 'web') completed.add('web');
-          if (kind === 'selenium') completed.add('selenium');
-          if (kind === 'mobile') completed.add('mobile');
-          if (kind === 'mobile-ios') completed.add('mobile-ios');
-          if (kind === 'espresso') completed.add('espresso');
+          if (!state.lastRun.outdated && kind === 'web') completed.add('web');
+          if (!state.lastRun.outdated && kind === 'selenium') completed.add('selenium');
+          if (!state.lastRun.outdated && kind === 'mobile') completed.add('mobile');
+          if (!state.lastRun.outdated && kind === 'mobile-ios') completed.add('mobile-ios');
+          if (!state.lastRun.outdated && kind === 'espresso') completed.add('espresso');
           if (state.sawPaymentFailure) completed.add('payment');
           if (web && state.sawAuthWebFailure && state.online.auth) completed.add('auth');
           if (mobile && state.sawKeycloakMobileFailure && state.apiAfterKeycloakFailure && state.online.keycloak) completed.add('keycloak');
@@ -836,25 +905,34 @@
       }
       if (!failed && kind === 'load') {
         const count = state.lastRun.loadCount;
+        const chosen = loadTargets[state.lastRun.loadTarget];
         const forwarded = target === 'app-a' && state.online.b && state.online.peer;
         const copies = forwarded ? 2 : 1;
         const perCopy = forwarded ? count / 2 : count;
         state.lastRun.serverLoads = { a: target === 'app-a' ? perCopy : 0, b: forwarded || target === 'app-b' ? perCopy : 0 };
-        const errors = productById(42) ? Math.max(0, count - copies * 600) : count;
+        const missingProduct = !state.lastRun.wrongHost && state.lastRun.loadTarget === 'catalog' && !productById(42);
+        const appCapacity = copies * (state.lastRun.wrongHost ? 200 : 600);
+        const errors = missingProduct ? count : Math.max(0, count - Math.min(appCapacity, state.lastRun.wrongHost ? appCapacity : chosen.limit));
         failed = errors > 0;
-        state.lastRun.replyCode = failed ? productById(42) ? 503 : 404 : 200;
-        detail = productById(42) ? `${count - errors} × 200 · ${errors} × 503. A: ${state.lastRun.serverLoads.a}, B: ${state.lastRun.serverLoads.b}; предел 600 на копию.${directLoad ? ' Резервный вход JMeter → A.' : ''}` : `${count} × 404: товар 42 отсутствует в тестовой БД.`;
+        state.lastRun.replyCode = failed ? missingProduct ? 404 : 503 : 200;
+        detail = missingProduct ? `${count} × 404: товар 42 отсутствует в тестовой БД.` : `${count - errors} × 200 · ${errors} × 503. A: ${state.lastRun.serverLoads.a}, B: ${state.lastRun.serverLoads.b}. ${state.lastRun.wrongHost ? `Host не совпал: ${chosen.label} получил 0 запросов; приложение тратит ресурсы на обработку неверного маршрута.` : `${chosen.label}: ${count} запросов; предел ${chosen.limit} за прогон.`}${directLoad ? ' Резервный вход JMeter → A.' : ''}`;
         if (errors) state.sawLoadFailure = true;
-        if (count === 1000 && errors && productById(42)) state.sawLoad1000Failure = true;
-        else if (count === 1000 && !errors && state.sawLoad1000Failure && state.online.a && state.online.b) completed.add('load-1000');
-        if (count === 1000 && errors && target === 'app-a' && !state.online.peer && state.online.b) state.sawPeerOverload = true;
-        if (count === 1000 && !errors && state.sawPeerOverload && forwarded) completed.add('peer-forward');
-        if (errors && !state.online.b && state.online.a && count === 1000) state.taskProgress.serverBOverload = true;
+        if (state.lastRun.wrongHost && errors) state.taskProgress.wrongHostFailure = true;
+        if (!state.lastRun.wrongHost && state.lastRun.loadTarget === 'catalog' && state.taskProgress.wrongHostFailure && !failed) completed.add('load-host');
+        if (!state.lastRun.wrongHost && state.lastRun.loadTarget === 'auth' && !failed) completed.add('load-auth');
+        if (!state.lastRun.wrongHost && state.lastRun.loadTarget === 'payment' && !failed) completed.add('load-payment');
+        if (state.lastRun.loadTarget === 'catalog' && !state.lastRun.wrongHost) {
+          if (count === 1000 && errors && !missingProduct) state.sawLoad1000Failure = true;
+          else if (count === 1000 && !errors && state.sawLoad1000Failure && state.online.a && state.online.b) completed.add('load-1000');
+          if (count === 1000 && errors && target === 'app-a' && !state.online.peer && state.online.b) state.sawPeerOverload = true;
+          if (count === 1000 && !errors && state.sawPeerOverload && forwarded) completed.add('peer-forward');
+          if (errors && !state.online.b && state.online.a && count === 1000) state.taskProgress.serverBOverload = true;
+        }
       }
-      if (kind === 'load' && directLoad && !failed && state.lastRun.loadCount === 1000 && state.lastRun.serverLoads.b === 500) state.taskProgress.balancerLoad = true;
+      if (kind === 'load' && directLoad && !failed && state.lastRun.loadCount === 1000 && state.lastRun.loadTarget === 'catalog' && !state.lastRun.wrongHost && state.lastRun.serverLoads.b === 500) state.taskProgress.balancerLoad = true;
       if (target) {
-        if (kind === 'load' && target === 'app-a' && state.online.b && state.online.peer) {
-          if (!await animate('app-b:svc-catalog', run, '', true)) return;
+        if (kind === 'load' && !state.lastRun.wrongHost && target === 'app-a' && state.online.b && state.online.peer) {
+          if (!await animate(`app-b:${loadTargets[state.lastRun.loadTarget].service}`, run, '', true)) return;
           if (!await animate('app-a:app-b', run, '', true)) return;
         }
         if (lastService && !await animate(`${target}:${lastService}`, run, '', true)) return;
@@ -871,12 +949,23 @@
       }
     }
     if (run !== runId) return;
+    const stale = !failed && state.lastRun.outdated;
+    if (stale) {
+      state.lastRun.comparison = staleComparison(kind);
+      detail = 'Приложение ответило корректно, но ожидание теста устарело. Сравни Expected и Actual ниже, затем актуализируй проверку.';
+      failed = true;
+      if (web) state.taskProgress.staleWeb = true;
+      if (kind === 'api') state.taskProgress.staleApi = true;
+    }
+    if (!failed && kind === 'web' && state.taskProgress.staleWeb) completed.add('stale-web');
+    if (!failed && kind === 'api' && state.taskProgress.staleApi) completed.add('stale-api');
     if (directUi && !failed) state.taskProgress[web ? 'balancerWeb' : 'balancerMobile'] = true;
     if (directApi && kind === 'api' && !failed) state.taskProgress.balancerApi = true;
     if (kind === 'sql' && state.sqlChanged && state.sqlApiVerified && productById(42)) completed.add('db-update');
-    const result = { id: 'assert', title: failed ? 'Проверка не прошла' : 'Проверка прошла', detail, route: state.lastRun.finalRoute, tool, returning: true, flowLabel: state.lastRun.flowLabel, replyCode: state.lastRun.replyCode, status: failed ? 'error' : 'done' };
+    const result = { id: 'assert', title: stale ? 'Ожидание теста устарело' : failed ? 'Проверка не прошла' : 'Проверка прошла', detail, route: state.lastRun.finalRoute, tool, returning: true, flowLabel: state.lastRun.flowLabel, replyCode: state.lastRun.replyCode, status: stale ? 'stale' : failed ? 'error' : 'done' };
     state.lastRun.steps.push(result);
-    state.lastRun.result = failed ? 'ошибка' : 'успех';
+    state.lastRun.result = stale ? 'устарел' : failed ? 'ошибка' : 'успех';
+    state.projectResults[state.lastRun.project] = stale ? 'stale' : failed ? 'error' : 'success';
     if (!reviewingStep) state.selectedStep = result.id;
     busy = false;
     refreshMap(); renderArticle(); renderJournal(); syncButtons(); save();

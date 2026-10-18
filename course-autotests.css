@@ -49,6 +49,8 @@ body[data-chapter="4"] #course-packets { position: absolute; z-index: 4; inset: 
 .course-test-request-packet[data-route="app-a:app-b"] { border-color: #2baf76; color: #22875c; box-shadow: 0 3px 12px color-mix(in srgb, #2baf76 28%, transparent); }
 .course-test-tool { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 58px; padding: 4px 6px; border: 1px solid var(--map-border); border-radius: 12px; background: var(--map-surface); color: var(--map-text); font: inherit; line-height: 1; cursor: pointer; pointer-events: auto; }
 .course-test-tool:is(:hover, :focus-visible, .is-selected) { border-color: var(--course-blue); }
+.course-test-tool.is-test-failed, .course-test-tool.is-test-failed:is(:hover, :focus-visible, .is-selected) { border-color: #c45b55; background: color-mix(in srgb, #c45b55 10%, var(--map-surface)); box-shadow: 0 0 0 2px color-mix(in srgb, #c45b55 16%, transparent); }
+.course-test-tool.is-test-failed strong, .course-test-tool.is-test-failed small { color: #bb514c; }
 .course-test-tool:focus-visible { outline: 2px solid var(--course-blue); outline-offset: 3px; }
 .course-test-tool strong { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .68rem; font-weight: 750; }
 .course-test-tool small { color: var(--map-muted); font-size: .47rem; font-weight: 650; }
@@ -68,6 +70,7 @@ body[data-chapter="4"] .course-micro-peer-link.is-disabled :is(circle, .course-m
 body[data-chapter="4"] .course-node.is-test-processing .questions-map-card__question { border-color: var(--course-blue); box-shadow: 0 0 0 4px color-mix(in srgb, var(--course-blue) 16%, transparent); }
 body[data-chapter="4"] .course-node.is-test-replaying .questions-map-card__question, .course-test-tool.is-test-replaying { border-color: var(--course-blue); box-shadow: 0 0 0 4px color-mix(in srgb, var(--course-blue) 16%, transparent); }
 body[data-chapter="4"] .course-node.is-journal-selected .questions-map-card__question, .course-test-tool.is-journal-selected { border-color: var(--course-blue); box-shadow: 0 0 0 2px color-mix(in srgb, var(--course-blue) 12%, transparent); }
+.course-test-tool.is-test-failed:is(.is-journal-selected, .is-test-replaying) { border-color: #c45b55; box-shadow: 0 0 0 3px color-mix(in srgb, #c45b55 20%, transparent); }
 .course-test-viz { display: grid; align-content: start; gap: .4rem; min-height: 0; margin: .28rem 0 .2rem; padding: .55rem; border: 1px solid var(--map-border); border-radius: 13px; background: color-mix(in srgb, var(--course-blue) 4%, var(--map-bg)); }
 .course-test-viz__label { display: flex; justify-content: space-between; align-items: center; color: var(--map-muted); font-size: .66rem; font-weight: 700; }
 .course-test-viz__label span { padding: .15rem .3rem; border-radius: 5px; background: color-mix(in srgb, var(--course-blue) 11%, var(--map-bg)); color: var(--course-blue); font-size: .51rem; font-weight: 850; }
@@ -91,6 +94,8 @@ body[data-chapter="4"] .course-node.is-journal-selected .questions-map-card__que
 body[data-chapter="4"] .course-article[data-article="database"] .course-article__scroll { display: block; overflow-y: auto; overscroll-behavior: contain; }
 body[data-chapter="4"] .course-article[data-article="database"] #course-article-visual:not(:empty) { display: grid; flex: none; align-content: start; }
 .course-test-project__choices { display: flex; flex-wrap: wrap; gap: .3rem; }
+.course-test-project__targets { margin-top: .32rem; }
+body[data-chapter="4"] .course-article[data-article="tasks"] #course-article-primary { display: grid; gap: .45rem; margin: .55rem 0; align-content: start; }
 .course-test-project__choices button { padding: .32rem .46rem; border: 1px solid var(--map-border); border-radius: 8px; background: var(--map-bg); color: var(--map-text); font-family: inherit; font-size: .62rem; font-weight: 700; line-height: 1.2; cursor: pointer; }
 .course-test-project__choices button[aria-pressed="true"] { border-color: var(--course-blue); background: color-mix(in srgb, var(--course-blue) 12%, var(--map-bg)); color: var(--course-blue); }
 .course-test-project__choices button:focus-visible { outline: 2px solid var(--course-blue); outline-offset: 2px; }
@@ -119,6 +124,7 @@ body[data-chapter="4"] .course-article[data-article^="project-"] .course-test-co
 .course-test-code__status { flex: none; padding: .16rem .34rem; border-radius: 6px; background: color-mix(in srgb, var(--course-blue) 12%, var(--map-bg)); color: var(--course-blue); }
 .course-test-code__status[data-status="success"] { color: #278960; background: color-mix(in srgb, #278960 12%, var(--map-bg)); }
 .course-test-code__status[data-status="error"] { color: #c35752; background: color-mix(in srgb, #c35752 12%, var(--map-bg)); }
+.course-test-code__status[data-status="stale"] { color: #a66d16; background: color-mix(in srgb, #dda333 15%, var(--map-bg)); }
 .course-test-code__source { margin: 0; color: var(--map-text); font: 500 .61rem/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .course-test-code__source code { display: block; }
 .course-test-code__line { display: grid; grid-template-columns: 1.6rem minmax(0, 1fr); min-height: 1.55em; margin: 0 -.35rem; padding: 0 .35rem; border-radius: 4px; }
@@ -138,6 +144,10 @@ html[data-theme="dark"] .course-test-code__call { color: #88bded; }
 .course-test-code__checks span { color: var(--course-blue); font-weight: 800; }
 .course-test-code__result { color: var(--map-text); font-size: .7rem; }
 .course-test-code__result p { margin: .42rem 0 0; color: var(--map-muted); line-height: 1.5; }
+.course-test-comparison { display: grid; gap: .23rem; margin-top: .42rem; padding: .4rem .5rem; border: 1px solid color-mix(in srgb, #c45b55 30%, var(--map-border)); border-radius: 9px; background: color-mix(in srgb, #c45b55 6%, var(--map-bg)); font: 600 .6rem/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.course-test-comparison > div { display: grid; grid-template-columns: 4.2rem minmax(0, 1fr); gap: .3rem; min-width: 0; }
+.course-test-comparison span { color: #bb514c; }
+.course-test-comparison code { min-width: 0; overflow-wrap: anywhere; color: var(--map-text); font: inherit; }
 body[data-chapter="4"] .course-test-journal { grid-template-columns: minmax(105px, 26%) minmax(0, 1fr); gap: .38rem; }
 body[data-chapter="4"] .course-test-journal .course-infra-network__list { gap: .22rem; overflow-y: auto; scrollbar-width: thin; }
 body[data-chapter="4"] .course-test-journal .course-infra-network__list button { gap: .18rem; padding: .34rem .35rem; border-radius: 8px; font-size: .61rem; }
@@ -148,6 +158,8 @@ body[data-chapter="4"] .course-test-journal .course-infra-network__detail { disp
 .course-test-journal__tag { flex: none; padding: .13rem .25rem; border-radius: 5px; background: color-mix(in srgb, var(--course-blue) 12%, var(--map-bg)); color: var(--course-blue); font-size: .48rem; font-weight: 800; }
 .course-test-journal__tag[data-tone="reply"] { background: color-mix(in srgb, #26845e 12%, var(--map-bg)); color: #26845e; }
 .course-test-journal__tag[data-tone="error"] { background: color-mix(in srgb, #bc5d57 12%, var(--map-bg)); color: #bc5d57; }
+.course-test-journal__tag[data-tone="stale"] { background: color-mix(in srgb, #dda333 15%, var(--map-bg)); color: #a66d16; }
+body[data-chapter="4"] .course-test-journal .course-infra-network__list button[data-tone="stale"] small { color: #a66d16; }
 .course-test-journal__code-title { display: flex; justify-content: space-between; align-items: baseline; gap: .3rem; padding-top: .22rem; border-top: 1px solid var(--map-border); color: var(--map-text); font-size: .58rem; font-weight: 750; }
 .course-test-journal__code-title small { min-width: 0; overflow: hidden; color: var(--map-muted); font-size: .51rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .course-test-journal__source { flex: 0 0 auto; min-width: 0; padding: .22rem .25rem; overflow-x: auto; border: 1px solid var(--map-border); border-radius: 8px; background: color-mix(in srgb, var(--course-blue) 3%, var(--map-bg)); font-size: .49rem; line-height: 1.25; white-space: pre; }
