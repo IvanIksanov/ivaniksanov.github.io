@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://qatodev.ru/sitemap.xml
+# Test pages use a static noindex meta tag. Allow crawling so robots can read it.
