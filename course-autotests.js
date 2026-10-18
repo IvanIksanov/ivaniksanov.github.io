@@ -626,8 +626,10 @@
     if (ticket === replayId) { replayCleanup(); replayCleanup = () => {}; }
   }
   function openJournal() {
-    if (matchMedia('(max-width: 767px)').matches) { article.hidden = true; state.article = ''; refreshMap(); }
+    article.hidden = true;
+    state.article = '';
     journal.hidden = false;
+    refreshMap();
     renderJournal();
     save();
   }
@@ -703,7 +705,6 @@
     const tool = toolForKind[kind];
     const firstRequest = web || mobile ? 'POST /auth/login' : kind === 'payment-api' ? 'POST /payments' : kind === 'patch' ? 'PATCH /api/products/42' : kind === 'load' ? `${state.loadCount} × GET /api/products/42` : kind === 'sql' || kind === 'sql-negative' ? 'SQL SELECT' : 'GET /api/products/42';
     state.lastRun = { title: name, kind, tool, project: projectForKind[kind], steps: [], result: 'выполняется', flowLabel: firstRequest, replyCode: 200, loadCount: kind === 'load' ? state.loadCount : undefined, serverLoads: { a: 0, b: 0 }, finalRoute: kind === 'sql' || kind === 'sql-negative' ? 'api:database' : '' };
-    refreshMap();
     openJournal(); renderCodePanel(); syncButtons();
     let failed = false;
     let detail = '';
