@@ -4,8 +4,8 @@
   const projects = [
     { id: 'web', title: 'Web UI · проект', detail: 'браузерные тесты', marks: [['TypeScript', 'Playwright'], ['Java', 'Selenium', 'JUnit']], x: 245, y: 380, width: 220 },
     { id: 'mobile', title: 'Mobile UI · проект', detail: 'Android и iOS', marks: [['Java', 'Appium', 'Android', 'iOS'], ['Android Studio', 'Kotlin', 'Espresso']], x: 245, y: 875, width: 220 },
-    { id: 'api', title: 'API + SQL · проект', detail: 'проверка данных', marks: [['Java', 'REST Assured', 'JUnit', 'PostgreSQL']], x: 1005, y: 915, width: 190 },
-    { id: 'load', title: 'Нагрузка · проект', detail: 'профиль нагрузки', marks: [['Java', 'JMeter', 'Groovy']], x: 1230, y: 915, width: 170 }
+    { id: 'load', title: 'Нагрузка · проект', detail: 'профиль нагрузки', marks: [['Java', 'JMeter', 'Groovy']], x: 1005, y: 915, width: 170 },
+    { id: 'api', title: 'API + SQL · проект', detail: 'проверка данных', marks: [['Java', 'REST Assured', 'JUnit', 'PostgreSQL']], x: 1230, y: 915, width: 190 }
   ];
   // Те же наборы Iconify и фирменные цвета, что используются для стеков в resume.js.
   const techIcons = {
@@ -46,11 +46,11 @@
   const testLinks = [
     { id: 'web:client', d: 'M 465 409 C 550 425, 620 480, 640 551' },
     { id: 'mobile:mobile', d: 'M 465 904 C 550 900, 620 860, 670 826' },
-    { id: 'api:balancer', d: 'M 1100 947 C 1030 840, 1060 680, 1170 621' },
-    { id: 'api:app-a', d: 'M 1195 947 C 1410 950, 1510 710, 1660 456', note: 'Прямой вход API-тестов к серверу A при отключённом балансировщике' },
-    { id: 'load:balancer', d: 'M 1315 947 C 1230 850, 1200 730, 1230 650' },
-    { id: 'load:app-a', d: 'M 1400 947 C 1510 825, 1490 505, 1660 456', note: 'Резервный прямой вход JMeter к серверу A при недоступном балансировщике' },
-    { id: 'api:database', d: 'M 1195 947 C 1510 1080, 2400 1080, 2510 651', note: 'JDBC-проверка напрямую читает тестовую PostgreSQL, минуя HTTP-вход' }
+    { id: 'load:balancer', d: 'M 1090 947 C 1040 845, 1080 690, 1170 621' },
+    { id: 'api:balancer', d: 'M 1325 947 C 1300 845, 1270 720, 1230 650' },
+    { id: 'load:app-a', d: 'M 1175 947 C 1280 820, 1450 580, 1660 456', note: 'Резервный прямой вход JMeter к серверу A при недоступном балансировщике' },
+    { id: 'api:app-a', d: 'M 1420 947 C 1490 820, 1570 590, 1660 456', note: 'Прямой вход API-тестов к серверу A при отключённом балансировщике' },
+    { id: 'api:database', d: 'M 1420 947 C 1650 1080, 2400 1080, 2510 651', note: 'JDBC-проверка напрямую читает тестовую PostgreSQL, минуя HTTP-вход' }
   ];
   const layer = document.getElementById('course-test-tools');
   if (layer) {
