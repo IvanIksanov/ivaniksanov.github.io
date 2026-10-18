@@ -89,6 +89,8 @@
   let busy = false;
   let runId = 0;
   let saveTimer = 0;
+  let replayId = 0;
+  let replayCleanup = () => {};
   let motion;
   function save() {
     state.offline = [...offline];
@@ -165,6 +167,7 @@
     });
     if (chapter === '3') document.querySelectorAll('#course-tools [data-tool]').forEach(tool => tool.classList.toggle('is-selected', state.article === `tool-${tool.dataset.tool}`));
     drawLines();
+    if (!networkPanel.hidden) highlightNetworkRequest();
   }
   const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
   async function hop(from, to, kind = 'request') {
@@ -214,60 +217,71 @@
   async function run(kind) {
     if (busy) return;
     if (kind === 'checkout' && !state.loaded) return;
+    replayId++;
+    replayCleanup(); replayCleanup = () => {};
     busy = true;
     const current = ++runId;
-    state.lastRun = { kind, code: '…', source: 'Запрос отправлен', trace: [], htmlCode: 0 };
-    renderNetwork();
+    const segments = { html: [], api: [], checkout: [] };
+    let segment = kind === 'page' ? 'html' : 'checkout';
+    const travel = async (from, to, direction = 'request') => {
+      segments[segment].push({ route: `${from}:${to}`, returning: direction === 'response' });
+      if (!networkPanel.hidden && state.networkRequest === segment) highlightNetworkRequest();
+      await hop(from, to, direction);
+    };
+    state.lastRun = { kind, code: '…', source: 'Запрос отправлен', trace: [], htmlCode: 0, segments };
+    state.networkRequest = kind === 'page' ? 'html' : 'checkout';
+    openNetwork();
     playButton.disabled = true;
     checkoutButton.disabled = true;
     const app = activeApp();
     let trace = [];
-    const log = (label, code) => { trace.push({ label, code }); state.lastRun = { kind, code: '…', source: label, trace: [...trace], htmlCode: kind === 'page' && !trace.some(item => item.label.includes('HTML')) ? 0 : 200 }; refreshArticle(); renderNetwork(); };
-    const done = result => { if (current === runId) finish(kind, { ...result, trace }); };
-    await hop('client', 'balancer');
+    const log = (label, code) => { trace.push({ label, code }); state.lastRun = { kind, code: segment === 'html' ? '…' : code, source: label, trace: [...trace], htmlCode: kind === 'page' && !trace.some(item => item.label.includes('HTML')) ? 0 : 200, app, segments }; refreshArticle(); renderNetwork(); };
+    const done = result => { if (current === runId) finish(kind, { ...result, app, trace, segments }); };
+    await travel('client', 'balancer');
     if (current !== runId) return;
     if (!app) { log('Нет доступного сервера A/B', '—'); done({ ...response('—', { error: 'NO_APP_SERVER' }, 'Балансировщик'), htmlCode: kind === 'page' ? 0 : 200 }); return; }
-    await hop('balancer', app);
+    await travel('balancer', app);
     if (current !== runId) return;
     if (kind === 'page') {
       log(`${app === 'app-a' ? 'A' : 'B'} → HTML`, 200);
-      await hop(app, 'balancer', 'response');
-      await hop('balancer', 'client', 'response');
-      await hop('client', 'balancer');
-      await hop('balancer', app);
+      await travel(app, 'balancer', 'response');
+      await travel('balancer', 'client', 'response');
+      segment = 'api';
+      await travel('client', 'balancer');
+      await travel('balancer', app);
     }
-    await hop(app, 'svc-auth');
+    await travel(app, 'svc-auth');
     if (current !== runId) return;
-    if (offline.has('svc-auth')) { log('Авторизация недоступна', 503); await hop('svc-auth', app, 'response'); done({ ...response(503, { error: 'AUTH_UNAVAILABLE' }, 'Авторизация'), htmlCode: 200 }); return; }
-    if (!state.sessionValid) { log('Сессия не действительна', 401); await hop('svc-auth', app, 'response'); done({ ...response(401, { error: 'SESSION_REQUIRED' }, 'Авторизация'), htmlCode: 200 }); return; }
+    if (offline.has('svc-auth')) { log('Авторизация недоступна', 503); await travel('svc-auth', app, 'response'); done({ ...response(503, { error: 'AUTH_UNAVAILABLE' }, 'Авторизация'), htmlCode: 200 }); return; }
+    if (!state.sessionValid) { log('Сессия не действительна', 401); await travel('svc-auth', app, 'response'); done({ ...response(401, { error: 'SESSION_REQUIRED' }, 'Авторизация'), htmlCode: 200 }); return; }
     log('Авторизация → сессия действительна', 200);
-    await hop('svc-auth', app, 'response');
-    await hop(app, 'svc-catalog');
+    await travel('svc-auth', app, 'response');
+    await travel(app, 'svc-catalog');
     if (current !== runId) return;
-    if (offline.has('svc-catalog')) { log('Каталог недоступен', 503); await hop('svc-catalog', app, 'response'); done({ ...response(503, { error: 'CATALOG_UNAVAILABLE' }, 'Каталог товаров'), htmlCode: 200 }); return; }
-    await hop('svc-catalog', 'database');
+    if (offline.has('svc-catalog')) { log('Каталог недоступен', 503); await travel('svc-catalog', app, 'response'); done({ ...response(503, { error: 'CATALOG_UNAVAILABLE' }, 'Каталог товаров'), htmlCode: 200 }); return; }
+    await travel('svc-catalog', 'database');
     if (current !== runId) return;
-    if (offline.has('database')) { log('PostgreSQL каталога недоступна', 503); await hop('database', 'svc-catalog', 'response'); done({ ...response(503, { error: 'CATALOG_DB_UNAVAILABLE' }, 'PostgreSQL · каталог'), htmlCode: 200 }); return; }
+    if (offline.has('database')) { log('PostgreSQL каталога недоступна', 503); await travel('database', 'svc-catalog', 'response'); done({ ...response(503, { error: 'CATALOG_DB_UNAVAILABLE' }, 'PostgreSQL · каталог'), htmlCode: 200 }); return; }
     log('Каталог → PostgreSQL → 2 строки', 200);
-    await hop('database', 'svc-catalog', 'response');
-    await hop('svc-catalog', app, 'response');
+    await travel('database', 'svc-catalog', 'response');
+    await travel('svc-catalog', app, 'response');
     if (kind === 'page') {
-      await hop(app, 'balancer', 'response');
-      await hop('balancer', 'client', 'response');
+      await travel(app, 'balancer', 'response');
+      await travel('balancer', 'client', 'response');
       done({ ...response(200, { products: products() }, 'Каталог товаров'), htmlCode: 200 });
       return;
     }
-    await hop(app, 'svc-payment');
+    await travel(app, 'svc-payment');
     if (current !== runId) return;
-    if (offline.has('svc-payment')) { log('Оплата недоступна; списания нет', 503); await hop('svc-payment', app, 'response'); done({ ...response(503, { error: 'PAYMENT_UNAVAILABLE' }, 'Оплата'), htmlCode: 200 }); return; }
-    await hop('svc-payment', 'ext-gateway');
+    if (offline.has('svc-payment')) { log('Оплата недоступна; списания нет', 503); await travel('svc-payment', app, 'response'); done({ ...response(503, { error: 'PAYMENT_UNAVAILABLE' }, 'Оплата'), htmlCode: 200 }); return; }
+    await travel('svc-payment', 'ext-gateway');
     if (current !== runId) return;
     const key = state.pendingKey || keyForPurchase();
     state.pendingKey = key;
     let record = state.paymentRecords[key];
     const idempotent = !!record;
     if (!record) {
-      await hop('ext-gateway', 'ext-bank');
+      await travel('ext-gateway', 'ext-bank');
       if (current !== runId) return;
       record = { paymentId: `pay_${(state.paymentCount + 1).toString().padStart(3, '0')}`, amount: 132980 };
       state.paymentRecords[key] = record;
@@ -276,18 +290,18 @@
     if (state.paymentTimeout && !idempotent) {
       state.paymentTimeout = false;
       log('Оплата проведена; ответ потерян', 504);
-      await hop('ext-bank', 'ext-gateway', 'response');
-      await hop('ext-gateway', 'svc-payment', 'response');
-      await hop('svc-payment', app, 'response');
+      await travel('ext-bank', 'ext-gateway', 'response');
+      await travel('ext-gateway', 'svc-payment', 'response');
+      await travel('svc-payment', app, 'response');
       done({ ...response(504, { error: 'PAYMENT_TIMEOUT', status: 'unknown', idempotencyKey: key }, 'Оплата'), htmlCode: 200, idempotent: false });
       return;
     }
     log(idempotent ? 'Оплата → прежний результат без списания' : 'Оплата → списание выполнено', 200);
-    if (!idempotent) await hop('ext-bank', 'ext-gateway', 'response');
-    await hop('ext-gateway', 'svc-payment', 'response');
-    await hop('svc-payment', app, 'response');
-    await hop(app, 'balancer', 'response');
-    await hop('balancer', 'client', 'response');
+    if (!idempotent) await travel('ext-bank', 'ext-gateway', 'response');
+    await travel('ext-gateway', 'svc-payment', 'response');
+    await travel('svc-payment', app, 'response');
+    await travel(app, 'balancer', 'response');
+    await travel('balancer', 'client', 'response');
     state.pendingKey = null;
     done({ ...response(200, { paymentId: record.paymentId, amount: record.amount, status: 'paid', idempotencyKey: key }, 'Оплата'), htmlCode: 200, idempotent });
   }
@@ -440,6 +454,55 @@
       ...(checkout ? [{ id: 'checkout', method: 'POST', name: '/api/checkout', code: checkout.code, source: checkout.source, body: checkout.body }] : [])
     ];
   }
+  function routesForNetwork(id) {
+    if (id === 'login') return [];
+    const live = busy && state.lastRun && (id === 'checkout' ? state.lastRun.kind === 'checkout' : state.lastRun.kind === 'page') ? state.lastRun : null;
+    const result = live || (id === 'checkout' ? state.lastCheckout : id === 'html' || id === 'api' ? state.lastPage : null);
+    if (!result) return [];
+    if (Array.isArray(result.segments?.[id])) return result.segments[id];
+    const app = result.app || activeApp();
+    const forward = [['client', 'balancer'], ...(app ? [['balancer', app]] : [])];
+    if (id === 'html') return forward.map(([from, to]) => ({ route: `${from}:${to}`, returning: false }));
+    if (!app) return forward.map(([from, to]) => ({ route: `${from}:${to}`, returning: false }));
+    const service = id === 'checkout' ? 'svc-payment' : 'svc-catalog';
+    const path = [...forward, [app, 'svc-auth']];
+    if (result.source !== 'Авторизация') path.push([app, service]);
+    if (result.code === 200) path.push([service, id === 'checkout' ? 'ext-gateway' : 'database']);
+    return path.map(([from, to]) => ({ route: `${from}:${to}`, returning: false }));
+  }
+  function pathForNetwork(route) {
+    const [from, to] = route.split(':');
+    return lineHost.querySelector(`[data-route="${route}"]`) || lineHost.querySelector(`[data-route="${to}:${from}"]`);
+  }
+  function highlightNetworkRequest() {
+    lineHost.querySelectorAll('.is-network-selected').forEach(path => path.classList.remove('is-network-selected'));
+    if (networkPanel.hidden) return;
+    for (const item of routesForNetwork(state.networkRequest)) pathForNetwork(item.route)?.classList.add('is-network-selected');
+  }
+  async function replayRequest(id) {
+    const ticket = ++replayId;
+    replayCleanup(); replayCleanup = () => {};
+    if (busy) return;
+    for (const item of routesForNetwork(id)) {
+      if (ticket !== replayId) return;
+      const path = pathForNetwork(item.route);
+      if (!path) continue;
+      const midpoint = path.getPointAtLength(path.getTotalLength() / 2);
+      const panelWidth = matchMedia('(max-width: 767px)').matches ? 0 : networkPanel.getBoundingClientRect().width;
+      motion.focus(midpoint.x + panelWidth / (2 * motion.snapshot().scale), midpoint.y, true);
+      path.classList.remove('is-replaying', 'is-replay-back');
+      void path.getBoundingClientRect();
+      path.classList.add('is-replaying');
+      path.classList.toggle('is-replay-back', item.returning);
+      const destination = item.route.split(':')[1];
+      const node = nodeHost.querySelector(`[data-node="${destination}"] .questions-map-card__question`);
+      node?.classList.add('is-processing');
+      replayCleanup = () => { path.classList.remove('is-replaying', 'is-replay-back'); node?.classList.remove('is-processing'); };
+      await wait(matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 750);
+      if (ticket !== replayId) return;
+      replayCleanup(); replayCleanup = () => {};
+    }
+  }
   function renderNetwork() {
     if (networkPanel.hidden) return;
     const requests = networkRequests();
@@ -452,14 +515,15 @@
       ? `${selected.method} ${selected.name === 'HTML' ? '/' : selected.name} HTTP/1.1\nHost: qatodev.ru\n${selected.id === 'checkout' ? `Idempotency-Key: ${state.lastCheckout?.body?.idempotencyKey || state.pendingKey || 'будет создан'}\nContent-Type: application/json\n` : ''}${['api', 'checkout'].includes(selected.id) ? `Cookie: session=${state.sessionValid ? 'demo' : 'отсутствует'}\n` : ''}\nHTTP ${selected.code}${selected.id === 'login' ? '\nSet-Cookie: session=demo; HttpOnly; Secure; SameSite=Lax' : ''}${selected.source ? `\nИсточник ответа: ${selected.source}` : ''}`
       : state.networkTab === 'preview' ? (selected.id === 'html' ? (selected.code === 200 ? `qa market\n${pageHasProducts() ? 'Ноутбук QA Book · Смартфон Pixel QA' : 'Товары ещё не получены'}` : 'Страница ещё не загружена') : selected.body && typeof selected.body === 'object' ? Object.entries(selected.body).map(([key, value]) => `${key}: ${typeof value === 'object' ? JSON.stringify(value) : value}`).join('\n') : selected.body || 'Ответ ещё не получен')
       : selected.body && typeof selected.body === 'object' ? JSON.stringify(selected.body, null, 2) : selected.body || 'Ответ ещё не получен';
-    $('#course-network-visual').innerHTML = `<div class="course-micro-network"><div class="course-micro-network__list">${requests.map(item => `<button type="button" data-request="${item.id}" class="${item.id === selected.id ? 'is-current' : ''}"><strong>${item.method}</strong><span>${escapeHtml(item.name)}</span><small>${item.code}</small></button>`).join('')}</div><div class="course-micro-network__detail"><div class="course-micro-network__url">https://qatodev.ru${selected.name === 'HTML' ? '/' : selected.name}</div><div class="course-micro-network__tabs">${[['headers', 'Заголовки'], ['preview', 'Просмотр'], ['response', 'Ответ']].map(([id, label]) => `<button type="button" data-tab="${id}" class="${state.networkTab === id ? 'is-current' : ''}">${label}</button>`).join('')}</div><div class="course-micro-network__body"><code>${escapeHtml(body)}</code></div></div></div>`;
-    $('#course-network-visual').querySelectorAll('[data-request]').forEach(button => button.addEventListener('click', () => { state.networkRequest = button.dataset.request; renderNetwork(); save(); }));
+    $('#course-network-visual').innerHTML = `<div class="course-micro-network"><div class="course-micro-network__list">${requests.map(item => `<button type="button" data-request="${item.id}" data-tone="${Number(item.code) >= 400 ? 'error' : Number(item.code) >= 200 ? 'ok' : 'pending'}" class="${item.id === selected.id ? 'is-current' : ''}"><strong>${item.method}</strong><span>${escapeHtml(item.name)}</span><small>${item.code}</small></button>`).join('')}</div><div class="course-micro-network__detail"><div class="course-micro-network__url">https://qatodev.ru${selected.name === 'HTML' ? '/' : selected.name}</div><div class="course-micro-network__tabs">${[['headers', 'Заголовки'], ['preview', 'Просмотр'], ['response', 'Ответ']].map(([id, label]) => `<button type="button" data-tab="${id}" class="${state.networkTab === id ? 'is-current' : ''}">${label}</button>`).join('')}</div><div class="course-micro-network__body"><code>${escapeHtml(body)}</code></div></div></div>`;
+    $('#course-network-visual').querySelectorAll('[data-request]').forEach(button => button.addEventListener('click', () => { state.networkRequest = button.dataset.request; renderNetwork(); save(); replayRequest(state.networkRequest); }));
     $('#course-network-visual').querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => { state.networkTab = button.dataset.tab; renderNetwork(); save(); }));
+    highlightNetworkRequest();
   }
   function pageHasProducts() {
     return busy && state.lastRun?.kind === 'page' ? false : state.lastPage?.code === 200;
   }
-  function openNetwork() { if (matchMedia('(max-width: 767px)').matches) { article.hidden = true; state.article = ''; refreshNodes(); } networkPanel.hidden = false; renderNetwork(); save(); }
+  function openNetwork() { article.hidden = true; state.article = ''; refreshNodes(); networkPanel.hidden = false; renderNetwork(); save(); }
 
   drawNodes();
   motion = window.createMapMotion({ viewport: scroller, canvas, getContentBounds: () => ({ left: 530, top: 60, right: 3020, bottom: 1080 }), onChange: () => { clearTimeout(saveTimer); saveTimer = setTimeout(save, 250); }, touchPanGain: 1.25 });
@@ -471,12 +535,14 @@
   checkoutButton.addEventListener('click', () => run('checkout'));
   $('#course-tasks').addEventListener('click', () => showArticle('tasks'));
   $('#course-article-close').addEventListener('click', () => { article.hidden = true; state.article = ''; refreshNodes(); save(); });
-  $('#course-network-close').addEventListener('click', () => { networkPanel.hidden = true; save(); });
+  $('#course-network-close').addEventListener('click', () => { replayId++; replayCleanup(); replayCleanup = () => {}; networkPanel.hidden = true; highlightNetworkRequest(); save(); });
   nodeHost.querySelector('[data-node="client"] .course-node__icon').addEventListener('click', openNetwork);
   if (chapter === '3') document.querySelectorAll('#course-tools [data-tool]').forEach(tool => tool.addEventListener('click', () => showArticle(`tool-${tool.dataset.tool}`)));
   $('#course-article-body').addEventListener('click', event => { if (event.target.closest('a')) event.stopPropagation(); });
   resetButton.addEventListener('click', () => {
     runId++;
+    replayId++;
+    replayCleanup(); replayCleanup = () => {};
     Object.assign(state, defaults());
     offline.clear(); completed.clear(); busy = false;
     article.hidden = true; networkPanel.hidden = true;
