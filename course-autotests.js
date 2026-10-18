@@ -257,11 +257,10 @@
       const b = point(to, 'left');
       const bend = Math.max(35, Math.abs(b.x - a.x) * .42);
       const directUi = to === 'app-a' && (from === 'client' || from === 'mobile');
+      const mid = (a.x + b.x) / 2;
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', directUi
-        ? from === 'client'
-          ? `M ${a.x} ${a.y} C ${a.x + 190} ${a.y - 210}, ${b.x - 200} ${b.y - 170}, ${b.x} ${b.y}`
-          : `M ${a.x} ${a.y} C ${a.x + 205} ${a.y + 25}, ${b.x - 150} ${a.y - 5}, ${b.x} ${b.y}`
+        ? `M ${a.x} ${a.y} C ${mid} ${a.y}, ${mid} ${b.y}, ${b.x} ${b.y}`
         : `M ${a.x} ${a.y} C ${a.x + bend} ${a.y}, ${b.x - bend} ${b.y}, ${b.x} ${b.y}`);
       path.dataset.testRoute = `${from}:${to}`;
       path.classList.add('course-test-route');
