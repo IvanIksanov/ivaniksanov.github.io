@@ -47,6 +47,7 @@
     { id: 'web:client', d: 'M 465 409 C 550 425, 620 480, 640 551' },
     { id: 'mobile:mobile', d: 'M 465 904 C 550 900, 620 860, 670 826' },
     { id: 'api:balancer', d: 'M 1100 947 C 1030 840, 1060 680, 1170 621' },
+    { id: 'api:app-a', d: 'M 1195 947 C 1410 950, 1510 710, 1660 456', note: 'Прямой вход API-тестов к серверу A при отключённом балансировщике' },
     { id: 'load:balancer', d: 'M 1315 947 C 1230 850, 1200 730, 1230 650' },
     { id: 'load:app-a', d: 'M 1400 947 C 1510 825, 1490 505, 1660 456', note: 'Резервный прямой вход JMeter к серверу A при недоступном балансировщике' },
     { id: 'api:database', d: 'M 1195 947 C 1510 1080, 2400 1080, 2510 651', note: 'JDBC-проверка напрямую читает тестовую PostgreSQL, минуя HTTP-вход' }
@@ -88,11 +89,11 @@
     { id: 'ext-gateway', title: 'WireMock · оплата', icon: 'mock', x: 2480, y: 830, width: 170 }
   ];
   const byId = new Map(nodes.map(node => [node.id, node]));
-  const edges = [['client', 'balancer'], ['mobile', 'balancer'], ['balancer', 'app-a'], ['balancer', 'app-b'], ['app-a', 'svc-auth'], ['app-a', 'svc-catalog'], ['app-a', 'svc-payment'], ['app-b', 'svc-auth'], ['app-b', 'svc-catalog'], ['app-b', 'svc-payment'], ['svc-catalog', 'database'], ['svc-auth', 'ext-keycloak'], ['svc-payment', 'ext-gateway']];
+  const edges = [['client', 'balancer'], ['mobile', 'balancer'], ['client', 'app-a'], ['mobile', 'app-a'], ['balancer', 'app-a'], ['balancer', 'app-b'], ['app-a', 'svc-auth'], ['app-a', 'svc-catalog'], ['app-a', 'svc-payment'], ['app-b', 'svc-auth'], ['app-b', 'svc-catalog'], ['app-b', 'svc-payment'], ['svc-catalog', 'database'], ['svc-auth', 'ext-keycloak'], ['svc-payment', 'ext-gateway']];
   const descriptions = {
     client: ['Браузер · тестовый клиент', 'Playwright или Selenium управляет браузером и проверяет UI. Страница делает реальные для учебной модели HTTP-запросы к тестовому стенду; это не production.'],
     mobile: ['Android / iOS · тестовый клиент', 'Appium проверяет Android через UiAutomator2 и iOS через XCUITest. Espresso работает только с Android. Здесь прогоны Appium написаны на Java.'],
-    balancer: ['Балансировщик · test', 'Обычные клиенты идут через балансировщик. У JMeter отдельно настроен резервный прямой адрес сервера A: при сбое балансировщика только нагрузочный прогон может дойти до A.'],
+    balancer: ['Балансировщик · test', 'Когда он доступен, HTTP-запросы идут через него. При отключении браузерный, мобильный и API-тестовый клиенты переходят на прямой адрес сервера A. JMeter тоже использует прямой вход.'],
     'app-a': ['Сервер A · test', 'В этой учебной конфигурации A также работает как прокси для нагрузки: принимает поток и передаёт часть на B по связи с галочкой. Это настроенный механизм, а не автоматическое свойство сервера.'],
     'app-b': ['Сервер B · test', 'При нагрузочном прогоне A передаёт B половину запросов. Если передача отключена или B недоступен, A ограничен 600 запросами за прогон.'],
     'svc-auth': ['Авторизация · test', 'Обрабатывает вход тестового пользователя и обращается к Keycloak за новым токеном. Если сервис отключён, Web UI и Mobile UI получают 503 до загрузки каталога.'],
@@ -104,7 +105,7 @@
     'project-web': ['Web UI · проект', 'Один проект браузерных автотестов с двумя вариантами стека: TypeScript + Playwright или Java + Selenium WebDriver.'],
     'project-mobile': ['Mobile UI · проект', 'Appium с Java проверяет Android через UiAutomator2 и iOS через XCUITest. Kotlin + Espresso — отдельный Android-вариант.'],
     'project-api': ['API + SQL · проект', 'Java + REST Assured проверяет HTTP API. JDBC отдельно читает тестовую PostgreSQL после изменения данных.'],
-    'project-load': ['Нагрузка · проект', 'JMeter поднимает 50 или 100 пользователей по 10 запросов. В этом тестовом стенде A настроен передавать половину потока B; порог каждой копии — 600. При отказе балансировщика JMeter переключается на отдельно настроенный прямой адрес A. Обычные UI/API-клиенты через сломанный балансировщик получат 503.']
+    'project-load': ['Нагрузка · проект', 'JMeter поднимает 50 или 100 пользователей по 10 запросов. В этом тестовом стенде A настроен передавать половину потока B; порог каждой копии — 600. При отказе балансировщика браузерные, мобильные, API- и нагрузочные тесты используют прямой адрес A.']
   };
   const tasks = [
     { id: 'web', title: 'Web UI: покупка в браузере', steps: [['project-web', 'Выбери Playwright и запусти вход → каталог → WireMock.', 'Запустить Web UI'], ['client', 'Проследи путь браузер → балансировщик → сервисы.', 'Открыть клиент'], ['ext-gateway', 'Проверь ответ мока оплаты и итоговый 200.', 'Открыть WireMock']] },
@@ -119,7 +120,7 @@
     { id: 'db-update', title: 'SQL-изменение и проверка данных', steps: [['database', "Выполни UPDATE products SET name = 'QA Book Pro' WHERE id = 42;", 'Выполнить SQL'], ['project-api', 'Запусти GET: новое имя должно прийти в JSON.', 'Проверить GET'], ['project-api', 'Запусти JDBC SELECT: сравни сохранённое значение.', 'Проверить SQL']] },
     { id: 'db-empty', title: 'Пустая таблица и восстановление', steps: [['database', 'Выполни DELETE FROM products; — удалятся все пять строк.', 'Выполнить SQL'], ['project-api', 'Запусти GET → 404 и SQL: 0 строк.', 'Проверить данные'], ['database', "Верни товар 42: INSERT INTO products (id, name, price, currency) VALUES (42, 'Ноутбук QA Book', 79990, 'RUB'); Остальные четыре готовые команды INSERT раскрой в PostgreSQL.", 'Выполнить SQL']] },
     { id: 'db-offline', title: 'PostgreSQL недоступна', steps: [['database', 'Отключи тестовую базу.', 'Отключить'], ['project-api', 'GET вернёт 503, а JDBC-проверка не установит соединение.', 'Проверить GET и SQL'], ['database', 'Включи базу и повтори проверки.', 'Включить']] },
-    { id: 'balancer', title: 'Резервный вход при отказе балансировщика', steps: [['balancer', 'Отключи общую точку входа.', 'Отключить'], ['project-api', 'Запусти обычный GET: он остановится с 503 до серверов.', 'Проверить GET'], ['project-load', 'Отправь 1000 запросов через прямой тестовый адрес A. A передаст половину на B: ожидаются 1000 × 200.', 'Запустить 1000'], ['balancer', 'Включи общую точку входа.', 'Включить']] },
+    { id: 'balancer', title: 'Резервный вход при отказе балансировщика', steps: [['balancer', 'Отключи общую точку входа.', 'Отключить'], ['project-web', 'Запусти Web UI: браузер направит запросы прямо на A.', 'Запустить Web UI'], ['project-mobile', 'Запусти Android или iOS: мобильный клиент тоже обойдёт балансировщик.', 'Запустить Mobile UI'], ['project-api', 'Запусти GET: API-тест дойдёт до A напрямую и получит товар.', 'Проверить GET'], ['project-load', 'Отправь 1000 запросов через прямой тестовый адрес A. A передаст половину на B: ожидаются 1000 × 200.', 'Запустить 1000'], ['balancer', 'Включи общую точку входа.', 'Включить']] },
     { id: 'peer-forward', title: 'Передача нагрузки с A на B', steps: [['app-a', 'Открой A и отключи «Передачу на B».', 'Отключить передачу'], ['project-load', 'Запусти 1000 запросов: A обработает 600, ещё 400 получат 503.', 'Запустить 1000'], ['app-a', 'Верни передачу на B.', 'Включить передачу'], ['project-load', 'Повтори прогон: зелёная волна A → B покажет распределение 500/500.', 'Запустить 1000']] },
     { id: 'server-b', title: 'Нагрузка после отказа B', steps: [['project-load', 'Выбери 1000 запросов.', 'Выбрать 1000'], ['app-b', 'Отключи B и направь весь поток на A.', 'Отключить'], ['project-load', 'Запусти прогон и сравни ошибки с двумя доступными копиями.', 'Запустить 1000'], ['app-b', 'Включи B.', 'Включить']] },
     { id: 'auth', title: 'Вход зависит от авторизации', steps: [['svc-auth', 'Отключи сервис авторизации.', 'Отключить'], ['project-web', 'Запусти Web UI: вход остановится до каталога с 503.', 'Запустить Web UI'], ['svc-auth', 'Включи авторизацию и повтори проверку.', 'Включить']] },
@@ -255,10 +256,16 @@
       const a = point(from, 'right');
       const b = point(to, 'left');
       const bend = Math.max(35, Math.abs(b.x - a.x) * .42);
+      const directUi = to === 'app-a' && (from === 'client' || from === 'mobile');
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', `M ${a.x} ${a.y} C ${a.x + bend} ${a.y}, ${b.x - bend} ${b.y}, ${b.x} ${b.y}`);
+      path.setAttribute('d', directUi
+        ? from === 'client'
+          ? `M ${a.x} ${a.y} C ${a.x + 190} ${a.y - 210}, ${b.x - 200} ${b.y - 170}, ${b.x} ${b.y}`
+          : `M ${a.x} ${a.y} C ${a.x + 205} ${a.y + 25}, ${b.x - 150} ${a.y - 5}, ${b.x} ${b.y}`
+        : `M ${a.x} ${a.y} C ${a.x + bend} ${a.y}, ${b.x - bend} ${b.y}, ${b.x} ${b.y}`);
       path.dataset.testRoute = `${from}:${to}`;
       path.classList.add('course-test-route');
+      if (directUi) path.classList.add('is-direct');
       const label = document.createElementNS('http://www.w3.org/2000/svg', 'title');
       label.textContent = `${byId.get(from).title} → ${byId.get(to).title}`;
       path.append(label);
@@ -285,19 +292,24 @@
       const id = card.dataset.node;
       card.classList.toggle('is-selected', state.article === id);
       const offline = id === 'balancer' ? !state.online.balancer : id === 'app-a' ? !state.online.a : id === 'app-b' ? !state.online.b : id === 'svc-auth' ? !state.online.auth : id === 'svc-catalog' ? !state.online.catalog : id === 'database' ? !state.online.database : id === 'ext-keycloak' ? !state.online.keycloak : false;
-      card.classList.toggle('is-faulty', offline || (id === 'ext-gateway' && state.paymentStubStatus === 503));
+      card.classList.toggle('is-removed', id === 'balancer' && offline);
+      card.classList.toggle('is-faulty', (offline && id !== 'balancer') || (id === 'ext-gateway' && state.paymentStubStatus === 503));
       card.dataset.offline = String(offline);
     }
     layer.querySelectorAll('[data-test-project]').forEach(card => card.classList.toggle('is-selected', state.article === `project-${card.dataset.testProject}`));
     lineHost.querySelectorAll('[data-test-route]').forEach(path => {
       const [from, to] = path.dataset.testRoute.split(':');
+      const directUi = path.classList.contains('is-direct');
       const forwardedLoad = state.lastRun?.kind === 'load' && state.online.peer && state.online.a;
-      const hidden = (from === 'app-a' && !state.online.a) || (from === 'app-b' && (!state.online.b || (state.online.a && !forwardedLoad))) || (to === 'app-a' && !state.online.a) || (to === 'app-b' && (!state.online.b || (from === 'balancer' && state.online.a))) || (from === 'app-a' && to === 'app-b' && !state.online.peer);
+      const hidden = (directUi && state.online.balancer) || (!state.online.balancer && (from === 'balancer' || to === 'balancer')) || (from === 'app-a' && !state.online.a) || (from === 'app-b' && (!state.online.b || (state.online.a && !forwardedLoad))) || (to === 'app-a' && !state.online.a && !directUi) || (to === 'app-b' && (!state.online.b || (from === 'balancer' && state.online.a))) || (from === 'app-a' && to === 'app-b' && !state.online.peer);
       path.classList.toggle('is-standby', hidden);
-      path.classList.toggle('is-faulty', ((from === 'balancer' || to === 'balancer') && !state.online.balancer) || (to === 'svc-auth' && !state.online.auth) || (to === 'ext-keycloak' && !state.online.keycloak) || (to === 'svc-catalog' && !state.online.catalog) || (to === 'database' && !state.online.database) || (to === 'ext-gateway' && state.paymentStubStatus === 503));
+      path.classList.toggle('is-faulty', (directUi && !state.online.a) || ((from === 'balancer' || to === 'balancer') && !state.online.balancer) || (to === 'svc-auth' && !state.online.auth) || (to === 'ext-keycloak' && !state.online.keycloak) || (to === 'svc-catalog' && !state.online.catalog) || (to === 'database' && !state.online.database) || (to === 'ext-gateway' && state.paymentStubStatus === 503));
     });
     layer.querySelector('[data-test-route="load:balancer"]')?.classList.toggle('is-standby', !state.online.balancer);
     layer.querySelector('[data-test-route="load:app-a"]')?.classList.toggle('is-standby', state.online.balancer || !state.online.a);
+    layer.querySelector('[data-test-route="api:balancer"]')?.classList.toggle('is-standby', !state.online.balancer);
+    layer.querySelector('[data-test-route="api:app-a"]')?.classList.toggle('is-standby', state.online.balancer);
+    layer.querySelector('[data-test-route="api:app-a"]')?.classList.toggle('is-faulty', !state.online.a);
     lineHost.querySelector('.course-micro-peer-link')?.classList.toggle('is-disabled', !state.online.peer || !state.online.a || !state.online.b);
   }
   function syncButtons() {
@@ -474,7 +486,7 @@
       const key = { balancer: 'balancer', 'app-a': 'a', 'app-b': 'b', 'svc-auth': 'auth', 'svc-catalog': 'catalog', database: 'database', 'ext-keycloak': 'keycloak' }[id];
       addAction(state.online[key] ? 'Отключить' : 'Включить', actionIcon.power, () => {
         state.online[key] = !state.online[key];
-        if (id === 'balancer' && state.online.balancer && state.taskProgress.balancerApi && state.taskProgress.balancerLoad) completed.add('balancer');
+        if (id === 'balancer' && state.online.balancer && state.taskProgress.balancerWeb && state.taskProgress.balancerMobile && state.taskProgress.balancerApi && state.taskProgress.balancerLoad) completed.add('balancer');
         if (id === 'database' && state.online.database && state.taskProgress.dbOffline) completed.add('db-offline');
         if (id === 'app-b' && state.online.b && state.taskProgress.serverBOverload) completed.add('server-b');
         refreshMap(); renderArticle(); save();
@@ -501,7 +513,7 @@
           ? [['Стаб', 'POST /gateway/payments'], ['Ответ', state.paymentStubStatus === 200 ? '200 · {"status":"approved"}' : '503 · {"error":"payment_unavailable"}'], ['Списание', 'не выполняется']]
         : id === 'svc-payment'
           ? [['Внешний API', 'WireMock · HTTP-мок'], ['POST /payments', state.paymentStubStatus === 200 ? '200 · paid' : '503 · отказ мока']]
-          : [['Контур', source], ['Последний прогон', state.lastRun?.result || 'ещё не запускался'], ...(id === 'app-a' || id === 'app-b' ? [['Нагрузка', `${state.lastRun?.serverLoads?.[id === 'app-a' ? 'a' : 'b'] || 0} / 600 запросов`]] : []), ...(id === 'app-a' ? [['Передача на B', state.online.peer ? 'включена' : 'отключена']] : []), ['Маршрут', !state.online.balancer ? 'балансировщик отключён · JMeter: прямой адрес A' : state.online.a ? 'через сервер A' : state.online.b ? 'через сервер B' : 'нет доступных серверов']];
+          : [['Контур', source], ['Последний прогон', state.lastRun?.result || 'ещё не запускался'], ...(id === 'app-a' || id === 'app-b' ? [['Нагрузка', `${state.lastRun?.serverLoads?.[id === 'app-a' ? 'a' : 'b'] || 0} / 600 запросов`]] : []), ...(id === 'app-a' ? [['Передача на B', state.online.peer ? 'включена' : 'отключена']] : []), ['Маршрут', !state.online.balancer ? 'UI, API и JMeter → напрямую к A' : state.online.a ? 'через сервер A' : state.online.b ? 'через сервер B' : 'нет доступных серверов']];
     visual.innerHTML = `<div class="course-test-viz__label">${esc(source)} <span>TEST</span></div>${rows.map(([label, value]) => `<div class="course-test-viz__row"><strong>${esc(label)}</strong><small>${esc(value)}</small></div>`).join('')}`;
     renderCodePanel();
     $('#course-article-actions').hidden = !$('#course-action-buttons').childElementCount;
@@ -700,8 +712,11 @@
     const mobile = kind === 'mobile' || kind === 'mobile-ios' || kind === 'espresso';
     const platform = kind === 'mobile-ios' ? 'iOS' : 'Android';
     const web = kind === 'web' || kind === 'selenium';
+    const directUi = (web || mobile) && !state.online.balancer;
     const directLoad = kind === 'load' && !state.online.balancer;
+    const directApi = projectForKind[kind] === 'api' && kind !== 'sql' && kind !== 'sql-negative' && !state.online.balancer;
     const clientId = mobile ? 'mobile' : 'client';
+    const clientRoute = `${clientId}:${directUi ? 'app-a' : 'balancer'}`;
     const tool = toolForKind[kind];
     const firstRequest = web || mobile ? 'POST /auth/login' : kind === 'payment-api' ? 'POST /payments' : kind === 'patch' ? 'PATCH /api/products/42' : kind === 'load' ? `${state.loadCount} × GET /api/products/42` : kind === 'sql' || kind === 'sql-negative' ? 'SQL SELECT' : 'GET /api/products/42';
     state.lastRun = { title: name, kind, tool, project: projectForKind[kind], steps: [], result: 'выполняется', flowLabel: firstRequest, replyCode: 200, loadCount: kind === 'load' ? state.loadCount : undefined, serverLoads: { a: 0, b: 0 }, finalRoute: kind === 'sql' || kind === 'sql-negative' ? 'api:database' : '' };
@@ -721,18 +736,18 @@
       if (!await animate('api:database', run, tool, true)) return;
       if (!failed && state.apiChanged && state.apiVerified) completed.add('api-sql');
     } else {
-      const startRoute = web ? 'web:client' : mobile ? 'mobile:mobile' : directLoad ? 'load:app-a' : `${projectForKind[kind]}:balancer`;
+      const startRoute = web ? 'web:client' : mobile ? 'mobile:mobile' : directLoad ? 'load:app-a' : directApi ? 'api:app-a' : `${projectForKind[kind]}:balancer`;
       state.lastRun.finalRoute = startRoute;
       if (!await step('runner', name, web ? 'Тестовый код управляет браузером.' : mobile ? `Тестовый код управляет нативным приложением ${platform}.` : kind === 'load' ? `Stepping Thread Group поднимает ${state.loadCount / 10} пользователей; ${directLoad ? 'резервный адрес ведёт прямо на A' : 'вход идёт через балансировщик'}.` : 'Java-код отправляет HTTP-запрос без браузера.', startRoute, run, tool)) return;
-      if (web || mobile) if (!await step('client', `${firstRequest} · ${mobile ? platform : 'браузер'}`, 'Тестовый клиент отправляет запрос через балансировщик.', `${clientId}:balancer`, run)) return;
-      const target = directLoad ? state.online.a ? 'app-a' : '' : !state.online.balancer ? '' : state.online.a ? 'app-a' : state.online.b ? 'app-b' : '';
+      if (web || mobile) if (!await step('client', `${firstRequest} · ${mobile ? platform : 'браузер'}`, directUi ? 'Тестовый клиент отправляет запрос прямо на сервер A.' : 'Тестовый клиент отправляет запрос через балансировщик.', clientRoute, run)) return;
+      const target = directLoad || directUi || directApi ? state.online.a ? 'app-a' : '' : !state.online.balancer ? '' : state.online.a ? 'app-a' : state.online.b ? 'app-b' : '';
       if (kind === 'load' && target) {
         const share = target === 'app-a' && state.online.b && state.online.peer ? state.lastRun.loadCount / 2 : state.lastRun.loadCount;
         state.lastRun.serverLoads = { a: target === 'app-a' ? share : 0, b: target === 'app-b' || share !== state.lastRun.loadCount ? share : 0 };
         renderArticle();
       }
-      if (!target) { failed = true; detail = directLoad ? '503: резервный адрес A недоступен.' : state.online.balancer ? '503: обе копии приложения недоступны.' : '503: балансировщик недоступен; запросы не дошли до серверов.'; state.lastRun.replyCode = 503; if (!state.online.balancer && kind === 'api') state.taskProgress.balancerApi = true; }
-      else if (!directLoad && !await step('route', 'Балансировщик', `Запрос направлен на тестовый сервер ${target === 'app-a' ? 'A' : 'B'}.`, `balancer:${target}`, run)) return;
+      if (!target) { failed = true; detail = directLoad || directUi || directApi ? '503: прямой адрес сервера A недоступен.' : state.online.balancer ? '503: обе копии приложения недоступны.' : '503: балансировщик недоступен; запросы не дошли до серверов.'; state.lastRun.replyCode = 503; }
+      else if (!directLoad && !directUi && !directApi && !await step('route', 'Балансировщик', `Запрос направлен на тестовый сервер ${target === 'app-a' ? 'A' : 'B'}.`, `balancer:${target}`, run)) return;
       if (!failed && (web || mobile)) {
         if (!await step('auth', 'Авторизация', 'Тестовый пользователь входит; токен используется в следующем запросе.', `${target}:svc-auth`, run)) return;
         lastService = 'svc-auth';
@@ -749,11 +764,11 @@
       }
       if (!failed && kind !== 'payment-api') {
         if (web || mobile) {
-          if (!await animate(`balancer:${target}`, run, '', true)) return;
-          if (!await animate(`${clientId}:balancer`, run, '', true)) return;
+          if (!directUi && !await animate(`balancer:${target}`, run, '', true)) return;
+          if (!await animate(clientRoute, run, '', true)) return;
           state.lastRun.flowLabel = 'GET /api/products/42';
-          if (!await step('catalog-client', 'GET /api/products/42 · клиент', 'После входа клиент отдельно запрашивает товар.', `${clientId}:balancer`, run)) return;
-          if (!await step('catalog-route', 'GET /api/products/42 · сервер', 'Балансировщик передаёт запрос приложению.', `balancer:${target}`, run)) return;
+          if (!await step('catalog-client', 'GET /api/products/42 · клиент', 'После входа клиент отдельно запрашивает товар.', clientRoute, run)) return;
+          if (!directUi && !await step('catalog-route', 'GET /api/products/42 · сервер', 'Балансировщик передаёт запрос приложению.', `balancer:${target}`, run)) return;
         }
         const forwardLoad = kind === 'load' && target === 'app-a' && state.online.b && state.online.peer;
         const catalogDetail = kind === 'patch' ? 'PATCH /api/products/42 меняет товар через сервис каталога.' : kind === 'load' ? 'HTTP-сэмплер запрашивает /api/products/42 через сервис каталога.' : 'GET /api/products/42 возвращает товар через сервис каталога.';
@@ -797,11 +812,11 @@
       if (!failed && (web || mobile) && !productById(42)) { failed = true; detail = 'GET /api/products/42 → 404: товар удалён, UI-проверка каталога не прошла.'; markStepFailure('db', detail, 404); }
       if (!failed && (web || mobile || kind === 'payment-api')) {
         if (web || mobile) {
-          if (!await animate(`balancer:${target}`, run, '', true)) return;
-          if (!await animate(`${clientId}:balancer`, run, '', true)) return;
+          if (!directUi && !await animate(`balancer:${target}`, run, '', true)) return;
+          if (!await animate(clientRoute, run, '', true)) return;
           state.lastRun.flowLabel = 'POST /payments';
-          if (!await step('payment-client', 'POST /payments · клиент', 'Оплата — отдельный запрос после загрузки товара.', `${clientId}:balancer`, run)) return;
-          if (!await step('payment-route', 'POST /payments · сервер', 'Балансировщик передаёт платёжный запрос приложению.', `balancer:${target}`, run)) return;
+          if (!await step('payment-client', 'POST /payments · клиент', 'Оплата — отдельный запрос после загрузки товара.', clientRoute, run)) return;
+          if (!directUi && !await step('payment-route', 'POST /payments · сервер', 'Балансировщик передаёт платёжный запрос приложению.', `balancer:${target}`, run)) return;
         }
         if (!await step('payment', 'Оплата · test', 'Проверяем переход от UI к платёжному сервису.', `${target}:svc-payment`, run)) return;
         lastService = 'svc-payment';
@@ -844,17 +859,21 @@
           if (!await animate('app-a:app-b', run, '', true)) return;
         }
         if (lastService && !await animate(`${target}:${lastService}`, run, '', true)) return;
-        if (!directLoad && !await step('response', `HTTP ${state.lastRun.replyCode} · ответ`, 'Результат возвращается через балансировщик тестовому клиенту.', `balancer:${target}`, run, '', true)) return;
+        if (directUi && !await step('response', `HTTP ${state.lastRun.replyCode} · ответ`, 'Сервер A отвечает тестовому клиенту напрямую.', clientRoute, run, '', true)) return;
+        if (!directLoad && !directUi && !directApi && !await step('response', `HTTP ${state.lastRun.replyCode} · ответ`, 'Результат возвращается через балансировщик тестовому клиенту.', `balancer:${target}`, run, '', true)) return;
         if (directLoad && !await step('response', `HTTP ${state.lastRun.replyCode} · ответ`, 'Результат возвращается JMeter через резервный прямой вход A.', startRoute, run, '', true)) return;
-        if (web || mobile) if (!await animate(`${mobile ? 'mobile' : 'client'}:balancer`, run, '', true)) return;
-        if (!directLoad && !await animate(startRoute, run, tool, true)) return;
+        if (directApi && !await step('response', `HTTP ${state.lastRun.replyCode} · ответ`, 'Сервер A отвечает API-тесту напрямую.', startRoute, run, '', true)) return;
+        if ((web || mobile) && !directUi) if (!await animate(clientRoute, run, '', true)) return;
+        if (!directLoad && !directApi && !await animate(startRoute, run, tool, true)) return;
       } else {
-        const replyRoute = web || mobile ? `${mobile ? 'mobile' : 'client'}:balancer` : startRoute;
+        const replyRoute = web || mobile ? clientRoute : startRoute;
         if (!await step('response', 'HTTP 503 · ответ', detail, replyRoute, run, '', true)) return;
         if (replyRoute !== startRoute && !await animate(startRoute, run, tool, true)) return;
       }
     }
     if (run !== runId) return;
+    if (directUi && !failed) state.taskProgress[web ? 'balancerWeb' : 'balancerMobile'] = true;
+    if (directApi && kind === 'api' && !failed) state.taskProgress.balancerApi = true;
     if (kind === 'sql' && state.sqlChanged && state.sqlApiVerified && productById(42)) completed.add('db-update');
     const result = { id: 'assert', title: failed ? 'Проверка не прошла' : 'Проверка прошла', detail, route: state.lastRun.finalRoute, tool, returning: true, flowLabel: state.lastRun.flowLabel, replyCode: state.lastRun.replyCode, status: failed ? 'error' : 'done' };
     state.lastRun.steps.push(result);

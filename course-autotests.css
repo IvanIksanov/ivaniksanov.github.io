@@ -32,6 +32,7 @@ body[data-chapter="4"] .course-test-tools, .course-chapter-stage .course-test-to
 .course-test-tools__links path { fill: none; stroke: var(--course-blue); stroke-width: 1.3; stroke-linecap: round; stroke-dasharray: 1 8; opacity: .46; }
 .course-test-tools__links path[data-test-route="api:database"] { stroke: var(--course-resource); opacity: .32; }
 .course-test-tools__links path.is-standby { opacity: 0; }
+.course-test-tools__links path.is-faulty:not(.is-running):not(.is-standby) { stroke: #ce716b; opacity: .88; }
 .course-test-tools__links path.is-running, body[data-chapter="4"] .course-lines path.course-test-route.is-running { stroke: var(--course-blue); stroke-width: 3.4; stroke-dasharray: 12 9; opacity: 1; filter: drop-shadow(0 0 3px var(--course-blue)); animation: course-test-route-flow var(--course-test-duration, 1.1s) linear 1 both; }
 .course-test-tools__links path.is-returning, body[data-chapter="4"] .course-lines path.course-test-route.is-returning { animation-direction: reverse; }
 .course-test-tools__links path.is-replaying, body[data-chapter="4"] .course-lines path.course-test-route.is-replaying { stroke: var(--course-blue); stroke-width: 3.4; stroke-dasharray: 12 9; opacity: 1; filter: drop-shadow(0 0 3px var(--course-blue)); animation: course-test-route-flow var(--course-replay-duration, 1.25s) linear 1 both; }
@@ -59,7 +60,7 @@ body[data-chapter="4"] #course-packets { position: absolute; z-index: 4; inset: 
 .course-test-tool.is-processing { animation: course-infra-pulse .55s ease-in-out; }
 body[data-chapter="4"] .course-lines path.course-test-route { stroke: var(--map-line); stroke-width: 1.5; stroke-dasharray: 4 8; opacity: .66; transition: opacity .25s ease; }
 body[data-chapter="4"] .course-lines path.course-test-route.is-standby { opacity: 0; pointer-events: none; }
-body[data-chapter="4"] .course-lines path.course-test-route.is-faulty:not(.is-running) { stroke: #ce716b; opacity: .88; }
+body[data-chapter="4"] .course-lines path.course-test-route.is-faulty:not(.is-running):not(.is-standby) { stroke: #ce716b; opacity: .88; }
 body[data-chapter="4"] .course-lines .course-micro-peer-link__line.course-test-route.is-running { stroke: #2baf76; filter: drop-shadow(0 0 4px #2baf76); }
 body[data-chapter="4"] .course-micro-peer-link:has(.is-running) circle { stroke: #2baf76; fill: color-mix(in srgb, #2baf76 16%, var(--map-bg)); }
 body[data-chapter="4"] .course-micro-peer-link:has(.is-running) .course-micro-peer-link__check { stroke: #2baf76; }
