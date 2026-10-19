@@ -235,7 +235,7 @@ body {
   width: calc(32px * var(--header-desktop-scale));
   height: calc(32px * var(--header-desktop-scale));
   margin-right: calc(5px * var(--header-desktop-scale));
-  background: url('img/QAtoDev_BlackAndWhite.png') center / contain no-repeat;
+  background: url('img/QAtoDev_Blueprint.png') center / contain no-repeat;
 }
 
 header.welcome {
@@ -314,14 +314,14 @@ header.welcome {
 }
 
 .site-title:focus-visible {
-  outline: 2px solid rgba(255, 160, 1, 0.35);
+  outline: 2px solid rgba(8, 121, 232, 0.35);
   outline-offset: 2px;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .site-title:hover,
   .site-title:focus-visible {
-    color: #FFA001;
+    color: #0879E8;
     opacity: 1;
     background-color: transparent;
   }
@@ -334,7 +334,7 @@ html[data-theme="dark"] .site-header .site-title {
 @media (hover: hover) and (pointer: fine) {
   html[data-theme="dark"] .site-title:hover,
   html[data-theme="dark"] .site-title:focus-visible {
-    color: #FFA001;
+    color: #0879E8;
     opacity: 1;
   }
 }

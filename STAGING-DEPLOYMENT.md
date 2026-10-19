@@ -14,6 +14,8 @@ hwois.html, start.html, and osi_model.html. Preserve main snapshots:
 over/questions_db_snapshot.json and over/public_ai_append_snapshot.json.
 Verify these settings before every production push.
 
-Staging header.css uses img/QAtoDev_BlackAndWhite.png for the header logo.
+Staging header.css uses img/QAtoDev_Blueprint.png for the header logo.
 Production keeps img/QAtoDev_(Flappy_Bird_style).png. Preserve this difference
 when merging staging into main; do not copy the test header asset selection.
+
+Staging header title hover/focus accent is blue (#0879E8); production stays orange.
