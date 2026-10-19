@@ -14,8 +14,8 @@ hwois.html, start.html, and osi_model.html. Preserve main snapshots:
 over/questions_db_snapshot.json and over/public_ai_append_snapshot.json.
 Verify these settings before every production push.
 
-Staging header.css uses img/QAtoDev_Blueprint.png for the header logo.
-Production keeps img/QAtoDev_(Flappy_Bird_style).png. Preserve this difference
-when merging staging into main; do not copy the test header asset selection.
-
-Staging header title hover/focus accent is blue (#0879E8); production stays orange.
+Header branding is selected by URL in header.js: only /test/ and its descendants
+activate the blueprint logo, circular clipping, and blue title hover/focus.
+All other paths keep the production logo and orange accent. These shared header
+files are safe to merge into main; no manual branding restore is needed.
+.gitignore does not exclude changes to tracked files and is not a deployment guard.

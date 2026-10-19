@@ -1,4 +1,8 @@
 (function () {
+  // Keep staging branding tied to its URL, even after merging branches.
+  document.documentElement.dataset.siteEnvironment =
+    /^\/test(?:\/|$)/.test(window.location.pathname) ? 'test' : 'production';
+
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
