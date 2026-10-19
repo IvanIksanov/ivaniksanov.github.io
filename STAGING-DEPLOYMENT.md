@@ -13,3 +13,7 @@ On main, restore production robots.txt and sitemap.xml and keep noindex only on
 hwois.html, start.html, and osi_model.html. Preserve main snapshots:
 over/questions_db_snapshot.json and over/public_ai_append_snapshot.json.
 Verify these settings before every production push.
+
+Staging header.css uses img/QAtoDev_BlackAndWhite.png for the header logo.
+Production keeps img/QAtoDev_(Flappy_Bird_style).png. Preserve this difference
+when merging staging into main; do not copy the test header asset selection.

@@ -235,7 +235,7 @@ body {
   width: calc(32px * var(--header-desktop-scale));
   height: calc(32px * var(--header-desktop-scale));
   margin-right: calc(5px * var(--header-desktop-scale));
-  background: url('img/QAtoDev_(Flappy_Bird_style).png') center / contain no-repeat;
+  background: url('img/QAtoDev_BlackAndWhite.png') center / contain no-repeat;
 }
 
 header.welcome {
