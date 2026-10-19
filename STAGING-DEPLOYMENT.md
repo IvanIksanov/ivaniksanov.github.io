@@ -19,3 +19,6 @@ activate the blueprint logo, circular clipping, and blue title hover/focus.
 All other paths keep the production logo and orange accent. These shared header
 files are safe to merge into main; no manual branding restore is needed.
 .gitignore does not exclude changes to tracked files and is not a deployment guard.
+
+The browser favicon also switches to a circular blueprint SVG only under /test/.
+Production favicon links are left untouched by header.js.
