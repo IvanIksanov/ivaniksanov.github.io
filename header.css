@@ -236,6 +236,7 @@ body {
   height: calc(32px * var(--header-desktop-scale));
   margin-right: calc(5px * var(--header-desktop-scale));
   background: url('img/QAtoDev_Blueprint.png') center / contain no-repeat;
+  border-radius: 50%;
 }
 
 header.welcome {
