@@ -74,10 +74,94 @@
 </div>
 <h2>Кто такой тестировщик и чем он занимается в 2026?</h2>
 
+<section id="team" class="article">
+    <div class="sdlc-trainer" data-stage-storage-key="hwois-team-stage" aria-live="polite">
+        <div class="trainer-intro">
+            <h3>Кто работает над продуктом</h3>
+            <p>Прежде чем познакомиться с обязанностями тестировщика, давайте узнаем, кто ещё входит в IT-команду и за что отвечает каждый её участник.</p>
+        </div>
+
+        <div class="sdlc-layout">
+            <div class="stage-scheme" role="tablist" aria-label="Участники команды разработки">
+                <div class="stage-list">
+                    <button class="stage-node is-active" type="button" data-stage="owner" role="tab" aria-selected="true">Product Owner</button>
+                    <button class="stage-node" type="button" data-stage="business-analyst" role="tab" aria-selected="false">Бизнес-аналитик</button>
+                    <button class="stage-node" type="button" data-stage="designer" role="tab" aria-selected="false">Дизайнер</button>
+                    <button class="stage-node" type="button" data-stage="system-analyst" role="tab" aria-selected="false">Системный аналитик</button>
+                    <button class="stage-node" type="button" data-stage="developer" role="tab" aria-selected="false">Разработчик</button>
+                    <button class="stage-node" type="button" data-stage="tester" role="tab" aria-selected="false">Тестировщик</button>
+                    <button class="stage-node" type="button" data-stage="release-manager" role="tab" aria-selected="false">Релиз-менеджер</button>
+                    <button class="stage-node" type="button" data-stage="scrum-master" role="tab" aria-selected="false">Scrum-мастер</button>
+                </div>
+            </div>
+
+            <div class="stage-details-frame">
+                <div class="stage-details">
+                    <article class="stage-panel is-active" data-stage="owner" role="tabpanel">
+                        <img src="img/cover/product_owner.jpg" alt="Обсуждение идеи продукта">
+                        <h4>Product Owner — владелец продукта</h4>
+                        <p>Определяет, какую пользу продукт должен принести пользователям, расставляет приоритеты в бэклоге и решает, какие задачи команда возьмёт в работу.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> уточняет ожидаемый результат и критерии приёмки задачи.</p>
+                        <p><strong>Как бывает в команде:</strong> кажется, что Product Owner постоянно на встречах. Он обсуждает с заказчиком цели продукта, а с соседними командами — общую функцию, которую нужно внедрить без конфликтов между сервисами.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="business-analyst" role="tabpanel">
+                        <img src="img/cover/book_store.webp" alt="Анализ потребностей бизнеса">
+                        <h4>Бизнес-аналитик</h4>
+                        <p>Выясняет потребности бизнеса и пользователей, описывает бизнес-процессы и правила, по которым должен работать продукт.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> разбирает пользовательские сценарии и спорные места в требованиях.</p>
+                        <p><strong>Как бывает в команде:</strong> его тоже трудно поймать между встречами, но он поможет разобраться в недочёте требований. Иногда уже готовое поведение оказывается полезнее первоначального замысла — тогда команда согласует изменение требований, а не просто объявляет ошибку нормой.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="designer" role="tabpanel">
+                        <img src="img/cover/designer.jpg" alt="Проектирование будущего продукта">
+                        <h4>Дизайнер</h4>
+                        <p>Продумывает пользовательский путь и создаёт макеты интерфейса: расположение элементов, состояния экранов и поведение при разных действиях.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> уточняет ожидаемый вид и поведение интерфейса, в том числе ошибки и пустые состояния.</p>
+                        <p><strong>Как бывает в команде:</strong> дизайнер приносит три макета, команда голосует в чате за понравившийся и обсуждает, какой вариант удобнее пользователю. Тестировщик заодно спрашивает, как будут выглядеть ошибки и пустой экран.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="system-analyst" role="tabpanel">
+                        <img src="img/cover/SA_step.png" alt="Проектирование работы системы">
+                        <h4>Системный аналитик</h4>
+                        <p>Переводит бизнес-требования в детали реализации: описывает данные, интерфейсы, интеграции и поведение системы в разных ситуациях.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> уточняет ответы API, ограничения и пограничные случаи для проверок.</p>
+                        <p><strong>Как бывает в команде:</strong> документация ещё не успела за изменениями, и не все детали описаны. Аналитик помогает выяснить, через какой endpoint идёт запрос, что вернёт сервер и какие данные должны оказаться в базе.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="developer" role="tabpanel">
+                        <img src="img/cover/DEV_step.png" alt="Разработка функциональности">
+                        <h4>Разработчик</h4>
+                        <p>Пишет и изменяет код, связывает части системы, исправляет найденные дефекты и проверяет свою реализацию.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> воспроизводит баги, обсуждает причины и проверяет исправления.</p>
+                        <p><strong>Как бывает в команде:</strong> исправил один баг, а рядом неожиданно появились три новых. Это повод проверить связанные сценарии и вместе найти причину. Если разработчик занят срочным исправлением, лучше прийти с чёткими шагами воспроизведения и выбрать подходящий момент для обсуждения.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="tester" role="tabpanel">
+                        <img src="img/cover/TST_step.png" alt="Проверка продукта">
+                        <h4>Тестировщик</h4>
+                        <p>Изучает требования, готовит сценарии и данные, проверяет продукт, описывает дефекты и повторно проверяет исправления.</p>
+                        <p><strong>Вместе с командой:</strong> заранее замечает неоднозначности и помогает понять, готова ли функция к выпуску.</p>
+                        <p><strong>Как бывает в команде:</strong> большую функцию делят на части между тестировщиками. Один из них становится <strong>feature lead</strong>: держит в голове всю функцию, ходит на синхронизации и собирает общую картину, пока коллеги глубоко проверяют свои части.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="release-manager" role="tabpanel">
+                        <img src="img/cover/release-master.jpg" alt="Подготовка выпуска продукта">
+                        <h4>Релиз-менеджер</h4>
+                        <p>Координирует выпуск новой версии: согласует состав релиза, время развёртывания, проверки и план отката на случай проблемы.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> сверяет результаты проверок перед релизом и после него.</p>
+                        <p><strong>Как бывает в команде:</strong> на утреннем <strong>дейли</strong> — короткой командной планёрке — напоминает, сколько времени осталось до релиза и какие задачи ещё не готовы. Со стороны может казаться, что он всех подгоняет, но ему важно увидеть риск заранее.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="scrum-master" role="tabpanel">
+                        <img src="img/cover/scrum-master.jpg" alt="Команда обсуждает работу над продуктом">
+                        <h4>Scrum-мастер</h4>
+                        <p>Помогает команде замечать помехи и улучшать совместную работу. Может сопровождать несколько команд или совмещать эту роль с работой тестировщика либо релиз-менеджера; совмещение с Product Owner тоже встречается, но может привести к конфликту интересов.</p>
+                        <p><strong>Как бывает в команде:</strong> предлагает на <strong>ретроспективе спринта</strong> записать на зелёных карточках, что удалось, а на красных — что мешало, и выбрать улучшение на следующий спринт. Иногда предлагает мозговой штурм. Когда релиз уже близко и все заняты, встречу лучше провести коротко и по делу — релиз-менеджер наверняка напомнит о сроках.</p>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <section id="whois" class="article">
     <p>Тестировщик играет ключевую роль на многих этапах разработки ПО. Без тестировщика и обеспечения качества продукта невозможно пройти все этапы разработки:</p>
 
-    <div class="sdlc-trainer" aria-live="polite">
+    <div class="sdlc-trainer" data-stage-storage-key="hwois-development-stage" aria-live="polite">
         <div class="trainer-intro">
             <h3>Этапы разработки программного обеспечения</h3>
             <p>Это тренажер: нажимайте на этап в схеме и сразу видите объяснение и пример. Цикл замкнут — опыт релиза и поддержки возвращается в идеи.</p>
@@ -226,22 +310,40 @@
 
 <script>
     (function() {
-        const chips = document.querySelectorAll('.stage-node');
-        const panels = document.querySelectorAll('.stage-panel');
+        document.querySelectorAll('.sdlc-trainer').forEach((trainer) => {
+            const chips = trainer.querySelectorAll('.stage-node');
+            const panels = trainer.querySelectorAll('.stage-panel');
+            const storageKey = trainer.dataset.stageStorageKey;
 
-        function activate(stage) {
+            function activate(chip) {
+                chips.forEach((item) => {
+                    const isActive = item === chip;
+                    item.classList.toggle('is-active', isActive);
+                    item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                });
+                panels.forEach((panel) => {
+                    panel.classList.toggle('is-active', panel.dataset.stage === chip.dataset.stage);
+                });
+            }
+
+            try {
+                const savedStage = sessionStorage.getItem(storageKey);
+                const savedChip = Array.from(chips).find((chip) => chip.dataset.stage === savedStage);
+                if (savedChip) activate(savedChip);
+            } catch (_) {
+                // Вкладки работают и без доступа к хранилищу браузера.
+            }
+
             chips.forEach((chip) => {
-                const isActive = chip.dataset.stage === stage;
-                chip.classList.toggle('is-active', isActive);
-                chip.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                chip.addEventListener('click', () => {
+                    activate(chip);
+                    try {
+                        sessionStorage.setItem(storageKey, chip.dataset.stage);
+                    } catch (_) {
+                        // Выбор остаётся активным до обновления страницы.
+                    }
+                });
             });
-            panels.forEach((panel) => {
-                panel.classList.toggle('is-active', panel.dataset.stage === stage);
-            });
-        }
-
-        chips.forEach((chip) => {
-            chip.addEventListener('click', () => activate(chip.dataset.stage));
         });
     })();
 </script>
