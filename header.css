@@ -2040,3 +2040,21 @@ html[data-theme="dark"] .darkToggleIcon_wfgR {
     touch-action: manipulation !important;
   }
 }
+
+/* Test branding is activated only under /test/, never on production pages. */
+html[data-site-environment="test"] .logo-art {
+  background-image: url('img/QAtoDev_Blueprint.png');
+  border-radius: 50%;
+}
+
+html[data-site-environment="test"] .site-header .site-title:focus-visible {
+  color: #0879E8;
+  outline-color: rgba(8, 121, 232, 0.35);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html[data-site-environment="test"] .site-header .site-title:hover {
+    color: #0879E8;
+    opacity: 1;
+  }
+}

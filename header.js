@@ -1,4 +1,19 @@
 (function () {
+  // Keep staging branding tied to its URL, even after merging branches.
+  document.documentElement.dataset.siteEnvironment =
+    /^\/test(?:\/|$)/.test(window.location.pathname) ? 'test' : 'production';
+
+  if (document.documentElement.dataset.siteEnvironment === 'test') {
+    // Replace all default favicons so browsers cannot pick the orange variant.
+    document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach(icon => icon.remove());
+    const testFavicon = document.createElement('link');
+    testFavicon.rel = 'icon';
+    testFavicon.type = 'image/svg+xml';
+    testFavicon.setAttribute('sizes', 'any');
+    testFavicon.href = '/test/img/favicon-blueprint.svg?v=1';
+    document.head.appendChild(testFavicon);
+  }
+
   const HEADER_SCROLL_ENTER_Y = 8;
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';

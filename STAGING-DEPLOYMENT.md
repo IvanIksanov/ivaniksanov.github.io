@@ -13,3 +13,12 @@ On main, restore production robots.txt and sitemap.xml and keep noindex only on
 hwois.html, start.html, and osi_model.html. Preserve main snapshots:
 over/questions_db_snapshot.json and over/public_ai_append_snapshot.json.
 Verify these settings before every production push.
+
+Header branding is selected by URL in header.js: only /test/ and its descendants
+activate the blueprint logo, circular clipping, and blue title hover/focus.
+All other paths keep the production logo and orange accent. These shared header
+files are safe to merge into main; no manual branding restore is needed.
+.gitignore does not exclude changes to tracked files and is not a deployment guard.
+
+The browser favicon also switches to a circular blueprint SVG only under /test/.
+Production favicon links are left untouched by header.js.
