@@ -16,6 +16,7 @@
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.19">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="hwois-map.css">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
     <script src="metrika.shared.js"></script>
@@ -267,6 +268,49 @@
 </section>
 
 
+<section id="team-flow" class="article" aria-labelledby="team-flow-title">
+    <div class="team-flow-frame">
+        <div class="team-flow-header">
+            <div>
+                <h3 id="team-flow-title">Команда на пути к релизу</h3>
+                <p>Отправьте участника на больничный или выведите из команды, назначьте замену и попробуйте выпустить продукт. Цветные этапы — проверки, которые начинаются ещё до завершения разработки.</p>
+            </div>
+            <div class="team-flow-controls">
+                <button id="team-flow-run" type="button">▶ Запустить релиз</button>
+                <button id="team-flow-reset" type="button">Сброс</button>
+            </div>
+        </div>
+        <div class="team-flow-workspace">
+            <div class="team-flow-viewport" id="team-flow-viewport" tabindex="0" aria-label="Карта этапов разработки. Перетаскивайте для перемещения, используйте колесо для прокрутки карты">
+                <div class="team-flow-canvas" id="team-flow-canvas">
+                    <svg class="team-flow-lines" id="team-flow-lines" viewBox="0 0 2250 760" aria-hidden="true">
+                        <defs>
+                            <marker id="team-flow-feedback-arrow" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="9" refY="6" orient="auto" viewBox="0 0 12 12">
+                                <path d="M1 1 L10 6 L1 11 Z"></path>
+                            </marker>
+                        </defs>
+                        <path class="team-flow-feedback" d="M 1665 285 C 1715 220, 1700 64, 1585 64 L 1110 64 C 1020 64, 990 110, 970 160" marker-end="url(#team-flow-feedback-arrow)"></path>
+                    </svg>
+                    <div id="team-flow-nodes"></div>
+                </div>
+            </div>
+            <div class="team-flow-zoom" aria-label="Масштаб карты">
+                <button type="button" id="team-flow-zoom-out" aria-label="Уменьшить карту">−</button>
+                <button type="button" id="team-flow-zoom-in" aria-label="Увеличить карту">+</button>
+            </div>
+            <aside class="team-flow-article" id="team-flow-article" aria-label="Подробности выбранного элемента" hidden>
+                <div class="team-flow-article__header">
+                    <h4 id="team-flow-article-title"></h4>
+                    <div class="team-flow-article__actions" id="team-flow-article-actions"></div>
+                    <button id="team-flow-article-close" type="button" aria-label="Закрыть подробности">×</button>
+                </div>
+                <div id="team-flow-article-content" class="team-flow-article__content"></div>
+            </aside>
+        </div>
+        <p class="team-flow-status" id="team-flow-status" role="status" aria-live="polite">Перемещайте карту и нажмите на портрет участника, чтобы изменить состав команды перед релизом.</p>
+    </div>
+</section>
+
 <section id="glossary" class="article">
     <div class="glossary-head">
         <h3>Глоссарий</h3>
@@ -480,6 +524,8 @@
     })();
 </script>
 
+  <script src="map-motion.shared.js?v=7"></script>
+  <script src="hwois-map.js"></script>
   <script src="header.js?v=8.9.16"></script>
 </body>
 </html>
