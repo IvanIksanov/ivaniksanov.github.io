@@ -3905,8 +3905,6 @@ html[data-theme="dark"] .skill-links a.selected {
   border-radius: 16px;
   background: var(--stage-panel);
   padding: 16px;
-  max-height: 520px;
-  overflow: auto;
 }
 
 .stage-panel {
