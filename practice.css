@@ -1,6 +1,7 @@
 .practice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+  grid-auto-rows: 1fr;
   gap: 18px;
   margin-top: 20px;
 }
@@ -28,6 +29,28 @@
 .practice-card p {
   margin: 0;
   color: #444;
+  font-size: .85rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.practice-skills {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 5px;
+}
+
+.practice-skills span {
+  max-width: 100%;
+  padding: 4px 7px;
+  border: 1px solid #e1e5e9;
+  border-radius: 999px;
+  background: #f3f5f7;
+  color: #495463;
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
@@ -54,6 +77,7 @@ html[data-theme="dark"] .practice-card__type { border-color: #4b5563; background
 
 .practice-cta {
   align-self: flex-start;
+  margin-top: auto;
   font-weight: 600;
   color: #111;
   background: var(--practice-accent, #ffa001);
@@ -64,6 +88,12 @@ html[data-theme="dark"] .practice-card__type { border-color: #4b5563; background
 
 .practice-card--books {
   --practice-accent: #2fb344;
+}
+
+.practice-card--course .practice-cta,
+html[data-theme="dark"] .practice-card--course .practice-cta {
+  background: #111;
+  color: #fff;
 }
 
 .practice-card--article {
@@ -115,6 +145,12 @@ html[data-theme="dark"] .practice-card {
 
 html[data-theme="dark"] .practice-card p {
   color: #c7c7c7;
+}
+
+html[data-theme="dark"] .practice-skills span {
+  border-color: #3b424b;
+  background: #2b3036;
+  color: #d6dee7;
 }
 
 html[data-theme="dark"] .practice-thumb {

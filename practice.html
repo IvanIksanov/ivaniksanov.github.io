@@ -16,7 +16,7 @@
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.19">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="practice.css?v=3">
+    <link rel="stylesheet" href="practice.css?v=5">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
     <script src="metrika.shared.js"></script>
@@ -73,63 +73,69 @@
 <main>
     <section class="article">
         <h2>Практика</h2>
-        <p>Здесь собраны статьи, практические задания и тренажёры для изучения QA.</p>
 
         <div class="practice-grid">
-            <a class="practice-card practice-card--course" href="course.html?chapter=1&amp;v=20261018c">
-                <div class="practice-thumb practice-thumb--course" aria-hidden="true">
-                    <img src="img/cover/course_architecture.png" alt="" loading="lazy">
-                </div>
-                <h3>Архитектура</h3>
-                <p>Визуализация архитектуры: пройди путь запроса от браузера до базы и проверь отказ работы всех систем.</p>
-                <span class="practice-cta">Открыть курс</span>
-            </a>
             <a class="practice-card practice-card--article" href="hwois.html">
                 <div class="practice-thumb practice-thumb--article">
-                    <img src="img/QA.jpeg" alt="" loading="lazy">
+                    <img src="img/cover/who_is_qa.webp" alt="" loading="lazy">
                     <span class="practice-card__type">Статья</span>
                 </div>
                 <h3>Кто такой тестировщик?</h3>
+                <div class="practice-skills" aria-label="Навыки"><span>Ручное тестирование</span><span>Анализ требований</span><span>Тест-дизайн</span></div>
                 <p>Роль QA в команде и этапы разработки программного обеспечения.</p>
                 <span class="practice-cta">Читать статью</span>
             </a>
+            <a class="practice-card practice-card--course" href="course.html?chapter=1&amp;v=20261018c">
+                <div class="practice-thumb practice-thumb--course" aria-hidden="true">
+                    <img src="img/cover/client-server.webp" alt="" loading="lazy">
+                </div>
+                <h3>Архитектура</h3>
+                <div class="practice-skills" aria-label="Навыки и стек"><span>Клиент-серверная архитектура</span><span>Микросервисы</span><span>SQL</span><span>CI/CD</span></div>
+                <p>Визуализация архитектуры: пройди путь запроса от браузера до базы и проверь отказ работы всех систем.</p>
+                <span class="practice-cta">Открыть курс</span>
+            </a>
             <a class="practice-card practice-card--books" href="pageBooks.html">
                 <div class="practice-thumb">
-                    <img src="img/cover/book_poster.webp" alt="Книжная полка" loading="lazy">
+                    <img src="img/cover/book_store.webp" alt="Книжная полка" loading="lazy">
                 </div>
                 <h3>Книжная полка</h3>
+                <div class="practice-skills" aria-label="Навыки"><span>UI/UX testing</span><span>Bug reporting</span><span>Регрессионное тестирование</span></div>
                 <p>Протестировать по чек-листу страницу с книгами.</p>
+                <span class="practice-cta">Открыть тренажер</span>
+            </a>
+            <a class="practice-card practice-card--swagger" href="swagger_api.html">
+                <div class="practice-thumb">
+                    <img src="img/cover/swagger_api.webp" alt="Swagger тренажер" loading="lazy">
+                </div>
+                <h3>Swagger тренажер</h3>
+                <div class="practice-skills" aria-label="Навыки и стек"><span>API testing</span><span>REST API</span><span>JSON</span><span>Swagger</span></div>
+                <p>Практика по API. Пройди задания по отправке запросов и ответов.</p>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
             <a class="practice-card practice-card--flappy" href="flappy.html">
                 <div class="practice-thumb">
-                    <img src="img/cover/flappy_poster.webp" alt="Flappy Bird" loading="lazy">
+                    <img src="img/cover/flappy_test.webp" alt="Flappy Bird" loading="lazy">
                 </div>
                 <h3>Flappy Bird</h3>
+                <div class="practice-skills" aria-label="Навыки"><span>Кроссбраузерное тестирование</span><span>Bug reporting</span><span>Тест-дизайн</span></div>
                 <p>Игра с багами. Отточить навыки тест-дизайна и наблюдательности.</p>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
             <a class="practice-card practice-card--login" href="loginSandbox.html">
                 <div class="practice-thumb">
-                    <img src="img/cover/login_poster.webp" alt="Login Sandbox" loading="lazy">
+                    <img src="img/cover/login_test.webp" alt="Login Sandbox" loading="lazy">
                 </div>
                 <h3>Login Sandbox</h3>
+                <div class="practice-skills" aria-label="Навыки"><span>Функциональное тестирование</span><span>API testing</span><span>Bug reporting</span></div>
                 <p>Проверка формы логина: позитивные и негативные сценарии по чек-листу.</p>
-                <span class="practice-cta">Открыть тренажер</span>
-            </a>
-            <a class="practice-card practice-card--swagger" href="swagger_api.html">
-                <div class="practice-thumb">
-                    <img src="img/cover/magic_poster.webp" alt="Swagger тренажер" loading="lazy">
-                </div>
-                <h3>Swagger тренажер</h3>
-                <p>Практика по API. Пройди задания по отправке запросов и ответов.</p>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
             <a class="practice-card practice-card--five" href="five-letters.html">
                 <div class="practice-thumb">
-                    <img src="img/cover/five_letters_poster.png" alt="Слова из 5 букв" loading="lazy">
+                    <img src="img/cover/words_test.webp" alt="Слова из 5 букв" loading="lazy">
                 </div>
                 <h3>Слова из 5 букв</h3>
+                <div class="practice-skills" aria-label="Навыки"><span>Тест-дизайн</span><span>Анализ требований</span></div>
                 <p>Угадывай слово или задавай условия, чтобы сузить словарь и быстрее найти ответ.</p>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
