@@ -183,8 +183,10 @@
   }, true);
   frame.addEventListener('focusin', () => setMapScrollActive(true));
   frame.addEventListener('focusout', event => {
-    if (!frame.contains(event.relatedTarget)) setMapScrollActive(false);
+    // Закрытие стартового окна удаляет из фокуса его кнопку без перехода за рамку карты.
+    if (event.relatedTarget && !frame.contains(event.relatedTarget)) setMapScrollActive(false);
   });
+  window.addEventListener('blur', () => setMapScrollActive(false));
 
   const motion = window.createMapMotion({
     viewport,
@@ -802,6 +804,7 @@
     frame.classList.remove('is-overlay-open');
     frame.querySelector('.team-flow-header').inert = false;
     workspace.inert = false;
+    viewport.focus({ preventScroll: true });
   }
   function resetProgress() {
     stages.forEach(stage => { progress[stage.id] = 'idle'; });
