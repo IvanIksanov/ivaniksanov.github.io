@@ -1,6 +1,6 @@
 // Механика камеры для схем: сопротивление у границ, инерция жеста и плавный возврат.
 // Формулы движения совпадают с картой вопросов; содержимое и допустимую область задаёт страница.
-window.createMapMotion = function createMapMotion({ viewport, canvas, getContentBounds, onChange, touchPanGain = 1 }) {
+window.createMapMotion = function createMapMotion({ viewport, canvas, getContentBounds, onChange, touchPanGain = 1, minScale = .7, shouldHandleWheel = () => true }) {
   const camera = { x: 0, y: 0, scale: 1 };
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -73,7 +73,7 @@ window.createMapMotion = function createMapMotion({ viewport, canvas, getContent
     clearTimeout(settleTimer);
     settleTimer = setTimeout(() => {
       const limit = bounds();
-      const target = { x: clamp(camera.x, ...limit.x), y: clamp(camera.y, ...limit.y), scale: clamp(camera.scale, .7, 1.6) };
+      const target = { x: clamp(camera.x, ...limit.x), y: clamp(camera.y, ...limit.y), scale: clamp(camera.scale, minScale, 1.6) };
       if (Math.hypot(target.x - camera.x, target.y - camera.y) > .25 || Math.abs(target.scale - camera.scale) > .001) animateTo(target);
     }, delay);
   }
@@ -88,7 +88,7 @@ window.createMapMotion = function createMapMotion({ viewport, canvas, getContent
     if (saved && Number.isFinite(saved.x) && Number.isFinite(saved.y)) {
       camera.x = saved.x;
       camera.y = saved.y;
-      camera.scale = clamp(saved.scale || 1, .7, 1.6);
+      camera.scale = clamp(saved.scale || 1, minScale, 1.6);
       const limit = bounds();
       camera.x = clamp(camera.x, ...limit.x);
       camera.y = clamp(camera.y, ...limit.y);
@@ -98,7 +98,7 @@ window.createMapMotion = function createMapMotion({ viewport, canvas, getContent
   function snapshot() { return { ...camera }; }
   function zoom(delta, point) {
     const old = camera.scale;
-    const next = clamp(old * Math.exp(-delta * .008), .7, 1.6);
+    const next = clamp(old * Math.exp(-delta * .008), minScale, 1.6);
     camera.x = point.x - (point.x - camera.x) * next / old;
     camera.y = point.y - (point.y - camera.y) * next / old;
     camera.scale = next;
@@ -162,7 +162,7 @@ window.createMapMotion = function createMapMotion({ viewport, canvas, getContent
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (pinch && pointers.size > 1) {
       const [a, b] = [...pointers.values()];
-      const scale = clamp(pinch.camera.scale * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(pinch.distance, 1), .7, 1.6);
+      const scale = clamp(pinch.camera.scale * Math.hypot(a.x - b.x, a.y - b.y) / Math.max(pinch.distance, 1), minScale, 1.6);
       const rect = viewport.getBoundingClientRect();
       const x = (a.x + b.x) / 2 - rect.left;
       const y = (a.y + b.y) / 2 - rect.top;
@@ -217,6 +217,7 @@ window.createMapMotion = function createMapMotion({ viewport, canvas, getContent
   viewport.addEventListener('pointercancel', release);
   viewport.addEventListener('click', event => { if (suppressClick) { event.preventDefault(); event.stopPropagation(); suppressClick = false; } }, true);
   viewport.addEventListener('wheel', event => {
+    if (!shouldHandleWheel(event)) return;
     event.preventDefault();
     if (pointerMotion) return;
     if (event.ctrlKey || event.metaKey) {
