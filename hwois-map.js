@@ -26,8 +26,10 @@
   const completionTasks = document.getElementById('team-flow-complete-tasks');
   const statusLine = document.getElementById('team-flow-status');
   const scenarioLine = document.getElementById('team-flow-scenario');
-  const rolePanels = new Map([...document.querySelectorAll('#team .stage-panel')].map(panel => [panel.dataset.stage, panel]));
+  const gameRoleIds = ['owner', 'business-analyst', 'designer', 'system-analyst', 'developer', 'tester', 'release-manager', 'scrum-master'];
+  const rolePanels = new Map(gameRoleIds.map(id => [id, document.querySelector(`#team .stage-panel[data-stage="${id}"]`)]));
   const roleNames = new Map([...rolePanels].map(([id, panel]) => [id, panel.querySelector('h4').textContent]));
+  roleNames.set('developer', 'Разработчик');
   const roleImages = new Map([...rolePanels].map(([id, panel]) => [id, panel.querySelector('img').getAttribute('src')]));
 
   const stages = [
@@ -521,6 +523,14 @@
         state.version = 13;
       }
       if (!state.assignments.retesting || !state.scenarioStart.assignments.retesting || !state.progress.retesting) return null;
+      for (const snapshot of [state, state.scenarioStart]) {
+        snapshot.presence = Object.fromEntries(gameRoleIds.map(role => [role, snapshot.presence[role] || 'active']));
+        stages.forEach(stage => {
+          snapshot.assignments[stage.id] = Object.fromEntries(Object.entries(snapshot.assignments[stage.id] || {})
+            .filter(([, role]) => rolePanels.has(role)));
+        });
+      }
+      if (state.hiredRole && !rolePanels.has(state.hiredRole)) state.hiredRole = null;
       return state;
     } catch (_) { storageAvailable = false; return null; }
   }
@@ -547,9 +557,21 @@
     meta.className = 'team-flow-article__meta';
     meta.append(presenceLine);
     const topic = panel.querySelector('.team-topic-chip');
-    if (topic) meta.append(topic.cloneNode(true));
+    if (topic) {
+      const chip = topic.cloneNode(true);
+      if (roleId === 'developer') chip.textContent = 'Код · исправления';
+      meta.append(chip);
+    }
     articleContent.append(meta);
-    panel.querySelectorAll('p').forEach(p => articleContent.append(p.cloneNode(true)));
+    if (roleId === 'developer') {
+      articleContent.append(
+        paragraph('Пишет и изменяет код, связывает части системы, исправляет найденные дефекты и проверяет свою реализацию.'),
+        paragraph('Вместе с тестировщиком: воспроизводит баги, обсуждает причины и проверяет исправления.'),
+        paragraph('Как бывает в команде: исправил один баг, а рядом неожиданно появились три новых. Это повод проверить связанные сценарии и вместе найти причину. Если разработчик занят срочным исправлением, лучше прийти с чёткими шагами воспроизведения и выбрать подходящий момент для обсуждения.')
+      );
+    } else {
+      panel.querySelectorAll('p').forEach(p => articleContent.append(p.cloneNode(true)));
+    }
     if (state === 'sick') articleContent.append(paragraph('Участник остаётся на карте с отметкой больничного. Нажмите его место и назначьте другого человека.', 'team-flow-article__hint'));
     if (state === 'left') articleContent.append(paragraph(scenarioIndex === 7 && ['developer', 'business-analyst', 'release-manager'].includes(roleId)
       ? 'Этот участник ушёл из команды. В задании можно нанять только одного сотрудника; остальные обязанности придётся распределить.'

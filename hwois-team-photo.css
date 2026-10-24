@@ -1,0 +1,155 @@
+#team-photo.article {
+  max-width: 1100px;
+  box-sizing: border-box;
+}
+
+#team .stage-panel img.stage-panel__team-crop {
+  height: 220px;
+  object-fit: none;
+}
+
+.team-photo__heading h3 { margin: 0 0 6px; }
+.team-photo__heading p {
+  margin: 0 0 14px;
+  color: #66717c;
+  font-size: .88rem;
+}
+
+.team-photo__frame {
+  overflow: hidden;
+  border: 2px solid #111;
+  border-radius: 18px;
+  background: #171c26;
+}
+
+.team-photo__scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1672 / 941;
+}
+
+.team-photo__scene > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.team-photo__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.team-photo__shade {
+  fill: rgba(255, 255, 255, .74);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .9s cubic-bezier(.24, .6, .3, 1);
+}
+
+.team-photo__shade.is-full {
+  opacity: 1;
+}
+
+.team-photo__cutout {
+  opacity: 1;
+  transition: opacity .28s ease-in-out;
+}
+
+.team-photo__hit {
+  fill: rgba(255, 255, 255, .001);
+  stroke: none;
+  pointer-events: visiblePainted;
+  cursor: pointer;
+}
+
+.team-photo__hit:focus { outline: none; }
+
+.team-photo__caption {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 5%;
+  width: 40%;
+  color: #172330;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, .8);
+  opacity: 0;
+  transform: translateY(calc(-50% + 10px));
+  transition: opacity .3s ease, transform .3s ease;
+  pointer-events: none;
+}
+
+.team-photo__caption.is-left { left: 5%; right: auto; }
+.team-photo__caption.is-visible { opacity: 1; transform: translateY(-50%); }
+.team-photo__caption.is-appearing { animation: team-photo-caption-enter .34s ease-out both; }
+@keyframes team-photo-caption-enter { from { opacity: 0; } to { opacity: 1; } }
+.team-photo__caption h4 {
+  margin: 0 0 10px;
+  font-size: clamp(1.1rem, 2.1vw, 1.9rem);
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -.015em;
+  white-space: nowrap;
+}
+.team-photo__caption p {
+  margin: 0;
+  font-size: clamp(.86rem, 1.4vw, 1.12rem);
+  line-height: 1.35;
+  font-weight: 550;
+}
+
+.team-photo__caption-details {
+  height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: height .48s cubic-bezier(.2, .7, .2, 1), margin-top .48s cubic-bezier(.2, .7, .2, 1), opacity .5s ease .04s, transform .48s ease;
+}
+.team-photo__caption.is-expanded {
+  max-height: calc(100% - 26px);
+  overflow-y: auto;
+  pointer-events: auto;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+.team-photo__caption.is-expanded .team-photo__caption-details { margin-top: 14px; }
+.team-photo__caption-details.is-revealed { opacity: 1; transform: translateY(0); }
+.team-photo__caption-details p { margin: 0 0 10px; font-size: clamp(.79rem, 1.1vw, .96rem); line-height: 1.4; font-weight: 400; }
+.team-photo__caption-details p:last-child { margin-bottom: 0; }
+
+html[data-theme="dark"] .team-photo__heading p { color: #a9b3be; }
+html[data-theme="dark"] .team-photo__frame { border-color: #f1f1f1; }
+html[data-theme="dark"] .team-photo__shade { fill: rgba(5, 10, 22, .74); }
+html[data-theme="dark"] .team-photo__caption { color: #fff; text-shadow: 0 2px 5px rgba(0, 0, 0, .7); }
+
+@media (max-width: 650px), (hover: none) and (pointer: coarse) {
+  .team-photo__frame { border-radius: 13px; }
+  .team-photo__caption,
+  .team-photo__caption.is-left {
+    top: auto;
+    right: 5%;
+    bottom: 6%;
+    left: 5%;
+    width: auto;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    transform: translateY(10px);
+  }
+  .team-photo__caption.is-visible { transform: translateY(0); }
+  .team-photo__caption h4 { margin-bottom: 3px; font-size: 1rem; }
+  .team-photo__caption p { font-size: .7rem; line-height: 1.25; }
+  .team-photo__caption.is-expanded { max-height: none; overflow: visible; }
+  .team-photo__caption-details { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .team-photo__shade, .team-photo__cutout, .team-photo__caption, .team-photo__caption-details { transition: none; }
+  .team-photo__caption.is-appearing { animation: none; }
+}
