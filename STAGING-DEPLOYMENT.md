@@ -10,7 +10,8 @@ Never force-push either remote.
 All staging HTML pages have a static robots noindex tag; staging sitemap is empty.
 These environment settings must not enter production when merging staging into main.
 On main, restore production robots.txt and sitemap.xml and keep noindex only on
-hwois.html, start.html, and osi_model.html. Preserve main snapshots:
+start.html and osi_model.html. The hwois.html article is indexable and listed in
+the production sitemap. Preserve main snapshots:
 over/questions_db_snapshot.json and over/public_ai_append_snapshot.json.
 Verify these settings before every production push.
 
