@@ -16,9 +16,9 @@
     </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.19">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20261024-2">
     <link rel="stylesheet" href="hwois-map.css?v=20261024-1">
-    <link rel="stylesheet" href="hwois-team-photo.css?v=20261024-18">
+    <link rel="stylesheet" href="hwois-team-photo.css?v=20261024-19">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
     <script src="metrika.shared.js"></script>
@@ -139,7 +139,7 @@
                         <p><strong>Как бывает в команде:</strong> исправил один баг, а рядом неожиданно появились три новых. Это повод проверить связанные сценарии и вместе найти причину. Если разработчик занят срочным исправлением, лучше прийти с чёткими шагами воспроизведения и выбрать подходящий момент для обсуждения.</p>
                     </article>
                     <article class="stage-panel" data-stage="frontend-developer" role="tabpanel">
-                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.png" style="object-position: 92% 55%" alt="Фронтенд-разработчик в команде">
+                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.jpg" loading="lazy" style="object-position: 92% 55%" alt="Фронтенд-разработчик в команде">
                         <div class="stage-panel__heading"><h4>Фронтенд-разработчик</h4><span class="team-topic-chip" data-topic="interface">Интерфейс · браузер</span></div>
                         <p>Превращает макеты в работающие страницы: пишет код интерфейса, показывает данные от API и настраивает действия пользователя.</p>
                         <p><strong>Вместе с тестировщиком:</strong> проверяет поведение кнопок и форм, ошибки на экране и работу страницы на разных размерах экрана.</p>
@@ -160,14 +160,14 @@
                         <p><strong>Как бывает в команде:</strong> на утреннем <strong>дейли</strong> — короткой командной планёрке — напоминает, сколько времени осталось до релиза и какие задачи ещё не готовы. Со стороны может казаться, что он всех подгоняет, но ему важно увидеть риск заранее.</p>
                     </article>
                     <article class="stage-panel" data-stage="project-manager" role="tabpanel">
-                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.png" style="object-position: 100% 8%" alt="Менеджер проекта в команде">
+                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.jpg" loading="lazy" style="object-position: 100% 8%" alt="Менеджер проекта в команде">
                         <div class="stage-panel__heading"><h4>Менеджер проекта</h4><span class="team-topic-chip" data-topic="process">План · сроки</span></div>
                         <p>Помогает команде планировать работу: следит за сроками, зависимостями задач и договорённостями между участниками проекта.</p>
                         <p><strong>Вместе с тестировщиком:</strong> учитывает время на проверки и помогает заранее сообщить о риске, если задача задерживается.</p>
                         <p><strong>Как бывает в команде:</strong> одна команда ждёт API от другой, а срок уже близко. Менеджер проекта помогает согласовать новый план. Приоритеты продукта определяет владелец продукта, а сам выпуск координирует релиз-менеджер.</p>
                     </article>
                     <article class="stage-panel" data-stage="devops" role="tabpanel">
-                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.png" style="object-position: 75% 14%" alt="DevOps-инженер в команде">
+                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.jpg" loading="lazy" style="object-position: 75% 14%" alt="DevOps-инженер в команде">
                         <div class="stage-panel__heading"><h4>DevOps-инженер</h4><span class="team-topic-chip" data-topic="backend">Сборка · стенды</span></div>
                         <p>Помогает автоматически собирать и развёртывать приложение, настраивает окружения и наблюдение за работой системы. Конкретные задачи зависят от команды.</p>
                         <p><strong>Вместе с тестировщиком:</strong> выясняет, какая версия попала на тестовый стенд, доступны ли нужные сервисы и не связана ли ошибка с окружением.</p>
@@ -192,7 +192,11 @@
     </div>
     <div class="team-photo__frame">
         <div class="team-photo__scene" id="team-photo-scene">
-            <img src="img/cover/Team_QAtoDev.png" alt="Иллюстрация команды QAtoDev за общим столом" draggable="false" width="1672" height="941">
+            <picture class="team-photo__image">
+                <source type="image/avif" srcset="img/cover/Team_QAtoDev-480.avif 480w, img/cover/Team_QAtoDev-960.avif 960w, img/cover/Team_QAtoDev-1672.avif 1672w" sizes="(max-width: 1100px) calc(100vw - 32px), 1060px">
+                <source type="image/webp" srcset="img/cover/Team_QAtoDev-480.webp 480w, img/cover/Team_QAtoDev-960.webp 960w, img/cover/Team_QAtoDev-1672.webp 1672w" sizes="(max-width: 1100px) calc(100vw - 32px), 1060px">
+                <img src="img/cover/Team_QAtoDev.jpg" alt="Иллюстрация команды QAtoDev за общим столом" draggable="false" loading="lazy" decoding="async" width="1672" height="941">
+            </picture>
             <svg id="team-photo-overlay" class="team-photo__overlay" viewBox="0 0 1672 941" aria-label="Интерактивные области участников команды">
                 <defs id="team-photo-defs">
                     <filter id="team-photo-feather" x="-24" y="-24" width="1720" height="989" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="7"></feGaussianBlur></filter>
@@ -654,8 +658,8 @@
 
   <script src="map-motion.shared.js?v=20261023-3"></script>
   <script src="hwois-map.js?v=20261024-1"></script>
-  <script src="hwois-team-photo-contours.js?v=20261024-1"></script>
-  <script src="hwois-team-photo.js?v=20261024-20"></script>
+  <script src="hwois-team-photo-contours.js?v=20261024-2"></script>
+  <script src="hwois-team-photo.js?v=20261024-22"></script>
   <script src="header.js?v=8.9.16"></script>
 </body>
 </html>

@@ -28,14 +28,32 @@
   aspect-ratio: 1672 / 941;
 }
 
-.team-photo__scene > img {
+.team-photo__scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('img/cover/Team_QAtoDev-preview.webp') center / cover no-repeat;
+  filter: blur(8px);
+  transform: scale(1.025);
+}
+
+.team-photo__image {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.team-photo__image img {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: fill;
   user-select: none;
   -webkit-user-drag: none;
+  transition: opacity .35s ease;
 }
+
+.team-photo__scene.is-image-loading .team-photo__image img { opacity: 0; }
 
 .team-photo__overlay {
   position: absolute;
@@ -155,6 +173,6 @@ html[data-theme="dark"] .team-photo__frame { border-color: #f1f1f1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .team-photo__shade, .team-photo__cutout, .team-photo__caption, .team-photo__caption-details { transition: none; }
+  .team-photo__shade, .team-photo__cutout, .team-photo__caption, .team-photo__caption-details, .team-photo__image img { transition: none; }
   .team-photo__caption.is-appearing { animation: none; }
 }
