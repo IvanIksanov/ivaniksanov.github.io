@@ -22,3 +22,8 @@ files are safe to merge into main; no manual branding restore is needed.
 
 The browser favicon also switches to a circular blueprint SVG only under /test/.
 Production favicon links are left untouched by header.js.
+
+Google Tag Manager is connected by the same google-tag-manager.shared.js include
+in both branches. Its URL guard permits only production hosts over HTTPS and
+excludes /test and all descendants. Keep this shared code identical across
+environments; see ANALYTICS.md for the GTM/GA4 setup and opt-out controls.
