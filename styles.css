@@ -4111,3 +4111,93 @@ html[data-theme="dark"] .skill-links a.selected {
     font-size: 20px;
   }
 }
+
+/* Keep the development stages beside their explanation at narrow widths. */
+.sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .sdlc-layout {
+  grid-template-columns: clamp(96px, 28%, 180px) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-scheme {
+  display: block;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-list {
+  position: sticky;
+  top: 12px;
+  width: 100%;
+  gap: 8px;
+}
+
+.sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-node {
+  min-height: 40px;
+  padding: 7px 8px;
+  font-size: .9rem;
+  line-height: 1.2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-details-frame {
+  min-width: 0;
+}
+
+.sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-panel img {
+  display: block;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+}
+
+@media (max-width: 600px) {
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] {
+    padding: 9px;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .sdlc-layout {
+    gap: 8px;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-list {
+    gap: 6px;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-node {
+    padding: 6px 5px;
+    font-size: .75rem;
+    line-height: 1.15;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-details-frame {
+    padding: 9px;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-panel img {
+    margin-bottom: 8px;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-panel h4 {
+    margin-bottom: 7px;
+    font-size: .95rem;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-panel p {
+    margin: 0 0 9px;
+    font-size: .85rem;
+    line-height: 1.38;
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 380px) {
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .sdlc-layout {
+    grid-template-columns: 86px minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-details-frame {
+    padding: 7px;
+  }
+}
