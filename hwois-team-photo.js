@@ -4,17 +4,17 @@
   if (!root || !data || data.image.width !== 1672 || data.image.height !== 941) return;
 
   const roles = [
-    { id: 'owner', title: 'Владелец продукта', source: 'owner', summary: 'Решает, какие функции нужны сайту или приложению и что команда сделает сначала.' },
-    { id: 'business-analyst', title: 'Бизнес-аналитик', source: 'business-analyst', summary: 'Узнаёт, что нужно людям, и записывает правила работы сайта или приложения.' },
-    { id: 'designer', title: 'Дизайнер', source: 'designer', summary: 'Рисует, как будут выглядеть страницы сайта или экраны приложения и где будут кнопки.' },
-    { id: 'system-analyst', title: 'Системный аналитик', source: 'system-analyst', summary: 'Продумывает, как части сайта или приложения будут работать вместе и передавать данные.' },
-    { id: 'backend-developer', title: 'Фронтенд-разработчик', source: 'frontend-developer', summary: 'Делает страницы сайта и кнопки, с которыми взаимодействует пользователь.' },
-    { id: 'frontend-developer', title: 'Бэкенд-разработчик', source: 'developer', summary: 'Создаёт бэкенд — невидимую часть сайта или приложения. Бэкенд хранит данные и считает сумму заказа.' },
-    { id: 'tester', title: 'Тестировщик', source: 'tester', summary: 'Проверяет сайт или приложение, находит ошибки и смотрит, исправили ли их.' },
-    { id: 'release-manager', title: 'Релиз-менеджер', source: 'release-manager', summary: 'Организует выпуск готового обновления сайта или приложения и помогает команде, если после выпуска что-то сломалось.' },
-    { id: 'scrum-master', title: 'Scrum-мастер', source: 'scrum-master', summary: 'Помогает команде договариваться и решать проблемы, которые мешают работе.' },
-    { id: 'project-manager', title: 'Менеджер проекта', source: 'project-manager', summary: 'Следит за всей работой над сайтом или приложением: кто какую задачу делает и успевает ли к сроку.' },
-    { id: 'devops', title: 'DevOps-инженер', source: 'devops', summary: 'Настраивает компьютеры и программы, на которых работает сайт или приложение, и помогает с обновлениями.' }
+    { id: 'owner', title: 'Владелец продукта', source: 'owner', salary: 350000, summary: 'Решает, какие функции нужны сайту или приложению и что команда сделает сначала.' },
+    { id: 'business-analyst', title: 'Бизнес-аналитик', source: 'business-analyst', salary: 280000, summary: 'Узнаёт, что нужно людям, и записывает правила работы сайта или приложения.' },
+    { id: 'designer', title: 'Дизайнер', source: 'designer', salary: 180000, summary: 'Рисует, как будут выглядеть страницы сайта или экраны приложения и где будут кнопки.' },
+    { id: 'system-analyst', title: 'Системный аналитик', source: 'system-analyst', salary: 260000, summary: 'Продумывает, как части сайта или приложения будут работать вместе и передавать данные.' },
+    { id: 'backend-developer', title: 'Фронтенд-разработчик', source: 'frontend-developer', salary: 280000, summary: 'Делает страницы сайта и кнопки, с которыми взаимодействует пользователь.' },
+    { id: 'frontend-developer', title: 'Бэкенд-разработчик', source: 'developer', salary: 210000, summary: 'Создаёт бэкенд — невидимую часть сайта или приложения. Бэкенд хранит данные и считает сумму заказа.' },
+    { id: 'tester', title: 'Тестировщик', source: 'tester', salary: 130000, summary: 'Проверяет сайт или приложение, находит ошибки и смотрит, исправили ли их.' },
+    { id: 'release-manager', title: 'Релиз-менеджер', source: 'release-manager', salary: 160000, summary: 'Организует выпуск готового обновления сайта или приложения и помогает команде, если после выпуска что-то сломалось.' },
+    { id: 'scrum-master', title: 'Scrum-мастер', source: 'scrum-master', salary: 160000, summary: 'Помогает команде договариваться и решать проблемы, которые мешают работе.' },
+    { id: 'project-manager', title: 'Менеджер проекта', source: 'project-manager', salary: 190000, summary: 'Следит за всей работой над сайтом или приложением: кто какую задачу делает и успевает ли к сроку.' },
+    { id: 'devops', title: 'DevOps-инженер', source: 'devops', salary: 280000, summary: 'Настраивает компьютеры и программы, на которых работает сайт или приложение, и помогает с обновлениями.' }
   ];
 
   const svgNS = 'http://www.w3.org/2000/svg';
@@ -24,6 +24,7 @@
   const caption = document.getElementById('team-photo-caption');
   const captionTitle = document.getElementById('team-photo-caption-title');
   const captionText = document.getElementById('team-photo-caption-text');
+  const captionSalary = document.getElementById('team-photo-caption-salary');
   const captionDetails = document.getElementById('team-photo-caption-details');
   const compactView = window.matchMedia('(max-width: 650px), (hover: none) and (pointer: coarse)');
   let activeId = null;
@@ -107,6 +108,7 @@
     activeId = role.id;
     captionTitle.textContent = role.title;
     captionText.textContent = role.summary;
+    captionSalary.textContent = `Зарплата: ${new Intl.NumberFormat('ru-RU').format(role.salary)} ₽/мес.`;
     const xValues = points.map(([x]) => x);
     const center = (Math.min(...xValues) + Math.max(...xValues)) / 2;
     caption.classList.toggle('is-left', center > data.image.width / 2);

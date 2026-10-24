@@ -102,6 +102,12 @@
   line-height: 1.35;
   font-weight: 550;
 }
+.team-photo__caption .team-photo__caption-salary {
+  margin-top: 12px;
+  color: rgba(255, 255, 255, .78);
+  font-size: clamp(.8rem, 1.15vw, .96rem);
+  font-weight: 700;
+}
 
 .team-photo__caption-details {
   height: 0;
@@ -143,6 +149,7 @@ html[data-theme="dark"] .team-photo__frame { border-color: #f1f1f1; }
   .team-photo__caption.is-visible { transform: translateY(0); }
   .team-photo__caption h4 { margin-bottom: 3px; font-size: 1rem; }
   .team-photo__caption p { font-size: .7rem; line-height: 1.25; }
+  .team-photo__caption .team-photo__caption-salary { margin-top: 5px; font-size: .7rem; }
   .team-photo__caption.is-expanded { max-height: none; overflow: visible; }
   .team-photo__caption-details { display: none; }
 }
