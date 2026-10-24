@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="header.css?v=8.9.19">
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="hwois-map.css?v=20261023-3">
+    <link rel="stylesheet" href="hwois-team-photo.css?v=20261024-15">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
     <script src="metrika.shared.js"></script>
@@ -75,7 +76,8 @@
 </div>
 <h2>Кто такой тестировщик и чем он занимается в 2026?</h2>
 
-<section id="team" class="article">
+<!-- Карточки ролей скрыты, но остаются источником описаний для фотографии команды и игры. -->
+<section id="team" class="article" hidden>
     <div class="sdlc-trainer" data-stage-storage-key="hwois-team-stage" aria-live="polite">
         <div class="trainer-intro">
             <h3>Кто работает над продуктом</h3>
@@ -89,9 +91,12 @@
                     <button class="stage-node" type="button" data-stage="business-analyst" role="tab" aria-selected="false">Бизнес-аналитик</button>
                     <button class="stage-node" type="button" data-stage="designer" role="tab" aria-selected="false">Дизайнер</button>
                     <button class="stage-node" type="button" data-stage="system-analyst" role="tab" aria-selected="false">Системный аналитик</button>
-                    <button class="stage-node" type="button" data-stage="developer" role="tab" aria-selected="false">Разработчик</button>
+                    <button class="stage-node" type="button" data-stage="developer" role="tab" aria-selected="false">Бэкенд-разработчик</button>
+                    <button class="stage-node" type="button" data-stage="frontend-developer" role="tab" aria-selected="false">Фронтенд-разработчик</button>
                     <button class="stage-node" type="button" data-stage="tester" role="tab" aria-selected="false">Тестировщик</button>
                     <button class="stage-node" type="button" data-stage="release-manager" role="tab" aria-selected="false">Релиз-менеджер</button>
+                    <button class="stage-node" type="button" data-stage="project-manager" role="tab" aria-selected="false">Менеджер проекта</button>
+                    <button class="stage-node" type="button" data-stage="devops" role="tab" aria-selected="false">DevOps-инженер</button>
                     <button class="stage-node" type="button" data-stage="scrum-master" role="tab" aria-selected="false">Scrum-мастер</button>
                 </div>
             </div>
@@ -128,10 +133,17 @@
                     </article>
                     <article class="stage-panel" data-stage="developer" role="tabpanel">
                         <img src="img/cover/DEV_step.png" alt="Разработка функциональности">
-                        <div class="stage-panel__heading"><h4>Разработчик</h4><span class="team-topic-chip" data-topic="development">Код · исправления</span></div>
-                        <p>Пишет и изменяет код, связывает части системы, исправляет найденные дефекты и проверяет свою реализацию.</p>
+                        <div class="stage-panel__heading"><h4>Бэкенд-разработчик</h4><span class="team-topic-chip" data-topic="development">Сервер · код</span></div>
+                        <p>Пишет серверную логику и API, работает с базой данных, исправляет ошибки и проверяет свою реализацию.</p>
                         <p><strong>Вместе с тестировщиком:</strong> воспроизводит баги, обсуждает причины и проверяет исправления.</p>
                         <p><strong>Как бывает в команде:</strong> исправил один баг, а рядом неожиданно появились три новых. Это повод проверить связанные сценарии и вместе найти причину. Если разработчик занят срочным исправлением, лучше прийти с чёткими шагами воспроизведения и выбрать подходящий момент для обсуждения.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="frontend-developer" role="tabpanel">
+                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.png" style="object-position: 92% 55%" alt="Фронтенд-разработчик в команде">
+                        <div class="stage-panel__heading"><h4>Фронтенд-разработчик</h4><span class="team-topic-chip" data-topic="interface">Интерфейс · браузер</span></div>
+                        <p>Превращает макеты в работающие страницы: пишет код интерфейса, показывает данные от API и настраивает действия пользователя.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> проверяет поведение кнопок и форм, ошибки на экране и работу страницы на разных размерах экрана.</p>
+                        <p><strong>Как бывает в команде:</strong> на компьютере кнопка выглядит хорошо, а на телефоне перекрывает текст. Тестировщик показывает проблему, дизайнер уточняет макет, а фронтенд-разработчик исправляет отображение.</p>
                     </article>
                     <article class="stage-panel" data-stage="tester" role="tabpanel">
                         <img src="img/cover/TST_step.png" alt="Проверка продукта">
@@ -147,6 +159,20 @@
                         <p><strong>Вместе с тестировщиком:</strong> сверяет результаты проверок перед релизом и после него.</p>
                         <p><strong>Как бывает в команде:</strong> на утреннем <strong>дейли</strong> — короткой командной планёрке — напоминает, сколько времени осталось до релиза и какие задачи ещё не готовы. Со стороны может казаться, что он всех подгоняет, но ему важно увидеть риск заранее.</p>
                     </article>
+                    <article class="stage-panel" data-stage="project-manager" role="tabpanel">
+                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.png" style="object-position: 100% 8%" alt="Менеджер проекта в команде">
+                        <div class="stage-panel__heading"><h4>Менеджер проекта</h4><span class="team-topic-chip" data-topic="process">План · сроки</span></div>
+                        <p>Помогает команде планировать работу: следит за сроками, зависимостями задач и договорённостями между участниками проекта.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> учитывает время на проверки и помогает заранее сообщить о риске, если задача задерживается.</p>
+                        <p><strong>Как бывает в команде:</strong> одна команда ждёт API от другой, а срок уже близко. Менеджер проекта помогает согласовать новый план. Приоритеты продукта определяет владелец продукта, а сам выпуск координирует релиз-менеджер.</p>
+                    </article>
+                    <article class="stage-panel" data-stage="devops" role="tabpanel">
+                        <img class="stage-panel__team-crop" src="img/cover/Team_QAtoDev.png" style="object-position: 75% 14%" alt="DevOps-инженер в команде">
+                        <div class="stage-panel__heading"><h4>DevOps-инженер</h4><span class="team-topic-chip" data-topic="backend">Сборка · стенды</span></div>
+                        <p>Помогает автоматически собирать и развёртывать приложение, настраивает окружения и наблюдение за работой системы. Конкретные задачи зависят от команды.</p>
+                        <p><strong>Вместе с тестировщиком:</strong> выясняет, какая версия попала на тестовый стенд, доступны ли нужные сервисы и не связана ли ошибка с окружением.</p>
+                        <p><strong>Как бывает в команде:</strong> проверка не проходит, хотя разработчик уже исправил код. DevOps-инженер помогает обнаружить, что на стенде ещё работает старая версия приложения.</p>
+                    </article>
                     <article class="stage-panel" data-stage="scrum-master" role="tabpanel">
                         <img src="img/cover/scrum-master.jpg" alt="Команда обсуждает работу над продуктом">
                         <div class="stage-panel__heading"><h4>Scrum-мастер</h4><span class="team-topic-chip" data-topic="process">Команда · процесс</span></div>
@@ -154,6 +180,30 @@
                         <p><strong>Как бывает в команде:</strong> предлагает на <strong>ретроспективе спринта</strong> записать на зелёных карточках, что удалось, а на красных — что мешало, и выбрать улучшение на следующий спринт. Иногда предлагает мозговой штурм. Когда релиз уже близко и все заняты, встречу лучше провести коротко и по делу — релиз-менеджер наверняка напомнит о сроках.</p>
                     </article>
                 </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section id="team-photo" class="article team-photo" aria-labelledby="team-photo-title">
+    <div class="team-photo__heading">
+        <h3 id="team-photo-title">Для начала познакомимся со всей IT-командой</h3>
+        <p>Наведите на участника команды, чтобы узнать его роль. Нажмите, чтобы прочитать подробнее.</p>
+    </div>
+    <div class="team-photo__frame">
+        <div class="team-photo__scene" id="team-photo-scene">
+            <img src="img/cover/Team_QAtoDev.png" alt="Иллюстрация команды QAtoDev за общим столом" draggable="false" width="1672" height="941">
+            <svg id="team-photo-overlay" class="team-photo__overlay" viewBox="0 0 1672 941" aria-label="Интерактивные области участников команды">
+                <defs id="team-photo-defs">
+                    <filter id="team-photo-feather" x="-24" y="-24" width="1720" height="989" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="7"></feGaussianBlur></filter>
+                </defs>
+                <g id="team-photo-shades"></g>
+                <g id="team-photo-regions"></g>
+            </svg>
+            <div id="team-photo-caption" class="team-photo__caption" aria-hidden="true">
+                <h4 id="team-photo-caption-title"></h4>
+                <p id="team-photo-caption-text"></p>
+                <div id="team-photo-caption-details" class="team-photo__caption-details"></div>
             </div>
         </div>
     </div>
@@ -602,7 +652,9 @@
 </script>
 
   <script src="map-motion.shared.js?v=20261023-3"></script>
-  <script src="hwois-map.js?v=20261023-3"></script>
+  <script src="hwois-map.js?v=20261024-1"></script>
+  <script src="hwois-team-photo-contours.js?v=20261024-1"></script>
+  <script src="hwois-team-photo.js?v=20261024-18"></script>
   <script src="header.js?v=8.9.16"></script>
 </body>
 </html>
