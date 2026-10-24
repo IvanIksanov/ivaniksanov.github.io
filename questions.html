@@ -16,7 +16,7 @@
     </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.19">
-    <link rel="stylesheet" href="questions.css?v=8.9.26">
+    <link rel="stylesheet" href="questions.css?v=8.9.27">
     <script>
         if (new URLSearchParams(location.search).get('map_embed') === '1') {
             document.documentElement.classList.add('questions-map-embed');
@@ -40,7 +40,7 @@
     <ul>
         <li><a href="course.html?chapter=1&amp;v=20261018c">Архитектура</a></li>
         <li><a href="roadmap.html">Roadmap</a></li>
-        <li><a class="is-active" href="index.html">Вопросы</a></li>
+        <li><a class="is-active" href="questions.html" aria-current="page">Вопросы</a></li>
         <li><a href="resume.html">Резюме</a></li>
         <li><a href="practice.html">Практика</a></li>
     </ul>
@@ -106,7 +106,8 @@
     <div class="selection-item" style="text-align: center;">
         <img src="img/answer/TitleCover.png" alt="От выгорания к офферу мечты!" width="300" height="140" style="display: block; margin: 0 auto;">
     </div>
-<h2>Вопросы на собеседовании для тестировщика</h2>
+<h1 class="questions-page-title">Вопросы на собеседовании для тестировщика</h1>
+<p class="questions-intro">Повторяйте теорию тестирования, тест-дизайн, API, базы данных и автоматизацию. Выбирайте категорию или ищите вопрос по ключевым словам.</p>
 <div class="questions-view-switcher" data-view="list" role="group" aria-label="Вид вопросов">
     <span class="questions-view-switcher__label" aria-current="page">Список</span>
     <a class="questions-view-switcher__track" href="questions-map.html" aria-label="Показать карту вопросов">

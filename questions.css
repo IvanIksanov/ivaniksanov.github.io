@@ -189,12 +189,14 @@ h1, h2, h3, h4, h5, h6 {
   --justify-content: center;
 }
 
-h2 {
+h2, .questions-page-title {
   text-align: center;
   margin-bottom: 20px;
   font-size: 1.2rem;     /* уменьшение размера шрифта */
   font-weight: normal;   /* убираем жирность */
 }
+
+.questions-intro { max-width: 680px; margin: 0 auto 18px; text-align: center; font-size: .9rem; line-height: 1.45; }
 
 /* Замени существующие стили .main-content */
 .main-content {

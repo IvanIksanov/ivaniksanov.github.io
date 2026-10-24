@@ -559,3 +559,4 @@ html[data-theme="dark"] .ai-table th {
     padding: .75rem .8rem;
   }
 }
+.interview-page-title { margin: 0 auto 16px; text-align: center; font-size: clamp(1.34rem, 1.14rem + .7vw, 1.74rem); line-height: 1.15; }
