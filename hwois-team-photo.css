@@ -46,7 +46,7 @@
 }
 
 .team-photo__shade {
-  fill: rgba(255, 255, 255, .74);
+  fill: rgba(5, 10, 22, .74);
   opacity: 0;
   pointer-events: none;
   transition: opacity .9s cubic-bezier(.24, .6, .3, 1);
@@ -76,8 +76,8 @@
   top: 50%;
   right: 5%;
   width: 40%;
-  color: #172330;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, .8);
+  color: #fff;
+  text-shadow: 0 2px 5px rgba(0, 0, 0, .7);
   opacity: 0;
   transform: translateY(calc(-50% + 10px));
   transition: opacity .3s ease, transform .3s ease;
@@ -125,8 +125,6 @@
 
 html[data-theme="dark"] .team-photo__heading p { color: #a9b3be; }
 html[data-theme="dark"] .team-photo__frame { border-color: #f1f1f1; }
-html[data-theme="dark"] .team-photo__shade { fill: rgba(5, 10, 22, .74); }
-html[data-theme="dark"] .team-photo__caption { color: #fff; text-shadow: 0 2px 5px rgba(0, 0, 0, .7); }
 
 @media (max-width: 650px), (hover: none) and (pointer: coarse) {
   .team-photo__frame { border-radius: 13px; }
