@@ -105,7 +105,7 @@
     const stageRect = stage.getBoundingClientRect();
     const introRect = intro.getBoundingClientRect();
     const navList = nav.querySelector('ul');
-    if (!desktop.matches || document.hidden || stage.classList.contains('is-preparing') ||
+    if (!desktop.matches || document.hidden ||
         center.classList.contains('has-conversation') || header.classList.contains('is-nav-morphing') ||
         header.classList.contains('is-menu-open') || !target || !dot || !navList ||
         getComputedStyle(navList).display === 'none' || getComputedStyle(nav).visibility === 'hidden' ||

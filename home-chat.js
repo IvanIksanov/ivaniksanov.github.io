@@ -5,7 +5,6 @@
     const root = document.querySelector('.home-stage');
     if (!root) return;
     if (!window.QAtoDevAiClient || !window.QAtoDevConversationMemory) {
-      root.classList.remove('is-preparing');
       return;
     }
 
@@ -979,7 +978,6 @@
     const restoredChatId = saveFirstAnswer();
     render();
     renderSaved(restoredChatId);
-    root.classList.remove('is-preparing');
   }
   document.addEventListener('DOMContentLoaded', () => {
     const desktop = matchMedia('(min-width: 901px)');

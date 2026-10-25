@@ -1,6 +1,25 @@
-/* Keep both side columns at one card height; shrink them together as chats appear. */
+/* Keep both side columns at one card height, including when the viewport gets shorter. */
 (() => {
   'use strict';
+  const images = [...document.querySelectorAll('.home-stage__card img')];
+  function rememberLoadedImages() {
+    if (!images.length || !images.every(image => image.complete && image.naturalWidth > 0)) return;
+    try { sessionStorage.setItem('home_card_images_ready_v1', '1'); } catch {}
+  }
+  for (const image of images) {
+    const card = image.closest('.home-stage__card');
+    const reveal = () => {
+      if (!image.naturalWidth) return;
+      if (typeof image.decode === 'function') {
+        image.decode().catch(() => {}).then(() => card.classList.add('is-image-ready'));
+      } else card.classList.add('is-image-ready');
+      rememberLoadedImages();
+    };
+    if (image.complete && image.naturalWidth > 0) {
+      card.classList.add('is-image-cached', 'is-image-ready');
+    } else image.addEventListener('load', reveal, { once: true });
+  }
+  rememberLoadedImages();
   document.addEventListener('DOMContentLoaded', () => {
     const columns = [...document.querySelectorAll('.home-stage__cards')];
     const mobile = matchMedia('(max-width: 900px)');
@@ -20,6 +39,11 @@
         .filter(card => !card.hidden);
     }
 
+    function overflowAmount(column) {
+      const overflow = column.scrollHeight - column.clientHeight;
+      return overflow > 0 ? overflow + bottomClearance : 0;
+    }
+
     function measure() {
       for (const column of columns) {
         column.classList.remove('is-collapsing');
@@ -32,7 +56,7 @@
           card.style.removeProperty('--home-card-title-size');
         }
       }
-      if (mobile.matches || !columns.some(column => column.querySelector('.home-chat__saved-card'))) {
+      if (mobile.matches) {
         for (const column of columns) {
           const first = visibleCards(column)[0];
           if (first && !removalTimers.has(column)) firstCardTops.set(column, first.getBoundingClientRect().top);
@@ -51,11 +75,11 @@
         const removable = [...promotions, ...saved];
 
         let cards = visibleCards(column);
-        let overflow = Math.max(0, column.scrollHeight - column.clientHeight + bottomClearance);
+        let overflow = overflowAmount(column);
         while (removable.length && overflow > (baseHeight - minimumHeight) * cards.length) {
           removable.shift().hidden = true;
           cards = visibleCards(column);
-          overflow = Math.max(0, column.scrollHeight - column.clientHeight + bottomClearance);
+          overflow = overflowAmount(column);
         }
         if (cards.length) shrinkNeeded = Math.max(shrinkNeeded, overflow / cards.length);
       }
