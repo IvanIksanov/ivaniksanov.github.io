@@ -15,7 +15,7 @@
   }[page];
   const glassAlways = new Set(['course.html', 'questions-map.html']).has(page);
   const showAiNotch = page === 'questions.html' || page === 'questions-map.html';
-  const markup = `<div class="site-header" data-shared-header="true">
+  const markup = String.raw`<div class="site-header" data-shared-header="true">
 <nav>
     <ul>
         <li style="position: relative;"><a href="course.html?chapter=1&amp;v=20261018c">Архитектура</a></li>
