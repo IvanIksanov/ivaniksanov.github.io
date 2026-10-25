@@ -32,7 +32,7 @@
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.47">
     <link rel="stylesheet" href="styles.css?v=8.9.4">
-    <link rel="stylesheet" href="home.css?v=1.0.50">
+    <link rel="stylesheet" href="home.css?v=1.0.56">
     <link rel="stylesheet" href="home-carousel-legacy.css?v=1.0.0" media="(max-width: 900px)">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
@@ -70,7 +70,11 @@
 
             <div class="home-stage__center">
                 <div class="home-stage__intro" id="home-chat-intro">
-                    <h1>Разбирайся.<br>Проверяй.<br><span>Тестируй.</span></h1>
+                    <h1 class="home-stage__guide-title" aria-label="Подготовка к собеседованию. Составь свой план. Бесплатная практика.">
+                        <span class="home-stage__guide-step is-active" data-guide-target="questions.html">Подготовка к собеседованию<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
+                        <span class="home-stage__guide-step" data-guide-target="roadmap.html">Составь свой план<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
+                        <span class="home-stage__guide-step" data-guide-target="practice.html">Бесплатная практика<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
+                    </h1>
                     <p>Бесплатная песочница для тестировщиков: находи баги, проверяй API, изучай архитектуру и готовься к собеседованию.</p>
                     <div class="home-stage__starters" aria-label="Идеи для начала">
                         <button type="button" data-home-starter="start">С чего начать</button>
@@ -772,8 +776,6 @@
             Всё началось с первой статьи на Хабр...
             Вскоре был создан telegram-канал по тестированию, а теперь уже запущена целая песочница для практики.
             Спасибо тем, кто помогает и поддерживает инициативу развития данного сообщества!<br><br></p>
-        <p>Только знакомитесь с профессией? Начните со статьи <a href="hwois.html">кто такой тестировщик и чем он занимается</a>, а затем переходите к <a href="practice.html">практическим заданиям для QA</a>.</p>
-        <p>Подписывайтесь на <a href="https://t.me/QAtoDev" target="_blank" style="background-color: #FFA001;">Telegram</a>!</p>
     </section>
 
 </main>
@@ -814,6 +816,7 @@
 <script src="home-chat-sync.shared.js?v=1.0.0"></script>
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js" defer></script>
 <script src="home-chat.js?v=1.0.55"></script>
+<script src="home-intro-guide.js?v=17"></script>
 <script src="home-side-cards.js?v=1.0.10"></script>
 <script src="home-mobile-carousel.js?v=1.0.0"></script>
 <script src="script.js?v=8.9.4"></script>
