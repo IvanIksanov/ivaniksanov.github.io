@@ -31,9 +31,11 @@ html[data-theme="dark"] body.roadmap-page {
   --roadmap-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
 }
 
-body.roadmap-page *,
-body.roadmap-page *::before,
-body.roadmap-page *::after {
+/* Keep the roadmap box model inside page content; the shared header uses
+   the same sizing as on the home and questions pages. */
+body.roadmap-page :not(.site-header, .site-header *),
+body.roadmap-page :not(.site-header, .site-header *)::before,
+body.roadmap-page :not(.site-header, .site-header *)::after {
   box-sizing: border-box;
 }
 

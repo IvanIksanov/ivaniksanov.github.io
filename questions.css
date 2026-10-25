@@ -2446,18 +2446,6 @@ html[data-theme="dark"] .bottom-filters {
         color: #F1F1F1;
   }
 
-  html[data-theme="dark"] .site-header nav a:hover {
-        background-color: #F1F1F1;
-        color: #1A1A1A;
-  }
-
-  @media (hover: none) and (pointer: coarse) {
-    html[data-theme="dark"] .site-header nav a:hover {
-          background-color: transparent;
-          color: inherit;
-    }
-  }
-
   html[data-theme="dark"] a.answer-link {
         background-color: #8CD136;
         color: #1A1A1A;

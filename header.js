@@ -19,14 +19,6 @@
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
   const ARCHITECTURE_VISITED_KEY = 'qa_architecture_visited_v1';
   const SHARED_ASSET_VERSION = '8.9.4';
-  const AUTH_BUTTON_INNER_HTML = `
-    <span class="auth-open-btn__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-        <path fill="currentColor" d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5z"/>
-      </svg>
-    </span>
-    <span class="auth-open-btn__label">Войти</span>
-  `;
   let headerScrolled = false;
 
   function withVersion(src) {
@@ -75,6 +67,12 @@
     const href = link.getAttribute('href');
     if (!href || href === '#' ) return;
 
+    if (link.classList.contains('is-active') && link.pathname === window.location.pathname) {
+      event.preventDefault();
+      window.location.reload();
+      return;
+    }
+
     const isSamePage = link.pathname === window.location.pathname && link.hash === '';
     if (window.scrollY <= 0 && isSamePage) return;
 
@@ -87,6 +85,219 @@
     window.setTimeout(() => {
       window.location.href = link.href;
     }, delay);
+  }
+
+  function setupCompactNavigation() {
+    const header = document.querySelector('.site-header');
+    const nav = header?.querySelector('nav');
+    const links = nav?.querySelector('ul');
+    if (!header || !nav || !links) return;
+
+    const narrowScreen = window.matchMedia('(max-width: 900px)');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'header-menu-toggle';
+    button.setAttribute('aria-label', 'Открыть меню');
+    button.setAttribute('aria-expanded', 'false');
+    links.id ||= 'site-header-links';
+    button.setAttribute('aria-controls', links.id);
+    button.innerHTML = '<span></span><span></span><span></span>';
+    nav.insertBefore(button, links);
+    header.classList.add('has-compact-menu');
+    let previousNavRect = nav.getBoundingClientRect();
+    let previousCompactState = narrowScreen.matches;
+    let morphCleanup = null;
+    let morphFrame = 0;
+    let previousLinkMetrics;
+    const controls = header.querySelector('.theme-switcher');
+    const themeButton = controls?.querySelector('#theme-toggle');
+    const home = header.querySelector('header.welcome');
+    let previousHomeRect = home?.getBoundingClientRect();
+    let previousControlsRect = controls?.getBoundingClientRect();
+    let anchorAnimations = [];
+
+    function readLinkMetrics() {
+      const link = links.querySelector('a');
+      const item = links.querySelector('li');
+      if (!link) return { fontSize: '12px', padding: '6px 12px', margin: '6px' };
+      const style = getComputedStyle(link);
+      return {
+        fontSize: style.fontSize,
+        padding: style.padding,
+        margin: item ? getComputedStyle(item).marginRight : '6px'
+      };
+    }
+
+    previousLinkMetrics = readLinkMetrics();
+
+    function alignMenuBelowHeader() {
+      header.style.setProperty('--header-controls-width', `${controls?.getBoundingClientRect().width || 0}px`);
+      const availableStart = (home?.offsetLeft || 0) + (home?.offsetWidth || 0);
+      const availableEnd = nav.offsetLeft;
+      const availableWidth = Math.max(0, availableEnd - availableStart - 6);
+      header.style.setProperty('--header-nav-center-offset', `${(availableStart + availableEnd) / 2 - availableEnd}px`);
+      header.style.setProperty('--header-nav-gap-width', `${availableWidth}px`);
+      const linksWidth = [...links.children].reduce((width, item) => {
+        return width + item.offsetWidth + (parseFloat(getComputedStyle(item).marginRight) || 0);
+      }, 18);
+      const inlineRoom = window.innerWidth > 600 && window.innerWidth <= 900 && linksWidth + 12 <= availableWidth;
+      header.classList.toggle('has-inline-room', inlineRoom);
+      header.classList.toggle('is-stacked-menu', narrowScreen.matches && !inlineRoom);
+      header.style.setProperty('--compact-menu-height', `${links.scrollHeight}px`);
+      if (themeButton) {
+        const { width, height } = themeButton.getBoundingClientRect();
+        header.style.setProperty('--header-menu-button-width', `${width}px`);
+        header.style.setProperty('--header-menu-button-height', `${height}px`);
+      }
+    }
+
+    alignMenuBelowHeader();
+    document.fonts?.ready.then(alignMenuBelowHeader);
+    if (controls && 'ResizeObserver' in window) {
+      const observer = new ResizeObserver(alignMenuBelowHeader);
+      observer.observe(controls);
+      if (themeButton) observer.observe(themeButton);
+    }
+
+    function setOpen(open) {
+      const expanded = open && narrowScreen.matches;
+      header.classList.toggle('is-menu-open', expanded);
+      button.setAttribute('aria-expanded', String(expanded));
+      button.setAttribute('aria-label', expanded ? 'Закрыть меню' : 'Открыть меню');
+      links.inert = narrowScreen.matches && !expanded;
+      if (expanded) alignMenuBelowHeader();
+    }
+
+    button.addEventListener('click', () => setOpen(!header.classList.contains('is-menu-open')));
+    document.addEventListener('pointerdown', event => {
+      if (header.classList.contains('is-menu-open') && !header.contains(event.target)) setOpen(false);
+    });
+    document.addEventListener('focusin', event => {
+      if (header.classList.contains('is-menu-open') && !header.contains(event.target)) setOpen(false);
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !header.classList.contains('is-menu-open')) return;
+      setOpen(false);
+      button.focus();
+    });
+    narrowScreen.addEventListener('change', () => {
+      const from = morphCleanup
+        ? document.querySelector('.header-nav-morph')?.getBoundingClientRect() || previousNavRect
+        : previousNavRect;
+      const homeFrom = anchorAnimations.length ? home?.getBoundingClientRect() : previousHomeRect;
+      const controlsFrom = anchorAnimations.length ? controls?.getBoundingClientRect() : previousControlsRect;
+      anchorAnimations.forEach(animation => animation.cancel());
+      anchorAnimations = [];
+      morphCleanup?.();
+      const collapsing = narrowScreen.matches;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const hasGlass = header.hasAttribute('data-glass-always') || window.scrollY > HEADER_SCROLL_ENTER_Y;
+      let ghost = null;
+      let ghostLinks = null;
+      let ghostBurger = null;
+      if (!reduceMotion && from.width) {
+        ghost = document.createElement('div');
+        ghost.className = 'header-nav-morph';
+        ghost.classList.toggle('is-scrolled', hasGlass);
+        ghost.style.left = `${from.left}px`;
+        ghost.style.top = `${from.top}px`;
+        ghost.style.width = `${from.width}px`;
+        ghost.style.height = `${from.height}px`;
+        ghost.style.borderRadius = collapsing ? '16px' : '50%';
+        const linkMetrics = collapsing ? previousLinkMetrics : readLinkMetrics();
+        ghost.style.setProperty('--morph-link-size', linkMetrics.fontSize);
+        ghost.style.setProperty('--morph-link-padding', linkMetrics.padding);
+        ghost.style.setProperty('--morph-link-margin', linkMetrics.margin);
+        ghostLinks = links.cloneNode(true);
+        ghostLinks.removeAttribute('id');
+        ghostLinks.className = 'header-nav-morph-links';
+        // The moving copy is visual only. Page-wide link styles can otherwise
+        // flash on its anchors while the viewport crosses the breakpoint.
+        ghostLinks.querySelectorAll('a').forEach(link => {
+          const label = document.createElement('span');
+          label.className = `header-nav-morph-label${link.classList.contains('is-active') ? ' is-active' : ''}`;
+          label.replaceChildren(...link.childNodes);
+          link.replaceWith(label);
+        });
+        ghostBurger = document.createElement('span');
+        ghostBurger.className = 'header-nav-morph-burger';
+        ghostBurger.innerHTML = '<i></i><i></i><i></i>';
+        ghostLinks.style.opacity = collapsing ? '1' : '0';
+        ghostBurger.style.opacity = collapsing ? '0' : '1';
+        ghost.append(ghostLinks, ghostBurger);
+        document.body.appendChild(ghost);
+        header.classList.add('is-nav-morphing');
+        header.classList.toggle('is-nav-morph-without-glass', !hasGlass);
+        nav.style.visibility = 'hidden';
+        morphCleanup = () => {
+          cancelAnimationFrame(morphFrame);
+          ghost.remove();
+          header.classList.remove('is-nav-morphing');
+          header.classList.remove('is-nav-morph-without-glass');
+          nav.style.visibility = '';
+          morphCleanup = null;
+        };
+      }
+      setOpen(false);
+      requestAnimationFrame(() => {
+        const to = nav.getBoundingClientRect();
+        if (!reduceMotion) {
+          for (const [element, start] of [[home, homeFrom], [controls, controlsFrom]]) {
+            if (!element || !start) continue;
+            const end = element.getBoundingClientRect();
+            const dx = start.left - end.left;
+            const dy = start.top - end.top;
+            if (Math.abs(dx) < .5 && Math.abs(dy) < .5) continue;
+            anchorAnimations.push(element.animate([
+              { transform: `translate(${dx}px, ${dy}px)` },
+              { transform: 'translate(0px, 0px)' }
+            ], { duration: 420, easing: 'cubic-bezier(.22, 1, .36, 1)' }));
+          }
+        }
+        if (ghost && to.width) {
+          const cleanup = morphCleanup;
+          const started = performance.now();
+          const duration = 420;
+          const fromRight = from.right;
+          const lerp = (a, b, amount) => a + (b - a) * amount;
+          const tick = now => {
+            if (morphCleanup !== cleanup) return;
+            const progress = Math.min(1, (now - started) / duration);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const target = nav.getBoundingClientRect();
+            const width = lerp(from.width, target.width, eased);
+            ghost.style.width = `${width}px`;
+            ghost.style.left = `${lerp(fromRight, target.right, eased) - width}px`;
+            ghost.style.top = `${lerp(from.top, target.top, eased)}px`;
+            ghost.style.height = `${lerp(from.height, target.height, eased)}px`;
+            ghost.style.borderRadius = `${lerp(collapsing ? 16 : 50, collapsing ? 50 : 16, eased)}px`;
+            const linkOpacity = collapsing ? 1 - Math.min(1, progress / .38) : Math.max(0, (progress - .46) / .54);
+            ghostLinks.style.opacity = String(linkOpacity);
+            ghostBurger.style.opacity = String(1 - linkOpacity);
+            if (progress < 1) morphFrame = requestAnimationFrame(tick);
+            else cleanup();
+          };
+          morphFrame = requestAnimationFrame(tick);
+        } else {
+          morphCleanup?.();
+        }
+        previousNavRect = to;
+        previousHomeRect = home?.getBoundingClientRect();
+        previousControlsRect = controls?.getBoundingClientRect();
+        previousCompactState = narrowScreen.matches;
+        previousLinkMetrics = readLinkMetrics();
+      });
+    });
+    window.addEventListener('resize', () => {
+      alignMenuBelowHeader();
+      if (previousCompactState === narrowScreen.matches && !morphCleanup) {
+        previousNavRect = nav.getBoundingClientRect();
+        previousHomeRect = home?.getBoundingClientRect();
+        previousControlsRect = controls?.getBoundingClientRect();
+        previousLinkMetrics = readLinkMetrics();
+      }
+    });
+    setOpen(false);
   }
 
   function getCurrentPageName() {
@@ -382,24 +593,13 @@
     if (!switcher) return;
     const storedAuthVisualState = readStoredAuthVisualState();
 
-    let authOpenBtn = document.getElementById('auth-open-btn');
-    if (!authOpenBtn) {
-      authOpenBtn = document.createElement('button');
-      authOpenBtn.id = 'auth-open-btn';
-
-      const themeToggle = switcher.querySelector('#theme-toggle');
-      if (themeToggle) {
-        switcher.insertBefore(authOpenBtn, themeToggle);
-      } else {
-        switcher.prepend(authOpenBtn);
-      }
-    }
+    const authOpenBtn = switcher.querySelector('#auth-open-btn');
+    if (!authOpenBtn) return;
 
     authOpenBtn.className = 'clean-btn toggleButton_gllP auth-open-btn';
     authOpenBtn.type = 'button';
     authOpenBtn.title = 'Войти и сохранить прогресс';
     authOpenBtn.setAttribute('aria-label', 'Войти и сохранить прогресс');
-    if (!authOpenBtn.querySelector('.auth-open-btn__icon')) authOpenBtn.innerHTML = AUTH_BUTTON_INNER_HTML;
     authOpenBtn.classList.toggle('is-guest', storedAuthVisualState !== 'auth');
     authOpenBtn.classList.toggle('is-auth', storedAuthVisualState === 'auth');
     const labelEl = authOpenBtn.querySelector('.auth-open-btn__label');
@@ -417,6 +617,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    setupCompactNavigation();
     updateHeaderState();
     if (!document.documentElement.hasAttribute('data-theme')) {
       document.documentElement.setAttribute('data-theme', 'light');

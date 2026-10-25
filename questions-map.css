@@ -141,6 +141,12 @@ body.questions-map-page .questions-map-main *::after { box-sizing: border-box; }
   outline: none;
 }
 
+body.interview-map-page .questions-map-scroller {
+  background-color: var(--map-bg);
+  background-image: radial-gradient(color-mix(in srgb, var(--map-line) 36%, transparent) .8px, transparent .8px);
+  background-size: 25px 25px;
+}
+
 .questions-map-scroller.is-dragging { cursor: grabbing; }
 
 .questions-map-scroller:focus-visible {
