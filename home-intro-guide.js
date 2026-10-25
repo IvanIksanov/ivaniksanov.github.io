@@ -2,10 +2,20 @@
   const stage = document.querySelector('.home-stage');
   const center = stage?.querySelector('.home-stage__center');
   const intro = stage?.querySelector('.home-stage__intro');
-  const steps = [...(intro?.querySelectorAll('.home-stage__guide-step') || [])];
+  const windowEl = intro?.querySelector('.home-stage__guide-window');
+  const baseTrack = windowEl?.querySelector('.home-stage__guide-track--base');
+  const steps = [...(baseTrack?.querySelectorAll('.home-stage__guide-step') || [])];
   const header = document.querySelector('.site-header');
   const nav = header?.querySelector('nav');
-  if (!stage || !center || !intro || !header || !nav || steps.length !== 3) return;
+  if (!stage || !center || !intro || !windowEl || !baseTrack || !header || !nav || steps.length !== 5) return;
+
+  steps.slice(0, 3).forEach(step => {
+    const clone = step.cloneNode(true);
+    clone.setAttribute('aria-hidden', 'true');
+    baseTrack.append(clone);
+  });
+  const baseSteps = [...baseTrack.querySelectorAll('.home-stage__guide-step')];
+  baseSteps.forEach((step, index) => step.classList.toggle('is-active', index % steps.length === 0));
 
   const desktop = matchMedia('(min-width: 901px)');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -20,12 +30,30 @@
   const dotLayer = guide.querySelector('g');
   const duration = 1450;
   const trailDelay = 320;
-  let active = 0;
+  let offset = 0;
+  let isSliding = false;
+  let slideTimer = 0;
   let squares = [];
   let phaseStarted = performance.now();
   let layoutFrame = 0;
   let animationFrame = 0;
   let wasVisible = false;
+
+  function currentStep() {
+    return baseSteps[offset];
+  }
+
+  function shiftTracks(nextOffset, instant = false) {
+    if (instant) {
+      baseTrack.style.transition = 'none';
+    }
+    const shift = `translateY(-${nextOffset * 1.28}em)`;
+    baseTrack.style.transform = shift;
+    if (instant) {
+      baseTrack.getBoundingClientRect();
+      baseTrack.style.removeProperty('transition');
+    }
+  }
 
   function paint(now) {
     const elapsed = Math.max(0, now - phaseStarted);
@@ -36,7 +64,7 @@
     squares.forEach((square, index) => {
       square.style.opacity = index >= erased && index < reached ? '1' : '0';
     });
-    steps[active].querySelector('.home-stage__guide-dot').style.opacity =
+    currentStep().querySelector('.home-stage__guide-dot').style.opacity =
       reducedMotion.matches || elapsed < trailDelay ? '1' : '0';
     return reducedMotion.matches ? 1 : Math.min(1, elapsed / (duration + trailDelay));
   }
@@ -55,9 +83,9 @@
     if (!reducedMotion.matches) animationFrame = requestAnimationFrame(animate);
   }
 
-  function hide() {
+  function hide(keepDotHidden = false) {
     guide.classList.remove('is-visible');
-    steps[active].querySelector('.home-stage__guide-dot').style.removeProperty('opacity');
+    if (!keepDotHidden) currentStep().querySelector('.home-stage__guide-dot').style.removeProperty('opacity');
     wasVisible = false;
     cancelAnimationFrame(animationFrame);
     animationFrame = 0;
@@ -65,7 +93,11 @@
 
   function update() {
     layoutFrame = 0;
-    const step = steps[active];
+    if (isSliding) {
+      hide(true);
+      return;
+    }
+    const step = currentStep();
     const dot = step.querySelector('.home-stage__guide-dot');
     const target = [...nav.querySelectorAll('a')].find(link =>
       link.getAttribute('href')?.split('?')[0] === step.dataset.guideTarget);
@@ -87,9 +119,11 @@
     const x1 = source.left + source.width / 2;
     const y1 = source.top + source.height / 2;
     const x2 = destination.left + destination.width / 2;
-    const y2 = destination.bottom + 8;
-    const maxTextRight = Math.max(...steps.map(item => item.getBoundingClientRect().right));
-    const firstTextTop = Math.min(...steps.map(item => item.getBoundingClientRect().top));
+    const atPageTop = window.scrollY < 2;
+    const y2 = destination.bottom + (atPageTop ? 3 : 8);
+    const visibleSteps = baseSteps.slice(offset, offset + 3);
+    const maxTextRight = Math.max(...visibleSteps.map(item => item.getBoundingClientRect().right));
+    const firstTextTop = Math.min(...visibleSteps.map(item => item.getBoundingClientRect().top));
     const corridorX = maxTextRight + 30;
     const clearY = firstTextTop - 34;
     if (corridorX + 38 > innerWidth - 20 ||
@@ -98,8 +132,6 @@
       return;
     }
 
-    // Keep the same route for all three destinations, then flatten its bends
-    // continuously as scrolling leaves less room between the title and nav.
     const bend = Math.min(82, (clearY - y2) * .24);
     const openPoints = [
       [x1, y1],
@@ -127,17 +159,27 @@
       compactPoints[index][0] * (1 - openness) + x * openness,
       compactPoints[index][1] * (1 - openness) + y * openness
     ]);
-    const path = points.slice(0, -1).reduce((d, point, index) => {
-      const previous = points[Math.max(0, index - 1)];
-      const next = points[index + 1];
-      const after = points[Math.min(points.length - 1, index + 2)];
-      const c1x = point[0] + (next[0] - previous[0]) / 6;
-      const c1y = point[1] + (next[1] - previous[1]) / 6;
-      const c2x = next[0] - (after[0] - point[0]) / 6;
-      const c2y = next[1] - (after[1] - point[1]) / 6;
-      return `${d} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${next[0]} ${next[1]}`;
-    }, `M ${x1} ${y1}`);
-    geometry.setAttribute('d', path);
+    // A clamped cubic spline follows the old waypoints without forcing a
+    // sharp change of direction at each one.
+    const knots = [points[0], points[0], ...points, points.at(-1), points.at(-1)];
+    const weighted = (a, b, c) => [
+      (a[0] + 4 * b[0] + c[0]) / 6,
+      (a[1] + 4 * b[1] + c[1]) / 6
+    ];
+    const commands = [];
+    for (let index = 1; index < knots.length - 2; index += 1) {
+      const a = knots[index - 1];
+      const b = knots[index];
+      const c = knots[index + 1];
+      const d = knots[index + 2];
+      const start = weighted(a, b, c);
+      const control1 = [(4 * b[0] + 2 * c[0]) / 6, (4 * b[1] + 2 * c[1]) / 6];
+      const control2 = [(2 * b[0] + 4 * c[0]) / 6, (2 * b[1] + 4 * c[1]) / 6];
+      const end = weighted(b, c, d);
+      if (index === 1) commands.push(`M ${start[0]} ${start[1]}`);
+      commands.push(`C ${control1[0]} ${control1[1]}, ${control2[0]} ${control2[1]}, ${end[0]} ${end[1]}`);
+    }
+    geometry.setAttribute('d', commands.join(' '));
     guide.setAttribute('viewBox', `0 0 ${innerWidth} ${innerHeight}`);
     const length = geometry.getTotalLength();
     const size = source.width;
@@ -174,14 +216,26 @@
   }
 
   function advance() {
-    if (!desktop.matches || document.hidden || center.classList.contains('has-conversation')) return;
-    steps[active].querySelector('.home-stage__guide-dot').style.removeProperty('opacity');
-    active = (active + 1) % steps.length;
-    steps.forEach((step, index) => step.classList.toggle('is-active', index === active));
+    if (!desktop.matches || document.hidden || isSliding || center.classList.contains('has-conversation')) return;
+    const departingDot = currentStep().querySelector('.home-stage__guide-dot');
+    hide(true);
+    offset += 1;
+    baseSteps.forEach((step, index) =>
+      step.classList.toggle('is-active', index % steps.length === offset % steps.length));
+    isSliding = true;
+    shiftTracks(offset);
     squares.forEach(square => square.remove());
     squares = [];
-    wasVisible = false;
-    update();
+    clearTimeout(slideTimer);
+    slideTimer = setTimeout(() => {
+      departingDot.style.removeProperty('opacity');
+      if (offset === steps.length) {
+        offset = 0;
+        shiftTracks(0, true);
+      }
+      isSliding = false;
+      update();
+    }, reducedMotion.matches ? 0 : 670);
   }
 
   window.addEventListener('scroll', schedule, { passive: true });

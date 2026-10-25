@@ -59,8 +59,10 @@ html[data-theme="dark"] .home-stage {
   overflow: clip;
   gap: var(--home-card-gap);
   padding: 20px 0;
-  transition: transform 320ms ease;
+  transition: transform 320ms ease, translate 320ms ease;
 }
+/* The stage starts below the header; center the cards in the viewport. */
+.home-stage__layout:has(.home-stage__center:not(.has-conversation)) > .home-stage__cards { translate: 0 calc(var(--site-header-height) * -0.5); }
 .home-stage.is-preparing .home-stage__cards, .home-stage.is-preparing .home-stage__center { visibility: hidden; }
 .home-stage__cards.is-collapsing { justify-content: safe flex-start; }
 .home-stage__cards > .home-stage__card { flex: 0 0 auto; }
@@ -127,11 +129,13 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
 .home-stage__intro h1 { margin: 24px 0 18px; font-family: "Fira Code", monospace; font-size: clamp(35px, 3.6vw, 58px); font-weight: 600; line-height: 1.13; letter-spacing: -.06em; word-spacing: normal; }
 .home-stage__center:not(.has-conversation) .home-stage__intro { translate: 0 clamp(14px, 3svh, 34px); }
 .home-stage__intro .home-stage__guide-title { margin: 24px 0 18px; font-size: clamp(25px, 2.5vw, 48px); line-height: 1.28; letter-spacing: -.045em; }
-.home-stage__guide-step { display: block; width: max-content; max-width: 100%; margin-inline: auto; color: var(--home-text); white-space: nowrap; transition: color 260ms ease; }
+.home-stage__guide-window { position: relative; display: block; height: 3.84em; overflow: hidden; }
+.home-stage__guide-track { display: block; transition: transform 650ms cubic-bezier(.22, 1, .36, 1); }
+.home-stage__guide-step { display: block; width: max-content; max-width: 100%; margin-inline: auto; color: var(--home-text); white-space: nowrap; transition: color 650ms ease; }
 .home-stage__guide-step.is-active { color: var(--home-accent); }
 .home-stage__guide-dot { display: inline-block; width: .16em; height: .16em; margin-left: .12em; background: currentColor; vertical-align: baseline; transition: opacity 110ms ease; }
 .home-stage__guide-step.is-active .home-stage__guide-dot { box-shadow: 0 0 13px color-mix(in srgb, var(--home-accent) 75%, transparent); }
-.home-stage__intro p { max-width: 680px; margin: 0 auto; color: var(--home-muted); font-size: clamp(13px, 1.05vw, 16px); line-height: 1.6; }
+.home-stage__intro p { max-width: 620px; margin: 0 auto; color: var(--home-muted); font-size: clamp(13px, 1.05vw, 16px); line-height: 1.6; }
 .home-stage__starters { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 590px; margin: clamp(16px, 2.5svh, 26px) auto 0; visibility: hidden; pointer-events: none; }
 .home-stage__starters.is-visible { visibility: visible; pointer-events: auto; }
 .home-stage__starters button { display: grid; place-items: center; min-width: 0; min-height: 39px; padding: 7px 13px; border: 1px solid var(--home-starter-border); border-radius: 999px; background: var(--home-starter-surface); color: var(--home-text); font: inherit; font-size: 12px; font-weight: 700; line-height: 1.2; text-align: center; cursor: pointer; opacity: 0; translate: 0 8px; transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease; }
@@ -243,7 +247,7 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
 @media (min-width: 1600px) {
   .home-stage__layout { grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) minmax(250px, 300px); gap: clamp(72px, 5vw, 120px); }
   .home-stage__intro h1 { font-size: clamp(58px, 3.8vw, 74px); }
-  .home-stage__intro p { max-width: 760px; font-size: clamp(16px, 1vw, 19px); }
+  .home-stage__intro p { max-width: 680px; font-size: clamp(16px, 1vw, 19px); }
   .home-chat__form { padding: 10px 10px 10px 20px; }
   .home-chat__form textarea { font-size: 17px; }
 }
@@ -260,7 +264,7 @@ html[data-theme="dark"] .home-stage .home-stage__card:hover {
   .home-stage__card strong { font-size: 13px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .home-stage__guide-step, .home-intro-guide { transition: none; }
+  .home-stage__guide-step, .home-stage__guide-track, .home-intro-guide { transition: none; }
   .home-intro-guide__dot { transition: none; }
   .home-stage__starters.is-visible button { animation: none; opacity: 1; translate: 0 0; }
   .home-stage .home-stage__card { transition: none; }
