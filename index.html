@@ -27,12 +27,17 @@
         (function () {
             const saved = localStorage.getItem('theme');
             document.documentElement.setAttribute('data-theme', saved === 'dark' ? 'dark' : 'light');
+            try {
+                if (sessionStorage.getItem('home_card_images_ready_v1') === '1') {
+                    document.documentElement.classList.add('home-card-images-seen');
+                }
+            } catch {}
         })();
     </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.47">
     <link rel="stylesheet" href="styles.css?v=8.9.4">
-    <link rel="stylesheet" href="home.css?v=1.0.60">
+    <link rel="stylesheet" href="home.css?v=1.0.65">
     <link rel="stylesheet" href="home-carousel-legacy.css?v=1.0.0" media="(max-width: 900px)">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
@@ -59,12 +64,12 @@
 <script src="site-header.shared.js?v=2"></script>
 
 <main>
-    <section class="home-stage is-preparing" aria-label="Главная QAtoDev">
+    <section class="home-stage" aria-label="Главная QAtoDev">
         <div class="home-stage__layout">
             <div class="home-stage__cards home-stage__cards--left" aria-label="Учёба и подготовка">
-                <a class="home-stage__card" href="roadmap.html"><img src="img/cover/skills_cover.webp" alt="" loading="lazy"><strong>Roadmap для QA</strong></a>
-                <a class="home-stage__card" href="questions.html"><img src="img/cover/questions_cover.webp" alt="" loading="lazy"><strong>Вопросы</strong></a>
-                <a class="home-stage__card" href="pageBooks.html"><img src="img/cover/book_store.webp" alt="" loading="lazy"><strong>Книжная полка</strong></a>
+                <a class="home-stage__card" href="roadmap.html"><img src="img/cover/skills_cover.webp" alt="" loading="eager" decoding="async"><strong>Roadmap для QA</strong></a>
+                <a class="home-stage__card" href="questions.html"><img src="img/cover/questions_cover.webp" alt="" loading="eager" decoding="async"><strong>Вопросы</strong></a>
+                <a class="home-stage__card" href="pageBooks.html"><img src="img/cover/book_store.webp" alt="" loading="eager" decoding="async"><strong>Книжная полка</strong></a>
                 <div class="home-chat__saved-list" id="home-chat-saved-left" aria-label="Сохранённые чаты" hidden></div>
             </div>
 
@@ -73,7 +78,7 @@
                     <h1 class="home-stage__guide-title" aria-label="Подготовка к собеседованию. План обучения. Бесплатная практика. Карта архитектуры. Создай своё резюме.">
                         <span class="home-stage__guide-window">
                             <span class="home-stage__guide-track home-stage__guide-track--base">
-                                <span class="home-stage__guide-step" data-guide-target="questions.html">Подготовка к собеседованию<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
+                                <span class="home-stage__guide-step is-active" data-guide-target="questions.html">Подготовка к собеседованию<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
                                 <span class="home-stage__guide-step" data-guide-target="roadmap.html">План обучения<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
                                 <span class="home-stage__guide-step" data-guide-target="practice.html">Бесплатная практика<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
                                 <span class="home-stage__guide-step" data-guide-target="course.html">Карта архитектуры<span class="home-stage__guide-dot" aria-hidden="true"></span></span>
@@ -111,13 +116,14 @@
             </div>
 
             <div class="home-stage__cards home-stage__cards--right" aria-label="Практика">
-                <a class="home-stage__card" href="loginSandbox.html"><img src="img/cover/login_test.webp" alt="" loading="lazy"><strong>Login Sandbox</strong></a>
-                <a class="home-stage__card" href="flappy.html"><img src="img/cover/flappy_test.webp" alt="" loading="lazy"><strong>Flappy тренажёр</strong></a>
-                <a class="home-stage__card" href="swagger_api.html"><img src="img/cover/swagger_api.webp" alt="" loading="lazy"><strong>Swagger тренажёр</strong></a>
+                <a class="home-stage__card" href="loginSandbox.html"><img src="img/cover/login_test.webp" alt="" loading="eager" decoding="async"><strong>Login Sandbox</strong></a>
+                <a class="home-stage__card" href="flappy.html"><img src="img/cover/flappy_test.webp" alt="" loading="eager" decoding="async"><strong>Flappy тренажёр</strong></a>
+                <a class="home-stage__card" href="swagger_api.html"><img src="img/cover/swagger_api.webp" alt="" loading="eager" decoding="async"><strong>Swagger тренажёр</strong></a>
                 <div class="home-chat__saved-list" id="home-chat-saved-right" aria-label="Сохранённые чаты" hidden></div>
             </div>
         </div>
     </section>
+    <script src="home-side-cards.js?v=1.0.14"></script>
     <section id="practice-covers">
         <div class="carousel home-mobile-carousel">
             <div class="carousel-images">
@@ -821,9 +827,8 @@
 <script src="home-chat-starters.js?v=1.0.6"></script>
 <script src="home-chat-sync.shared.js?v=1.0.0"></script>
 <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js" defer></script>
-<script src="home-chat.js?v=1.0.55"></script>
-<script src="home-intro-guide.js?v=23"></script>
-<script src="home-side-cards.js?v=1.0.10"></script>
+<script src="home-chat.js?v=1.0.56"></script>
+<script src="home-intro-guide.js?v=24"></script>
 <script src="home-mobile-carousel.js?v=1.0.0"></script>
 <script src="script.js?v=8.9.4"></script>
 
