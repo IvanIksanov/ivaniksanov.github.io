@@ -13,10 +13,6 @@
   line-height: 1.45;
 }
 
-.practice-guide { margin-top: 26px; }
-.practice-guide h2 { margin-bottom: 10px; }
-.practice-guide p { margin: 0 0 10px; font-size: .9rem; line-height: 1.5; }
-
 .practice-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
@@ -183,6 +179,6 @@ html[data-theme="dark"] .practice-cta {
 @media (max-width: 520px) {
   .practice-grid {
     grid-template-columns: minmax(0, 20rem);
-    justify-content: start;
+    justify-content: center;
   }
 }
