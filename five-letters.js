@@ -36,6 +36,7 @@ function createHelperColumns(rows) {
   };
 
   const els = {
+    modeRow: document.querySelector('.five-mode-row'),
     tabsWrap: document.querySelector('.five-tabs'),
     tabs: Array.from(document.querySelectorAll('.five-tab')),
     panels: Array.from(document.querySelectorAll('.five-panel')),
@@ -53,6 +54,7 @@ function createHelperColumns(rows) {
     presentGrid: document.getElementById('five-present-grid'),
     excludedGrid: document.getElementById('five-excluded-grid'),
     helperSync: document.getElementById('five-helper-sync'),
+    clearHelperActions: document.getElementById('five-clear-helper-actions'),
     clearHelper: document.getElementById('five-clear-helper'),
     candidatesHead: document.getElementById('five-candidates-head'),
     candidates: document.getElementById('five-candidates'),
@@ -264,6 +266,7 @@ function createHelperColumns(rows) {
     els.board.innerHTML = '';
     const demoGuesses = demoActive ? DEMO_GUESSES : null;
     const answerForScores = demoActive ? DEMO_ANSWER : state.answer;
+    const touchKeyboardActive = touchControlsEnabled && document.activeElement === els.hiddenInput;
     for (let rowIndex = 0; rowIndex < 6; rowIndex += 1) {
       const guess = demoGuesses?.[rowIndex] || getRowWord(rowIndex);
       const row = document.createElement('div');
@@ -280,6 +283,11 @@ function createHelperColumns(rows) {
           && index === invalidFlash.cellIndex;
         const letter = isInvalidCell ? invalidFlash.char : guess[index] || '';
         cell.textContent = letter;
+        if (!demoActive && !state.finished && !invalidFlash &&
+            rowIndex === state.guesses.length && index === state.currentGuess.length &&
+            index < 5 && (index === 0 || touchKeyboardActive)) {
+          cell.classList.add('is-awaiting-first-letter');
+        }
         if (letter) cell.classList.add('is-filled');
         if (isInvalidCell) cell.classList.add('is-invalid', 'is-shaking');
         if (isWinningRow) cell.classList.add('is-win');
@@ -485,6 +493,12 @@ function createHelperColumns(rows) {
   function renderHelperInputs() {
     const syncEnabled = !state.helperDetached;
     els.helperSync.checked = syncEnabled;
+    els.clearHelperActions.hidden = syncEnabled;
+    const syncText = syncEnabled ? 'Синхронизация с игрой включена' : 'Синхронизация с игрой выключена';
+    const syncControl = els.helperSync.closest('.five-helper-sync');
+    syncControl?.classList.toggle('is-on', syncEnabled);
+    syncControl?.setAttribute('data-tooltip', syncText);
+    els.helperSync.setAttribute('aria-label', syncText);
     els.correctRow.innerHTML = '';
     els.presentGrid.innerHTML = '';
     els.excludedGrid.innerHTML = '';
@@ -1105,6 +1119,10 @@ function createHelperColumns(rows) {
       tab.setAttribute('aria-selected', String(active));
     });
     els.tabsWrap.classList.toggle('is-helper', mode === 'helper');
+    els.modeRow.classList.toggle('is-helper', mode === 'helper');
+    const syncControl = els.helperSync.closest('.five-helper-sync');
+    syncControl.inert = mode !== 'helper';
+    syncControl.setAttribute('aria-hidden', String(mode !== 'helper'));
     els.panels.forEach((panel) => {
       const active = panel.id === `five-panel-${mode}`;
       panel.classList.toggle('is-active', active);
@@ -1171,13 +1189,13 @@ function createHelperColumns(rows) {
     renderCandidates();
   }
 
-  function focusGrid() {
-    if (state.finished || demoActive) return;
+  function focusGrid(fromBoard = false) {
+    if (state.finished || demoActive || (touchControlsEnabled && !fromBoard)) return;
     els.hiddenInput.focus({ preventScroll: true });
   }
 
-  els.board.addEventListener('pointerdown', focusGrid);
-  els.board.addEventListener('click', focusGrid);
+  els.board.addEventListener('pointerdown', () => focusGrid(true));
+  els.board.addEventListener('click', () => focusGrid(true));
   els.board.addEventListener('pointerup', (event) => {
     const cell = event.target.closest('.five-cell[data-hint]');
     if (cell) {
@@ -1207,6 +1225,8 @@ function createHelperColumns(rows) {
     renderBoard();
   });
   els.board.addEventListener('keydown', handleTyping);
+  els.hiddenInput.addEventListener('focus', () => requestAnimationFrame(renderBoard));
+  els.hiddenInput.addEventListener('blur', () => requestAnimationFrame(renderBoard));
   els.hiddenInput.addEventListener('keydown', handleTyping);
   els.hiddenInput.addEventListener('input', () => {
     if (state.mode !== 'game' || state.finished) return;
@@ -1225,16 +1245,30 @@ function createHelperColumns(rows) {
   });
   els.tabs.forEach((tab) => tab.addEventListener('click', () => setMode(tab.dataset.mode)));
   els.submitGuess.addEventListener('click', () => {
+    if (touchControlsEnabled) els.hiddenInput.blur();
     submitGuess();
     focusGrid();
   });
-  els.deleteLetter.addEventListener('click', deleteLastLetter);
+  els.deleteLetter.addEventListener('click', () => {
+    if (touchControlsEnabled) els.hiddenInput.blur();
+    deleteLastLetter();
+  });
   els.startPlay.addEventListener('click', () => {
     dismissDemo();
     focusGrid();
   });
   els.playAgain.addEventListener('click', () => startNewGame(''));
 
+  const syncControl = els.helperSync.closest('.five-helper-sync');
+  let syncTooltipTimer = 0;
+  syncControl.addEventListener('pointerleave', () => {
+    clearTimeout(syncTooltipTimer);
+    syncControl.classList.remove('is-tooltip-dismissed');
+  });
+  syncControl.addEventListener('focusout', () => {
+    clearTimeout(syncTooltipTimer);
+    syncControl.classList.remove('is-tooltip-dismissed');
+  });
   els.helperSync.addEventListener('change', () => {
     resetCandidateReveals();
     if (els.helperSync.checked) {
@@ -1246,11 +1280,16 @@ function createHelperColumns(rows) {
       renderHelperInputs();
       renderCandidates();
     }
+    syncControl.classList.remove('is-tooltip-dismissed');
+    clearTimeout(syncTooltipTimer);
+    syncTooltipTimer = setTimeout(() => {
+      syncControl.classList.add('is-tooltip-dismissed');
+    }, 500);
     saveState();
   });
 
   els.clearHelper.addEventListener('click', () => {
-    state.helperDetached = true;
+    if (!state.helperDetached) return;
     resetCandidateReveals();
     state.helper = createEmptyHelper();
     saveState();

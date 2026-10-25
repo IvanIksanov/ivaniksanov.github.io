@@ -14,10 +14,17 @@
             }
         })();
     </script>
+    <script>
+        try {
+            if (JSON.parse(localStorage.getItem('qatodev_five_letters_qa_v1') || '{}').open === true) {
+                document.documentElement.classList.add('five-qa-preopen');
+            }
+        } catch {}
+    </script>
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.47">
     <link rel="stylesheet" href="styles.css?v=8.9.4">
-    <link rel="stylesheet" href="five-letters.css">
+    <link rel="stylesheet" href="five-letters.css?v=1.0.10">
     <link rel="icon" href="img/favicon-48.png" sizes="48x48" type="image/png">
     <link rel="icon" href="img/favicon-192.png" sizes="192x192" type="image/png">
     <script>
@@ -30,7 +37,8 @@
           text: [
             "Играй как в классическую головоломку: вводи русские слова из пяти букв и сверяй цветовую подсказку после каждой попытки.",
             "Во вкладке «Помощник» можно вручную указать буквы, которые уже точно есть в слове, и символы, которые нужно исключить из вариантов.",
-            "Прогресс игры и условия помощника сохраняются локально, поэтому можно переключаться между режимами и возвращаться после перезагрузки."
+            "Прогресс игры и условия помощника сохраняются локально, поэтому можно переключаться между режимами и возвращаться после перезагрузки.",
+            "Кнопка QA слева снизу открывает чек-лист для проверки игры и помощника."
           ]
         };
     </script>
@@ -42,19 +50,30 @@
 <noscript><div><img src="https://mc.yandex.ru/watch/99129194" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <script src="site-header.shared.js?v=2"></script>
 
-<main>
-    <section class="article five-letters-shell">
-        <div class="five-letters-hero">
-            <img src="img/cover/five_letters_poster.png" alt="Слова из 5 букв" loading="eager">
-            <div>
-                <h2>Слова из 5 букв</h2>
-                <p>Тренажер на внимательность к условиям: играй сам или фильтруй словарь по уже известным подсказкам.</p>
-            </div>
-        </div>
+<button class="five-qa-fab" id="five-qa-fab" type="button" aria-controls="five-qa-panel" aria-expanded="false" aria-label="Открыть QA-чек-лист">QA</button>
+<aside class="five-qa-panel" id="five-qa-panel" aria-label="QA-чек-лист тренажёра" aria-hidden="true" inert>
+    <div class="five-qa-head">
+        <p class="five-qa-progress" id="five-qa-progress" aria-live="polite"></p>
+        <button class="five-qa-close" id="five-qa-close" type="button" aria-label="Закрыть QA-чек-лист">×</button>
+    </div>
+    <div class="five-qa-body">
+        <div id="five-qa-checklist"></div>
+        <button class="five-qa-verify" id="five-qa-verify" type="button">Проверить регресс</button>
+    </div>
+</aside>
 
-        <div class="five-tabs" role="tablist" aria-label="Режим тренажера">
-            <button class="five-tab is-active" id="five-tab-game" type="button" role="tab" aria-selected="true" aria-controls="five-panel-game" data-mode="game">Игра</button>
-            <button class="five-tab" id="five-tab-helper" type="button" role="tab" aria-selected="false" aria-controls="five-panel-helper" data-mode="helper">Помощник</button>
+<main>
+    <section class="article five-letters-shell" aria-label="Тренажёр «Слова из 5 букв»">
+        <div class="five-mode-row">
+            <div class="five-tabs" role="tablist" aria-label="Режим тренажера">
+                <button class="five-tab is-active" id="five-tab-game" type="button" role="tab" aria-selected="true" aria-controls="five-panel-game" data-mode="game">Игра</button>
+                <button class="five-tab" id="five-tab-helper" type="button" role="tab" aria-selected="false" aria-controls="five-panel-helper" data-mode="helper">Помощник</button>
+            </div>
+            <label class="five-helper-sync" data-tooltip="Синхронизация с игрой включена" aria-hidden="true" inert>
+                <input id="five-helper-sync" type="checkbox" aria-label="Синхронизация с игрой включена">
+                <span class="five-helper-sync__option" data-compact="−">Выкл</span>
+                <span class="five-helper-sync__option" data-compact="✓">С игрой</span>
+            </label>
         </div>
 
         <section class="five-panel is-active" id="five-panel-game" role="tabpanel" aria-labelledby="five-tab-game">
@@ -84,11 +103,6 @@
         </section>
 
         <section class="five-panel" id="five-panel-helper" role="tabpanel" aria-labelledby="five-tab-helper" hidden>
-            <label class="five-helper-sync">
-                <input id="five-helper-sync" type="checkbox">
-                <span>Синхронизировать с игрой</span>
-            </label>
-
             <div class="five-helper-grid five-helper-grid--boards">
                 <div class="five-helper-card five-helper-card--conditions">
                     <h3>Сетка подсказок</h3>
@@ -117,7 +131,7 @@
                     <div class="five-helper-excluded-grid" id="five-excluded-grid" aria-label="Исключенные буквы"></div>
                 </div>
             </div>
-            <div class="five-actions">
+            <div class="five-actions" id="five-clear-helper-actions" hidden>
                 <button type="button" id="five-clear-helper">Очистить условия</button>
             </div>
             <div class="five-candidates-head" id="five-candidates-head" hidden>
@@ -136,12 +150,9 @@
     </section>
 </main>
 
-<footer class="qatodev">
-    <p>&copy; <span class="footer-year" data-footer-year></span> QAtoDev</p>
-</footer>
-
 <script src="five-letters-dictionary.js"></script>
-<script src="five-letters.js"></script>
+<script src="five-letters.js?v=1.0.8"></script>
+<script src="five-letters-qa.js?v=1.0.4"></script>
 <script>
     (function() {
       const root = document.documentElement;
