@@ -52,6 +52,10 @@ document.addEventListener('DOMContentLoaded', function(){
     'load-qa': ['jmeter', 'cypress', 'allure', 'ci-cd', 'rest-api', 'postman', 'insomnia', 'charles', 'devtools', 'MySQL', 'postgresql', 'mongodb', 'dbeaver', 'docker', 'git']
   };
   const skillLinks = document.querySelectorAll('#qa-skills .skill-links a');
+  const skillsSection = document.getElementById('qa-skills');
+  skillsSection?.addEventListener('selectstart', function(event) {
+    if (event.target.closest?.('#qa-skills > h2, #qa-skills .skill-category')) event.preventDefault();
+  });
   const defaultSkillIds = [
     'test-design',
     'postman',
@@ -98,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function(){
   skillLinks.forEach(function(skill){
     skill.addEventListener('click', function(e){
       e.preventDefault();
+      window.getSelection()?.removeAllRanges();
       const skillId = skill.getAttribute('data-skill-id') || '';
       const skillName = getSkillLabel(skill);
       if (skill.classList.contains('selected')) {

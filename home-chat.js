@@ -848,6 +848,7 @@
     function fitInput() {
       input.style.height = '26px';
       input.style.height = `${Math.min(input.scrollHeight, 96)}px`;
+      input.style.overflowY = input.scrollHeight > 96 ? 'auto' : 'hidden';
     }
     async function submit(suggestedQuestion = null, sourceTurn = null) {
       const fromSuggestion = typeof suggestedQuestion === 'string';

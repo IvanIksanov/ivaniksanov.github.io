@@ -83,12 +83,16 @@ header {
 :root {
   --site-header-height: 90px;
   --header-desktop-scale: 1;
+  --header-nav-wide-scale: 1;
   --header-glass-bg: rgba(255, 255, 255, 0.22);
   --header-glass-border: 1px solid rgba(0, 0, 0, 0.05);
   --header-glass-shadow: 0 2px 6px rgba(0, 0, 0, 0.055);
   --header-glass-blur: 3px;
   --header-glass-saturate: 90%;
   --header-title-color: #181818;
+}
+@media (min-width: 1600px) {
+  :root { --header-nav-wide-scale: 1.2; }
 }
 
 @media (min-width: 601px) {
@@ -347,7 +351,7 @@ html[data-theme="dark"] .site-header .site-title {
 
 .site-header nav {
   position: relative;
-  padding: 8px 16px;
+  padding: 8px calc(16px * var(--header-nav-wide-scale));
   border-radius: 16px;
   border: 1px solid transparent;
   background: transparent;
@@ -360,6 +364,7 @@ html[data-theme="dark"] .site-header .site-title {
   font-size: calc(12px * var(--header-desktop-scale));
   grid-area: nav;
   transition:
+    padding 0.3s ease,
     border-color 0.28s ease,
     box-shadow 0.32s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.32s cubic-bezier(0.22, 1, 0.36, 1),
@@ -420,7 +425,8 @@ html[data-theme="dark"] .site-header .site-title {
 }
 
 .site-header nav li {
-  margin-right: calc(6px * var(--header-desktop-scale));
+  margin-right: calc(6px * var(--header-desktop-scale) * var(--header-nav-wide-scale));
+  transition: margin-right 0.3s ease;
 }
 
 .site-header nav li:first-child {
@@ -434,15 +440,17 @@ html[data-theme="dark"] .site-header .site-title {
   gap: 0.28rem;
   position: relative;
   text-decoration: none;
-  padding: calc(6px * var(--header-desktop-scale)) calc(12px * var(--header-desktop-scale));
+  padding: calc(6px * var(--header-desktop-scale)) calc(12px * var(--header-desktop-scale) * var(--header-nav-wide-scale));
   color: #1A1A1A;
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
-  font-size: calc(12px * var(--header-desktop-scale));
+  font-size: calc(12px * var(--header-desktop-scale) * var(--header-nav-wide-scale));
   font-weight: 500;
   font-style: normal;
   letter-spacing: 0;
   line-height: 1.2;
   transition:
+    padding 0.3s ease,
+    font-size 0.3s ease,
     color 0.34s cubic-bezier(0.22, 1, 0.36, 1),
     background-color 0.34s cubic-bezier(0.22, 1, 0.36, 1);
 }

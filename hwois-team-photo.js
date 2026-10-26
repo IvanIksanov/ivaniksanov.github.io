@@ -5,12 +5,15 @@
 
   const scene = document.getElementById('team-photo-scene');
   const photo = scene.querySelector('.team-photo__image img');
-  if (!photo.complete) {
-    scene.classList.add('is-image-loading');
-    photo.addEventListener('load', () => {
-      const decoded = photo.decode ? photo.decode() : Promise.resolve();
-      Promise.resolve(decoded).catch(() => {}).then(() => scene.classList.remove('is-image-loading'));
-    }, { once: true });
+  const revealPhoto = () => {
+    Promise.resolve().then(() => photo.decode?.()).catch(() => {}).then(() => {
+      scene.classList.remove('is-image-loading');
+    });
+  };
+  if (photo.complete) {
+    revealPhoto();
+  } else {
+    photo.addEventListener('load', revealPhoto, { once: true });
     photo.addEventListener('error', () => scene.classList.remove('is-image-loading'), { once: true });
   }
 
