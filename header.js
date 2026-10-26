@@ -31,7 +31,12 @@
       header.classList.add('is-scrolled');
       return;
     }
-    const y = window.scrollY || window.pageYOffset || 0;
+    const roadmapScroller = document.body.classList.contains('roadmap-route-mode')
+      ? document.getElementById('roadmap-route')
+      : document.body.classList.contains('roadmap-skills-mode')
+        ? document.getElementById('roadmap-minimal-skills')
+        : null;
+    const y = Math.max(window.scrollY || window.pageYOffset || 0, roadmapScroller?.scrollTop || 0);
     if (!headerScrolled && y > HEADER_SCROLL_ENTER_Y) {
       headerScrolled = true;
     } else if (headerScrolled && y < HEADER_SCROLL_EXIT_Y) {

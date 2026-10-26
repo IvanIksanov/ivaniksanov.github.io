@@ -69,7 +69,7 @@
     let pendingAuthSession;
     let initialAuthResolved = false;
     let selectedExcerpt = '';
-    let collapsed = read('roadmap_ai_collapsed_v1', false) === true;
+    let collapsed = true;
     const client = window.QAtoDevAiClient.create({
       get supabaseStore() { return window.AppSupabase; },
       get lastKnownAccessToken() { return accessToken; },
@@ -434,6 +434,7 @@
       syncInputHeight();
       el('body').inert = collapsed;
       el('body').setAttribute('aria-hidden', String(collapsed));
+      el('form').inert = collapsed;
       panel.querySelector('.roadmap-chat__footer').inert = collapsed;
       el('toggle-label').textContent = collapsed ? 'Развернуть' : 'Свернуть';
       el('toggle').setAttribute('aria-expanded', String(!collapsed));
@@ -710,6 +711,7 @@
     let panelHeightAnimation;
     let historyAnimation;
     window.addEventListener('qatodev:roadmap-topic', e => {
+      collapsed = true;
       if (!initialAuthResolved) { topic = e.detail; return; }
       const canAnimate = panel.getClientRects().length && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const startHeight = panel.getBoundingClientRect().height;

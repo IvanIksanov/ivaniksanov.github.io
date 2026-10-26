@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="roadmap-page-root">
 <head>
     <meta charset="UTF-8">
     <script src="google-tag-manager.shared.js?v=20261024-1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <script src="page-zoom-lock.shared.js?v=2"></script>
     <title>Roadmap тестировщика — план развития Fullstack QA | QAtoDev</title>
     <meta name="description" content="Составьте план развития QA: ручное тестирование, API, SQL, автоматизация, мобильные приложения, CI/CD, нагрузка и безопасность. Изучайте связанные темы.">
     <script>
@@ -17,7 +18,7 @@
     <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
     <link rel="stylesheet" href="header.css?v=8.9.47">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="roadmap.css?v=8.9.89">
+    <link rel="stylesheet" href="roadmap.css?v=8.9.106">
     <link rel="icon" href="img/QAtoDev_small_main.png" sizes="100x100" type="image/png">
     <script src="favicon.shared.js?v=1"></script>
     <script src="metrika.shared.js"></script>
@@ -79,20 +80,20 @@
         <section class="roadmap-minimal-stage" id="roadmap-minimal-stage" hidden>
             <div class="roadmap-left-workspace">
                 <div class="roadmap-minimal-skills" id="roadmap-minimal-skills" aria-label="Навыки roadmap"></div>
-                <div class="roadmap-route" id="roadmap-route" aria-label="Карта направлений" hidden>
+                <div class="roadmap-route" id="roadmap-route" aria-label="Карта направлений" tabindex="-1" hidden>
                     <svg class="roadmap-route__line" id="roadmap-route-line" aria-hidden="true">
                         <path id="roadmap-route-path"></path>
                     </svg>
                     <div class="roadmap-route__stops" id="roadmap-route-stops"></div>
                 </div>
-                <section class="roadmap-chat" id="roadmap-chat" aria-label="Помощник по Roadmap">
+                <section class="roadmap-chat is-collapsed" id="roadmap-chat" aria-label="Помощник по Roadmap">
                     <div class="roadmap-chat__header">
                         <div class="roadmap-chat__identity">
                             <span class="roadmap-chat__prompt" aria-hidden="true">›_</span>
                             <strong>Помощник</strong>
                             <span class="roadmap-chat__topic" id="roadmap-chat-topic">Roadmap</span>
                         </div>
-                        <button type="button" id="roadmap-chat-toggle" aria-expanded="true" aria-controls="roadmap-chat-body"><span id="roadmap-chat-toggle-label">Свернуть</span><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m5 9 7 7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                        <button type="button" id="roadmap-chat-toggle" aria-expanded="false" aria-controls="roadmap-chat-body"><span id="roadmap-chat-toggle-label">Развернуть</span><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="m5 9 7 7 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
                     </div>
                     <div id="roadmap-chat-body"><div class="roadmap-chat__body-inner">
                         <div class="roadmap-chat__actions" aria-label="Быстрые вопросы">
@@ -125,11 +126,14 @@
             </div>
             <article class="article roadmap-minimal-article" id="roadmap-minimal-article" aria-live="polite">
                 <div class="roadmap-minimal-sheet-handle" aria-hidden="true"></div>
+                <button type="button" class="roadmap-minimal-article__close" id="roadmap-minimal-article-close" aria-label="Закрыть описание навыка" title="Закрыть описание навыка">
+                    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                </button>
                 <div class="roadmap-minimal-article__inner">
                     <div class="roadmap-minimal-title-art" id="roadmap-minimal-title-art" aria-hidden="true" hidden></div>
                     <h2 id="roadmap-minimal-title">Выберите навык</h2>
                     <div class="roadmap-minimal-copy" id="roadmap-minimal-copy">
-                        <p>Нажмите на чип слева, чтобы открыть материалы и короткое описание навыка.</p>
+                        <p>Выберите навык слева, чтобы увидеть краткое описание и материалы.</p>
                     </div>
                     <div class="roadmap-minimal-resources" id="roadmap-minimal-resources"></div>
                 </div>
@@ -357,7 +361,7 @@
 <script src="supabase.client.js?v=8.9.4"></script>
 <script src="ai-client.shared.js?v=1.0.5"></script>
 <script src="roadmap-chat-sync.shared.js?v=1.0.0"></script>
-<script src="roadmap-chat.js?v=1.0.27"></script>
+<script src="roadmap-chat.js?v=1.0.28"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function(){
       const RESOURCE_STATUSES = {
@@ -451,6 +455,7 @@
       let roadmapStatusMenuTimer = null;
       let roadmapRoutePathFrame = 0;
       let roadmapRouteAnimationFrame = 0;
+      let roadmapRouteCloseTimer = 0;
       let roadmapRouteSkillsById = new Map();
 
       const roadmapSidebar = document.querySelector('.roadmap-sidebar');
@@ -466,6 +471,7 @@
       const roadmapRouteLine = document.getElementById('roadmap-route-line');
       const roadmapRoutePath = document.getElementById('roadmap-route-path');
       const roadmapMinimalArticle = document.getElementById('roadmap-minimal-article');
+      const roadmapMinimalArticleClose = document.getElementById('roadmap-minimal-article-close');
       const roadmapMinimalTitleArt = document.getElementById('roadmap-minimal-title-art');
       const roadmapMinimalTitle = document.getElementById('roadmap-minimal-title');
       const roadmapMinimalResources = document.getElementById('roadmap-minimal-resources');
@@ -3930,12 +3936,13 @@ pm.test("Ответ является массивом", function () {
         roadmapMinimalSkills.replaceChildren(...skills.map(createRoadmapMinimalChip));
         renderRoadmapRoute(skills);
         bindRoadmapMinimalSheet();
+        roadmapMinimalArticleClose?.addEventListener('click', closeRoadmapRouteSelection);
         resetRoadmapOpenResourceFrames();
 
         roadmapViewSwitcher.querySelectorAll('[data-roadmap-mode]').forEach(function(button) {
           button.addEventListener('click', function(event) {
             event.preventDefault();
-            setRoadmapViewMode(button.dataset.roadmapMode);
+            setRoadmapViewMode(button.dataset.roadmapMode, { fromUser: true });
           });
         });
 
@@ -3955,7 +3962,15 @@ pm.test("Ответ является массивом", function () {
           }
         });
 
-        window.addEventListener('resize', scheduleRoadmapRoutePath, { passive: true });
+        window.addEventListener('resize', function() {
+          scheduleRoadmapRoutePath();
+          roadmapMinimalArticle.inert = document.body.classList.contains('roadmap-route-mode') &&
+            window.matchMedia('(max-width: 1080px)').matches &&
+            !roadmapMinimalArticle.classList.contains('is-mobile-open');
+        }, { passive: true });
+        roadmapRoute.addEventListener('scroll', updateRoadmapHeaderScrollState, { passive: true });
+        roadmapMinimalSkills.addEventListener('scroll', updateRoadmapHeaderScrollState, { passive: true });
+        window.addEventListener('scroll', updateRoadmapHeaderScrollState, { passive: true });
         document.addEventListener('visibilitychange', function() {
           if (!document.hidden && document.body.classList.contains('roadmap-route-mode')) {
             restoreRoadmapRoutePath();
@@ -4031,6 +4046,9 @@ pm.test("Ответ является массивом", function () {
       }
 
       function resetRoadmapMinimalSkillView() {
+        roadmapMinimalArticle?.classList.remove('is-mobile-open');
+        document.body.classList.remove('roadmap-route-sheet-open');
+        document.body.classList.remove('roadmap-route-chat-visible');
         document.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
           item.classList.remove('is-active');
         });
@@ -4038,7 +4056,7 @@ pm.test("Ответ является массивом", function () {
         if (roadmapMinimalResources) roadmapMinimalResources.replaceChildren();
         if (roadmapMinimalCopy) {
           const paragraph = document.createElement('p');
-          paragraph.textContent = 'Нажмите на чип слева, чтобы открыть материалы и короткое описание навыка.';
+          paragraph.textContent = 'Выберите навык слева, чтобы увидеть краткое описание и материалы.';
           roadmapMinimalCopy.replaceChildren(paragraph);
         }
         publishRoadmapChatContext('roadmap', 'Roadmap', []);
@@ -4100,15 +4118,24 @@ pm.test("Ответ является массивом", function () {
       }
 
       function setRoadmapViewMode(mode, options) {
+        clearTimeout(roadmapRouteCloseTimer);
         const settings = options || {};
         const nextMode = ROADMAP_VIEW_MODES.includes(mode) ? mode : 'skills';
+        const previousMode = document.body.dataset.roadmapView;
         const isWorkspaceMode = nextMode !== 'details';
+        if (isWorkspaceMode && window.matchMedia('(min-width: 1081px)').matches && window.scrollY > 0) {
+          window.scrollTo(0, 0);
+        }
         document.body.dataset.roadmapView = nextMode;
         roadmapViewSwitcher.dataset.roadmapMode = nextMode;
         if (roadmapViewLabel) roadmapViewLabel.textContent = ROADMAP_VIEW_LABELS[nextMode] || nextMode;
         document.body.classList.toggle('roadmap-minimal-mode', isWorkspaceMode);
         document.body.classList.toggle('roadmap-skills-mode', nextMode === 'skills');
         document.body.classList.toggle('roadmap-route-mode', nextMode === 'route');
+        roadmapMinimalArticle.classList.remove('is-mobile-open');
+        roadmapMinimalArticle.inert = nextMode === 'route' && window.matchMedia('(max-width: 1080px)').matches;
+        document.body.classList.remove('roadmap-route-sheet-open');
+        document.body.classList.remove('roadmap-route-chat-visible');
         roadmapMinimalStage.hidden = !isWorkspaceMode;
         roadmapMinimalSkills.hidden = nextMode !== 'skills';
         roadmapRoute.hidden = nextMode !== 'route';
@@ -4128,10 +4155,43 @@ pm.test("Ответ является массивом", function () {
         } else if (nextMode === 'skills') {
           requestAnimationFrame(restoreRoadmapMinimalSkill);
         } else {
-          if (!settings.preserveRoute) restoreRoadmapRouteSelection();
+          if (!settings.preserveRoute) restoreRoadmapRouteSelection({ showSheet: settings.fromUser === true });
+          else if (roadmapRouteStops.querySelector('.roadmap-route__stop.is-active')) {
+            document.body.classList.add('roadmap-route-chat-visible');
+          }
           restoreRoadmapRoutePath();
         }
-        requestAnimationFrame(updateRoadmapFocusNotePosition);
+        requestAnimationFrame(function() {
+          updateRoadmapFocusNotePosition();
+          updateRoadmapHeaderScrollState();
+          if (settings.fromUser && previousMode === 'skills' && nextMode === 'route') {
+            requestAnimationFrame(centerRoadmapRouteSelection);
+          }
+        });
+      }
+
+      function centerRoadmapRouteSelection() {
+        if (!document.body.classList.contains('roadmap-route-mode') ||
+            !window.matchMedia('(min-width: 1081px)').matches) return;
+        const target = roadmapRouteStops.querySelector('.roadmap-route__stop.is-active .roadmap-route__skill.is-active') ||
+          roadmapRouteStops.querySelector('.roadmap-route__stop.is-active .roadmap-route__direction');
+        if (!target) return;
+        const routeRect = roadmapRoute.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const targetTop = roadmapRoute.scrollTop +
+          (targetRect.top + targetRect.height / 2) -
+          (routeRect.top + routeRect.height / 2);
+        roadmapRoute.scrollTo({ top: targetTop, behavior: 'smooth' });
+      }
+
+      function updateRoadmapHeaderScrollState() {
+        const header = document.querySelector('.site-header');
+        if (!header || header.hasAttribute('data-glass-always')) return;
+        const mode = document.body.dataset.roadmapView;
+        const innerScroll = window.matchMedia('(min-width: 1081px)').matches
+          ? (mode === 'route' ? roadmapRoute.scrollTop : mode === 'skills' ? roadmapMinimalSkills.scrollTop : 0)
+          : 0;
+        header.classList.toggle('is-scrolled', window.scrollY > 8 || innerScroll > 8);
       }
 
       function renderRoadmapRoute(skills) {
@@ -4172,8 +4232,9 @@ pm.test("Ответ является массивом", function () {
         roadmapRouteStops.replaceChildren(fragment);
       }
 
-      function restoreRoadmapRouteSelection() {
+      function restoreRoadmapRouteSelection(options) {
         resetRoadmapRouteGroup();
+        const showSheet = options?.showSheet === true;
         const savedSkillId = localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY);
         const savedSelectionType = localStorage.getItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY);
         const savedSkillBlock = getRoadmapBlockBySkillId(savedSkillId);
@@ -4191,23 +4252,21 @@ pm.test("Ответ является массивом", function () {
           return;
         }
 
-        selectRoadmapRouteGroup(stop, block, roadmapRouteSkillsById, { forceOpen: true });
-        if (savedSelectionType !== 'skill' || !savedSkillId || !block.skills.includes(savedSkillId)) return;
+        const hasSavedSkill = savedSelectionType === 'skill' && savedSkillId && block.skills.includes(savedSkillId);
+        selectRoadmapRouteGroup(stop, block, roadmapRouteSkillsById, { forceOpen: true, showSheet: showSheet && !hasSavedSkill });
+        if (!hasSavedSkill) return;
         const skillChip = stop.querySelector('[data-skill-id="' + CSS.escape(savedSkillId) + '"]');
-        if (skillChip) selectRoadmapRouteSkill(skillChip);
+        if (skillChip) selectRoadmapRouteSkill(skillChip, { showSheet: showSheet });
       }
 
       function selectRoadmapRouteGroup(activeStop, block, skillsById, options) {
         const settings = options || {};
-        renderRoadmapBlockArticle(block);
-
         if (activeStop.classList.contains('is-active') && !settings.forceOpen) {
-          resetRoadmapRouteGroup();
-          localStorage.removeItem(ROADMAP_ROUTE_GROUP_KEY);
-          localStorage.removeItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY);
-          animateRoadmapRoutePath(300);
+          closeRoadmapRouteSelection();
           return;
         }
+        renderRoadmapBlockArticle(block);
+        document.body.classList.add('roadmap-route-chat-visible');
 
         roadmapRouteStops.querySelectorAll('.roadmap-route__stop').forEach(function(stop) {
           const isActive = stop === activeStop;
@@ -4230,6 +4289,7 @@ pm.test("Ответ является массивом", function () {
         }).filter(Boolean);
         skillCloud.replaceChildren(...chips);
         skillCloud.hidden = false;
+        if (settings.showSheet !== false) showRoadmapRouteSheet(activeStop.querySelector('.roadmap-route__direction'));
         if (settings.persist !== false) persistRoadmapSelectedBlock(block);
         requestAnimationFrame(function() {
           activeStop.classList.add('is-revealed');
@@ -4238,6 +4298,10 @@ pm.test("Ответ является массивом", function () {
       }
 
       function renderRoadmapBlockArticle(block) {
+        clearTimeout(roadmapRouteCloseTimer);
+        roadmapMinimalArticle.classList.remove('is-mobile-open');
+        document.body.classList.remove('roadmap-route-sheet-open');
+        document.body.classList.remove('roadmap-route-chat-visible');
         const content = ROADMAP_BLOCK_CONTENT[block.id] || {};
         const article = document.createElement('div');
         article.className = 'skill-article-content roadmap-block-article';
@@ -4443,14 +4507,18 @@ pm.test("Ответ является массивом", function () {
         chip.dataset.skillId = skill.id;
         chip.dataset.plan = skill.plan;
         chip.textContent = skill.label;
-        if (localStorage.getItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY) === 'skill' && localStorage.getItem(ROADMAP_MINIMAL_SKILL_KEY) === skill.id) chip.classList.add('is-active');
         chip.addEventListener('click', function() {
           selectRoadmapRouteSkill(chip);
         });
         return chip;
       }
 
-      function selectRoadmapRouteSkill(chip) {
+      function selectRoadmapRouteSkill(chip, options) {
+        clearTimeout(roadmapRouteCloseTimer);
+        if (chip.classList.contains('is-active') && !options?.forceOpen) {
+          closeRoadmapRouteSelection();
+          return;
+        }
         document.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
           item.classList.remove('is-active');
         });
@@ -4465,7 +4533,54 @@ pm.test("Ответ является массивом", function () {
         publishRoadmapChatContext(skillId, skillName);
         roadmapMinimalArticle.classList.add('has-selection');
         document.body.classList.add('roadmap-minimal-skill-selected');
+        document.body.classList.add('roadmap-route-chat-visible');
         document.body.classList.remove('roadmap-minimal-sheet-expanded');
+        if (options?.showSheet !== false) showRoadmapRouteSheet(chip);
+      }
+
+      function showRoadmapRouteSheet(target) {
+        if (!document.body.classList.contains('roadmap-route-mode') || !window.matchMedia('(max-width: 1080px)').matches) return;
+        roadmapMinimalArticle.inert = false;
+        void roadmapMinimalArticle.offsetHeight;
+        roadmapMinimalArticle.classList.add('is-mobile-open');
+        document.body.classList.add('roadmap-route-sheet-open');
+        requestAnimationFrame(function() {
+          if (!roadmapMinimalArticle.classList.contains('is-mobile-open') || !target?.isConnected) return;
+          const headerBottom = document.querySelector('.site-header')?.getBoundingClientRect().bottom || 0;
+          const sheetPeek = Math.max(190, Math.min(window.innerHeight * 0.38, 320));
+          const visibleBottom = window.innerHeight - sheetPeek - 12;
+          const visibleTop = Math.max(12, Math.min(headerBottom + 12, visibleBottom - 80));
+          const rect = target.getBoundingClientRect();
+          if (rect.top >= visibleTop + 12 && rect.bottom <= visibleBottom - 12) return;
+          const targetCenter = (rect.top + rect.bottom) / 2;
+          const availableCenter = (visibleTop + visibleBottom) / 2;
+          window.scrollBy({ top: targetCenter - availableCenter, behavior: 'smooth' });
+        });
+      }
+
+      function closeRoadmapRouteSheet() {
+        roadmapMinimalArticle.classList.remove('is-mobile-open');
+        roadmapMinimalArticle.inert = document.body.classList.contains('roadmap-route-mode') &&
+          window.matchMedia('(max-width: 1080px)').matches;
+        document.body.classList.remove('roadmap-minimal-sheet-expanded', 'roadmap-route-chat-visible', 'roadmap-route-sheet-open');
+      }
+
+      function closeRoadmapRouteSelection() {
+        clearTimeout(roadmapRouteCloseTimer);
+        const focusWasInSelection = document.activeElement === roadmapMinimalArticleClose || roadmapRoute.contains(document.activeElement);
+        closeRoadmapRouteSheet();
+        resetRoadmapRouteGroup();
+        if (focusWasInSelection) roadmapRoute.focus({ preventScroll: true });
+        localStorage.removeItem(ROADMAP_ROUTE_GROUP_KEY);
+        localStorage.removeItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY);
+        localStorage.removeItem(ROADMAP_MINIMAL_SKILL_KEY);
+        document.body.classList.remove('roadmap-minimal-skill-selected');
+        animateRoadmapRoutePath(300);
+        if (window.matchMedia('(max-width: 1080px)').matches) {
+          roadmapRouteCloseTimer = setTimeout(resetRoadmapMinimalSkillView, 300);
+        } else {
+          resetRoadmapMinimalSkillView();
+        }
       }
 
       function resetRoadmapRouteGroup() {
@@ -4559,6 +4674,14 @@ pm.test("Ответ является массивом", function () {
 
       function selectRoadmapMinimalSkill(chip, options) {
         const settings = options || {};
+
+        if (settings.persist !== false && chip.classList.contains('is-active')) {
+          localStorage.removeItem(ROADMAP_MINIMAL_SKILL_KEY);
+          localStorage.removeItem(ROADMAP_ROUTE_GROUP_KEY);
+          localStorage.removeItem(ROADMAP_ROUTE_SELECTION_TYPE_KEY);
+          resetRoadmapMinimalSkillView();
+          return;
+        }
 
         roadmapMinimalSkills.querySelectorAll('.roadmap-minimal-chip.is-active').forEach(function(item) {
           item.classList.remove('is-active');
@@ -5479,6 +5602,6 @@ function createRoadmapSkillTest(skillId) {
       });
     });
 </script>
-  <script src="header.js?v=8.9.35"></script>
+  <script src="header.js?v=8.9.36"></script>
 </body>
 </html>
