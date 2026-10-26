@@ -12,8 +12,9 @@
     'questions-map.html': 'questions.html',
     'resume.html': 'resume.html',
     'practice.html': 'practice.html',
+    'testing-types-map.html': 'practice.html'
   }[page];
-  const glassAlways = new Set(['course.html', 'questions-map.html']).has(page);
+  const glassAlways = new Set(['course.html', 'questions-map.html', 'testing-types-map.html']).has(page);
   const showAiNotch = page === 'questions.html' || page === 'questions-map.html';
   const markup = String.raw`<div class="site-header" data-shared-header="true">
 <nav>

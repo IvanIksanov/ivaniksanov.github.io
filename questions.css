@@ -220,10 +220,10 @@ h2, .questions-page-title {
   left: clamp(0.75rem, 2vw, 2rem);
   z-index: 6;
   padding: 0.45rem 0.7rem;
-  border: 1px solid #d9dde3;
+  border: 1px solid rgba(88, 98, 112, 0.12);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 5px 20px rgba(22, 27, 35, 0.1);
+  box-shadow: 0 2px 8px rgba(22, 27, 35, 0.05);
   color: #515967;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -291,9 +291,9 @@ h2, .questions-page-title {
 }
 
 html[data-theme="dark"] .questions-view-switcher {
-  border-color: #454a52;
+  border-color: rgba(255, 255, 255, 0.1);
   background: rgba(34, 37, 43, 0.92);
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.24);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   color: #b7bdc7;
 }
 html[data-theme="dark"] .questions-view-switcher__track {
@@ -327,24 +327,39 @@ html[data-theme="dark"] .questions-view-switcher__track:focus-visible { outline-
 
 @media (max-width: 1300px) {
   .questions-view-switcher {
-    gap: 0;
-    padding: 0.35rem;
+    gap: 0.4rem;
+    padding: 0.35rem 0.5rem;
   }
   .questions-view-switcher .questions-view-switcher__label {
-    max-width: 0;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: max-width 280ms ease, opacity 220ms ease, visibility 0s linear 280ms;
+    font-size: 0.7rem;
   }
+  .questions-view-switcher__track {
+    flex-basis: 44px;
+    width: 44px;
+    height: 22px;
+  }
+  .questions-view-switcher__thumb {
+    width: 16px;
+    height: 16px;
+  }
+  .questions-view-switcher[data-view="map"] .questions-view-switcher__thumb {
+    transform: translate(22px, -50%);
+  }
+}
+
+@media (max-width: 1180px) {
+  .questions-view-switcher .questions-view-switcher__label[aria-current="page"] {
+    display: none;
+  }
+}
+
+@media (max-width: 1099px) {
+  body:not(.questions-map-page) .questions-view-switcher .questions-view-switcher__label { display: none; }
+  body.questions-map-page .questions-view-switcher { display: none; }
 }
 
 @media (max-width: 1009px) {
   body:not(.questions-map-page) .questions-view-switcher { display: none; }
-}
-
-@media (max-width: 1099px) {
-  body.questions-map-page .questions-view-switcher { display: none; }
 }
 
 /* Добавь новые стили для чипов */

@@ -162,6 +162,25 @@ html[data-theme="dark"] .practice-card p {
   color: #c7c7c7;
 }
 
+@media (hover: none), (pointer: coarse) {
+  a.practice-card {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  a.practice-card:hover,
+  a.practice-card:active {
+    background-color: #fff;
+    color: inherit;
+  }
+
+  html[data-theme="dark"] a.practice-card:hover,
+  html[data-theme="dark"] a.practice-card:active {
+    background-color: #1f1f1f;
+    color: #f1f1f1;
+    border-color: #2f2f2f;
+  }
+}
+
 html[data-theme="dark"] .practice-skills span {
   border-color: #3b424b;
   background: #2b3036;

@@ -4125,8 +4125,6 @@ html[data-theme="dark"] .skill-links a.selected {
 }
 
 .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-list {
-  position: sticky;
-  top: 12px;
   width: 100%;
   gap: 8px;
 }
@@ -4134,10 +4132,10 @@ html[data-theme="dark"] .skill-links a.selected {
 .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-node {
   min-height: 40px;
   padding: 7px 8px;
-  font-size: .9rem;
+  font-size: clamp(.62rem, 2.7vw, .9rem);
   line-height: 1.2;
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
 }
 
 .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-details-frame {
@@ -4166,7 +4164,6 @@ html[data-theme="dark"] .skill-links a.selected {
 
   .sdlc-trainer[data-stage-storage-key="hwois-development-stage"] .stage-node {
     padding: 6px 5px;
-    font-size: .75rem;
     line-height: 1.15;
   }
 

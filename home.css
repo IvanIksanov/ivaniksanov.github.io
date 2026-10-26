@@ -50,6 +50,21 @@ html[data-theme="dark"] .home-stage {
   gap: clamp(16px, 3.4vw, 72px);
 }
 .home-mobile-carousel { display: none; }
+
+.home-redesign #about .study-plan-note {
+  max-width: 100%;
+  margin-inline: 0;
+  color: #626b76;
+  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 500;
+  line-height: 1.62;
+  text-align: left;
+}
+
+html[data-theme="dark"] .home-redesign #about .study-plan-note {
+  color: #abb4bf;
+}
 .home-stage__cards {
   --home-card-gap: clamp(6px, 1.4svh, 18px);
   display: flex;

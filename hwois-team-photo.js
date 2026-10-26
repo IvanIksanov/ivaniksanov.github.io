@@ -16,11 +16,11 @@
 
   const roles = [
     { id: 'owner', title: 'Владелец продукта', source: 'owner', salary: 350000, summary: 'Решает, какие функции нужны сайту или приложению и что команда сделает сначала.' },
-    { id: 'business-analyst', title: 'Бизнес-аналитик', source: 'business-analyst', salary: 280000, summary: 'Узнаёт, что нужно людям, и записывает правила работы сайта или приложения.' },
+    { id: 'business-analyst', title: 'Бизнес-аналитик', source: 'business-analyst', salary: 250000, summary: 'Узнаёт, что нужно людям, и записывает правила работы сайта или приложения.' },
     { id: 'designer', title: 'Дизайнер', source: 'designer', salary: 180000, summary: 'Рисует, как будут выглядеть страницы сайта или экраны приложения и где будут кнопки.' },
     { id: 'system-analyst', title: 'Системный аналитик', source: 'system-analyst', salary: 260000, summary: 'Продумывает, как части сайта или приложения будут работать вместе и передавать данные.' },
-    { id: 'backend-developer', title: 'Фронтенд-разработчик', source: 'frontend-developer', salary: 280000, summary: 'Делает страницы сайта и кнопки, с которыми взаимодействует пользователь.' },
-    { id: 'frontend-developer', title: 'Бэкенд-разработчик', source: 'developer', salary: 210000, summary: 'Создаёт бэкенд — невидимую часть сайта или приложения. Бэкенд хранит данные и считает сумму заказа.' },
+    { id: 'backend-developer', title: 'Фронтенд-разработчик', source: 'frontend-developer', salary: 240000, summary: 'Делает страницы сайта и кнопки, с которыми взаимодействует пользователь.' },
+    { id: 'frontend-developer', title: 'Бэкенд-разработчик', source: 'developer', salary: 270000, summary: 'Создаёт бэкенд — невидимую часть сайта или приложения. Бэкенд хранит данные и считает сумму заказа.' },
     { id: 'tester', title: 'Тестировщик', source: 'tester', salary: 130000, summary: 'Проверяет сайт или приложение, находит ошибки и смотрит, исправили ли их.' },
     { id: 'release-manager', title: 'Релиз-менеджер', source: 'release-manager', salary: 160000, summary: 'Организует выпуск готового обновления сайта или приложения и помогает команде, если после выпуска что-то сломалось.' },
     { id: 'scrum-master', title: 'Scrum-мастер', source: 'scrum-master', salary: 160000, summary: 'Помогает команде договариваться и решать проблемы, которые мешают работе.' },
@@ -148,9 +148,18 @@
     }, 1000);
   }
 
+  function updateRegionButtons() {
+    regions.querySelectorAll('.team-photo__hit').forEach(hit => {
+      const isPinned = hit.dataset.roleId === pinnedId;
+      hit.setAttribute('aria-pressed', String(isPinned));
+      hit.setAttribute('aria-label', `${isPinned ? 'Скрыть подробности' : 'Открыть'}: ${hit.dataset.roleTitle}`);
+    });
+  }
+
   function openRole(role) {
     clearTimeout(detailsCleanupTimer);
     pinnedId = role.id;
+    updateRegionButtons();
     setActive(role);
     if (compactView.matches) {
       caption.classList.remove('is-expanded');
@@ -188,14 +197,15 @@
     captionDetails.classList.add('is-revealed');
   }
 
-  function closeRole() {
+  function closeRole(keepHover = false) {
     pinnedId = null;
+    updateRegionButtons();
     captionDetails.style.height = `${captionDetails.getBoundingClientRect().height}px`;
     captionDetails.classList.remove('is-revealed');
     captionDetails.getBoundingClientRect();
     captionDetails.style.height = '0px';
     caption.classList.remove('is-expanded');
-    clearActive();
+    if (!keepHover) clearActive();
     clearTimeout(detailsCleanupTimer);
     detailsCleanupTimer = setTimeout(() => {
       if (!pinnedId) captionDetails.replaceChildren();
@@ -212,16 +222,26 @@
     hit.setAttribute('d', pathFor(points));
     hit.setAttribute('role', 'button');
     hit.setAttribute('tabindex', '0');
+    hit.dataset.roleId = role.id;
+    hit.dataset.roleTitle = role.title;
+    hit.setAttribute('aria-pressed', 'false');
     hit.setAttribute('aria-label', `Открыть: ${role.title}`);
     hit.addEventListener('pointerenter', () => { if (!pinnedId) setActive(role); });
     hit.addEventListener('pointerleave', () => scheduleClear(role));
     hit.addEventListener('focus', () => { if (!pinnedId) setActive(role); });
     hit.addEventListener('blur', () => scheduleClear(role));
-    hit.addEventListener('click', () => openRole(role));
+    function toggleRole() {
+      if (pinnedId === role.id) {
+        closeRole(!compactView.matches && hit.matches(':hover, :focus'));
+      } else {
+        openRole(role);
+      }
+    }
+    hit.addEventListener('click', toggleRole);
     hit.addEventListener('keydown', event => {
       if (event.key !== 'Enter' && event.key !== ' ') return;
       event.preventDefault();
-      openRole(role);
+      toggleRole();
     });
     group.append(hit);
     regions.append(group);
