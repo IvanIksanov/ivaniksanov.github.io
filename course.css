@@ -67,11 +67,11 @@ html[data-theme="dark"] .course-page { --course-packet: #303840; --course-resour
 .course-network-panel:has(.course-network__help[open]) .course-network { display: block; min-height: auto; }
 .course-network-panel:has(.course-network__help[open]) .course-network__split { height: clamp(190px, 28vh, 300px); min-height: 0; }
 .course-network-panel:has(.course-network__help[open]) .course-network__help { padding-bottom: .75rem; }
-.course-scroller { position: absolute; inset: 0; overflow: hidden; overscroll-behavior: none; touch-action: none; background: var(--map-bg); cursor: grab; user-select: none; }
+.course-scroller { position: absolute; inset: 0; overflow: hidden; overscroll-behavior: none; touch-action: none; background-color: var(--map-bg); background-image: radial-gradient(color-mix(in srgb, var(--map-border) 36%, transparent) .7px, transparent .7px); background-size: 23px 23px; cursor: grab; user-select: none; }
 .course-scroller::-webkit-scrollbar { display: none; }
 .course-scroller.is-dragging { cursor: grabbing; user-select: none; }
 .course-scroller:focus-visible { outline: 2px solid var(--course-blue); outline-offset: -2px; }
-.course-canvas { position: relative; width: 2900px; height: 1000px; transform-origin: top left; background-image: radial-gradient(color-mix(in srgb, var(--map-border) 36%, transparent) .7px, transparent .7px); background-size: 23px 23px; }
+.course-canvas { position: relative; width: 2900px; height: 1000px; transform-origin: top left; }
 .course-lines { width: 2900px; height: 1000px; }
 .course-lines { transition: opacity .38s ease; }
 .course-lines.is-resetting { opacity: 0; }

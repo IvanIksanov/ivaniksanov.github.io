@@ -28,15 +28,6 @@
   aspect-ratio: 1672 / 941;
 }
 
-.team-photo__scene::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('img/cover/Team_QAtoDev-preview.webp') center / cover no-repeat;
-  filter: blur(8px);
-  transform: scale(1.025);
-}
-
 .team-photo__image {
   position: absolute;
   inset: 0;
