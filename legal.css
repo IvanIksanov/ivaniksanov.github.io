@@ -1,64 +1,63 @@
+/* Legal pages use restrained document typography rather than display headings. */
+.legal-hero,
 .legal-page {
-  max-width: 900px;
-  margin: 0 auto 2rem;
-  padding: 0 1rem;
+  box-sizing: border-box;
+  width: min(100%, 820px);
+  margin-inline: auto;
+  padding-inline: 24px;
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.65;
+  letter-spacing: 0;
+  word-spacing: normal;
 }
-
-.legal-hero {
-  max-width: 900px;
-  margin: 0 auto 1rem;
-  padding: 0 1rem;
-}
-
+.legal-hero { margin-bottom: 18px; }
+.legal-page { margin-bottom: 44px; }
 .legal-hero h1 {
-  margin: 0 0 0.4rem;
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  line-height: 1.08;
+  margin: 0 0 6px;
+  font-family: inherit;
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 650;
+  line-height: 1.24;
+  letter-spacing: -0.025em;
+  word-spacing: normal;
 }
-
-.legal-hero p {
-  margin: 0;
-  opacity: 0.78;
-}
-
+.legal-hero p { margin: 0; font-size: 13px; line-height: 1.5; opacity: 0.7; }
 .legal-card {
-  background: #fafafa;
-  border-radius: 14px;
-  padding: 1.25rem 1.35rem;
-  margin-bottom: 1rem;
+  margin: 0;
+  padding: 19px 0 21px;
+  border-bottom: 1px solid rgba(35, 42, 48, 0.13);
+  border-radius: 0;
+  background: transparent;
 }
-
+.legal-card:first-child { border-top: 1px solid rgba(35, 42, 48, 0.13); }
 .legal-card h2,
 .legal-card h3 {
-  margin-top: 0;
+  margin: 0 0 10px;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: 0;
+  word-spacing: normal;
+  text-align: left;
 }
-
 .legal-card p,
-.legal-card li {
-  line-height: 1.6;
-}
-
-.legal-card ul {
-  margin: 0.75rem 0 0;
-  padding-left: 1.2rem;
-}
-
-.legal-meta {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.legal-meta strong {
-  display: inline-block;
-  min-width: 210px;
-}
-
-.legal-note {
-  font-size: 0.92rem;
-  opacity: 0.82;
-}
-
-.legal-inline-link {
+.legal-card li,
+.legal-meta { font-size: 15px; font-weight: 400; line-height: 1.65; }
+.legal-card p { margin: 0 0 10px; }
+.legal-card p:last-child { margin-bottom: 0; }
+.legal-card ul { margin: 8px 0 0; padding-left: 21px; }
+.legal-card li { padding-left: 2px; margin-bottom: 5px; }
+.legal-card li:last-child { margin-bottom: 0; }
+.legal-meta { display: grid; gap: 4px; }
+.legal-meta strong { display: inline; min-width: 0; margin: 0 5px 0 0; font-weight: 600; }
+.legal-note { font-size: 14px !important; opacity: 0.78; }
+.legal-meta + .legal-note { margin-top: 14px; }
+.legal-inline-link,
+.legal-inline-link:hover {
+  display: inline;
   padding: 0;
   border-radius: 0;
   background: transparent;
@@ -66,12 +65,6 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
-
-.legal-inline-link:hover {
-  background: transparent;
-  color: #0b5f58;
-}
-
 .legal-cookie-settings {
   padding: 0;
   border: 0;
@@ -82,35 +75,21 @@
   text-underline-offset: 2px;
   cursor: pointer;
 }
-
+html[data-theme="dark"] .legal-card,
+html[data-theme="dark"] .legal-card:first-child { border-color: rgba(255, 255, 255, 0.17); }
+html[data-theme="dark"] .legal-inline-link,
+html[data-theme="dark"] .legal-inline-link:hover,
 html[data-theme="dark"] .legal-cookie-settings { color: #8ce5db; }
-
-html[data-theme="dark"] .legal-card {
-  background: #242424;
-}
-
-html[data-theme="dark"] .legal-inline-link {
-  color: #8ce5db;
-}
-
-html[data-theme="dark"] .legal-inline-link:hover {
-  color: #b4f4ec;
-}
-
 @media (max-width: 600px) {
-  .legal-page,
-  .legal-hero {
-    padding: 0 0.6rem;
-  }
-
-  .legal-card {
-    padding: 0.95rem 1rem;
-    border-radius: 12px;
-  }
-
-  .legal-meta strong {
-    min-width: 0;
-    display: block;
-    margin-bottom: 0.12rem;
-  }
+  .legal-hero,
+  .legal-page { padding-inline: 18px; font-size: 14px; }
+  .legal-hero { margin-bottom: 12px; }
+  .legal-hero h1 { font-size: 24px; line-height: 1.28; }
+  .legal-card { padding: 16px 0 18px; }
+  .legal-card h2,
+  .legal-card h3 { font-size: 16px; }
+  .legal-card p,
+  .legal-card li,
+  .legal-meta { font-size: 14px; line-height: 1.6; }
+  .legal-note { font-size: 13px !important; }
 }
