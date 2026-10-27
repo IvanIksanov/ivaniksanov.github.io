@@ -1,16 +1,17 @@
 const YANDEX_METRIKA_COUNTER_ID = 99129194;
 const METRIKA_OPT_OUT_KEY = "metrikaOptOut";
+const hasAnalyticsConsent = window.QAtoDevAnalyticsConsent === "granted";
 
 const protocol = window.location.protocol;
 const host = window.location.hostname;
 const searchParams = new URLSearchParams(window.location.search);
 
 if (searchParams.get("disableMetrics") === "1") {
-    window.localStorage.setItem(METRIKA_OPT_OUT_KEY, "1");
+    try { window.localStorage.setItem(METRIKA_OPT_OUT_KEY, "1"); } catch (_) {}
 }
 
 if (searchParams.get("disableMetrics") === "0") {
-    window.localStorage.removeItem(METRIKA_OPT_OUT_KEY);
+    try { window.localStorage.removeItem(METRIKA_OPT_OUT_KEY); } catch (_) {}
 }
 
 const isLocalEnvironment =
@@ -18,8 +19,12 @@ const isLocalEnvironment =
     host === "localhost" ||
     host === "127.0.0.1" ||
     host === "::1";
+let testPath = window.location.pathname;
+try { testPath = decodeURIComponent(testPath).replace(/\/{2,}/g, "/"); } catch (_) {}
+const isTestEnvironment = /^\/test(?:\/|$)/i.test(testPath);
 
-const isOptedOut = window.localStorage.getItem(METRIKA_OPT_OUT_KEY) === "1";
+let isOptedOut = searchParams.get("disableMetrics") === "1";
+try { isOptedOut = isOptedOut || window.localStorage.getItem(METRIKA_OPT_OUT_KEY) === "1"; } catch (_) {}
 
 function sanitizeMetricValue(value) {
     if (value === null || value === undefined) return undefined;
@@ -58,7 +63,7 @@ function sanitizeMetricParams(params) {
 }
 
 function reachMetrikaGoal(goalId, params) {
-    if (!goalId || isLocalEnvironment || isOptedOut || typeof window.ym !== "function") {
+    if (!goalId || isLocalEnvironment || isTestEnvironment || isOptedOut || !hasAnalyticsConsent || typeof window.ym !== "function") {
         return false;
     }
     try {
@@ -77,11 +82,11 @@ function reachMetrikaGoal(goalId, params) {
 
 window.QAtoDevMetrics = {
     counterId: YANDEX_METRIKA_COUNTER_ID,
-    enabled: !(isLocalEnvironment || isOptedOut),
+    enabled: !(isLocalEnvironment || isTestEnvironment || isOptedOut) && hasAnalyticsConsent,
     reachGoal: reachMetrikaGoal
 };
 
-if (isLocalEnvironment || isOptedOut) {
+if (isLocalEnvironment || isTestEnvironment || isOptedOut || !hasAnalyticsConsent) {
     window.ym = window.ym || function () {};
 } else {
     (function (m, e, t, r, i, k, a) {
