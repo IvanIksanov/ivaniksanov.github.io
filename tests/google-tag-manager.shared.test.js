@@ -7,10 +7,10 @@ const vm = require("node:vm");
 const root = path.join(__dirname, "..");
 const source = fs.readFileSync(path.join(root, "google-tag-manager.shared.js"), "utf8");
 
-function environment(url, { optedOut = false, storageBlocked = false } = {}) {
+function environment(url, { optedOut = false, storageBlocked = false, consent = "granted" } = {}) {
   const scripts = [];
   const storage = new Map(optedOut ? [["metrikaOptOut", "1"]] : []);
-  const window = { location: new URL(url) };
+  const window = { location: new URL(url), QAtoDevAnalyticsConsent: consent };
   Object.defineProperty(window, "localStorage", {
     get() {
       if (storageBlocked) throw new Error("Storage blocked");
@@ -74,6 +74,14 @@ test("a production page whose name starts with test is still tracked", () => {
   assert.equal(env.scripts.length, 1);
 });
 
+test("GTM stays unloaded without an explicit analytics choice", () => {
+  for (const consent of [null, "denied"]) {
+    const env = environment("https://qatodev.ru/", { consent });
+    env.run();
+    assert.equal(env.scripts.length, 0);
+  }
+});
+
 test("both the saved and URL analytics opt-outs disable GTM", () => {
   const saved = environment("https://qatodev.ru/", { optedOut: true });
   saved.run();
@@ -111,7 +119,8 @@ test("all site pages use one shared loader at the start of head", () => {
   for (const name of pages) {
     const html = fs.readFileSync(path.join(root, name), "utf8");
     assert.equal((html.match(/google-tag-manager\.shared\.js/g) || []).length, 1, name);
-    assert.match(html, /<head>\s*<meta\s+charset=[^>]+>\s*<script src="google-tag-manager\.shared\.js\?v=20261024-1"><\/script>/i, name);
+    assert.match(html, /<script src="analytics-consent\.shared\.js\?v=1"><\/script>\s*<script src="google-tag-manager\.shared\.js\?v=20261027-1"><\/script>/i, name);
     assert.doesNotMatch(html, /googletagmanager\.com\/ns\.html/, name);
+    assert.doesNotMatch(html, /mc\.yandex\.ru\/watch\/99129194/, name);
   }
 });

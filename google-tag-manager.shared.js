@@ -25,7 +25,8 @@
     } catch (_) {
         // A blocked storage must not break the page or the URL opt-out.
     }
-    if (disabled || document.getElementById("qatodev-gtm-container")) return;
+    // The shared consent script runs before this loader in <head>.
+    if (disabled || window.QAtoDevAnalyticsConsent !== "granted" || document.getElementById("qatodev-gtm-container")) return;
 
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({ "gtm.start": Date.now(), event: "gtm.js" });

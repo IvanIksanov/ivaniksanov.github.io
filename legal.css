@@ -72,6 +72,19 @@
   color: #0b5f58;
 }
 
+.legal-cookie-settings {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #0f766e;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .legal-cookie-settings { color: #8ce5db; }
+
 html[data-theme="dark"] .legal-card {
   background: #242424;
 }
