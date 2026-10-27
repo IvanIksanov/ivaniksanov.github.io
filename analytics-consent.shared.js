@@ -14,7 +14,7 @@
     if (source && source.src && !document.querySelector('[data-analytics-consent-style]')) {
         const css = document.createElement("link");
         css.rel = "stylesheet";
-        css.href = new URL("analytics-consent.shared.css?v=1", source.src).href;
+        css.href = new URL("analytics-consent.shared.css?v=2", source.src).href;
         css.dataset.analyticsConsentStyle = "";
         document.head.appendChild(css);
     }
@@ -32,7 +32,7 @@
         const panel = document.createElement("aside");
         panel.className = "analytics-consent";
         panel.setAttribute("aria-label", "Настройки аналитических cookie");
-        panel.innerHTML = '<p>Мы используем cookie и похожие технологии для работы сайта. С вашего согласия Яндекс.Метрика и Google Analytics помогают понять, как им пользуются. <a href="privacy-policy.html#cookies">О cookie и данных</a></p><div class="analytics-consent__actions"><button type="button" data-consent="denied">Без аналитики</button><button type="button" data-consent="granted">OK</button></div>';
+        panel.innerHTML = '<p>Мы используем cookie и похожие технологии для работы сайта. С вашего согласия Яндекс.Метрика и Google Analytics помогают понять, как им пользуются. <a href="privacy-policy.html#cookies">О cookie и данных</a></p><div class="analytics-consent__actions"><button type="button" data-consent="granted">OK</button></div>';
         panel.addEventListener("click", function (event) {
             const button = event.target.closest("[data-consent]");
             if (!button) return;
