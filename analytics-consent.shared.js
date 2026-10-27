@@ -19,16 +19,9 @@
         document.head.appendChild(css);
     }
 
-    function render() {
-        if (window !== window.top) return;
-        const settings = document.querySelector("[data-cookie-settings]");
-        if (settings) {
-            settings.addEventListener("click", function () {
-                try { window.localStorage.removeItem(key); } catch (_) {}
-                window.location.reload();
-            });
-        }
-        if (choice === "granted" || choice === "denied") return;
+    function showPanel() {
+        if (window !== window.top && !document.querySelector("[data-cookie-settings]")) return;
+        if (document.querySelector(".analytics-consent")) return;
         const panel = document.createElement("aside");
         panel.className = "analytics-consent";
         panel.setAttribute("aria-label", "Настройки аналитических cookie");
@@ -45,6 +38,24 @@
             if (value === "granted") window.location.reload();
         });
         document.body.appendChild(panel);
+    }
+
+    function render() {
+        const settings = document.querySelector("[data-cookie-settings]");
+        if (settings) {
+            settings.textContent = choice === "granted" ? "Отключить аналитику" : "Включить аналитику";
+            settings.addEventListener("click", function () {
+                if (choice === "granted") {
+                    try { window.localStorage.setItem(key, "denied"); } catch (_) {}
+                    window.QAtoDevAnalyticsConsent = "denied";
+                    window.location.reload();
+                    return;
+                }
+                showPanel();
+            });
+        }
+        // Keep the policy readable; its own control opens the notice on demand.
+        if (!settings && choice !== "granted" && choice !== "denied") showPanel();
     }
 
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", render, { once: true });
