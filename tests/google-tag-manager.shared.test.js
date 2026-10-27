@@ -119,7 +119,7 @@ test("all site pages use one shared loader at the start of head", () => {
   for (const name of pages) {
     const html = fs.readFileSync(path.join(root, name), "utf8");
     assert.equal((html.match(/google-tag-manager\.shared\.js/g) || []).length, 1, name);
-    assert.match(html, /<script src="analytics-consent\.shared\.js\?v=3"><\/script>\s*<script src="google-tag-manager\.shared\.js\?v=20261027-1"><\/script>/i, name);
+    assert.match(html, /<script src="analytics-consent\.shared\.js\?v=4"><\/script>\s*<script src="google-tag-manager\.shared\.js\?v=20261027-1"><\/script>/i, name);
     assert.doesNotMatch(html, /googletagmanager\.com\/ns\.html/, name);
     assert.doesNotMatch(html, /mc\.yandex\.ru\/watch\/99129194/, name);
   }
