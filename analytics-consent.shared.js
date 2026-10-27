@@ -14,7 +14,7 @@
     if (source && source.src && !document.querySelector('[data-analytics-consent-style]')) {
         const css = document.createElement("link");
         css.rel = "stylesheet";
-        css.href = new URL("analytics-consent.shared.css?v=2", source.src).href;
+        css.href = new URL("analytics-consent.shared.css?v=3", source.src).href;
         css.dataset.analyticsConsentStyle = "";
         document.head.appendChild(css);
     }
