@@ -25,7 +25,7 @@
         const panel = document.createElement("aside");
         panel.className = "analytics-consent";
         panel.setAttribute("aria-label", "Настройки аналитических cookie");
-        panel.innerHTML = '<p>Нажимая «ОК», вы соглашаетесь с тем, что <a href="privacy-policy.html#cookies">мы используем cookie для аналитики</a>.</p><div class="analytics-consent__actions"><button type="button" data-consent="granted">ОК</button></div>';
+        panel.innerHTML = '<p>Соглашаясь, вы разрешаете нам использовать <a href="privacy-policy.html#cookies">cookie для аналитики</a>.</p><div class="analytics-consent__actions"><button type="button" data-consent="granted">ОК</button></div>';
         panel.addEventListener("click", function (event) {
             const button = event.target.closest("[data-consent]");
             if (!button) return;
