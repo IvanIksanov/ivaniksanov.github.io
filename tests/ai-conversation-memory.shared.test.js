@@ -89,3 +89,50 @@ test('chat icon is hidden, restricted to resume icon keys and carried to the nex
   assert.equal(memory.normalizeIcon('integration'), 'integration');
   assert.equal(memory.extract('Ответ.\n<qa-icon>незаконченный блок').answer, 'Ответ.');
 });
+
+test('meta and small-talk questions are not offered as follow-up chips', () => {
+  assert.equal(memory.isMetaSuggestion('Какой вопрос по тестированию у тебя сейчас?'), true);
+  assert.equal(memory.isMetaSuggestion('Что обсудим дальше?'), true);
+  assert.equal(memory.isMetaSuggestion('О чём поговорим?'), true);
+  assert.equal(memory.isMetaSuggestion('Как я могу помочь тебе сегодня?'), true);
+  assert.equal(memory.isMetaSuggestion('Чем помочь?'), true);
+  assert.equal(memory.isMetaSuggestion('Какие проверки добавить для формы входа?'), false);
+  assert.equal(memory.isMetaSuggestion('Какой код ожидать при просроченном токене?'), false);
+
+  assert.deepEqual(Array.from(memory.normalizeSuggestions([
+    'Какой вопрос по тестированию у тебя сейчас?',
+    'Что обсудим дальше?',
+    'Почему GET /profile без токена возвращает 401?'
+  ])), ['Почему GET /profile без токена возвращает 401?']);
+
+  assert.equal(memory.isSmallTalkQuestion('Как дела?'), true);
+  assert.equal(memory.isSmallTalkQuestion('Привет! Как дела?'), true);
+  assert.equal(memory.isSmallTalkQuestion('Как ты тестируешь API?'), false);
+  assert.equal(memory.isSmallTalkQuestion('Что нового в API?'), false);
+});
+
+test('follow-up chips skip the current question and the model own question', () => {
+  assert.deepEqual(Array.from(memory.filterSuggestions([
+    'Как дела?',
+    'Как я могу помочь тебе сегодня?',
+    'Почему GET /profile без токена возвращает 401?'
+  ], {
+    question: 'Как дела?',
+    answer: 'Привет! Как я могу помочь тебе сегодня?'
+  })), ['Почему GET /profile без токена возвращает 401?']);
+});
+
+test('the reported greeting response produces no follow-up chips', () => {
+  const parsed = memory.extract([
+    '<qa-title>Приветствие и настройка темы</qa-title>',
+    '<qa-icon>qa</qa-icon>',
+    '<qa-memory>Начальная беседа, приветствие, нет конкретного вопроса</qa-memory>',
+    '<qa-next>Какой вопрос по тестированию у тебя сейчас?</qa-next>',
+    '',
+    'Привет! У меня всё отлично, спасибо. Как я могу помочь тебе сегодня?'
+  ].join('\n'));
+
+  assert.equal(parsed.answer, 'Привет! У меня всё отлично, спасибо. Как я могу помочь тебе сегодня?');
+  assert.deepEqual(Array.from(parsed.suggestions), []);
+  assert.equal(memory.isSmallTalkQuestion('Как дела?'), true);
+});

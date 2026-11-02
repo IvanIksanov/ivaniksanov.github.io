@@ -892,7 +892,12 @@
         turn.memory = parsed.memory;
         turn.title = parsed.title;
         turn.icon = chatIcon(parsed.icon, parsed.title);
-        turn.suggestions = parsed.suggestions;
+        turn.suggestions = window.QAtoDevConversationMemory.isSmallTalkQuestion(question)
+          ? []
+          : window.QAtoDevConversationMemory.filterSuggestions(parsed.suggestions, {
+              question,
+              answer: parsed.answer
+            });
         const newChatId = saveFirstAnswer();
         if (!newChatId) persist();
         renderSaved(newChatId);

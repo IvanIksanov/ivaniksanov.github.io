@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const categoryNote = document.getElementById("category-note");
   const categoryFilters = document.getElementById("category-filters");
   const badgeCategory = document.getElementById("badge-category");
   const counterEl = document.getElementById("counter");
@@ -9,8 +8,29 @@ document.addEventListener("DOMContentLoaded", () => {
   const skipBtn = document.getElementById("skip-btn");
   const acceptBtn = document.getElementById("accept-btn");
   const stageEl = document.getElementById("stage");
+  const settingsWrap = document.getElementById("interview-settings-wrap");
+  const settingsBtn = document.getElementById("interview-settings-btn");
+  const settingsBtnLabel = document.getElementById("interview-settings-btn-label");
+  const historyBtn = document.getElementById("interview-history-btn");
+  const historyDialog = document.getElementById("interview-history");
+  const historyList = document.getElementById("interview-history-list");
+  const historyLocalNote = document.getElementById("interview-history-local-note");
+  const historyCloseBtn = document.getElementById("interview-history-close");
+  const timerEl = document.getElementById("interview-timer");
+  const timerFill = document.getElementById("interview-timer-fill");
+  const timerLabel = document.getElementById("interview-timer-label");
+  const setupDialog = document.getElementById("interview-setup");
+  const setupStartBtn = document.getElementById("interview-setup-start");
+  const setupCancelBtn = document.getElementById("interview-setup-cancel");
+  const setupCloseBtn = document.getElementById("interview-setup-close");
+  const setupTimerOptions = document.getElementById("interview-timer-options");
+  const setupModeButtons = Array.from(document.querySelectorAll("[data-interview-mode]"));
+  const setupTimerButtons = Array.from(document.querySelectorAll("[data-timer-seconds]"));
 
-  if (!categoryFilters || !questionTitleEl || !answerEl || !toggleAnswerBtn || !skipBtn || !acceptBtn) return;
+  if (!categoryFilters || !questionTitleEl || !answerEl || !toggleAnswerBtn || !skipBtn || !acceptBtn
+    || !settingsWrap || !settingsBtn || !settingsBtnLabel || !timerEl || !timerFill || !timerLabel
+    || !historyBtn || !historyDialog || !historyList || !historyLocalNote || !historyCloseBtn
+    || !setupDialog || !setupStartBtn || !setupCancelBtn || !setupCloseBtn || !setupTimerOptions) return;
 
   const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
   const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -19,10 +39,55 @@ document.addEventListener("DOMContentLoaded", () => {
   const INTERVIEW_SELECTED_CATEGORIES_KEY = "interview_selected_categories";
   const INTERVIEW_SESSION_STATE_KEY = "interview_session_state_v1";
   const INTERVIEW_SCROLL_STATE_KEY = "interview_scroll_state_v1";
+  const INTERVIEW_HISTORY_KEY = "interview_history_v1";
+  const INTERVIEW_HISTORY_LIMIT = 50;
+  const INTERVIEW_HISTORY_TABLE = "interview_history";
+  const INTERVIEW_HISTORY_SYNC_INTERVAL_MS = 5 * 60 * 1000;
+  const INTERVIEW_HISTORY_SYNC_TS_KEY = "interview_history_sync_ts_v1";
+  const INTERVIEW_MODE_KEY = "interview_mode_v1";
+  const INTERVIEW_TIMER_SECONDS_KEY = "interview_timer_seconds_v1";
+  const INTERVIEW_TIMER_STEPS = [15, 30, 60];
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
   const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
   const DEFAULT_MODEL = "openai/gpt-oss-20b";
+  const QUESTIONS_DATA_URL = "over/questions_db_snapshot.json";
+  const INTERVIEW_POOL_LIMIT = 25;
+  const DEFAULT_PHOTO = { src: "img/cover/call_mock.png", alt: "Окно тренировочного созвона" };
+  const RESULT_PHOTOS = {
+    good: { src: "img/cover/call_mock_good.png", alt: "Хороший результат собеседования" },
+    "so-so": { src: "img/cover/call_mock_so_so.png", alt: "Средний результат собеседования" },
+    bad: { src: "img/cover/call_mock_bad.png", alt: "Слабый результат собеседования" },
+    neutral: { src: "img/cover/call_mock_so_so.png", alt: "Собеседование завершено" }
+  };
+
+  // Canonical directions and labels, mirrored from questions.html.
+  const CATEGORY_DEFS = [
+    { key: "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ", label: "Теория" },
+    { key: "WEB", label: "Web" },
+    { key: "API", label: "API" },
+    { key: "БАЗЫ ДАННЫХ", label: "Базы данных" },
+    { key: "GIT + IDE + SELENIUM", label: "Git + IDE" },
+    { key: "DEVOPS", label: "DevOps" },
+    { key: "AQA Java", label: "Java" },
+    { key: "AQA Python", label: "Python" },
+    { key: "AQA JS", label: "JS" }
+  ];
+  const CATEGORY_LABELS = new Map(CATEGORY_DEFS.map(({ key, label }) => [key, label]));
+  const CATEGORY_RANK = new Map(CATEGORY_DEFS.map(({ key }, index) => [key, index]));
+  const DEFAULT_CATEGORY = CATEGORY_DEFS[0].key;
+  const EXCLUDED_CATEGORY = "Вопросы к руководителю | команде | HR";
+  const CATEGORY_ALIASES = new Map();
+  CATEGORY_DEFS.forEach(({ key, label }) => {
+    CATEGORY_ALIASES.set(key.toUpperCase(), key);
+    CATEGORY_ALIASES.set(label.toUpperCase(), key);
+  });
+  [
+    ["БД", "БАЗЫ ДАННЫХ"],
+    ["GIT", "GIT + IDE + SELENIUM"],
+    ["HR", EXCLUDED_CATEGORY],
+    ["ВОПРОСЫ К РУКОВОДИТЕЛЮ | КОМАНДЕ | HR", EXCLUDED_CATEGORY]
+  ].forEach(([alias, key]) => CATEGORY_ALIASES.set(alias, key));
 
   let allCategories = [];
   let allItems = [];
@@ -34,10 +99,27 @@ document.addEventListener("DOMContentLoaded", () => {
   let interviewFinished = false;
   let acceptedCount = 0;
   let skippedCount = 0;
+  let roundStats = new Map();
+  let roundAnswers = [];
+  let roundId = "";
+  let historyResumeTimer = false;
+  let historySyncPromise = null;
+  let historySyncTimer = 0;
+  let historySyncQueued = false;
   let publicAiMap = new Map();
   const aiStateByQuestion = new Map();
   let pendingRestoreAnswerExpanded = false;
   let interviewScrollSaveRaf = 0;
+  let interviewMode = "manual";
+  let setupMode = "manual";
+  let setupCategories = new Set();
+  let timerSeconds = 15;
+  let setupTimerSeconds = 15;
+  let timerDeadline = 0;
+  let timerRemainingMs = 0;
+  let timerFrame = 0;
+  let timerPaused = false;
+  let timerLabelValue = "";
 
   const aiZone = document.createElement("div");
   aiZone.className = "interview-ai-zone";
@@ -50,14 +132,43 @@ document.addEventListener("DOMContentLoaded", () => {
   answerEl.insertAdjacentElement("afterend", aiZone);
   const aiAppendBtn = aiZone.querySelector("#interview-ai-append-btn");
   const aiSupplementEl = aiZone.querySelector("#interview-ai-supplement");
+  const photoImage = document.querySelector("#question-photo img");
+  let photoSwapTimer = 0;
+  if (photoImage) {
+    const usePhotoFallback = () => {
+      if (photoImage.dataset.fallback === "true") return;
+      photoImage.dataset.fallback = "true";
+      photoImage.src = "img/call-cats2.jpeg";
+    };
+    photoImage.addEventListener("error", usePhotoFallback, { once: true });
+    if (photoImage.complete && photoImage.naturalWidth === 0) usePhotoFallback();
+  }
 
-  function normalizeCategoryKey(category) {
-    const value = String(category || "").replace(/\s+/g, " ").trim().toUpperCase();
-    if (!value || value === "ВСЕ") return "ALL";
-    if (value === "БД" || value === "БАЗЫ ДАННЫХ") return "БАЗЫ ДАННЫХ";
-    if (value === "GIT" || value === "GIT + IDE" || value === "GIT + IDE + SELENIUM") return "GIT";
-    if (value === "ТЕОРИЯ") return "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ";
-    return value;
+  function setQuestionPhoto(photo) {
+    if (!photoImage || !photo?.src) return;
+    if (photoImage.getAttribute("src") === photo.src) {
+      if (photo.alt) photoImage.alt = photo.alt;
+      return;
+    }
+    window.clearTimeout(photoSwapTimer);
+    if (document.documentElement.classList.contains("is-interview-booting")) {
+      photoImage.classList.remove("is-swapping");
+      photoImage.src = photo.src;
+      if (photo.alt) photoImage.alt = photo.alt;
+      return;
+    }
+    photoImage.classList.add("is-swapping");
+    photoSwapTimer = window.setTimeout(() => {
+      photoImage.src = photo.src;
+      if (photo.alt) photoImage.alt = photo.alt;
+      requestAnimationFrame(() => photoImage.classList.remove("is-swapping"));
+    }, 160);
+  }
+
+  function canonicalCategory(category) {
+    const value = String(category || "").replace(/\s+/g, " ").trim();
+    if (!value) return "";
+    return CATEGORY_ALIASES.get(value.toUpperCase()) || value;
   }
 
   function readInterviewSessionState() {
@@ -74,6 +185,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function writeInterviewSessionState() {
     try {
+      const timerActive = interviewMode === "timer" && interviewStarted && !interviewFinished;
+      const timerRemaining = timerActive
+        ? (timerPaused ? timerRemainingMs : Math.max(0, timerDeadline - performance.now()))
+        : 0;
       const state = {
         ts: Date.now(),
         selectedCategories: Array.from(selectedCategories || []),
@@ -83,6 +198,14 @@ document.addEventListener("DOMContentLoaded", () => {
         interviewFinished: !!interviewFinished,
         acceptedCount: Math.max(0, Number(acceptedCount) || 0),
         skippedCount: Math.max(0, Number(skippedCount) || 0),
+        roundStats: Object.fromEntries(roundStats),
+        roundId,
+        roundAnswers,
+        mode: interviewMode,
+        timerSeconds,
+        timerRemainingMs: Math.round(timerRemaining),
+        timerSavedAt: Date.now(),
+        timerPaused: timerActive ? !!timerPaused : false,
         answerExpanded: toggleAnswerBtn?.getAttribute("aria-expanded") === "true"
       };
       localStorage.setItem(INTERVIEW_SESSION_STATE_KEY, JSON.stringify(state));
@@ -99,23 +222,83 @@ document.addEventListener("DOMContentLoaded", () => {
     return pool;
   }
 
-  function restoreInterviewSessionStateIfPossible() {
+  function restoreInterviewSessionStateIfPossible({ useSessionCategories = false } = {}) {
     const saved = readInterviewSessionState();
     if (!saved || !Array.isArray(saved.poolIds) || !saved.poolIds.length) return false;
-    const restoredPool = buildPoolFromIds(saved.poolIds);
-    if (!restoredPool.length) return false;
+    if (useSessionCategories && Array.isArray(saved.selectedCategories)) {
+      const savedCategories = [...new Set(saved.selectedCategories.map(canonicalCategory))]
+        .filter((category) => allCategories.includes(category));
+      if (savedCategories.length) selectedCategories = new Set(savedCategories);
+    }
+    const poolFromIds = buildPoolFromIds(saved.poolIds);
+    const restoredPool = poolFromIds.filter((item) => selectedCategories.has(item.category));
+    // Never resume a pool that contains questions from directions the user
+    // has not selected: rebuild a clean pool instead.
+    if (!restoredPool.length || restoredPool.length !== poolFromIds.length) return false;
     interviewPool = restoredPool;
     interviewIndex = Math.max(0, Math.min(Number(saved.index) || 0, restoredPool.length - 1));
     interviewStarted = !!saved.interviewStarted;
     interviewFinished = !!saved.interviewFinished;
     acceptedCount = Math.max(0, Number(saved.acceptedCount) || 0);
     skippedCount = Math.max(0, Number(saved.skippedCount) || 0);
+    roundStats = new Map();
+    if (saved.roundStats && typeof saved.roundStats === "object" && !Array.isArray(saved.roundStats)) {
+      Object.entries(saved.roundStats).forEach(([category, stats]) => {
+        const key = canonicalCategory(category);
+        if (!key) return;
+        roundStats.set(key, {
+          accepted: Math.max(0, Number(stats?.accepted) || 0),
+          skipped: Math.max(0, Number(stats?.skipped) || 0)
+        });
+      });
+    }
+    roundId = typeof saved.roundId === "string" && saved.roundId ? saved.roundId : newRoundId();
+    roundAnswers = Array.isArray(saved.roundAnswers)
+      ? saved.roundAnswers
+        .filter((answer) => answer?.id && answer?.title)
+        .map((answer) => ({
+          id: String(answer.id),
+          title: String(answer.title),
+          category: canonicalCategory(answer.category),
+          status: answer.status === "skipped" ? "skipped" : "accepted"
+        }))
+      : [];
+    if (saved.mode === "manual" || saved.mode === "timer") interviewMode = saved.mode;
+    const savedTimerSeconds = Number(saved.timerSeconds);
+    if (INTERVIEW_TIMER_STEPS.includes(savedTimerSeconds)) timerSeconds = savedTimerSeconds;
+    setupMode = interviewMode;
+    setupTimerSeconds = timerSeconds;
+    setupCategories = new Set(selectedCategories);
+    persistSelectedCategories();
+    syncChipActiveState();
+    const savedTimerRemaining = Number(saved.timerRemainingMs);
+    const savedTimerSavedAt = Number(saved.timerSavedAt);
+    let restoredTimerRemaining = 0;
+    if (interviewMode === "timer" && interviewStarted && !interviewFinished) {
+      if (Number.isFinite(savedTimerRemaining) && savedTimerRemaining >= 0) {
+        restoredTimerRemaining = saved.timerPaused
+          ? savedTimerRemaining
+          : Math.max(0, savedTimerRemaining - Math.max(0, Date.now() - (Number.isFinite(savedTimerSavedAt) ? savedTimerSavedAt : Date.now())));
+      } else {
+        restoredTimerRemaining = timerSeconds * 1000;
+      }
+      if (restoredTimerRemaining <= 0) restoredTimerRemaining = timerSeconds * 1000;
+      restoredTimerRemaining = Math.min(restoredTimerRemaining, timerSeconds * 1000);
+    }
     pendingRestoreAnswerExpanded = !!saved.answerExpanded;
     if (interviewFinished) {
       finishInterview();
     } else {
       renderCard();
-      if (pendingRestoreAnswerExpanded && currentQuestion && toggleAnswerBtn && !toggleAnswerBtn.disabled) {
+      if (!interviewStarted) {
+        openSetupDialog({ allowCancel: false });
+      } else if (interviewMode === "timer") {
+        pauseTimer();
+        timerRemainingMs = restoredTimerRemaining;
+        timerPaused = true;
+        setTimerVisual(timerRemainingMs);
+        openSetupDialog({ allowCancel: true });
+      } else if (pendingRestoreAnswerExpanded && currentQuestion && toggleAnswerBtn && !toggleAnswerBtn.disabled) {
         answerEl.hidden = false;
         toggleAnswerBtn.setAttribute("aria-expanded", "true");
         toggleAnswerBtn.textContent = "Скрыть ответ";
@@ -145,52 +328,61 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function revealInterviewPage() {
+    document.documentElement.classList.remove("is-interview-booting");
+  }
+
   function restoreInterviewScrollState() {
     try {
       const raw = localStorage.getItem(INTERVIEW_SCROLL_STATE_KEY);
-      if (!raw) return;
+      if (!raw) {
+        revealInterviewPage();
+        return;
+      }
       const parsed = JSON.parse(raw);
-      if (!parsed || parsed.path !== window.location.pathname) return;
+      if (!parsed || parsed.path !== window.location.pathname) {
+        revealInterviewPage();
+        return;
+      }
       const y = Math.max(0, Number(parsed.y) || 0);
+      let revealed = false;
+      const finish = () => {
+        if (revealed) return;
+        revealed = true;
+        window.scrollTo(0, y);
+        revealInterviewPage();
+      };
+      window.scrollTo(0, y);
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo(0, y);
-        });
+        window.scrollTo(0, y);
+        requestAnimationFrame(finish);
       });
-    } catch {}
+      window.setTimeout(finish, 120);
+    } catch {
+      revealInterviewPage();
+    }
   }
 
   function chipLabel(category) {
-    if (category === "БАЗЫ ДАННЫХ") return "БД";
-    if (category === "GIT + IDE + SELENIUM") return "GIT";
-    if (category === "ТЕОРИЯ ТЕСТИРОВАНИЯ + СОФТЫ") return "Теория";
-    return category;
+    return CATEGORY_LABELS.get(category) || category;
   }
 
   function isExcludedCategory(category) {
-    const t = String(category || "").trim();
-    return t === "Вопросы к руководителю | команде | HR";
+    return canonicalCategory(category) === EXCLUDED_CATEGORY;
   }
 
-  function randInt(min, max) {
-    if (window.crypto && crypto.getRandomValues) {
-      const buf = new Uint32Array(1);
-      crypto.getRandomValues(buf);
-      return min + (buf[0] % (max - min + 1));
-    }
-    return Math.floor(Math.random() * (max - min + 1)) + min;
+  const EXCLUDED_ITEM_IDS = new Set(["accordion_theory_q54"]);
+  const EXCLUDED_ITEM_TITLES = new Set(["вопросы на софты без конкретного ответа"]);
+
+  function isExcludedItem(item) {
+    const id = String(item?.id || "").trim();
+    const title = String(item?.title || "").replace(/\s+/g, " ").trim().toLowerCase();
+    return EXCLUDED_ITEM_IDS.has(id) || EXCLUDED_ITEM_TITLES.has(title);
   }
 
   function shuffleInPlace(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      let j;
-      if (window.crypto && crypto.getRandomValues) {
-        const buf = new Uint32Array(1);
-        crypto.getRandomValues(buf);
-        j = buf[0] % (i + 1);
-      } else {
-        j = Math.floor(Math.random() * (i + 1));
-      }
+    for (let i = arr.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
@@ -667,62 +859,332 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch {}
   }
 
-  function getSelectedItemsFlat() {
-    return allItems.filter((item) => selectedCategories.has(item.category) && !isExcludedCategory(item.category));
+  function bumpRoundStat(item, field) {
+    if (!item?.category) return;
+    const stats = roundStats.get(item.category) || { accepted: 0, skipped: 0 };
+    stats[field] += 1;
+    roundStats.set(item.category, stats);
   }
 
-  function buildSample(list, selected) {
-    const byCat = new Map();
-    selected.forEach((c) => {
-      if (isExcludedCategory(c)) return;
-      byCat.set(c, []);
-    });
-    list.forEach((q) => {
-      if (byCat.has(q.category)) byCat.get(q.category).push(q);
-    });
-    byCat.forEach((arr) => shuffleInPlace(arr));
-    const target = randInt(20, 25);
-    const cats = Array.from(byCat.keys());
-    if (!cats.length) return [];
-    if (list.length <= target) return shuffleInPlace(list.slice());
+  function recordRoundAnswer(item, status) {
+    if (!item?.id || !item?.title) return;
+    const existing = roundAnswers.find((answer) => answer.id === item.id);
+    const value = {
+      id: item.id,
+      title: item.title,
+      category: item.category,
+      status: status === "skipped" ? "skipped" : "accepted"
+    };
+    if (existing) Object.assign(existing, value);
+    else roundAnswers.push(value);
+  }
 
-    const result = [];
-    const quotas = new Map();
-    const base = Math.floor(target / cats.length);
-    let rem = target % cats.length;
+  function getWeakCategories(limit = 2) {
+    return [...roundStats.entries()]
+      .map(([category, stats]) => {
+        const total = stats.accepted + stats.skipped;
+        const percent = total ? Math.round((stats.accepted / total) * 100) : 100;
+        return { category, total, percent };
+      })
+      .filter(({ total, percent }) => total > 0 && percent < 60)
+      .sort((a, b) => a.percent - b.percent || b.total - a.total)
+      .slice(0, limit)
+      .map(({ category }) => chipLabel(category));
+  }
 
-    cats.forEach((c) => {
-      let need = base + (rem > 0 ? 1 : 0);
-      rem = Math.max(0, rem - 1);
-      const src = byCat.get(c) || [];
-      const take = Math.min(need, src.length);
-      for (let i = 0; i < take; i++) result.push(src[i]);
-      quotas.set(c, take);
-    });
+  function newRoundId() {
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
 
-    let total = result.length;
-    if (total < target) {
-      const ptrs = {};
-      cats.forEach((c) => { ptrs[c] = quotas.get(c) || 0; });
-      outer: while (total < target) {
-        let added = false;
-        for (let i = 0; i < cats.length; i++) {
-          const c = cats[i];
-          const src = byCat.get(c) || [];
-          const p = ptrs[c];
-          if (p < src.length) {
-            result.push(src[p]);
-            ptrs[c] = p + 1;
-            total += 1;
-            added = true;
-            if (total >= target) break outer;
-          }
-        }
-        if (!added) break;
-      }
+  function readInterviewHistory() {
+    try {
+      const raw = localStorage.getItem(INTERVIEW_HISTORY_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .filter((entry) => entry && Array.isArray(entry.questions))
+        .sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0));
+    } catch {
+      return [];
     }
-    if (result.length > target) return shuffleInPlace(result).slice(0, target);
-    return shuffleInPlace(result);
+  }
+
+  function writeInterviewHistory(list) {
+    try {
+      localStorage.setItem(INTERVIEW_HISTORY_KEY, JSON.stringify(list.slice(0, INTERVIEW_HISTORY_LIMIT)));
+    } catch {}
+  }
+
+  function historyEntryFromRemote(row) {
+    const questions = Array.isArray(row?.questions) ? row.questions : [];
+    return {
+      id: String(row?.id || ""),
+      number: Math.max(0, Number(row?.number) || 0),
+      ts: Date.parse(row?.created_at) || Number(row?.ts) || 0,
+      categories: [...new Set((Array.isArray(row?.categories) ? row.categories : [])
+        .map(canonicalCategory)
+        .filter(Boolean))],
+      accepted: Math.max(0, Number(row?.accepted) || 0),
+      skipped: Math.max(0, Number(row?.skipped) || 0),
+      total: Math.max(0, Number(row?.total) || 0),
+      percent: Math.min(100, Math.max(0, Number(row?.percent) || 0)),
+      questions: questions
+        .filter((question) => question?.id && question?.title)
+        .map((question) => ({
+          id: String(question.id),
+          title: String(question.title),
+          category: canonicalCategory(question.category),
+          status: question.status === "skipped" ? "skipped" : "accepted"
+        }))
+    };
+  }
+
+  function historyRowFromLocal(entry, userId) {
+    return {
+      user_id: userId,
+      id: entry.id,
+      number: Math.max(0, Number(entry.number) || 0),
+      created_at: new Date(Number(entry.ts) || Date.now()).toISOString(),
+      categories: Array.isArray(entry.categories) ? entry.categories : [],
+      accepted: Math.max(0, Number(entry.accepted) || 0),
+      skipped: Math.max(0, Number(entry.skipped) || 0),
+      total: Math.max(0, Number(entry.total) || 0),
+      percent: Math.min(100, Math.max(0, Number(entry.percent) || 0)),
+      questions: Array.isArray(entry.questions) ? entry.questions : []
+    };
+  }
+
+  async function getInterviewCloudUserId() {
+    const api = window.AppSupabase;
+    if (!api) return "";
+    try {
+      const session = api.getSession ? await api.getSession() : null;
+      if (session?.user?.id) return session.user.id;
+      if (api.getSession) return "";
+    } catch {}
+    try {
+      const user = api.getUser ? await api.getUser() : null;
+      return user?.id || "";
+    } catch {
+      return "";
+    }
+  }
+
+  async function updateInterviewLocalNote() {
+    const userId = await getInterviewCloudUserId();
+    historyLocalNote.hidden = !!userId;
+  }
+
+  function scheduleInterviewHistorySync(delay = 0) {
+    if (historySyncPromise) {
+      historySyncQueued = true;
+      return;
+    }
+    window.clearTimeout(historySyncTimer);
+    historySyncTimer = window.setTimeout(() => {
+      historySyncTimer = 0;
+      syncInterviewHistory();
+    }, Math.max(0, Number(delay) || 0));
+  }
+
+  function syncInterviewHistory() {
+    if (historySyncPromise) return historySyncPromise;
+    historySyncPromise = (async () => {
+      const api = window.AppSupabase;
+      const client = api?.client;
+      if (!client) return { ok: false, skipped: "no-client" };
+      const userId = await getInterviewCloudUserId();
+      if (!userId) {
+        await updateInterviewLocalNote();
+        return { ok: false, skipped: "signed-out" };
+      }
+      historyLocalNote.hidden = true;
+      const { data: remoteRows, error } = await client
+        .from(INTERVIEW_HISTORY_TABLE)
+        .select("user_id,id,number,created_at,categories,accepted,skipped,total,percent,questions")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+
+      const local = readInterviewHistory();
+      const byId = new Map();
+      local.forEach((entry) => {
+        if (entry?.id) byId.set(entry.id, entry);
+      });
+      (remoteRows || []).forEach((row) => {
+        const entry = historyEntryFromRemote(row);
+        if (!entry.id) return;
+        const existing = byId.get(entry.id);
+        if (!existing || (Number(entry.ts) || 0) > (Number(existing.ts) || 0)) {
+          byId.set(entry.id, entry);
+        }
+      });
+
+      const merged = [...byId.values()]
+        .filter((entry) => entry?.id && Array.isArray(entry.questions))
+        .sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0))
+        .slice(0, INTERVIEW_HISTORY_LIMIT);
+      writeInterviewHistory(merged);
+
+      const remoteIds = new Set((remoteRows || []).map((row) => String(row.id)));
+      const uploadRows = merged
+        .filter((entry) => !remoteIds.has(entry.id))
+        .map((entry) => historyRowFromLocal(entry, userId));
+      if (uploadRows.length) {
+        const { error: upsertError } = await client
+          .from(INTERVIEW_HISTORY_TABLE)
+          .upsert(uploadRows, { onConflict: "user_id,id", ignoreDuplicates: true });
+        if (upsertError) throw upsertError;
+      }
+
+      try { localStorage.setItem(INTERVIEW_HISTORY_SYNC_TS_KEY, String(Date.now())); } catch {}
+      if (historyDialog.open) renderInterviewHistory();
+      return { ok: true, uploaded: uploadRows.length, remote: remoteRows?.length || 0 };
+    })().catch((error) => {
+      console.warn("Interview history sync failed", error);
+      return { ok: false, error };
+    }).finally(() => {
+      historySyncPromise = null;
+      if (historySyncQueued) {
+        historySyncQueued = false;
+        scheduleInterviewHistorySync(0);
+      }
+    });
+    return historySyncPromise;
+  }
+
+  function saveInterviewHistoryEntry() {
+    if (interviewMode !== "manual" || !roundAnswers.length) return;
+    if (!roundId) roundId = newRoundId();
+    const history = readInterviewHistory();
+    if (history.some((entry) => entry.id === roundId)) return;
+    const total = interviewPool.length || roundAnswers.length;
+    const percent = total ? Math.round((acceptedCount / total) * 100) : 0;
+    const number = history.reduce((max, entry) => Math.max(max, Number(entry.number) || 0), 0) + 1;
+    history.unshift({
+      id: roundId,
+      number,
+      ts: Date.now(),
+      categories: Array.from(selectedCategories),
+      accepted: acceptedCount,
+      skipped: skippedCount,
+      total,
+      percent,
+      questions: roundAnswers.map((answer) => ({ ...answer }))
+    });
+    writeInterviewHistory(history);
+    scheduleInterviewHistorySync(0);
+  }
+
+  function formatHistoryDate(ts) {
+    try {
+      return new Date(Number(ts) || 0).toLocaleString("ru-RU", {
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch {
+      return "";
+    }
+  }
+
+  function renderInterviewHistory() {
+    historyList.innerHTML = "";
+    const history = readInterviewHistory();
+    if (!history.length) {
+      const empty = document.createElement("p");
+      empty.className = "interview-history__empty";
+      empty.textContent = "Пока нет завершённых ручных собеседований.";
+      historyList.appendChild(empty);
+      return;
+    }
+    history.forEach((entry, index) => {
+      const details = document.createElement("details");
+      details.className = "interview-history__item";
+
+      const summary = document.createElement("summary");
+      const summaryTop = document.createElement("div");
+      summaryTop.className = "interview-history__summary";
+
+      const name = document.createElement("span");
+      name.className = "interview-history__name";
+      name.textContent = `Собеседование ${history.length - index}`;
+
+      const score = document.createElement("span");
+      score.className = "interview-history__score";
+      score.textContent = `${entry.accepted || 0} из ${entry.total || 0} · ${entry.percent || 0}%`;
+      summaryTop.append(name, score);
+
+      const date = document.createElement("span");
+      date.className = "interview-history__date";
+      date.textContent = formatHistoryDate(entry.ts);
+
+      const link = document.createElement("a");
+      link.className = "interview-history__link";
+      link.href = "questions.html";
+      link.setAttribute("aria-label", "Перейти на страницу вопросов");
+      link.innerHTML = '<span>К вопросам</span><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M21 3l-9 9"></path><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"></path></svg>';
+      link.addEventListener("click", (event) => event.stopPropagation());
+
+      const metaLeft = document.createElement("div");
+      metaLeft.className = "interview-history__meta-left";
+      metaLeft.append(date);
+
+      const categories = document.createElement("div");
+      categories.className = "interview-history__categories";
+      (entry.categories || []).forEach((category) => {
+        const chip = document.createElement("span");
+        chip.className = "interview-history__category";
+        chip.textContent = chipLabel(canonicalCategory(category));
+        categories.appendChild(chip);
+      });
+
+      const meta = document.createElement("div");
+      meta.className = "interview-history__meta";
+      meta.append(metaLeft, categories);
+
+      const summaryAction = document.createElement("div");
+      summaryAction.className = "interview-history__summary-action";
+      summaryAction.appendChild(link);
+
+      summary.append(summaryTop, meta, summaryAction);
+
+      const body = document.createElement("div");
+      body.className = "interview-history__questions";
+      (entry.questions || []).forEach((question) => {
+        const row = document.createElement("div");
+        row.className = `interview-history__question is-${question.status === "skipped" ? "skipped" : "accepted"}`;
+
+        const title = document.createElement("span");
+        title.className = "interview-history__question-title";
+        title.textContent = question.title;
+        row.appendChild(title);
+
+        const categoryLabel = chipLabel(canonicalCategory(question.category));
+        if (categoryLabel) {
+          const category = document.createElement("span");
+          category.className = "interview-history__category interview-history__question-category";
+          category.textContent = categoryLabel;
+          row.appendChild(category);
+        }
+
+        body.appendChild(row);
+      });
+
+      details.append(summary, body);
+      historyList.appendChild(details);
+    });
+  }
+
+  function getSelectedItemsFlat() {
+    return allItems.filter((item) => selectedCategories.has(item.category));
+  }
+
+  function buildInterviewPool() {
+    const pool = shuffleInPlace(getSelectedItemsFlat());
+    return pool.slice(0, Math.min(pool.length, INTERVIEW_POOL_LIMIT));
   }
 
   function updateCounter() {
@@ -736,6 +1198,35 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setInterviewNavMode(mode) {
+    stageEl.classList.toggle("is-running", mode === "normal" || mode === "timer");
+    stageEl.classList.toggle("is-timer", mode === "timer");
+    stageEl.classList.toggle("is-retry", mode === "retry");
+    toggleAnswerBtn.hidden = mode !== "normal";
+    toggleAnswerBtn.disabled = mode !== "normal";
+    const showSettings = mode === "normal" || mode === "timer" || mode === "retry";
+    settingsWrap.hidden = !showSettings;
+    historyBtn.hidden = !showSettings;
+    settingsBtn.hidden = !showSettings;
+    if (showSettings) {
+      const timerMode = mode === "timer";
+      const retryMode = mode === "retry";
+      settingsBtnLabel.textContent = retryMode ? "Заново" : timerMode ? "Пауза" : "Настройки";
+      settingsBtn.setAttribute("aria-label", retryMode
+        ? "Начать заново"
+        : timerMode ? "Пауза и настройки собеседования" : "Настройки собеседования");
+      settingsBtn.classList.toggle("is-retry", retryMode);
+    } else {
+      settingsBtn.classList.remove("is-retry");
+    }
+    if (mode === "timer") {
+      skipBtn.disabled = true;
+      skipBtn.style.visibility = "hidden";
+      acceptBtn.disabled = true;
+      acceptBtn.style.visibility = "hidden";
+      timerEl.hidden = false;
+      return;
+    }
+    timerEl.hidden = true;
     if (mode === "start") {
       skipBtn.disabled = true;
       skipBtn.style.visibility = "hidden";
@@ -748,10 +1239,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mode === "retry") {
       skipBtn.disabled = true;
       skipBtn.style.visibility = "hidden";
-      acceptBtn.disabled = false;
-      acceptBtn.style.visibility = "";
-      acceptBtn.textContent = "Попробовать снова";
-      acceptBtn.title = "Попробовать снова";
+      acceptBtn.disabled = true;
+      acceptBtn.style.visibility = "hidden";
       return;
     }
     skipBtn.disabled = false;
@@ -765,36 +1254,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function finishInterview() {
+    stopTimer();
     interviewFinished = true;
     interviewStarted = false;
     currentQuestion = null;
-    const total = interviewPool.length || 1;
-    const percent = Math.round((acceptedCount / total) * 100);
-    let text = "";
-    if (percent <= 10) text = "Печально. Советуем пройтись по базовой теории и попробовать ещё раз. На вкладке «Вопросы» ты найдешь все вопросы из интервью.";
-    else if (percent <= 30) text = "Неплохое начало. Усильте ключевые темы и разберите ошибки. На вкладке «Вопросы» ты найдешь все вопросы из интервью.";
-    else if (percent <= 60) text = "Середина пути. Виден прогресс, но есть пробелы — закрепите практикой. На вкладке «Вопросы» ты найдешь все вопросы из интервью.";
-    else if (percent <= 70) text = "Уверенный уровень: большинство базовых вопросов закрыты. Продолжайте тренироваться.";
-    else if (percent <= 90) text = "Сильный результат. Осталось отполировать тонкости и довести ответы до краткости.";
-    else if (percent < 100) text = "Почти идеально! Шлифуйте слабые места на задачах и кейсах.";
-    else text = "Идеально! Готовность к собеседованию максимальная.";
-
-    badgeCategory.textContent = "Итог";
-    questionTitleEl.textContent = `Процент прохождения: ${percent}%`;
-    answerEl.innerHTML = `<p>Засчитано: <strong>${acceptedCount}</strong></p><p>Пропущено: <strong>${skippedCount}</strong></p><p>${escapeHtml(text)}</p>`;
+    const total = interviewPool.length || 0;
+    const percent = total ? Math.round((acceptedCount / total) * 100) : 0;
+    answerEl.classList.add("interview-result");
     answerEl.hidden = false;
-    toggleAnswerBtn.disabled = true;
-    toggleAnswerBtn.setAttribute("aria-expanded", "true");
-    toggleAnswerBtn.textContent = "Скрыть ответ";
+
+    if (interviewMode === "timer") {
+      badgeCategory.textContent = "Итог";
+      questionTitleEl.textContent = "Раунд завершён";
+      answerEl.innerHTML = `<p class="interview-result__line">Просмотрено вопросов: <strong>${total}</strong>. Без оценки — режим по таймеру.</p>`;
+      counterEl.textContent = total ? `${total} / ${total}` : "0 / 0";
+      setQuestionPhoto(RESULT_PHOTOS.neutral);
+    } else {
+      const weak = getWeakCategories();
+      const kind = percent >= 70 ? "good" : percent >= 40 ? "so-so" : "bad";
+      badgeCategory.textContent = "Итог";
+      questionTitleEl.textContent = `Вы прошли ${acceptedCount} из ${total}`;
+      answerEl.innerHTML = [
+        `<p class="interview-result__line">Пропущено: <strong>${skippedCount}</strong> · результат: <strong>${percent}%</strong></p>`,
+        weak.length
+          ? `<p class="interview-result__line">Стоит подтянуть: <strong>${escapeHtml(weak.join(", "))}</strong>.</p>`
+          : `<p class="interview-result__line">Все выбранные разделы закрыты уверенно.</p>`
+      ].join("");
+      updateCounter();
+      setQuestionPhoto(RESULT_PHOTOS[kind]);
+    }
+
     aiZone.style.display = "none";
-    updateCounter();
     setInterviewNavMode("retry");
+    if (interviewMode === "manual") saveInterviewHistoryEntry();
     writeInterviewSessionState();
   }
 
   function renderCard() {
+    answerEl.classList.remove("interview-result");
     const item = currentPoolItem();
     if (!item) {
+      stopTimer();
       currentQuestion = null;
       questionTitleEl.textContent = "Не удалось загрузить вопросы";
       badgeCategory.textContent = "—";
@@ -808,9 +1308,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!interviewStarted) {
+      stopTimer();
       currentQuestion = null;
       badgeCategory.textContent = "—";
-      questionTitleEl.textContent = "Нажмите «Начать собеседование» после выбора разделов интервью";
+      questionTitleEl.textContent = "Настройте собеседование, чтобы начать";
       answerEl.hidden = true;
       answerEl.innerHTML = "";
       aiZone.style.display = "none";
@@ -829,26 +1330,223 @@ document.addEventListener("DOMContentLoaded", () => {
     questionTitleEl.style.color = "";
     renderAnswer(item);
     toggleAnswerBtn.disabled = false;
-    setInterviewNavMode("normal");
+    if (interviewMode === "timer") {
+      setInterviewNavMode("timer");
+      startTimer();
+    } else {
+      setInterviewNavMode("normal");
+      stopTimer();
+    }
     updateCounter();
     writeInterviewSessionState();
   }
 
   function rebuildInterviewPool({ deferStart = false } = {}) {
-    const selected = Array.from(selectedCategories);
-    const flat = getSelectedItemsFlat();
-    interviewPool = buildSample(flat, selected);
+    interviewPool = buildInterviewPool();
     interviewIndex = 0;
     interviewStarted = !deferStart;
     interviewFinished = false;
     acceptedCount = 0;
     skippedCount = 0;
+    roundStats = new Map();
+    roundAnswers = [];
+    roundId = newRoundId();
     pendingRestoreAnswerExpanded = false;
+    setQuestionPhoto(DEFAULT_PHOTO);
     renderCard();
   }
 
-  function setAllCategoriesSelected() {
-    selectedCategories = new Set(allCategories.filter((c) => !isExcludedCategory(c)));
+  function setDefaultCategorySelected() {
+    const preferred = allCategories.includes(DEFAULT_CATEGORY) ? DEFAULT_CATEGORY : allCategories[0];
+    selectedCategories = new Set(preferred ? [preferred] : []);
+  }
+
+  function readInterviewSettings() {
+    try {
+      const mode = localStorage.getItem(INTERVIEW_MODE_KEY);
+      if (mode === "manual" || mode === "timer") interviewMode = mode;
+      const seconds = Number(localStorage.getItem(INTERVIEW_TIMER_SECONDS_KEY));
+      if (INTERVIEW_TIMER_STEPS.includes(seconds)) timerSeconds = seconds;
+    } catch {}
+    setupMode = interviewMode;
+    setupTimerSeconds = timerSeconds;
+  }
+
+  function persistInterviewSettings() {
+    try {
+      localStorage.setItem(INTERVIEW_MODE_KEY, interviewMode);
+      localStorage.setItem(INTERVIEW_TIMER_SECONDS_KEY, String(timerSeconds));
+    } catch {}
+  }
+
+  function updateSetupStartLabel() {
+    if (interviewFinished) {
+      setupStartBtn.textContent = "Начать сначала";
+      return;
+    }
+    if (interviewStarted) {
+      const sameCategories = setupCategories.size === selectedCategories.size
+        && [...setupCategories].every((category) => selectedCategories.has(category));
+      const unchanged = sameCategories
+        && setupMode === interviewMode
+        && setupTimerSeconds === timerSeconds;
+      setupStartBtn.textContent = unchanged ? "Продолжить" : "Начать заново";
+      return;
+    }
+    setupStartBtn.textContent = "Начать собеседование";
+  }
+
+  function syncSetupUi() {
+    setupModeButtons.forEach((button) => {
+      const active = button.dataset.interviewMode === setupMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    setupTimerOptions.hidden = setupMode !== "timer";
+    setupTimerButtons.forEach((button) => {
+      const active = Number(button.dataset.timerSeconds) === setupTimerSeconds;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    updateSetupStartLabel();
+  }
+
+  function openSetupDialog({ allowCancel = false } = {}) {
+    setupMode = interviewMode;
+    setupTimerSeconds = timerSeconds;
+    setupCategories = new Set(selectedCategories);
+    syncChipActiveState();
+    pauseTimer();
+    writeInterviewSessionState();
+    syncSetupUi();
+    setupCancelBtn.hidden = !allowCancel;
+    setupCloseBtn.hidden = !allowCancel;
+    if (!setupDialog.open) setupDialog.showModal();
+    requestAnimationFrame(() => setupStartBtn.focus());
+  }
+
+  function closeSetupDialog({ resume = true } = {}) {
+    if (setupDialog.open) setupDialog.close();
+    if (resume) {
+      resumeTimer();
+      writeInterviewSessionState();
+    }
+  }
+
+  function openHistoryDialog() {
+    historyResumeTimer = interviewMode === "timer" && interviewStarted && !interviewFinished && !timerPaused;
+    pauseTimer();
+    writeInterviewSessionState();
+    updateInterviewLocalNote();
+    scheduleInterviewHistorySync(0);
+    renderInterviewHistory();
+    if (!historyDialog.open) historyDialog.showModal();
+  }
+
+  function closeHistoryDialog() {
+    if (historyDialog.open) historyDialog.close();
+    if (historyResumeTimer) {
+      historyResumeTimer = false;
+      resumeTimer();
+      writeInterviewSessionState();
+    }
+  }
+
+  function applySetupOrContinue() {
+    const sameCategories = setupCategories.size === selectedCategories.size
+      && [...setupCategories].every((category) => selectedCategories.has(category));
+    const unchanged = interviewStarted && !interviewFinished
+      && sameCategories && setupMode === interviewMode && setupTimerSeconds === timerSeconds;
+    if (unchanged) {
+      closeSetupDialog({ resume: true });
+      return;
+    }
+    selectedCategories = new Set(setupCategories);
+    persistSelectedCategories();
+    startInterviewFromSetup();
+  }
+
+  function startInterviewFromSetup() {
+    interviewMode = setupMode;
+    timerSeconds = setupTimerSeconds;
+    persistInterviewSettings();
+    closeSetupDialog({ resume: false });
+    stopTimer();
+    rebuildInterviewPool({ deferStart: false });
+  }
+
+  function stopTimer() {
+    cancelAnimationFrame(timerFrame);
+    timerFrame = 0;
+    timerPaused = false;
+    timerRemainingMs = 0;
+    timerLabelValue = "";
+    timerEl.hidden = true;
+    timerFill.style.width = "0%";
+    timerLabel.textContent = `${timerSeconds} с`;
+  }
+
+  function setTimerVisual(remaining) {
+    const total = Math.max(1, timerSeconds * 1000);
+    const safeRemaining = Math.max(0, Math.min(total, remaining));
+    timerFill.style.width = `${(safeRemaining / total) * 100}%`;
+    const secondsLeft = Math.max(0, Math.ceil(safeRemaining / 1000));
+    if (String(secondsLeft) !== timerLabelValue) {
+      timerLabelValue = String(secondsLeft);
+      timerLabel.textContent = `${secondsLeft} с`;
+    }
+  }
+
+  function startTimer() {
+    stopTimer();
+    if (interviewMode !== "timer" || !interviewStarted || interviewFinished) return;
+    timerRemainingMs = timerSeconds * 1000;
+    timerDeadline = performance.now() + timerRemainingMs;
+    timerPaused = false;
+    timerEl.hidden = false;
+    setTimerVisual(timerRemainingMs);
+    tickTimer();
+  }
+
+  function tickTimer() {
+    if (timerPaused || interviewMode !== "timer" || !interviewStarted || interviewFinished) return;
+    const remaining = Math.max(0, timerDeadline - performance.now());
+    setTimerVisual(remaining);
+    if (remaining <= 0) {
+      timerFrame = 0;
+      advanceByTimer();
+      return;
+    }
+    timerFrame = requestAnimationFrame(tickTimer);
+  }
+
+  function pauseTimer() {
+    if (interviewMode !== "timer" || !interviewStarted || interviewFinished || timerPaused) return;
+    if (timerFrame) cancelAnimationFrame(timerFrame);
+    timerFrame = 0;
+    timerRemainingMs = Math.max(0, timerDeadline - performance.now());
+    timerPaused = true;
+    setTimerVisual(timerRemainingMs);
+  }
+
+  function resumeTimer() {
+    if (interviewMode !== "timer" || !interviewStarted || interviewFinished || !timerPaused) return;
+    if (timerRemainingMs <= 0) timerRemainingMs = timerSeconds * 1000;
+    timerPaused = false;
+    timerDeadline = performance.now() + timerRemainingMs;
+    timerEl.hidden = false;
+    setTimerVisual(timerRemainingMs);
+    if (!timerFrame) tickTimer();
+  }
+
+  function advanceByTimer() {
+    if (!interviewStarted || interviewFinished) return;
+    if (interviewIndex >= interviewPool.length - 1) {
+      finishInterview();
+      return;
+    }
+    interviewIndex += 1;
+    renderCard();
   }
 
   function persistSelectedCategories() {
@@ -857,46 +1555,15 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch {}
   }
 
-  function updateNote() {
-    if (!categoryNote) return;
-    if (selectedCategories.size === allCategories.length) {
-      categoryNote.textContent = "По умолчанию выбраны все категории.";
-      return;
-    }
-    if (selectedCategories.size === 0) {
-      categoryNote.textContent = "Выберите хотя бы одну категорию.";
-      return;
-    }
-    categoryNote.textContent = `Выбрано категорий: ${selectedCategories.size}`;
-  }
-
   function syncChipActiveState() {
     categoryFilters.querySelectorAll(".filter-chip").forEach((chip) => {
-      const category = chip.dataset.category;
-      if (category === "Все") {
-        chip.classList.toggle("active", selectedCategories.size === allCategories.length);
-      } else {
-        chip.classList.toggle("active", selectedCategories.has(category));
-      }
+      chip.classList.toggle("active", setupCategories.has(chip.dataset.category));
     });
-    updateNote();
     updateCounter();
   }
 
   function renderCategoryChips() {
     categoryFilters.innerHTML = "";
-    const allChip = document.createElement("button");
-    allChip.type = "button";
-    allChip.className = "filter-chip active";
-    allChip.dataset.category = "Все";
-    allChip.textContent = "Все";
-      allChip.addEventListener("click", () => {
-        setAllCategoriesSelected();
-        persistSelectedCategories();
-        syncChipActiveState();
-        rebuildInterviewPool({ deferStart: true });
-      });
-    categoryFilters.appendChild(allChip);
 
     allCategories.forEach((category) => {
       const chip = document.createElement("button");
@@ -905,84 +1572,79 @@ document.addEventListener("DOMContentLoaded", () => {
       chip.dataset.category = category;
       chip.textContent = chipLabel(category);
       chip.addEventListener("click", () => {
-        if (selectedCategories.has(category) && selectedCategories.size > 1) {
-          selectedCategories.delete(category);
+        if (setupCategories.has(category) && setupCategories.size > 1) {
+          setupCategories.delete(category);
         } else {
-          selectedCategories.add(category);
+          setupCategories.add(category);
         }
-        persistSelectedCategories();
         syncChipActiveState();
-        rebuildInterviewPool({ deferStart: true });
+        updateSetupStartLabel();
       });
       categoryFilters.appendChild(chip);
     });
   }
 
-  function flattenQuestions(rawData) {
+  function flattenQuestions(payload) {
+    const sections = Array.isArray(payload) ? payload : payload?.data || payload?.questions || [];
     const categories = [];
     const items = [];
-    (rawData || []).forEach((cat) => {
-      if (!cat?.category || !Array.isArray(cat.items)) return;
-      if (!categories.includes(cat.category)) categories.push(cat.category);
-      cat.items.forEach((item) => {
-        if (!item?.id || !item?.title) return;
-        items.push({
-          ...item,
-          category: cat.category
-        });
+    sections.forEach((section) => {
+      const category = canonicalCategory(section?.category);
+      if (!category || isExcludedCategory(category) || !Array.isArray(section.items)) return;
+      if (!categories.includes(category)) categories.push(category);
+      section.items.forEach((item) => {
+        if (!item?.id || !item?.title || isExcludedItem(item)) return;
+        items.push({ ...item, category });
       });
     });
+    categories.sort((a, b) => (CATEGORY_RANK.get(a) ?? 999) - (CATEGORY_RANK.get(b) ?? 999));
     return { categories, items };
   }
 
-  function getQuestionsDataNow() {
-    const fromWindow = window.questionsData;
-    if (Array.isArray(fromWindow) && fromWindow.length) return fromWindow;
-    return null;
-  }
-
-  function waitForQuestionsData() {
-    const existing = getQuestionsDataNow();
-    if (existing) return Promise.resolve(existing);
-    return new Promise((resolve) => {
-      let done = false;
-      const finish = (data) => {
-        if (done) return;
-        done = true;
-        window.removeEventListener("qatodev:questions-data-ready", onReady);
-        resolve(Array.isArray(data) ? data : []);
-      };
-      const onReady = (e) => finish(e?.detail?.questions || window.questionsData);
-      window.addEventListener("qatodev:questions-data-ready", onReady, { once: true });
-      setTimeout(() => finish(getQuestionsDataNow() || []), 7000);
-    });
+  async function loadQuestionsData() {
+    const res = await fetch(QUESTIONS_DATA_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Questions data fetch failed: ${res.status}`);
+    return res.json();
   }
 
   async function bootstrap() {
+    readInterviewSettings();
     questionTitleEl.textContent = "Загружаю вопросы…";
     const [rawData] = await Promise.all([
-      waitForQuestionsData(),
+      loadQuestionsData(),
       fetchPublicAiAnswers().catch((e) => console.warn("Interview page: public AI preload failed", e))
     ]);
     const { categories, items } = flattenQuestions(rawData);
-    allCategories = categories.filter((c) => !isExcludedCategory(c));
+    allCategories = categories;
     allItems = items;
+    let restoredSelection = false;
     try {
       const saved = JSON.parse(localStorage.getItem(INTERVIEW_SELECTED_CATEGORIES_KEY) || "null");
       if (Array.isArray(saved) && saved.length) {
-        selectedCategories = new Set(saved.filter((c) => allCategories.includes(c) && !isExcludedCategory(c)));
+        const filtered = [...new Set(saved.map(canonicalCategory))]
+          .filter((category) => allCategories.includes(category));
+        if (filtered.length) {
+          selectedCategories = new Set(filtered);
+          restoredSelection = true;
+        }
       }
     } catch {}
-    if (!selectedCategories.size) setAllCategoriesSelected();
+    // First visit: start from the focused "Теория" direction.
+    if (!restoredSelection || !selectedCategories.size) {
+      setDefaultCategorySelected();
+    }
+    setupCategories = new Set(selectedCategories);
     persistSelectedCategories();
     renderCategoryChips();
     syncChipActiveState();
     if (!allItems.length) {
       questionTitleEl.textContent = "Не удалось загрузить вопросы";
+      revealInterviewPage();
       return;
     }
-    if (!restoreInterviewSessionStateIfPossible()) {
-      rebuildInterviewPool({ deferStart: false });
+    if (!restoreInterviewSessionStateIfPossible({ useSessionCategories: !restoredSelection })) {
+      rebuildInterviewPool({ deferStart: true });
+      openSetupDialog({ allowCancel: false });
     }
     restoreInterviewScrollState();
   }
@@ -1004,6 +1666,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   skipBtn.addEventListener("click", () => {
     if (!interviewPool.length || interviewFinished || !interviewStarted) return;
+    if (currentQuestion) bumpRoundStat(currentQuestion, "skipped");
+    if (currentQuestion) recordRoundAnswer(currentQuestion, "skipped");
     skippedCount += 1;
     if (interviewIndex >= interviewPool.length - 1) {
       finishInterview();
@@ -1014,17 +1678,21 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   acceptBtn.addEventListener("click", () => {
-    if (!interviewPool.length) return;
+    if (!interviewPool.length) {
+      openSetupDialog({ allowCancel: false });
+      return;
+    }
     if (interviewFinished) {
-      rebuildInterviewPool({ deferStart: false });
+      openSetupDialog({ allowCancel: true });
       return;
     }
     if (!interviewStarted) {
-      interviewStarted = true;
-      renderCard();
+      openSetupDialog({ allowCancel: false });
       return;
     }
     if (currentQuestion) setProgressMark(currentQuestion, "studied");
+    if (currentQuestion) bumpRoundStat(currentQuestion, "accepted");
+    if (currentQuestion) recordRoundAnswer(currentQuestion, "accepted");
     acceptedCount += 1;
     if (interviewIndex >= interviewPool.length - 1) {
       finishInterview();
@@ -1034,17 +1702,81 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCard();
   });
 
+  setupModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      setupMode = button.dataset.interviewMode === "timer" ? "timer" : "manual";
+      syncSetupUi();
+    });
+  });
+  setupTimerButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const seconds = Number(button.dataset.timerSeconds);
+      if (INTERVIEW_TIMER_STEPS.includes(seconds)) {
+        setupTimerSeconds = seconds;
+        syncSetupUi();
+      }
+    });
+  });
+  setupStartBtn.addEventListener("click", applySetupOrContinue);
+  setupCancelBtn.addEventListener("click", () => closeSetupDialog({ resume: true }));
+  setupCloseBtn.addEventListener("click", () => closeSetupDialog({ resume: true }));
+  historyBtn.addEventListener("click", openHistoryDialog);
+  historyCloseBtn.addEventListener("click", closeHistoryDialog);
+  historyDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeHistoryDialog();
+  });
+  historyDialog.addEventListener("click", (event) => {
+    if (event.target === historyDialog) closeHistoryDialog();
+  });
+  settingsBtn.addEventListener("click", () => openSetupDialog({ allowCancel: true }));
+  setupDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    if (interviewStarted || interviewFinished) closeSetupDialog({ resume: true });
+  });
+  setupDialog.addEventListener("click", (event) => {
+    if (event.target !== setupDialog) return;
+    if (interviewStarted || interviewFinished) closeSetupDialog({ resume: true });
+  });
+
   window.addEventListener("scroll", queueInterviewScrollSave, { passive: true });
   window.addEventListener("pagehide", writeInterviewScrollState);
 
   aiAppendBtn.addEventListener("click", onAiAppendClick);
 
+  document.addEventListener("shared-auth:ready", () => {
+    updateInterviewLocalNote();
+    scheduleInterviewHistorySync(0);
+  });
+  window.addEventListener("online", () => scheduleInterviewHistorySync(0));
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    updateInterviewLocalNote();
+    scheduleInterviewHistorySync(0);
+  });
+  window.setTimeout(() => scheduleInterviewHistorySync(0), 1200);
+  window.setInterval(() => {
+    if (document.visibilityState === "visible") scheduleInterviewHistorySync(0);
+  }, INTERVIEW_HISTORY_SYNC_INTERVAL_MS);
+  try {
+    window.AppSupabase?.client?.auth?.onAuthStateChange?.((event) => {
+      if (!["SIGNED_IN", "SIGNED_OUT", "TOKEN_REFRESHED", "INITIAL_SESSION"].includes(event)) return;
+      updateInterviewLocalNote();
+      scheduleInterviewHistorySync(200);
+    });
+  } catch {}
+
   document.addEventListener("keydown", (e) => {
+    if (setupDialog.open) return;
     if (e.key === " " && document.activeElement && /INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
     if (!interviewStarted && !interviewFinished && e.key !== "Enter") return;
     if (e.key === " ") {
       e.preventDefault();
-      if (!toggleAnswerBtn.disabled) toggleAnswerBtn.click();
+      if (interviewMode === "timer" && interviewStarted && !interviewFinished) {
+        openSetupDialog({ allowCancel: true });
+      } else if (!toggleAnswerBtn.disabled) {
+        toggleAnswerBtn.click();
+      }
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
       skipBtn.click();
@@ -1059,5 +1791,6 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Interview bootstrap failed", e);
     questionTitleEl.textContent = "Не удалось загрузить вопросы";
     if (stageEl) stageEl.classList.add("stage-error");
+    revealInterviewPage();
   });
 });

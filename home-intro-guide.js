@@ -18,7 +18,6 @@
   baseSteps.forEach((step, index) => step.classList.toggle('is-active', index % steps.length === 0));
 
   const desktop = matchMedia('(min-width: 901px)');
-  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const svgNS = 'http://www.w3.org/2000/svg';
   const guide = document.createElementNS(svgNS, 'svg');
   guide.classList.add('home-intro-guide');
@@ -57,16 +56,15 @@
 
   function paint(now) {
     const elapsed = Math.max(0, now - phaseStarted);
-    const head = reducedMotion.matches ? 1 : Math.min(1, elapsed / duration);
-    const tail = reducedMotion.matches ? 0 : Math.min(1, Math.max(0, (elapsed - trailDelay) / duration));
+    const head = Math.min(1, elapsed / duration);
+    const tail = Math.min(1, Math.max(0, (elapsed - trailDelay) / duration));
     const reached = Math.floor(head * squares.length);
     const erased = Math.floor(tail * squares.length);
     squares.forEach((square, index) => {
       square.style.opacity = index >= erased && index < reached ? '1' : '0';
     });
-    currentStep().querySelector('.home-stage__guide-dot').style.opacity =
-      reducedMotion.matches || elapsed < trailDelay ? '1' : '0';
-    return reducedMotion.matches ? 1 : Math.min(1, elapsed / (duration + trailDelay));
+    currentStep().querySelector('.home-stage__guide-dot').style.opacity = elapsed < trailDelay ? '1' : '0';
+    return Math.min(1, elapsed / (duration + trailDelay));
   }
 
   function animate(now) {
@@ -80,7 +78,7 @@
     animationFrame = 0;
     phaseStarted = performance.now();
     paint(phaseStarted);
-    if (!reducedMotion.matches) animationFrame = requestAnimationFrame(animate);
+    animationFrame = requestAnimationFrame(animate);
   }
 
   function hide(keepDotHidden = false) {
@@ -235,7 +233,7 @@
       }
       isSliding = false;
       update();
-    }, reducedMotion.matches ? 0 : 670);
+    }, 670);
   }
 
   window.addEventListener('scroll', schedule, { passive: true });
@@ -249,6 +247,6 @@
   const resizeObserver = new ResizeObserver(schedule);
   resizeObserver.observe(intro);
   resizeObserver.observe(nav);
-  if (!reducedMotion.matches) setInterval(advance, 3300);
+  setInterval(advance, 3300);
   schedule();
 })();

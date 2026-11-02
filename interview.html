@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <script src="analytics-consent.shared.js?v=6"></script>
     <script src="google-tag-manager.shared.js?v=20261027-1"></script>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <script src="page-zoom-lock.shared.js?v=2"></script>
     <title>Тренировочное собеседование QA онлайн | QAtoDev</title>
     <meta name="description" content="Соберите тренировочное собеседование для тестировщика. Отвечайте на вопросы по QA, проверяйте ответы и отрабатывайте темы перед техническим интервью.">
     <script>
@@ -13,46 +14,125 @@
             if (saved === 'dark' || saved === 'light') {
                 document.documentElement.setAttribute('data-theme', saved);
             }
+            document.documentElement.classList.add('is-interview-booting');
+            if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+            window.setTimeout(function () {
+                document.documentElement.classList.remove('is-interview-booting');
+            }, 4000);
         })();
     </script>
     <link rel="icon" href="img/QAtoDev_small_main.png" sizes="100x100" type="image/png">
     <script src="favicon.shared.js?v=1"></script>
-  <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
+  <script src="auth.bootstrap.shared.js?v=8.9.7"></script>
   <link rel="stylesheet" href="header.css?v=8.9.48">
-    <link rel="stylesheet" href="interview.css?v=20261024-1">
+    <link rel="stylesheet" href="interview.css?v=20261102-29">
     <script src="metrika.shared.js?v=20261027-1"></script>
     <link rel="canonical" href="https://qatodev.ru/interview.html">
   <meta name="robots" content="noindex">
 </head>
 <body>
 <script src="site-header.shared.js?v=2"></script>
-<br><br>
 <main class="main-content">
     <h1 class="interview-page-title">Тренировочное собеседование для тестировщика</h1>
-    <div class="filters-row">
-        <p id="category-note" class="study-plan-note">По умолчанию выбраны все категории.</p>
-        <div id="category-filters" class="category-filters" aria-label="Фильтры категорий"></div>
-    </div>
-    <figure class="photo-3x2" id="question-photo">
-        <img src="img/call-cats2.jpeg" alt="Подключение к звонку">
+    <figure class="photo-16x9" id="question-photo">
+        <img src="img/cover/call_mock.png" alt="Окно тренировочного созвона">
     </figure>
     <section id="stage" class="stage" aria-live="polite" aria-atomic="true">
         <div class="stage-header">
             <span id="badge-category" class="badge">—</span>
-            <span id="counter" class="counter">0 / 0</span>
+            <div class="stage-header__tools">
+                <span id="counter" class="counter">0 / 0</span>
+            </div>
+        </div>
+        <div class="interview-timer" id="interview-timer" hidden aria-hidden="true">
+            <span class="interview-timer__label" id="interview-timer-label">15 с</span>
+            <span class="interview-timer__track"><span class="interview-timer__fill" id="interview-timer-fill"></span></span>
         </div>
         <article class="card" role="group" aria-labelledby="question-title">
             <h2 id="question-title" class="question-title">Загружаю вопросы…</h2>
             <button id="toggle-answer" class="btn btn-outline" type="button" aria-expanded="false" aria-controls="answer" title="Посмотреть ответ (Пробел)">Посмотреть ответ</button>
             <div id="answer" class="answer" hidden></div>
         </article>
+        <div class="stage-settings" id="interview-settings-wrap" hidden>
+            <button id="interview-history-btn" class="interview-settings-btn" type="button" hidden>
+                <span class="interview-settings-btn__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 12a9 9 0 1 0 3-6.7"></path>
+                        <path d="M3 4v5h5"></path>
+                        <path d="M12 7v5l3 2"></path>
+                    </svg>
+                </span>
+                <span>История</span>
+            </button>
+            <button id="interview-settings-btn" class="interview-settings-btn" type="button" hidden>
+                <span class="interview-settings-btn__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 .6 1.51 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.14.36.4.68.74.9.3.2.67.3 1.06.3H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51.8Z"></path>
+                    </svg>
+                </span>
+                <span id="interview-settings-btn-label">Настройки</span>
+            </button>
+        </div>
         <div class="nav">
             <button id="skip-btn" class="btn btn-secondary" type="button" title="Пропустить вопрос (→)">Пропустить вопрос</button>
             <button id="accept-btn" class="btn" type="button" title="Засчитать ответ (Enter)">Засчитать ответ</button>
         </div>
     </section>
-    <br><br><br>
 </main>
+
+<dialog id="interview-setup" class="interview-setup" aria-labelledby="interview-setup-title">
+    <div class="interview-setup__card">
+        <div class="interview-setup__head">
+            <h2 id="interview-setup-title">Настройки собеседования</h2>
+            <button type="button" id="interview-setup-close" class="interview-setup__close" aria-label="Закрыть настройки" hidden>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18"></path>
+                </svg>
+            </button>
+        </div>
+        <p class="interview-setup__hint">Выберите темы, режим и время на ответ.</p>
+        <div class="interview-setup__field">
+            <span class="interview-setup__label">Категории</span>
+            <div id="category-filters" class="category-filters" aria-label="Категории вопросов"></div>
+        </div>
+        <div class="interview-setup__field">
+            <span class="interview-setup__label">Режим</span>
+            <div class="interview-mode" role="group" aria-label="Режим собеседования">
+                <button type="button" class="interview-mode__button is-active" data-interview-mode="manual" aria-pressed="true">Вручную</button>
+                <button type="button" class="interview-mode__button" data-interview-mode="timer" aria-pressed="false">По таймеру</button>
+            </div>
+        </div>
+        <div class="interview-setup__field" id="interview-timer-options" hidden>
+            <span class="interview-setup__label">Время на вопрос</span>
+            <div class="interview-timer-choices" role="group" aria-label="Время на вопрос">
+                <button type="button" class="interview-timer-choice is-active" data-timer-seconds="15" aria-pressed="true">15 сек</button>
+                <button type="button" class="interview-timer-choice" data-timer-seconds="30" aria-pressed="false">30 сек</button>
+                <button type="button" class="interview-timer-choice" data-timer-seconds="60" aria-pressed="false">1 мин</button>
+            </div>
+        </div>
+        <div class="interview-setup__actions">
+            <button type="button" id="interview-setup-cancel" class="btn btn-outline" hidden>Отмена</button>
+            <button type="button" id="interview-setup-start" class="btn interview-setup__start">Начать собеседование</button>
+        </div>
+    </div>
+</dialog>
+
+<dialog id="interview-history" class="interview-setup interview-history" aria-labelledby="interview-history-title">
+    <div class="interview-setup__card interview-history__card">
+        <div class="interview-setup__head">
+            <h2 id="interview-history-title">История собеседований</h2>
+            <button type="button" id="interview-history-close" class="interview-setup__close" aria-label="Закрыть историю">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6L6 18"></path>
+                </svg>
+            </button>
+        </div>
+        <p class="interview-setup__hint">Ручные раунды: видно, какие вопросы засчитаны, а какие пропущены.</p>
+        <p id="interview-history-local-note" class="interview-history__note" hidden>История хранится локально в этом браузере. Войдите, чтобы синхронизировать её между устройствами.</p>
+        <div id="interview-history-list" class="interview-history__list"></div>
+    </div>
+</dialog>
 
 
 
@@ -60,43 +140,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.client.js?v=8.9.4"></script>
 <script src="debug.shared.js"></script>
-<script src="ai-prompts.shared.js?v=1.0.0"></script>
-<script src="questions.js?v=8.9.23"></script>
-<script src="interview.js?v=8.9.6"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-      // Ищем именно ваш тег <img src="img/call-cats2.jpeg" ...>
-      const img = document.querySelector('img[src$="call-cats2.jpeg"]');
-      if (!img) return;
-
-      // Список картинок (примерные пути — замените на свои)
-      const sources = [
-        'img/call-cat.jpeg',
-        'img/call-Bulanova.jpeg',
-        'img/call-anonym.jpeg',
-        'img/call-incr.jpeg',
-        'img/call-monkey.jpeg',
-        'img/call-cats3.jpeg'
-      ];
-
-      // (необязательно) добавим текущую картинку первой в цикл
-      sources.unshift(img.getAttribute('src'));
-
-      // небольшая подсказка и курсор
-      img.title = 'Нажмите, чтобы сменить картинку';
-      img.style.cursor = 'pointer';
-
-      // предзагрузка
-      sources.forEach(src => { const im = new Image(); im.src = src; });
-
-      let i = 0;
-      img.addEventListener('click', () => {
-        i = (i + 1) % sources.length;
-        img.src = sources[i];
-      });
-    });
-</script>
-
-  <script src="header.js?v=8.9.35"></script>
+<script src="ai-prompts.shared.js?v=1.0.2"></script>
+<script src="ai-client.shared.js?v=1.0.5"></script>
+<script src="ai-table-scroll.shared.js?v=1.0.0"></script>
+<script src="theme-toggle.shared.js?v=1"></script>
+<script src="interview.js?v=8.9.27"></script>
+  <script src="header.js?v=8.9.39"></script>
 </body>
 </html>

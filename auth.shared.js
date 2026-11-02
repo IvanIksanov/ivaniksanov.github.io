@@ -20,7 +20,7 @@
   const CLOUD_AUTH_SYNC_COOLDOWN_MS = 2 * 60 * 1000;
   const CLOUD_OP_TIMEOUT_MS = 10000;
   const REST_TIMEOUT_MS = 7000;
-  const SHARED_ASSET_VERSION = "8.9.4";
+  const SHARED_ASSET_VERSION = "8.9.7";
 
   let supabaseStore = null;
   let authUser = null;
@@ -32,6 +32,10 @@
   let pendingAuthReturnScrollY = null;
   let authController = null;
   let syncCoordinator = null;
+  let resolveAuthReady;
+  const authReadyPromise = new Promise((resolve) => {
+    resolveAuthReady = resolve;
+  });
 
   function withVersion(src) {
     if (!src || /^https?:\/\//i.test(src) || src.includes("?")) return src;
@@ -835,6 +839,12 @@
   async function requireAuthForAction(options) {
     const action = options?.action || null;
     const bypassStorageKey = options?.bypassStorageKey || "";
+    if (!window.SharedAuth?.ready) {
+      await Promise.race([
+        authReadyPromise,
+        new Promise((resolve) => setTimeout(resolve, 8000))
+      ]);
+    }
     if (isCloudReady() && !authUser) {
       await refreshAuthUserInBackground({ force: true, source: "protected-action" });
     }
@@ -874,6 +884,7 @@
 
   function publishSharedAuthApi() {
     window.SharedAuth = {
+      ready: false,
       requireAuthForAction,
       isAuthenticated() {
         return !!authUser;
@@ -887,16 +898,30 @@
           return;
         }
         restoreAuthReturnScrollPosition();
+      },
+      showModal(prefillMessage, options) {
+        showAuthModal(prefillMessage, options);
+      },
+      hideModal() {
+        hideAuthModal();
+      },
+      getActiveSession() {
+        return authController?.getActiveSession?.() || null;
+      },
+      getController() {
+        return authController;
+      },
+      getState() {
+        return authController?.getState?.() || { authUser, authProfile, authResolved };
       }
     };
-    document.dispatchEvent(new CustomEvent("shared-auth:ready"));
+    document.dispatchEvent(new CustomEvent("shared-auth:api-ready"));
   }
 
   async function init() {
     if (initialized) return;
-    initialized = true;
-
     if (!getEl("auth-open-btn") || !getEl("auth-modal")) return;
+    initialized = true;
 
     try {
       supabaseStore = await ensureSupabaseReady();
@@ -913,6 +938,11 @@
       authUser = state.authUser;
       authProfile = state.authProfile;
       authResolved = state.authResolved;
+    }
+    if (window.SharedAuth) {
+      window.SharedAuth.ready = true;
+      resolveAuthReady?.();
+      document.dispatchEvent(new CustomEvent("shared-auth:ready"));
     }
 
     setInterval(() => {

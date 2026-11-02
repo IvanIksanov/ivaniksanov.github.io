@@ -1314,6 +1314,8 @@
       }
       updateAuthButtonUi();
       applyAuthModalMode();
+      if (dom.authModal) dom.authModal.dataset.authReady = "true";
+      document.dispatchEvent(new CustomEvent("auth-core:ready"));
       if (!isCloudReady()) return api;
       if (!isAuthSessionCheckFresh()) {
         await refreshAuthUser({ source: "init", initial: true });
