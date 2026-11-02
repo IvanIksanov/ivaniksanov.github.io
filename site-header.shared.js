@@ -19,7 +19,7 @@
   const markup = String.raw`<div class="site-header" data-shared-header="true">
 <nav>
     <ul>
-        <li style="position: relative;"><a href="course.html?chapter=1&amp;v=20261018c">Архитектура</a></li>
+        <li style="position: relative;"><a href="course.html?chapter=1">Архитектура</a></li>
         <li style="position: relative;"><a href="roadmap.html">Roadmap</a></li>
         <li style="position: relative;"><a href="questions.html">Вопросы</a></li>
         <li style="position: relative;"><a href="resume.html">Резюме</a></li>
