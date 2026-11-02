@@ -26,10 +26,10 @@
             }
         })();
     </script>
-    <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
+    <script src="auth.bootstrap.shared.js?v=8.9.7"></script>
     <link rel="stylesheet" href="header.css?v=8.9.48">
     <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="practice.css?v=10">
+    <link rel="stylesheet" href="practice.css?v=12">
     <link rel="icon" href="img/QAtoDev_small_main.png" sizes="100x100" type="image/png">
     <script src="favicon.shared.js?v=1"></script>
     <script src="metrika.shared.js?v=20261027-1"></script>
@@ -41,10 +41,22 @@
 <main>
     <section class="article">
         <h1 class="practice-heading">Практика QA для тестировщиков</h1>
-        <p class="practice-intro">Начните с готового чек-листа: проверяйте формы и игры, ищите баги, пробуйте API и разбирайтесь в архитектуре.</p>
+        <p class="practice-intro">Начните с готового чек-листа: проверяйте формы и игры, ищите баги, пробуйте API, готовьтесь к собеседованию и разбирайтесь в архитектуре.</p>
 
         <div class="practice-grid">
-            <a class="practice-card practice-card--article" href="hwois.html">
+            <a class="practice-card practice-card--interview" href="interview.html" data-type="trainer" data-track="manual api" data-level="1-4" data-minutes="15-25">
+                <div class="practice-thumb">
+                    <img src="img/cover/call_mock.png" alt="Тренировочное собеседование QA" loading="lazy">
+                </div>
+                <h3>Мок-собеседование</h3>
+                <div class="practice-skills" aria-label="Категории вопросов">
+                    <span>Собеседование</span><span>Теория QA</span><span>API</span><span>SQL/БД</span><span>Git/DevOps</span>
+                </div>
+                <p>Тренировочное интервью по теории, API, SQL, Git и DevOps. Проверяйте себя и закрывайте пробелы.</p>
+                <div class="practice-card__meta">Тренажёр · 9 категорий · 15–25 мин</div>
+                <span class="practice-cta">Пройти собеседование</span>
+            </a>
+            <a class="practice-card practice-card--article" href="hwois.html" data-type="interactive" data-track="manual" data-level="1" data-minutes="5-7">
                 <div class="practice-thumb practice-thumb--article">
                     <img src="img/cover/who_is_qa.webp" alt="" loading="lazy">
                     <span class="practice-card__type">Интерактив</span>
@@ -52,60 +64,68 @@
                 <h3>Кто такой тестировщик?</h3>
                 <div class="practice-skills" aria-label="Навыки"><span>Ручное тестирование</span><span>Анализ требований</span><span>Тест-дизайн</span></div>
                 <p>Узнай, как работает тестировщик, и попробуй распределить задачи в команде без перегруза перед релизом.</p>
+                <div class="practice-card__meta">Интерактив · 5–7 мин</div>
                 <span class="practice-cta">Читать и играть</span>
             </a>
-            <a class="practice-card practice-card--course" href="course.html?chapter=1">
+            <a class="practice-card practice-card--course" href="course.html?chapter=1" data-type="course" data-track="manual" data-level="1-4" data-minutes="20-30">
                 <div class="practice-thumb practice-thumb--course" aria-hidden="true">
                     <img src="img/cover/client-server.webp" alt="" loading="lazy">
                 </div>
                 <h3>Архитектура</h3>
                 <div class="practice-skills" aria-label="Навыки и стек"><span>Клиент-серверная архитектура</span><span>Микросервисы</span><span>SQL</span><span>CI/CD</span></div>
                 <p>Визуализация архитектуры: пройди путь запроса от браузера до базы и проверь отказ работы всех систем.</p>
+                <div class="practice-card__meta">Курс · 4 главы · 20–30 мин</div>
                 <span class="practice-cta">Открыть курс</span>
             </a>
-            <a class="practice-card practice-card--books" href="pageBooks.html">
+            <a class="practice-card practice-card--books" href="pageBooks.html" data-type="trainer" data-track="manual" data-level="1-3" data-minutes="10-15">
                 <div class="practice-thumb">
                     <img src="img/cover/book_store.webp" alt="Книжная полка" loading="lazy">
                 </div>
                 <h3>Книжная полка</h3>
                 <div class="practice-skills" aria-label="Навыки"><span>UI/UX testing</span><span>Bug reporting</span><span>Регрессионное тестирование</span></div>
                 <p>Протестировать по чек-листу страницу с книгами.</p>
+                <div class="practice-card__meta">Тренажёр · 3 уровня · 10–15 мин</div>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
-            <a class="practice-card practice-card--swagger" href="swagger_api.html">
+            <a class="practice-card practice-card--swagger" href="swagger_api.html" data-type="trainer" data-track="api" data-level="1-5" data-minutes="10-15">
                 <div class="practice-thumb">
                     <img src="img/cover/swagger_api.webp" alt="Swagger тренажер" loading="lazy">
                 </div>
                 <h3>Swagger тренажер</h3>
                 <div class="practice-skills" aria-label="Навыки и стек"><span>API testing</span><span>REST API</span><span>JSON</span><span>Swagger</span></div>
                 <p>Практика по API. Пройди задания по отправке запросов и ответов.</p>
+                <div class="practice-card__meta">Тренажёр · 5 уровней · 10–15 мин</div>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
-            <a class="practice-card practice-card--five" href="five-letters.html">
+            <a class="practice-card practice-card--five" href="five-letters.html" data-type="trainer" data-track="manual" data-level="1-3" data-minutes="10-15" data-progress-key="qatodev_five_letters_qa_v1" data-progress-total="28">
                 <div class="practice-thumb">
                     <img src="img/cover/words_test.webp" alt="Слова из 5 букв" loading="lazy">
                 </div>
                 <h3>Слова из 5 букв</h3>
                 <div class="practice-skills" aria-label="Навыки"><span>QA-чек-лист</span><span>Тест-дизайн</span><span>Анализ требований</span></div>
                 <p>Проверь игру по чек-листу: ввод букв, подсказки, работу помощника и сохранение результата.</p>
+                <div class="practice-card__meta">Тренажёр · 3 уровня · 10–15 мин</div>
+                <div class="practice-progress" data-progress hidden></div>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
-            <a class="practice-card practice-card--login" href="loginSandbox.html">
+            <a class="practice-card practice-card--login" href="loginSandbox.html" data-type="trainer" data-track="manual api" data-level="1-3" data-minutes="10-15">
                 <div class="practice-thumb">
                     <img src="img/cover/login_test.webp" alt="Login Sandbox" loading="lazy">
                 </div>
                 <h3>Login Sandbox</h3>
                 <div class="practice-skills" aria-label="Навыки"><span>Функциональное тестирование</span><span>API testing</span><span>Bug reporting</span></div>
                 <p>Проверка формы логина: позитивные и негативные сценарии по чек-листу.</p>
+                <div class="practice-card__meta">Тренажёр · 3 уровня · 10–15 мин</div>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
-            <a class="practice-card practice-card--flappy" href="flappy.html">
+            <a class="practice-card practice-card--flappy" href="flappy.html" data-type="trainer" data-track="manual" data-level="1-2" data-minutes="5-10">
                 <div class="practice-thumb">
                     <img src="img/cover/flappy_test.webp" alt="Flappy Bird" loading="lazy">
                 </div>
                 <h3>Flappy Bird</h3>
                 <div class="practice-skills" aria-label="Навыки"><span>Кроссбраузерное тестирование</span><span>Bug reporting</span><span>Тест-дизайн</span></div>
                 <p>Игра с багами. Отточить навыки тест-дизайна и наблюдательности.</p>
+                <div class="practice-card__meta">Тренажёр · 2 уровня · 5–10 мин</div>
                 <span class="practice-cta">Открыть тренажер</span>
             </a>
         </div>
@@ -135,6 +155,8 @@
     })();
 </script>
 
-<script src="header.js?v=8.9.35"></script>
+<script src="trainers/shared.js?v=1"></script>
+<script src="practice.js?v=2"></script>
+<script src="header.js?v=8.9.39"></script>
 </body>
 </html>

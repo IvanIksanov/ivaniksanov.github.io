@@ -1,0 +1,247 @@
+/* Shared trainer kit: QA panel, checklist, progress and feedback. */
+.trainer-qa-fab {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1190;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 0, 0, .1);
+  border-radius: 999px;
+  background: var(--trainer-qa-accent, #ffa001);
+  color: #1f1f1f;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.trainer-qa-fab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, .24);
+}
+
+body.trainer-qa-open .trainer-qa-fab { display: none; }
+
+.trainer-qa-panel {
+  --trainer-qa-surface: #fafafa;
+  --trainer-qa-line: #d8d8d8;
+  --trainer-qa-ink: #1f1f1f;
+  --trainer-qa-muted: #62676d;
+  --trainer-qa-progress-color: #126a70;
+  --trainer-qa-pass-border: #66a586;
+  --trainer-qa-pass-bg: #e8f5ed;
+  --trainer-qa-pass-ink: #236044;
+  --trainer-qa-fail-border: #d69280;
+  --trainer-qa-fail-bg: #fff0ee;
+  --trainer-qa-fail-ink: #9b4739;
+  --trainer-qa-pass-width: 0%;
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 1190;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(420px, calc(100vw - 32px));
+  max-height: min(74vh, 760px);
+  overflow: hidden;
+  border: 1px solid var(--trainer-qa-line);
+  border-radius: 12px;
+  background: var(--trainer-qa-surface);
+  color: var(--trainer-qa-ink);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, .2);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity .2s ease, transform .22s ease, visibility 0s linear .22s;
+}
+
+.trainer-qa-panel[aria-hidden="false"] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition: opacity .22s ease, transform .24s ease;
+}
+
+.trainer-qa-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--trainer-qa-line);
+}
+
+.trainer-qa-close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--trainer-qa-line);
+  border-radius: 8px;
+  background: var(--trainer-qa-surface);
+  color: var(--trainer-qa-ink);
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.trainer-qa-body {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.trainer-qa-progress {
+  margin: 0;
+  color: var(--trainer-qa-progress-color);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.trainer-qa-group { margin: 0 0 14px; }
+.trainer-qa-group h3 {
+  margin: 0 0 6px;
+  color: var(--trainer-qa-ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.trainer-qa-group ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.trainer-qa-check {
+  padding: 8px;
+  border: 1px solid var(--trainer-qa-line);
+  border-radius: 8px;
+}
+.trainer-qa-check-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+.trainer-qa-check-text { min-width: 0; font-size: 12px; line-height: 1.35; }
+.trainer-qa-choices { display: inline-flex; gap: 5px; }
+.trainer-qa-choices button {
+  min-width: 48px;
+  padding: 4px 6px;
+  border: 1px solid var(--trainer-qa-line);
+  border-radius: 8px;
+  background: var(--trainer-qa-surface);
+  color: var(--trainer-qa-ink);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.trainer-qa-choices button[aria-pressed="true"][data-result="pass"] {
+  border-color: var(--trainer-qa-pass-border);
+  background: var(--trainer-qa-pass-bg);
+  color: var(--trainer-qa-pass-ink);
+}
+.trainer-qa-choices button[aria-pressed="true"][data-result="fail"] {
+  border-color: var(--trainer-qa-fail-border);
+  background: var(--trainer-qa-fail-bg);
+  color: var(--trainer-qa-fail-ink);
+}
+
+.trainer-qa-verify {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 188px;
+  min-height: 32px;
+  margin: 10px auto 0;
+  padding: 5px 10px;
+  overflow: hidden;
+  border: 1px solid var(--trainer-qa-line);
+  border-radius: 999px;
+  background: var(--trainer-qa-surface);
+  color: var(--trainer-qa-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.trainer-qa-verify::before,
+.trainer-qa-verify::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+.trainer-qa-verify::before {
+  z-index: -2;
+  background: linear-gradient(135deg, #ff5a5f, #ff7a18 52%, #ff3d54);
+  transition: opacity 280ms ease;
+}
+.trainer-qa-verify::after {
+  z-index: -1;
+  width: var(--trainer-qa-pass-width);
+  background: linear-gradient(135deg, #34d399, #22c55e 48%, #14b8a6);
+  transition: width 700ms ease, opacity 280ms ease;
+}
+.trainer-qa-verify.is-verified { color: #fff; }
+.trainer-qa-verify.is-verified::before,
+.trainer-qa-verify.is-verified::after { opacity: 1; }
+.trainer-qa-verify:hover { border-color: var(--trainer-qa-accent, #ffa001); }
+.trainer-qa-panel button:focus-visible,
+.trainer-qa-fab:focus-visible { outline: 2px solid #397ebd; outline-offset: 2px; }
+
+@media (max-width: 720px) {
+  .trainer-qa-fab {
+    left: 12px;
+    bottom: 12px;
+    min-width: 48px;
+    height: 38px;
+    padding: 0 11px;
+    font-size: 12px;
+  }
+  .trainer-qa-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 42vh;
+    border-radius: 10px 10px 0 0;
+    transform: translateY(14px);
+  }
+  .trainer-qa-check-row { grid-template-columns: minmax(0, 1fr); }
+  .trainer-qa-choices { justify-content: flex-end; }
+}
+
+html[data-theme="dark"] .trainer-qa-panel {
+  --trainer-qa-surface: #1c1c1c;
+  --trainer-qa-line: #414141;
+  --trainer-qa-ink: #f1f1f1;
+  --trainer-qa-muted: #bebebe;
+  --trainer-qa-progress-color: #78d4d7;
+  --trainer-qa-pass-bg: #203d30;
+  --trainer-qa-pass-ink: #a8dfbf;
+  --trainer-qa-fail-bg: #3b2828;
+  --trainer-qa-fail-ink: #efb4aa;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trainer-qa-panel,
+  .trainer-qa-fab { transition: none; }
+}

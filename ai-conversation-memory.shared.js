@@ -17,12 +17,46 @@
     return String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
   }
 
+  function normalizeText(value) {
+    return String(value || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  }
+
+  const metaSuggestionPatterns = [
+    /^(?:какой|какую|какие|какое)\s+(?:у\s+(?:тебя|вас)\s+)?(?:вопрос|тему|темы|задачу|задачи|проблему|проблемы)/i,
+    /^(?:что|чем)\s+(?:ты|вы)?\s*(?:хочешь|хотите|хотел|хотела|хотелось|обсуд\w*|поговор\w*|занима\w*|изуча\w*|интересует|помочь|делать|делаешь|делаете)/i,
+    /^(?:о\s+ч[её]м|про\s+что)\s+(?:поговор\w*|обсуд\w*|спрос\w*|рассказ\w*)/i,
+    /^(?:как|чем)(?:\s+я)?(?:\s+могу)?\s+(?:тебе|вам)?\s*помочь(?:\s+(?:тебе|вам))?(?:\s+(?:сегодня|с\s+чем-то))?[\s?!.]*$/i,
+    /^(?:что\s+(?:бы\s+)?ты\s+хотел|что\s+(?:бы\s+)?вы\s+хотели)/i,
+    /^(?:на\s+какую|по\s+какой)\s+теме/i,
+    /^(?:есть\s+ли\s+(?:у\s+(?:тебя|вас)\s+)?вопрос)/i,
+    /^(?:что\s+дальше|как\s+продолжить|продолжим)/i,
+    /^(?:готов[ыа]?\s+ли|хотите\s+ли|хочешь\s+ли|нужн[аоы]\s+ли)/i
+  ];
+
+  function isMetaSuggestion(value) {
+    const text = normalize(value);
+    return Boolean(text) && metaSuggestionPatterns.some(pattern => pattern.test(text));
+  }
+
+  const greeting = '(?:привет(?:ик)?|здравствуй(?:те)?|добр(?:ый|ое) (?:день|утро|вечер)|доброй ночи|хай|hello|hi|hey|good (?:morning|afternoon|evening))';
+  const smallTalkCore = '(?:как дела|как ты|как настроение|как жизнь|что делаешь|что нового|как поживаешь|как у тебя дела|как твои дела|что происходит)';
+  const smallTalkPatterns = [
+    new RegExp(`^${greeting}[\\s!.,?]*$`, 'i'),
+    new RegExp(`^${smallTalkCore}[\\s!.,?]*$`, 'i'),
+    new RegExp(`^${greeting}[\\s!.,?]*${smallTalkCore}[\\s!.,?]*$`, 'i')
+  ];
+
+  function isSmallTalkQuestion(value) {
+    const text = normalize(value);
+    return Boolean(text) && smallTalkPatterns.some(pattern => pattern.test(text));
+  }
+
   function normalizeTitle(value) {
     return String(value || '').replace(/<[^>]*>/g, ' ').replace(/[\u0000-\u001f\u007f]/g, ' ')
       .replace(/\s+/g, ' ').replace(/^[\s#*`"«]+|[\s#*`"»]+$/g, '').trim().slice(0, 64);
   }
 
-  function normalizeSuggestions(value) {
+  function normalizeSuggestionList(value) {
     if (!Array.isArray(value)) return [];
     return [...new Set(value.flatMap(item => {
       const text = String(item || '').replace(/<[^>]*>/g, ' ')
@@ -31,7 +65,24 @@
       return (questions?.length > 1 ? questions : [text])
         .map(question => question.replace(/^(?:[-*•]|\d+[.)])\s*/, '').trim().slice(0, 140));
     })
-      .filter(item => item && !/^(?:готов[ыа] ли|хотите ли|хочешь ли|продолжим\b|есть ли (?:у вас|у тебя) вопросы|нужн[аоы] ли (?:вам |тебе )?(?:дополнительн[а-яё]* )?подсказк|как продолжить\b|что дальше\b)/i.test(item)))].slice(0, 2);
+      .filter(item => item && !isMetaSuggestion(item)
+        && !/^(?:готов[ыа] ли|хотите ли|хочешь ли|продолжим|есть ли (?:у вас|у тебя) вопросы|нужн[аоы] ли (?:вам |тебе )?(?:дополнительн[а-яё]* )?подсказк|как продолжить|что дальше)/i.test(item)))];
+  }
+
+  function normalizeSuggestions(value) {
+    return normalizeSuggestionList(value).slice(0, 2);
+  }
+
+  function filterSuggestions(value, context = {}) {
+    const question = normalizeText(context.question);
+    const answer = normalizeText(context.answer);
+    return normalizeSuggestionList(value).filter(item => {
+      const text = normalizeText(item);
+      if (!text) return false;
+      if (question && text === question) return false;
+      if (answer && text.length > 18 && answer.includes(text)) return false;
+      return true;
+    }).slice(0, 2);
   }
 
   function extractVisibleNext(answer) {
@@ -78,5 +129,15 @@
     return window.QAtoDevAiPrompts.home.memoryQuestion(question, note, chatTitle);
   }
 
-  window.QAtoDevConversationMemory = { normalize, normalizeTitle, normalizeIcon, normalizeSuggestions, extract, withMemory };
+  window.QAtoDevConversationMemory = {
+    normalize,
+    normalizeTitle,
+    normalizeIcon,
+    normalizeSuggestions,
+    filterSuggestions,
+    isMetaSuggestion,
+    isSmallTalkQuestion,
+    extract,
+    withMemory
+  };
 })();

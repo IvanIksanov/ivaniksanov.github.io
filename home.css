@@ -298,24 +298,9 @@ html.home-card-images-seen .home-stage__card strong { color: #fff; text-shadow: 
   .home-stage__intro .home-stage__guide-title { font-size: clamp(22px, 3vw, 35px); margin: 8px 0 10px; }
   .home-stage__card strong { font-size: 13px; }
 }
-@media (prefers-reduced-motion: reduce) {
-  .home-stage__guide-step, .home-stage__guide-track, .home-intro-guide { transition: none; }
-  .home-intro-guide__dot { transition: none; }
-  .home-stage__starters.is-visible button { animation: none; opacity: 1; translate: 0 0; }
-  .home-stage .home-stage__card { transition: none; }
-  .home-stage__card img { transition: none; }
-  .home-stage__card::after, .home-stage__card strong { transition: none; }
-  .home-chat__question.is-entering, .home-chat__answer.is-entering,
-  .home-chat__turn.is-offline-entering > .home-chat__answer, .home-chat__turn.is-offline-entering > .home-chat__actions,
-  .home-chat__turn.is-offline-entering > .home-chat__followups { animation: none; }
-  .home-chat__saved-card.is-new { animation: none; }
-  .home-chat__saved-card.is-appearing { animation: none; }
-  .home-chat__saved-pattern { transition: none; }
-  .home-chat__action span { transition: none; }
-  .home-chat__usage-tooltip { transform: none; transition: opacity 0s, visibility 0s; }
-  .home-chat__usage-toggle:hover .home-chat__usage-tooltip { transform: none; transition-delay: 1s; }
-  .home-chat__usage-toggle:focus-visible .home-chat__usage-tooltip { transform: none; transition-delay: 0s; }
-}
+/* The homepage keeps its decorative animations even when the OS asks to
+   reduce motion: the guide, title dispersion, cards and chat entrances are
+   part of the product's identity. Other pages still respect the preference. */
 #qa-skills > h2,
 #qa-skills .skill-category,
 #qa-skills .skill-category * {

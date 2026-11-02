@@ -7,7 +7,7 @@
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
   const ARCHITECTURE_VISITED_KEY = 'qa_architecture_visited_v1';
-  const SHARED_ASSET_VERSION = '8.9.4';
+  const SHARED_ASSET_VERSION = '8.9.7';
   let headerScrolled = false;
 
   function withVersion(src) {
@@ -345,7 +345,7 @@
     let animationTimer;
 
     const animateTitle = () => {
-      if (!art || prefersReducedMotion()) return;
+      if (!art) return;
       clearTimeout(animationTimer);
       title.classList.add('is-assembling');
       const fragment = document.createDocumentFragment();
@@ -393,7 +393,7 @@
       animateTitle();
       window.setTimeout(() => {
         window.location.href = './';
-      }, art && !prefersReducedMotion() ? 720 : 0);
+      }, art ? 720 : 0);
     };
 
     title.addEventListener('click', activateHomeLink);
@@ -577,7 +577,7 @@
     };
     if (window.QAtoDevAiPrompts) { appendPreflight(); return; }
     const prompts = document.createElement('script');
-    prompts.src = 'ai-prompts.shared.js?v=1.0.0';
+    prompts.src = 'ai-prompts.shared.js?v=1.0.2';
     prompts.addEventListener('load', appendPreflight, { once: true });
     document.body.appendChild(prompts);
   }
@@ -602,6 +602,35 @@
     }
 
     const hasAuthModal = !!document.getElementById('auth-modal');
+    if (hasAuthModal && authOpenBtn.dataset.authEarlyBound !== 'true') {
+      authOpenBtn.dataset.authEarlyBound = 'true';
+      authOpenBtn.addEventListener('click', (event) => {
+        const modal = document.getElementById('auth-modal');
+        if (!modal || modal.dataset.authReady === 'true') return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (authOpenBtn.dataset.authPendingOpen === 'true') return;
+        authOpenBtn.dataset.authPendingOpen = 'true';
+        let fallbackTimer = 0;
+        const openWhenReady = () => {
+          document.removeEventListener('auth-core:ready', openWhenReady);
+          if (fallbackTimer) clearTimeout(fallbackTimer);
+          delete authOpenBtn.dataset.authPendingOpen;
+          authOpenBtn.click();
+        };
+        fallbackTimer = window.setTimeout(() => {
+          document.removeEventListener('auth-core:ready', openWhenReady);
+          delete authOpenBtn.dataset.authPendingOpen;
+          const currentModal = document.getElementById('auth-modal');
+          if (!currentModal) return;
+          currentModal.classList.add('show');
+          currentModal.setAttribute('aria-hidden', 'false');
+          const status = document.getElementById('auth-status');
+          if (status) status.textContent = 'Авторизация временно недоступна. Проверьте соединение и обновите страницу.';
+        }, 8000);
+        document.addEventListener('auth-core:ready', openWhenReady, { once: true });
+      }, true);
+    }
     if (hasAuthModal || authOpenBtn.dataset.fallbackBound === 'true') return;
 
     authOpenBtn.dataset.fallbackBound = 'true';

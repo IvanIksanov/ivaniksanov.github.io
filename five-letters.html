@@ -23,10 +23,11 @@
             }
         } catch {}
     </script>
-    <script src="auth.bootstrap.shared.js?v=8.9.4"></script>
+    <script src="auth.bootstrap.shared.js?v=8.9.7"></script>
     <link rel="stylesheet" href="header.css?v=8.9.48">
     <link rel="stylesheet" href="styles.css?v=8.9.4">
-    <link rel="stylesheet" href="five-letters.css?v=1.0.10">
+    <link rel="stylesheet" href="trainers/shared.css?v=1">
+    <link rel="stylesheet" href="five-letters.css?v=1.0.11">
     <link rel="icon" href="img/QAtoDev_small_main.png" sizes="100x100" type="image/png">
     <script src="favicon.shared.js?v=1"></script>
     <script>
@@ -51,15 +52,15 @@
 <body>
 <script src="site-header.shared.js?v=2"></script>
 
-<button class="five-qa-fab" id="five-qa-fab" type="button" aria-controls="five-qa-panel" aria-expanded="false" aria-label="Открыть QA-чек-лист">QA</button>
-<aside class="five-qa-panel" id="five-qa-panel" aria-label="QA-чек-лист тренажёра" aria-hidden="true" inert>
-    <div class="five-qa-head">
-        <p class="five-qa-progress" id="five-qa-progress" aria-live="polite"></p>
-        <button class="five-qa-close" id="five-qa-close" type="button" aria-label="Закрыть QA-чек-лист">×</button>
+<button class="trainer-qa-fab five-qa-fab" id="five-qa-fab" type="button" aria-controls="five-qa-panel" aria-expanded="false" aria-label="Открыть QA-чек-лист">QA</button>
+<aside class="trainer-qa-panel five-qa-panel" id="five-qa-panel" aria-label="QA-чек-лист тренажёра" aria-hidden="true" inert>
+    <div class="trainer-qa-head five-qa-head">
+        <p class="trainer-qa-progress five-qa-progress" id="five-qa-progress" aria-live="polite"></p>
+        <button class="trainer-qa-close five-qa-close" id="five-qa-close" type="button" aria-label="Закрыть QA-чек-лист">×</button>
     </div>
-    <div class="five-qa-body">
-        <div id="five-qa-checklist"></div>
-        <button class="five-qa-verify" id="five-qa-verify" type="button">Проверить регресс</button>
+    <div class="trainer-qa-body five-qa-body">
+        <div class="trainer-qa-checklist" id="five-qa-checklist"></div>
+        <button class="trainer-qa-verify five-qa-verify" id="five-qa-verify" type="button">Проверить регресс</button>
     </div>
 </aside>
 
@@ -153,7 +154,8 @@
 
 <script src="five-letters-dictionary.js"></script>
 <script src="five-letters.js?v=1.0.8"></script>
-<script src="five-letters-qa.js?v=1.0.7"></script>
+<script src="trainers/shared.js?v=1"></script>
+<script src="five-letters-qa.js?v=1.1.0"></script>
 <script>
     (function() {
       const root = document.documentElement;
@@ -174,6 +176,6 @@
       });
     })();
 </script>
-<script src="header.js?v=8.9.35"></script>
+<script src="header.js?v=8.9.39"></script>
 </body>
 </html>

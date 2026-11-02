@@ -1838,8 +1838,97 @@ const refineSystemPrompt = window.QAtoDevAiPrompts.questions.refineSystem;
     return false;
   }
 
+  function publishQuestionsSharedAuth(controller) {
+    if (!controller || window.SharedAuth) return;
+    window.SharedAuth = {
+      ready: true,
+      async requireAuthForAction(options = {}) {
+        if (authUser) return true;
+        const status = await ensureAuthContext();
+        if (status === true) return true;
+        controller.showModal(
+          options?.authMessage || "Войдите, чтобы продолжить.",
+          options
+        );
+        return false;
+      },
+      isAuthenticated() {
+        return !!authUser;
+      },
+      hasGuestBypass() {
+        return false;
+      },
+      restorePendingScroll() {
+        controller.restorePendingScroll?.();
+      },
+      showModal(prefillMessage, options) {
+        controller.showModal(prefillMessage, options);
+      },
+      hideModal() {
+        controller.hideModal();
+      },
+      getActiveSession() {
+        return controller.getActiveSession?.() || null;
+      },
+      getController() {
+        return controller;
+      },
+      getState() {
+        return controller.getState?.() || { authUser, authProfile, authResolved };
+      }
+    };
+    document.dispatchEvent(new CustomEvent("shared-auth:ready"));
+  }
+
+  function isQuestionsPage() {
+    return /(?:^|\/)questions\.html$/i.test(window.location.pathname || '');
+  }
+
+  function waitForSharedAuthController(timeoutMs = 6000) {
+    if (window.SharedAuth?.ready === true) {
+      const existing = window.SharedAuth.getController?.();
+      if (existing) return Promise.resolve(existing);
+    }
+    return new Promise((resolve) => {
+      let done = false;
+      const cleanup = () => {
+        window.clearTimeout(timeout);
+        window.clearInterval(interval);
+        document.removeEventListener('shared-auth:ready', finish);
+      };
+      const finish = () => {
+        if (done || window.SharedAuth?.ready !== true) return;
+        const controller = window.SharedAuth.getController?.() || null;
+        if (!controller) return;
+        done = true;
+        cleanup();
+        resolve(controller);
+      };
+      const timeout = window.setTimeout(() => {
+        if (done) return;
+        done = true;
+        cleanup();
+        resolve(null);
+      }, timeoutMs);
+      const interval = window.setInterval(finish, 100);
+      document.addEventListener('shared-auth:ready', finish);
+      finish();
+    });
+  }
+
   async function ensureUnifiedAuthController() {
-    if (authController || !window.AuthCoreShared || !authModal || !authOpenBtn) return authController;
+    if (authController) return authController;
+    if (!isQuestionsPage()) {
+      const sharedController = await waitForSharedAuthController();
+      if (!sharedController) return null;
+      authController = sharedController;
+      const state = authController.getState?.() || {};
+      authUser = state.authUser || null;
+      authProfile = state.authProfile || null;
+      authResolved = state.authResolved === true;
+      return authController;
+    }
+    if (!window.AuthCoreShared || !authModal || !authOpenBtn) return authController;
     authController = window.AuthCoreShared.create({
       supabaseStore,
       authStateShared,
@@ -1962,7 +2051,10 @@ const refineSystemPrompt = window.QAtoDevAiPrompts.questions.refineSystem;
     authResolved = state.authResolved;
     return authController;
   }
-  authControllerInitPromise = ensureUnifiedAuthController().catch((e) => {
+  authControllerInitPromise = ensureUnifiedAuthController().then((controller) => {
+    if (controller) publishQuestionsSharedAuth(controller);
+    return controller;
+  }).catch((e) => {
     console.warn("Unified auth controller init failed", e);
     return null;
   });

@@ -1066,180 +1066,24 @@ html[data-theme="dark"] .five-helper-row input.five-helper-tile--excluded.has-va
   color: #fff;
 }
 
-/* QA checklist uses the same left workbench layout as the book shelf. */
+/* QA panel skin: shared component + five-specific workbench layout. */
 .five-qa-fab,
 .five-qa-panel {
   font-family: Arial, Helvetica, sans-serif;
 }
 
 .five-qa-fab {
-  position: fixed;
   left: 20px;
   bottom: 20px;
   z-index: 1200;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 52px;
-  height: 44px;
-  padding: 0 14px;
-  border: 1px solid rgba(0, 0, 0, .1);
-  border-radius: 999px;
-  background: #ffa001;
-  color: #1f1f1f;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, .22);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform .2s ease, box-shadow .2s ease;
 }
-
-.five-qa-fab:hover { transform: translateY(-1px); box-shadow: 0 12px 26px rgba(0, 0, 0, .24); }
-body.five-qa-open .five-qa-fab { display: none; }
 
 .five-qa-panel {
-  --five-qa-surface: #fafafa;
-  --five-qa-line: #d8d8d8;
-  --five-qa-ink: #1f1f1f;
-  --five-qa-muted: #62676d;
-  position: fixed;
-  left: 16px;
-  bottom: 16px;
-  z-index: 1190;
-  box-sizing: border-box;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  width: min(420px, calc(100vw - 32px));
-  max-height: min(74vh, 760px);
-  overflow: hidden;
-  border: 1px solid var(--five-qa-line);
-  border-radius: 12px;
-  background: var(--five-qa-surface);
-  color: var(--five-qa-ink);
-  box-shadow: 0 16px 42px rgba(0, 0, 0, .2);
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transform: translateY(8px);
-  transition: opacity .2s ease, transform .22s ease, visibility 0s linear .22s;
+  --trainer-qa-accent: #ffa001;
+  --trainer-qa-progress-color: #126a70;
 }
 
-.five-qa-panel[aria-hidden="false"] {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: none;
-  transition: opacity .22s ease, transform .24s ease;
-}
-
-.five-qa-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  padding: 8px;
-  border-bottom: 1px solid var(--five-qa-line);
-}
-
-.five-qa-close {
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--five-qa-line);
-  border-radius: 8px;
-  background: var(--five-qa-surface);
-  color: var(--five-qa-ink);
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.five-qa-body {
-  min-height: 0;
-  overflow-y: auto;
-  padding: 10px;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
-}
-
-.five-qa-progress {
-  margin: 0;
-  color: #126a70;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-.five-qa-group { margin: 0 0 14px; }
-.five-qa-group h3 { margin: 0 0 6px; color: var(--five-qa-ink); font-size: 13px; font-weight: 700; }
-.five-qa-group ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.five-qa-check { padding: 8px; border: 1px solid var(--five-qa-line); border-radius: 8px; }
-.five-qa-check-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
-.five-qa-check-text { min-width: 0; font-size: 12px; line-height: 1.35; }
-.five-qa-choices { display: inline-flex; gap: 5px; }
-.five-qa-choices button {
-  min-width: 48px;
-  padding: 4px 6px;
-  border: 1px solid var(--five-qa-line);
-  border-radius: 8px;
-  background: var(--five-qa-surface);
-  color: var(--five-qa-ink);
-  font: inherit;
-  font-size: 11px;
-  cursor: pointer;
-}
-.five-qa-choices button[aria-pressed="true"][data-result="pass"] { border-color: #66a586; background: #e8f5ed; color: #236044; }
-.five-qa-choices button[aria-pressed="true"][data-result="fail"] { border-color: #d69280; background: #fff0ee; color: #9b4739; }
-.five-qa-verify {
-  --five-correct-width: 0%;
-  position: relative;
-  isolation: isolate;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 188px;
-  min-height: 32px;
-  margin: 10px auto 0;
-  padding: 5px 10px;
-  overflow: hidden;
-  border: 1px solid var(--five-qa-line);
-  border-radius: 999px;
-  background: var(--five-qa-surface);
-  color: var(--five-qa-ink);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.five-qa-verify::before,
-.five-qa-verify::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  opacity: 0;
-  pointer-events: none;
-}
-.five-qa-verify::before {
-  z-index: -2;
-  background: linear-gradient(135deg, #ff5a5f, #ff7a18 52%, #ff3d54);
-  transition: opacity 280ms ease;
-}
-.five-qa-verify::after {
-  z-index: -1;
-  width: var(--five-correct-width);
-  background: linear-gradient(135deg, #34d399, #22c55e 48%, #14b8a6);
-  transition: width 700ms ease, opacity 280ms ease;
-}
-.five-qa-verify.is-verified {
-  color: #fff;
-}
-.five-qa-verify.is-verified::before,
-.five-qa-verify.is-verified::after {
-  opacity: 1;
-}
-.five-qa-verify:hover { border-color: #ffa001; }
-.five-qa-panel button:focus-visible,
-.five-qa-fab:focus-visible { outline: 2px solid #397ebd; outline-offset: 2px; }
+body.five-qa-open .five-qa-fab { display: none; }
 
 @media (min-width: 721px) {
   .five-qa-panel {
@@ -1260,28 +1104,11 @@ body.five-qa-open .five-qa-fab { display: none; }
   html.five-qa-preopen .five-letters-shell { transition: none; }
 }
 
-@media (max-width: 720px) {
-  .five-qa-fab { left: 12px; bottom: 12px; min-width: 48px; height: 38px; padding: 0 11px; font-size: 12px; }
-  .five-qa-panel { left: 0; right: 0; bottom: 0; width: auto; max-height: 42vh; border-radius: 10px 10px 0 0; transform: translateY(14px); }
-  .five-qa-check-row { grid-template-columns: minmax(0, 1fr); }
-  .five-qa-choices { justify-content: flex-end; }
-}
-
-html[data-theme="dark"] .five-qa-panel {
-  --five-qa-surface: #1c1c1c;
-  --five-qa-line: #414141;
-  --five-qa-ink: #f1f1f1;
-  --five-qa-muted: #bebebe;
-}
-html[data-theme="dark"] .five-qa-progress { color: #78d4d7; }
-html[data-theme="dark"] .five-qa-choices button[aria-pressed="true"][data-result="pass"] { background: #203d30; color: #a8dfbf; }
-html[data-theme="dark"] .five-qa-choices button[aria-pressed="true"][data-result="fail"] { background: #3b2828; color: #efb4aa; }
-
 @media (prefers-reduced-motion: reduce) {
   .five-mode-row,
   .five-helper-sync,
   .five-mode-row.is-helper .five-helper-sync,
-  .five-qa-panel,
+  .trainer-qa-panel,
   .five-letters-shell,
-  .five-qa-fab { transition: none; }
+  .trainer-qa-fab { transition: none; }
 }
