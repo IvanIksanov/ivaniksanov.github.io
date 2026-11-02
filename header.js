@@ -392,7 +392,7 @@
       title.dataset.siteTitleNavigating = 'true';
       animateTitle();
       window.setTimeout(() => {
-        window.location.href = 'index.html';
+        window.location.href = './';
       }, art && !prefersReducedMotion() ? 720 : 0);
     };
 
@@ -410,7 +410,7 @@
     const pageName = getCurrentPageName();
     if (pageName === '' || pageName === 'index.html') return;
 
-    const goHome = () => { window.location.href = 'index.html'; };
+    const goHome = () => { window.location.href = './'; };
     logo.classList.add('logo--home-link');
     logo.setAttribute('role', 'link');
     logo.setAttribute('tabindex', '0');
