@@ -87,21 +87,6 @@
 html[data-theme="dark"] .practice-thumb--course { background: #1a1a1a; }
 
 .practice-thumb--article { position: relative; }
-.practice-thumb--code-lab {
-  position: relative;
-  display: grid;
-  place-items: center;
-  background: radial-gradient(circle at 78% 18%, #7fe4e8 0, transparent 38%), linear-gradient(135deg, #0f3d40, #14767b 58%, #44bbc1);
-  color: #ecffff;
-}
-.practice-thumb--code-lab svg {
-  width: min(46%, 132px);
-  height: auto;
-  filter: drop-shadow(0 4px 10px rgba(0, 25, 28, .28));
-}
-.practice-card--code-lab {
-  --practice-accent: #44bbc1;
-}
 .practice-card__type { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border: 1px solid #d1d5db; border-radius: 999px; background: #f8fafc; color: #475569; font-size: .75rem; font-weight: 700; }
 html[data-theme="dark"] .practice-card__type { border-color: #4b5563; background: #30343a; color: #e5e7eb; }
 
@@ -148,7 +133,6 @@ html[data-theme="dark"] .practice-card--course .practice-cta {
 
 .practice-card--books .practice-cta,
 .practice-card--interview .practice-cta,
-.practice-card--code-lab .practice-cta,
 .practice-card--login .practice-cta,
 .practice-card--swagger .practice-cta {
   color: #fff;
