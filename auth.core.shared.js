@@ -545,10 +545,8 @@
         labelEl.textContent = uiConfig.buttonLabel;
       }
       if (isAuthenticatedUi) {
-        dom.authOpenBtn.title = "Профиль";
         dom.authOpenBtn.setAttribute("aria-label", "Профиль");
       } else {
-        dom.authOpenBtn.title = "Войти и сохранить прогресс";
         dom.authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
       }
     }

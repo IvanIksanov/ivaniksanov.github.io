@@ -6,8 +6,18 @@
     <script src="google-tag-manager.shared.js?v=20261027-1"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <script src="page-zoom-lock.shared.js?v=2"></script>
-    <title>Тренировочное собеседование QA онлайн | QAtoDev</title>
-    <meta name="description" content="Соберите тренировочное собеседование для тестировщика. Отвечайте на вопросы по QA, проверяйте ответы и отрабатывайте темы перед техническим интервью.">
+    <title>Собеседование QA онлайн — тренировка с ИИ | QAtoDev</title>
+    <meta name="description" content="Тренировочное собеседование для QA и тестировщиков: вопросы по теории, API, SQL и автоматизации, голосовые ответы, разбор с ИИ и отчёт. Подготовка к техническому интервью.">
+    <meta name="keywords" content="собес QA, собеседование тестировщика, собеседование QA, мок-собеседование, подготовка к собеседованию QA, ИИ тестировщик, голосовое собеседование, QA интервью">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Собеседование QA онлайн — тренировка с ИИ | QAtoDev">
+    <meta property="og:description" content="Пройдите тренировочное собеседование QA с ИИ: вопросы, голосовые ответы, разбор и отчёт для подготовки к интервью тестировщика.">
+    <meta property="og:url" content="https://qatodev.ru/interview.html">
+    <meta property="og:image" content="https://qatodev.ru/img/cover/call_mock.png">
+    <meta property="og:locale" content="ru_RU">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Собеседование QA онлайн — тренировка с ИИ | QAtoDev">
+    <meta name="twitter:description" content="Тренировочное собеседование для QA и тестировщиков: вопросы, голосовые ответы, разбор с ИИ и отчёт.">
     <script>
         (function () {
             const saved = localStorage.getItem('theme');
@@ -25,13 +35,37 @@
     <script src="favicon.shared.js?v=1"></script>
   <script src="auth.bootstrap.shared.js?v=8.9.7"></script>
   <link rel="stylesheet" href="header.css?v=8.9.48">
-    <link rel="stylesheet" href="interview.css?v=20261102-29">
+    <link rel="stylesheet" href="interview.css?v=20261102-73">
     <script src="metrika.shared.js?v=20261027-1"></script>
     <link rel="canonical" href="https://qatodev.ru/interview.html">
-  <meta name="robots" content="noindex">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <script type="application/ld+json">
+{
+      "@context": "https://schema.org",
+      "@type": ["WebPage", "LearningResource"],
+      "@id": "https://qatodev.ru/interview.html",
+      "url": "https://qatodev.ru/interview.html",
+      "name": "Собеседование QA онлайн — тренировка с ИИ",
+      "description": "Тренировочное собеседование для QA и тестировщиков: вопросы по теории, API, SQL и автоматизации, голосовые ответы, разбор с ИИ и отчёт.",
+      "inLanguage": "ru",
+      "isPartOf": {
+        "@type": "WebSite",
+        "@id": "https://qatodev.ru/#website",
+        "url": "https://qatodev.ru/",
+        "name": "QAtoDev"
+      },
+      "learningResourceType": "Тренировочное собеседование",
+      "educationalUse": "Подготовка к техническому интервью",
+      "audience": {
+        "@type": "Audience",
+        "audienceType": "QA-инженеры и тестировщики"
+      },
+      "teaches": ["QA", "тестирование ПО", "API", "SQL", "автоматизация тестирования"]
+}
+    </script>
 </head>
 <body>
-<script src="site-header.shared.js?v=2"></script>
+<script src="site-header.shared.js?v=4"></script>
 <main class="main-content">
     <h1 class="interview-page-title">Тренировочное собеседование для тестировщика</h1>
     <figure class="photo-16x9" id="question-photo">
@@ -50,10 +84,19 @@
         </div>
         <article class="card" role="group" aria-labelledby="question-title">
             <h2 id="question-title" class="question-title">Загружаю вопросы…</h2>
-            <button id="toggle-answer" class="btn btn-outline" type="button" aria-expanded="false" aria-controls="answer" title="Посмотреть ответ (Пробел)">Посмотреть ответ</button>
+            <button id="toggle-answer" class="btn btn-outline" type="button" aria-expanded="false" aria-controls="answer">Посмотреть ответ</button>
             <div id="answer" class="answer" hidden></div>
         </article>
         <div class="stage-settings" id="interview-settings-wrap" hidden>
+            <button id="interview-mic" class="interview-mic is-off" type="button" aria-label="Микрофон выключен" aria-pressed="false">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="11" rx="3"></rect>
+                    <path d="M5 11a7 7 0 0 0 14 0"></path>
+                    <path d="M12 18v3"></path>
+                    <path d="M9 21h6"></path>
+                    <path class="interview-mic__slash" d="M4 4l16 16"></path>
+                </svg>
+            </button>
             <button id="interview-history-btn" class="interview-settings-btn" type="button" hidden>
                 <span class="interview-settings-btn__icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -74,9 +117,10 @@
                 <span id="interview-settings-btn-label">Настройки</span>
             </button>
         </div>
+        <p id="interview-mic-hint" class="interview-mic-hint" hidden aria-live="polite"></p>
         <div class="nav">
-            <button id="skip-btn" class="btn btn-secondary" type="button" title="Пропустить вопрос (→)">Пропустить вопрос</button>
-            <button id="accept-btn" class="btn" type="button" title="Засчитать ответ (Enter)">Засчитать ответ</button>
+            <button id="skip-btn" class="btn btn-secondary" type="button">Пропустить вопрос</button>
+            <button id="accept-btn" class="btn" type="button">Засчитать ответ</button>
         </div>
     </section>
 </main>
@@ -91,7 +135,6 @@
                 </svg>
             </button>
         </div>
-        <p class="interview-setup__hint">Выберите темы, режим и время на ответ.</p>
         <div class="interview-setup__field">
             <span class="interview-setup__label">Категории</span>
             <div id="category-filters" class="category-filters" aria-label="Категории вопросов"></div>
@@ -100,17 +143,18 @@
             <span class="interview-setup__label">Режим</span>
             <div class="interview-mode" role="group" aria-label="Режим собеседования">
                 <button type="button" class="interview-mode__button is-active" data-interview-mode="manual" aria-pressed="true">Вручную</button>
-                <button type="button" class="interview-mode__button" data-interview-mode="timer" aria-pressed="false">По таймеру</button>
+                <button type="button" class="interview-mode__button" data-interview-mode="voice" aria-pressed="false">Голосом</button>
+            </div>
+            <p id="interview-voice-note" class="interview-setup__note" aria-live="polite" hidden>Голосом — демо. Ответ записывается в браузере и распознаётся на сервере после завершения.</p>
+        </div>
+        <div class="interview-setup__field interview-options-field" id="interview-voice-options">
+            <span class="interview-setup__label">Время на голосовой ответ</span>
+            <div class="interview-timer-choices" role="group" aria-label="Время на голосовой ответ">
+                <button type="button" class="interview-timer-choice is-active" data-voice-seconds="45" aria-pressed="true">45 сек</button>
+                <button type="button" class="interview-timer-choice" data-voice-seconds="60" aria-pressed="false">1 мин</button>
             </div>
         </div>
-        <div class="interview-setup__field" id="interview-timer-options" hidden>
-            <span class="interview-setup__label">Время на вопрос</span>
-            <div class="interview-timer-choices" role="group" aria-label="Время на вопрос">
-                <button type="button" class="interview-timer-choice is-active" data-timer-seconds="15" aria-pressed="true">15 сек</button>
-                <button type="button" class="interview-timer-choice" data-timer-seconds="30" aria-pressed="false">30 сек</button>
-                <button type="button" class="interview-timer-choice" data-timer-seconds="60" aria-pressed="false">1 мин</button>
-            </div>
-        </div>
+        <p id="interview-setup-category-note" class="interview-setup__note" hidden>Выберите хотя бы одну категорию</p>
         <div class="interview-setup__actions">
             <button type="button" id="interview-setup-cancel" class="btn btn-outline" hidden>Отмена</button>
             <button type="button" id="interview-setup-start" class="btn interview-setup__start">Начать собеседование</button>
@@ -128,23 +172,22 @@
                 </svg>
             </button>
         </div>
-        <p class="interview-setup__hint">Ручные раунды: видно, какие вопросы засчитаны, а какие пропущены.</p>
+        <p id="interview-history-hint" class="interview-setup__hint" hidden>Ручные и голосовые раунды: видно, какие вопросы засчитаны, а какие пропущены.</p>
         <p id="interview-history-local-note" class="interview-history__note" hidden>История хранится локально в этом браузере. Войдите, чтобы синхронизировать её между устройствами.</p>
         <div id="interview-history-list" class="interview-history__list"></div>
     </div>
 </dialog>
 
-
-
 <!-- Очень важно: сначала подключаем файл с данными -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase.client.js?v=8.9.4"></script>
 <script src="debug.shared.js"></script>
-<script src="ai-prompts.shared.js?v=1.0.2"></script>
+<script src="ai-prompts.shared.js?v=1.0.14"></script>
 <script src="ai-client.shared.js?v=1.0.5"></script>
 <script src="ai-table-scroll.shared.js?v=1.0.0"></script>
 <script src="theme-toggle.shared.js?v=1"></script>
-<script src="interview.js?v=8.9.27"></script>
-  <script src="header.js?v=8.9.39"></script>
+<script src="voice-report.shared.js?v=19" data-voice-report-worker="true"></script>
+<script src="interview.js?v=8.9.90"></script>
+  <script src="header.js?v=8.9.45"></script>
 </body>
 </html>

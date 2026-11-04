@@ -2,3 +2,6 @@ project_id = "ivaniksanov-github-io"
 
 [functions.ai-chat]
 verify_jwt = false
+
+[functions.voice-answer]
+verify_jwt = false

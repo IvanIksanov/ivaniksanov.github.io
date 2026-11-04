@@ -7,7 +7,7 @@
   const HEADER_SCROLL_EXIT_Y = 2;
   const AUTH_VISUAL_STATE_KEY = 'auth_visual_state_v1';
   const ARCHITECTURE_VISITED_KEY = 'qa_architecture_visited_v1';
-  const SHARED_ASSET_VERSION = '8.9.7';
+  const SHARED_ASSET_VERSION = '8.9.8';
   let headerScrolled = false;
 
   function withVersion(src) {
@@ -481,7 +481,7 @@
         <p class="auth-legal-note">Продолжая вход, вы подтверждаете согласие на обработку персональных данных на условиях <a href="personal-data-consent.html" target="_blank" rel="noopener noreferrer">Согласия</a> и ознакомление с <a href="privacy-policy.html" target="_blank" rel="noopener noreferrer">Политикой</a>.</p>
         <p id="auth-status" class="auth-text auth-status"></p>
         <div class="auth-actions">
-          <button type="button" id="auth-sync-btn" class="auth-sync-btn" title="Синхронизировать данные" aria-label="Синхронизировать данные"><span class="auth-sync-icon" aria-hidden="true">↻</span></button>
+          <button type="button" id="auth-sync-btn" class="auth-sync-btn" aria-label="Синхронизировать данные"><span class="auth-sync-icon" aria-hidden="true">↻</span></button>
           <button type="button" id="auth-send-btn" class="auth-send-btn">Получить ссылку</button>
           <button type="button" id="auth-close-btn" class="auth-close-btn">Закрыть</button>
         </div>
@@ -562,6 +562,28 @@
     document.body.appendChild(stateScript);
   }
 
+  function ensureVoiceReportWorker() {
+    let jobs = [];
+    try {
+      jobs = JSON.parse(localStorage.getItem('qatodev_voice_report_jobs_v1') || '[]');
+    } catch {
+      return;
+    }
+    if (!Array.isArray(jobs) || !jobs.length) return;
+    if (document.querySelector('script[data-voice-report-worker="true"]')) {
+      window.QAtoDevVoiceReport?.processPending?.();
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = withVersion('voice-report.shared.js?v=19');
+    script.async = false;
+    script.dataset.voiceReportWorker = 'true';
+    script.addEventListener('load', () => {
+      window.QAtoDevVoiceReport?.processPending?.();
+    }, { once: true });
+    document.body.appendChild(script);
+  }
+
   function ensureModelPreflightScript() {
     const explicitOptIn = document.documentElement.dataset.modelPreflight === 'true'
       || document.body?.dataset?.modelPreflight === 'true';
@@ -577,7 +599,7 @@
     };
     if (window.QAtoDevAiPrompts) { appendPreflight(); return; }
     const prompts = document.createElement('script');
-    prompts.src = 'ai-prompts.shared.js?v=1.0.2';
+    prompts.src = 'ai-prompts.shared.js?v=1.0.14';
     prompts.addEventListener('load', appendPreflight, { once: true });
     document.body.appendChild(prompts);
   }
@@ -592,7 +614,6 @@
 
     authOpenBtn.className = 'clean-btn toggleButton_gllP auth-open-btn';
     authOpenBtn.type = 'button';
-    authOpenBtn.title = 'Войти и сохранить прогресс';
     authOpenBtn.setAttribute('aria-label', 'Войти и сохранить прогресс');
     authOpenBtn.classList.toggle('is-guest', storedAuthVisualState !== 'auth');
     authOpenBtn.classList.toggle('is-auth', storedAuthVisualState === 'auth');
@@ -664,5 +685,6 @@
     ensureProfileButton();
     ensureSharedAuthScript();
     ensureModelPreflightScript();
+    ensureVoiceReportWorker();
   });
 })();

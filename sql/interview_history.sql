@@ -11,10 +11,17 @@ create table if not exists public.interview_history (
   total integer not null default 0 check (total >= 0),
   percent integer not null default 0 check (percent between 0 and 100),
   questions jsonb not null default '[]'::jsonb,
+  mode text not null default 'manual',
+  report jsonb,
   primary key (user_id, id),
   constraint interview_history_categories_array check (jsonb_typeof(categories) = 'array'),
   constraint interview_history_questions_array check (jsonb_typeof(questions) = 'array')
 );
+
+alter table public.interview_history
+  add column if not exists mode text not null default 'manual';
+alter table public.interview_history
+  add column if not exists report jsonb;
 
 create index if not exists interview_history_user_created_idx
   on public.interview_history (user_id, created_at desc);

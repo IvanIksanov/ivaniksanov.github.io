@@ -352,16 +352,13 @@
       labelEl.textContent = uiConfig.buttonLabel;
     }
     if (authUser?.email) {
-      authOpenBtn.title = "Профиль";
       authOpenBtn.setAttribute("aria-label", "Профиль");
       return;
     }
     if (isAuthenticatedUi) {
-      authOpenBtn.title = "Профиль";
       authOpenBtn.setAttribute("aria-label", "Профиль");
       return;
     }
-    authOpenBtn.title = "Войти и сохранить прогресс";
     authOpenBtn.setAttribute("aria-label", "Войти и сохранить прогресс");
   }
 
