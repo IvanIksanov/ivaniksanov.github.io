@@ -30,6 +30,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const setupCancelBtn = document.getElementById("interview-setup-cancel");
   const setupCloseBtn = document.getElementById("interview-setup-close");
   const setupVoiceOptions = document.getElementById("interview-voice-options");
+  const setupVoiceCheckRow = document.getElementById("interview-voice-check-row");
+  const setupVoiceCheckNote = document.getElementById("interview-voice-check");
+  const setupVoiceCheckBtn = document.getElementById("interview-voice-check-btn");
   const setupModeButtons = Array.from(document.querySelectorAll("[data-interview-mode]"));
   const setupVoiceButtons = Array.from(document.querySelectorAll("[data-voice-seconds]"));
 
@@ -38,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     || !micIndicator || !micHint || !voiceModeBtn || !voiceNote
     || !historyBtn || !historyDialog || !historyList || !historyHint || !historyLocalNote || !historyCloseBtn
     || !setupDialog || !setupStartBtn || !setupCategoryNote || !setupCancelBtn || !setupCloseBtn
-    || !setupVoiceOptions) return;
+    || !setupVoiceOptions || !setupVoiceCheckRow || !setupVoiceCheckNote || !setupVoiceCheckBtn) return;
 
   const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
   const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -140,6 +143,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let timerLabelValue = "";
   let voiceSeconds = 45;
   let setupVoiceSeconds = 45;
+  let setupVoiceState = "idle";
+  let setupVoiceError = "";
+  let setupVoiceCheckPromise = null;
+  let suppressMicLoss = false;
   let voiceStream = null;
   let voiceStreamPromise = null;
   let voiceStreamToken = 0;
@@ -742,6 +749,39 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
+  function handleVoiceMicLost(message) {
+    if (suppressMicLoss) return;
+    if (interviewMode !== "voice" || !interviewStarted || interviewFinished) return;
+    if (!voiceRecording && !voiceRecorder) return;
+    voiceRecording = false;
+    stopVoiceLevelAnimation();
+    stopVoiceCapture({ discard: true });
+    releaseVoiceStream();
+    micPermissionGranted = false;
+    setMicIndicatorError(message);
+    hideMicHint();
+    openSetupDialog({ allowCancel: true });
+  }
+
+  function bindVoiceStreamTracks(stream) {
+    stream.getAudioTracks().forEach((track) => {
+      if (track.__interviewMicBound) return;
+      track.__interviewMicBound = true;
+      track.addEventListener("ended", () => {
+        if (voiceStream !== stream) return;
+        handleVoiceMicLost("Микрофон отключился. Ответ не записывается.");
+      });
+      track.addEventListener("mute", () => {
+        if (!voiceRecording) return;
+        window.setTimeout(() => {
+          if (!suppressMicLoss && voiceRecording && voiceStream === stream && track.muted) {
+            handleVoiceMicLost("Микрофон перестал передавать звук. Ответ не записывается.");
+          }
+        }, 1500);
+      });
+    });
+  }
+
   function ensureVoiceStream() {
     if (voiceStream && voiceStream.active) return Promise.resolve(voiceStream);
     if (voiceStreamPromise) return voiceStreamPromise;
@@ -762,6 +802,7 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("voice_stream_released");
       }
       voiceStream = stream;
+      bindVoiceStreamTracks(stream);
       return stream;
     }).finally(() => {
       if (voiceStreamPromise === promise) voiceStreamPromise = null;
@@ -778,9 +819,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const stream = voiceStream;
     voiceStream = null;
     if (!stream) return;
+    suppressMicLoss = true;
     stream.getTracks().forEach((track) => {
       try { track.stop(); } catch {}
     });
+    window.setTimeout(() => {
+      suppressMicLoss = false;
+    }, 700);
   }
 
   function pickVoiceMimeType() {
@@ -835,6 +880,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (token === voiceCaptureToken) {
           voiceRecording = false;
           setMicIndicatorError(voiceMicErrorMessage(error));
+          openSetupDialog({ allowCancel: true });
         }
         return null;
       }
@@ -847,6 +893,7 @@ document.addEventListener("DOMContentLoaded", () => {
         voiceRecorder = null;
         voiceRecording = false;
         setMicIndicatorError("Не удалось начать запись");
+        openSetupDialog({ allowCancel: true });
         return null;
       }
       if (token === voiceCaptureToken) {
@@ -871,7 +918,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function resumeVoiceRecording() {
     if (!voiceSupport.supported || interviewMode !== "voice" || !interviewStarted || interviewFinished) return;
     if (voiceRecording) return;
-    if (!voiceRecorder) return;
+    if (!voiceRecorder) {
+      beginVoiceQuestion();
+      return;
+    }
     voiceRecording = true;
     if (voiceRecorder.state === "paused") {
       try { voiceRecorder.resume(); } catch {}
@@ -1586,10 +1636,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return wrap;
   }
 
-  function appendVoiceResultHint(wrap) {
+  function appendVoiceResultHint(wrap, text = "Подробный разбор — в «Истории» собеседований.") {
     const hint = document.createElement("p");
     hint.className = "interview-result__history-hint";
-    hint.textContent = "Подробный разбор — в «Истории» собеседований.";
+    hint.textContent = text;
     wrap.appendChild(hint);
   }
 
@@ -1599,9 +1649,9 @@ document.addEventListener("DOMContentLoaded", () => {
     voiceAnalysisTotal = Math.max(0, Number(total) || 0);
     answerEl.classList.add("interview-result");
     answerEl.hidden = false;
-    badgeCategory.textContent = "Итог";
+    badgeCategory.hidden = true;
     questionTitleEl.hidden = true;
-    questionTitleEl.textContent = "";
+    applyQuestionTitle("");
     answerEl.innerHTML = "";
 
     const wrap = createVoiceResultCard();
@@ -1634,9 +1684,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (interviewMode !== "voice") return;
     answerEl.classList.add("interview-result");
     answerEl.hidden = false;
-    badgeCategory.textContent = "Итог";
+    badgeCategory.hidden = true;
     questionTitleEl.hidden = true;
-    questionTitleEl.textContent = "";
+    applyQuestionTitle("");
     if (running) {
       updateVoiceAnalysisProgress(voiceAnalysisDone, voiceAnalysisTotal || roundAnswers.length);
       return;
@@ -2498,6 +2548,7 @@ document.addEventListener("DOMContentLoaded", () => {
     stageEl.classList.toggle("is-timer", mode === "timer");
     stageEl.classList.toggle("is-voice", mode === "voice");
     stageEl.classList.toggle("is-retry", mode === "retry");
+    stageEl.classList.toggle("is-mode-voice", interviewMode === "voice");
     toggleAnswerBtn.hidden = mode !== "normal";
     toggleAnswerBtn.disabled = mode !== "normal";
     const showSettings = mode === "normal" || mode === "timer" || mode === "voice" || mode === "retry";
@@ -2571,9 +2622,9 @@ document.addEventListener("DOMContentLoaded", () => {
     answerEl.hidden = false;
 
     if (interviewMode === "voice") {
-      badgeCategory.textContent = "Итог";
+      badgeCategory.hidden = true;
       questionTitleEl.hidden = true;
-      questionTitleEl.textContent = "";
+      applyQuestionTitle("");
       if (voiceReport) {
         updateVoiceResultUi({ report: voiceReport });
       } else {
@@ -2581,23 +2632,31 @@ document.addEventListener("DOMContentLoaded", () => {
         startVoiceReportAnalysis();
       }
     } else if (interviewMode === "timer") {
-      badgeCategory.textContent = "Итог";
-      questionTitleEl.textContent = "Раунд завершён";
+      badgeCategory.hidden = true;
+      applyQuestionTitle("Раунд завершён");
       answerEl.innerHTML = `<p class="interview-result__line">Просмотрено вопросов: <strong>${total}</strong>. Без оценки — режим по таймеру.</p>`;
       counterEl.textContent = total ? `${total} / ${total}` : "0 / 0";
       setQuestionPhoto(RESULT_PHOTOS.neutral);
     } else {
       const weak = getWeakCategories();
       const kind = percent >= 70 ? "good" : percent >= 40 ? "so-so" : "bad";
-      badgeCategory.textContent = "Итог";
-      questionTitleEl.textContent = `Вы прошли ${acceptedCount} из ${total}`;
-      answerEl.innerHTML = [
-        `<p class="interview-result__line">Пропущено: <strong>${skippedCount}</strong> · результат: <strong>${percent}%</strong></p>`,
-        weak.length
-          ? `<p class="interview-result__line">Стоит подтянуть: <strong>${escapeHtml(weak.join(", "))}</strong>.</p>`
-          : `<p class="interview-result__line">Все выбранные разделы закрыты уверенно.</p>`
-      ].join("");
-      updateCounter();
+      badgeCategory.hidden = true;
+      questionTitleEl.hidden = true;
+      applyQuestionTitle("");
+      answerEl.innerHTML = "";
+      const wrap = createVoiceResultCard();
+      renderHistorySummary(wrap, {
+        score: percent,
+        answered: acceptedCount,
+        total,
+        summary: weak.length
+          ? `Стоит подтянуть: ${weak.join(", ")}.`
+          : "Все выбранные разделы закрыты уверенно.",
+        recommendations: []
+      });
+      appendVoiceResultHint(wrap, "Все вопросы, ответы и теория — в «Истории» собеседований.");
+      answerEl.appendChild(wrap);
+      counterEl.textContent = `${acceptedCount} / ${total}`;
       setQuestionPhoto(RESULT_PHOTOS[kind]);
     }
 
@@ -2607,9 +2666,19 @@ document.addEventListener("DOMContentLoaded", () => {
     writeInterviewSessionState();
   }
 
+  function applyQuestionTitle(text, { adaptive = false } = {}) {
+    const value = String(text || "");
+    questionTitleEl.textContent = value;
+    const length = value.length;
+    questionTitleEl.classList.toggle("is-medium", adaptive && length > 50 && length <= 70);
+    questionTitleEl.classList.toggle("is-long", adaptive && length > 70 && length <= 100);
+    questionTitleEl.classList.toggle("is-very-long", adaptive && length > 100);
+  }
+
   function renderCard() {
     answerEl.classList.remove("interview-result");
     questionTitleEl.hidden = false;
+    badgeCategory.hidden = false;
     if (interviewMode !== "voice") {
       if (voiceRecording) stopVoiceRecording({ discard: true, silent: true });
       hideMicIndicator();
@@ -2622,7 +2691,7 @@ document.addEventListener("DOMContentLoaded", () => {
       hideMicIndicator();
       releaseVoiceStream();
       currentQuestion = null;
-      questionTitleEl.textContent = "Не удалось загрузить вопросы";
+      applyQuestionTitle("Не удалось загрузить вопросы");
       badgeCategory.textContent = "—";
       counterEl.textContent = "0 / 0";
       answerEl.hidden = true;
@@ -2640,7 +2709,7 @@ document.addEventListener("DOMContentLoaded", () => {
       releaseVoiceStream();
       currentQuestion = null;
       badgeCategory.textContent = "—";
-      questionTitleEl.textContent = "Настройте собеседование, чтобы начать";
+      applyQuestionTitle("Настройте собеседование, чтобы начать");
       answerEl.hidden = true;
       answerEl.innerHTML = "";
       aiZone.style.display = "none";
@@ -2655,7 +2724,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     currentQuestion = item;
     badgeCategory.textContent = chipLabel(item.category);
-    questionTitleEl.textContent = item.title;
+    applyQuestionTitle(item.title, { adaptive: true });
     questionTitleEl.style.color = "";
     renderAnswer(item);
     toggleAnswerBtn.disabled = false;
@@ -2723,9 +2792,88 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch {}
   }
 
+  function setSetupVoiceCheckUi() {
+    if (setupMode !== "voice" || !voiceSupport.supported) {
+      setupVoiceCheckRow.hidden = true;
+      updateSetupStartLabel();
+      return;
+    }
+    setupVoiceCheckRow.hidden = false;
+    setupVoiceCheckNote.classList.remove("is-success", "is-error");
+    setupVoiceCheckBtn.hidden = false;
+    if (setupVoiceState === "checking") {
+      setupVoiceCheckNote.textContent = "Проверяю микрофон…";
+      setupVoiceCheckBtn.disabled = true;
+      setupVoiceCheckBtn.textContent = "Проверяю…";
+    } else if (setupVoiceState === "ready") {
+      setupVoiceCheckNote.textContent = "Микрофон подключён. Можно продолжать.";
+      setupVoiceCheckNote.classList.add("is-success");
+      setupVoiceCheckBtn.disabled = false;
+      setupVoiceCheckBtn.textContent = "Проверить снова";
+    } else if (setupVoiceState === "error") {
+      setupVoiceCheckNote.textContent = setupVoiceError || "Микрофон недоступен.";
+      setupVoiceCheckNote.classList.add("is-error");
+      setupVoiceCheckBtn.disabled = false;
+      setupVoiceCheckBtn.textContent = "Проверить микрофон";
+    } else {
+      setupVoiceCheckNote.textContent = "Перед началом проверим микрофон.";
+      setupVoiceCheckBtn.disabled = false;
+      setupVoiceCheckBtn.textContent = "Проверить микрофон";
+    }
+    updateSetupStartLabel();
+  }
+
+  async function ensureSetupVoiceReady({ force = false } = {}) {
+    if (setupMode !== "voice") return false;
+    if (!voiceSupport.supported) {
+      setupVoiceState = "error";
+      setupVoiceError = "Браузер не поддерживает микрофон.";
+      setSetupVoiceCheckUi();
+      return false;
+    }
+    if (voiceStream && voiceStream.active) {
+      setupVoiceState = "ready";
+      setupVoiceError = "";
+      setSetupVoiceCheckUi();
+      return true;
+    }
+    if (setupVoiceState === "ready" && micPermissionGranted && !force) {
+      setSetupVoiceCheckUi();
+      return true;
+    }
+    if (setupVoiceCheckPromise && !force) return setupVoiceCheckPromise;
+    setupVoiceState = "checking";
+    setupVoiceError = "";
+    setSetupVoiceCheckUi();
+    const promise = ensureVoiceStream()
+      .then(() => {
+        micPermissionGranted = true;
+        setupVoiceState = "ready";
+        setupVoiceError = "";
+        setMicIndicatorReady("Микрофон подключён");
+        setSetupVoiceCheckUi();
+        return true;
+      })
+      .catch((error) => {
+        micPermissionGranted = false;
+        setupVoiceState = "error";
+        setupVoiceError = voiceMicErrorMessage(error);
+        setMicIndicatorError(setupVoiceError);
+        setSetupVoiceCheckUi();
+        return false;
+      })
+      .finally(() => {
+        if (setupVoiceCheckPromise === promise) setupVoiceCheckPromise = null;
+        setSetupVoiceCheckUi();
+      });
+    setupVoiceCheckPromise = promise;
+    return promise;
+  }
+
   function updateSetupStartLabel() {
     const noCategories = setupCategories.size === 0;
-    setupStartBtn.disabled = noCategories;
+    const voiceBlocked = setupMode === "voice" && setupVoiceState !== "ready";
+    setupStartBtn.disabled = noCategories || voiceBlocked;
     setupCategoryNote.hidden = !noCategories;
     if (interviewFinished) {
       setupStartBtn.textContent = "Начать сначала";
@@ -2758,7 +2906,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
     });
-    updateSetupStartLabel();
+    setSetupVoiceCheckUi();
   }
 
   function openSetupDialog({ allowCancel = false } = {}) {
@@ -2773,11 +2921,18 @@ document.addEventListener("DOMContentLoaded", () => {
     setupCancelBtn.hidden = !allowCancel;
     setupCloseBtn.hidden = !allowCancel;
     if (!setupDialog.open) setupDialog.showModal();
-    requestAnimationFrame(() => setupStartBtn.focus());
+    if (setupMode === "voice") ensureSetupVoiceReady({ force: true });
+    requestAnimationFrame(() => {
+      if (setupMode === "voice" && setupVoiceState === "error") setupVoiceCheckBtn.focus();
+      else setupStartBtn.focus();
+    });
   }
 
   function closeSetupDialog({ resume = true } = {}) {
     if (setupDialog.open) setupDialog.close();
+    if (resume && setupMode === "voice" && (!interviewStarted || interviewFinished) && !voiceRecording) {
+      releaseVoiceStream();
+    }
     if (resume) {
       resumeTimer();
       writeInterviewSessionState();
@@ -2810,6 +2965,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function applySetupOrContinue() {
     if (!setupCategories.size) {
       setupStartBtn.focus();
+      return;
+    }
+    if (setupMode === "voice" && setupVoiceState !== "ready") {
+      ensureSetupVoiceReady({ force: true });
       return;
     }
     const sameCategories = setupCategories.size === selectedCategories.size
@@ -2999,7 +3158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function bootstrap() {
     readInterviewSettings();
-    questionTitleEl.textContent = "Загружаю вопросы…";
+    applyQuestionTitle("Загружаю вопросы…");
     const [rawData] = await Promise.all([
       loadQuestionsData(),
       fetchPublicAiAnswers().catch((e) => console.warn("Interview page: public AI preload failed", e))
@@ -3028,7 +3187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCategoryChips();
     syncChipActiveState();
     if (!allItems.length) {
-      questionTitleEl.textContent = "Не удалось загрузить вопросы";
+      applyQuestionTitle("Не удалось загрузить вопросы");
       revealInterviewPage();
       return;
     }
@@ -3111,6 +3270,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       setupMode = mode === "voice" ? "voice" : "manual";
       syncSetupUi();
+      if (setupMode === "voice") {
+        ensureSetupVoiceReady({ force: true });
+      } else if (!interviewStarted || interviewFinished) {
+        releaseVoiceStream();
+      }
     });
   });
   setupVoiceButtons.forEach((button) => {
@@ -3122,6 +3286,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   });
+  setupVoiceCheckBtn.addEventListener("click", () => ensureSetupVoiceReady({ force: true }));
   setupStartBtn.addEventListener("click", applySetupOrContinue);
   setupCancelBtn.addEventListener("click", () => closeSetupDialog({ resume: true }));
   setupCloseBtn.addEventListener("click", () => closeSetupDialog({ resume: true }));
@@ -3247,7 +3412,7 @@ document.addEventListener("DOMContentLoaded", () => {
   detectMicPermission();
   bootstrap().catch((e) => {
     console.error("Interview bootstrap failed", e);
-    questionTitleEl.textContent = "Не удалось загрузить вопросы";
+    applyQuestionTitle("Не удалось загрузить вопросы");
     if (stageEl) stageEl.classList.add("stage-error");
     revealInterviewPage();
   });
