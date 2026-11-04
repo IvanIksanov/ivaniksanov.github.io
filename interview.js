@@ -8,12 +8,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const skipBtn = document.getElementById("skip-btn");
   const acceptBtn = document.getElementById("accept-btn");
   const stageEl = document.getElementById("stage");
+  const micIndicator = document.getElementById("interview-mic");
+  const micHint = document.getElementById("interview-mic-hint");
+  const voiceModeBtn = document.querySelector('[data-interview-mode="voice"]');
+  const voiceNote = document.getElementById("interview-voice-note");
   const settingsWrap = document.getElementById("interview-settings-wrap");
   const settingsBtn = document.getElementById("interview-settings-btn");
   const settingsBtnLabel = document.getElementById("interview-settings-btn-label");
   const historyBtn = document.getElementById("interview-history-btn");
   const historyDialog = document.getElementById("interview-history");
   const historyList = document.getElementById("interview-history-list");
+  const historyHint = document.getElementById("interview-history-hint");
   const historyLocalNote = document.getElementById("interview-history-local-note");
   const historyCloseBtn = document.getElementById("interview-history-close");
   const timerEl = document.getElementById("interview-timer");
@@ -21,16 +26,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const timerLabel = document.getElementById("interview-timer-label");
   const setupDialog = document.getElementById("interview-setup");
   const setupStartBtn = document.getElementById("interview-setup-start");
+  const setupCategoryNote = document.getElementById("interview-setup-category-note");
   const setupCancelBtn = document.getElementById("interview-setup-cancel");
   const setupCloseBtn = document.getElementById("interview-setup-close");
-  const setupTimerOptions = document.getElementById("interview-timer-options");
+  const setupVoiceOptions = document.getElementById("interview-voice-options");
   const setupModeButtons = Array.from(document.querySelectorAll("[data-interview-mode]"));
-  const setupTimerButtons = Array.from(document.querySelectorAll("[data-timer-seconds]"));
+  const setupVoiceButtons = Array.from(document.querySelectorAll("[data-voice-seconds]"));
 
   if (!categoryFilters || !questionTitleEl || !answerEl || !toggleAnswerBtn || !skipBtn || !acceptBtn
     || !settingsWrap || !settingsBtn || !settingsBtnLabel || !timerEl || !timerFill || !timerLabel
-    || !historyBtn || !historyDialog || !historyList || !historyLocalNote || !historyCloseBtn
-    || !setupDialog || !setupStartBtn || !setupCancelBtn || !setupCloseBtn || !setupTimerOptions) return;
+    || !micIndicator || !micHint || !voiceModeBtn || !voiceNote
+    || !historyBtn || !historyDialog || !historyList || !historyHint || !historyLocalNote || !historyCloseBtn
+    || !setupDialog || !setupStartBtn || !setupCategoryNote || !setupCancelBtn || !setupCloseBtn
+    || !setupVoiceOptions) return;
 
   const PUBLIC_AI_APPEND_CACHE_KEY = "public_ai_append_cache_v1";
   const PUBLIC_AI_APPEND_CACHE_TTL_MS = 10 * 60 * 1000;
@@ -46,7 +54,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const INTERVIEW_HISTORY_SYNC_TS_KEY = "interview_history_sync_ts_v1";
   const INTERVIEW_MODE_KEY = "interview_mode_v1";
   const INTERVIEW_TIMER_SECONDS_KEY = "interview_timer_seconds_v1";
+  const INTERVIEW_VOICE_SECONDS_KEY = "interview_voice_seconds_v1";
   const INTERVIEW_TIMER_STEPS = [15, 30, 60];
+  const VOICE_TIMER_STEPS = [45, 60];
+  const VOICE_POOL_LIMIT = 10;
+  const MIN_SPEECH_RMS = 0.008;
+  const VOICED_RMS = 0.012;
+  const MIN_SPEECH_MS = 450;
   const SUPABASE_URL_DIRECT = "https://mbebpfbmnojlaggdroum.supabase.co";
   const SUPABASE_FUNCTIONS_BASE_DIRECT = "https://mbebpfbmnojlaggdroum.functions.supabase.co";
   const SUPABASE_ANON_KEY_DIRECT = "sb_publishable_T3nVktglpWOrhAtjsYQggw_2ywfFs8C";
@@ -106,7 +120,10 @@ document.addEventListener("DOMContentLoaded", () => {
   let historySyncPromise = null;
   let historySyncTimer = 0;
   let historySyncQueued = false;
+  let historyNoteToken = 0;
   let publicAiMap = new Map();
+  let publicAiSnapshotMap = null;
+  let publicAiSnapshotPromise = null;
   const aiStateByQuestion = new Map();
   let pendingRestoreAnswerExpanded = false;
   let interviewScrollSaveRaf = 0;
@@ -119,7 +136,38 @@ document.addEventListener("DOMContentLoaded", () => {
   let timerRemainingMs = 0;
   let timerFrame = 0;
   let timerPaused = false;
+  let timerPausedByVisibility = false;
   let timerLabelValue = "";
+  let voiceSeconds = 45;
+  let setupVoiceSeconds = 45;
+  let voiceStream = null;
+  let voiceStreamPromise = null;
+  let voiceStreamToken = 0;
+  let voiceRecorder = null;
+  let voiceRecorderReady = null;
+  let voiceCaptureToken = 0;
+  let voiceRecording = false;
+  let voiceAnswerCommitted = false;
+  let voiceQuestionStartedAt = 0;
+  let voiceUploads = new Map();
+  let voiceLevelContext = null;
+  let voiceLevelSource = null;
+  let voiceLevelAnalyser = null;
+  let voiceLevelData = null;
+  let voiceLevelFrame = 0;
+  let voiceLevelStream = null;
+  let voicePeakRms = 0;
+  let voiceLevelFrames = 0;
+  let voiceVoicedMs = 0;
+  let voiceLastLevelAt = 0;
+  let micPermissionGranted = false;
+  let micHintTimer = 0;
+  let voiceReport = null;
+  let voiceAnalysisRunning = false;
+  let voiceAnalysisToken = 0;
+  let voiceAnalysisDone = 0;
+  let voiceAnalysisTotal = 0;
+  let voiceSupport = { supported: false, mobile: false, secure: false };
 
   const aiZone = document.createElement("div");
   aiZone.className = "interview-ai-zone";
@@ -185,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function writeInterviewSessionState() {
     try {
-      const timerActive = interviewMode === "timer" && interviewStarted && !interviewFinished;
+      const timerActive = (interviewMode === "timer" || interviewMode === "voice") && interviewStarted && !interviewFinished;
       const timerRemaining = timerActive
         ? (timerPaused ? timerRemainingMs : Math.max(0, timerDeadline - performance.now()))
         : 0;
@@ -203,6 +251,8 @@ document.addEventListener("DOMContentLoaded", () => {
         roundAnswers,
         mode: interviewMode,
         timerSeconds,
+        voiceSeconds,
+        voiceReport,
         timerRemainingMs: Math.round(timerRemaining),
         timerSavedAt: Date.now(),
         timerPaused: timerActive ? !!timerPaused : false,
@@ -253,6 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
     roundId = typeof saved.roundId === "string" && saved.roundId ? saved.roundId : newRoundId();
+    voiceUploads = new Map();
     roundAnswers = Array.isArray(saved.roundAnswers)
       ? saved.roundAnswers
         .filter((answer) => answer?.id && answer?.title)
@@ -260,30 +311,47 @@ document.addEventListener("DOMContentLoaded", () => {
           id: String(answer.id),
           title: String(answer.title),
           category: canonicalCategory(answer.category),
-          status: answer.status === "skipped" ? "skipped" : "accepted"
+          status: answer.status === "skipped" ? "skipped" : "accepted",
+          transcript: String(answer.transcript || "").slice(0, 3000),
+          durationSeconds: Math.max(0, Number(answer.durationSeconds) || 0),
+          analysis: normalizeVoiceAnalysis(answer.analysis),
+          shortAnswer: !!answer.shortAnswer,
+          echoQuestion: !!answer.echoQuestion
         }))
       : [];
-    if (saved.mode === "manual" || saved.mode === "timer") interviewMode = saved.mode;
+    if (saved.mode === "manual" || (saved.mode === "voice" && voiceSupport.supported)) {
+      interviewMode = saved.mode;
+    }
     const savedTimerSeconds = Number(saved.timerSeconds);
     if (INTERVIEW_TIMER_STEPS.includes(savedTimerSeconds)) timerSeconds = savedTimerSeconds;
+    const savedVoiceSeconds = Number(saved.voiceSeconds);
+    if (VOICE_TIMER_STEPS.includes(savedVoiceSeconds)) voiceSeconds = savedVoiceSeconds;
+    voiceReport = isValidVoiceReport(saved.voiceReport) ? saved.voiceReport : null;
+    voiceAnalysisRunning = false;
+    if (!voiceReport && interviewFinished && interviewMode === "voice") {
+      const stored = readInterviewHistory().find(entry => entry.id === roundId);
+      if (isValidVoiceReport(stored?.report)) voiceReport = stored.report;
+    }
     setupMode = interviewMode;
     setupTimerSeconds = timerSeconds;
+    setupVoiceSeconds = voiceSeconds;
     setupCategories = new Set(selectedCategories);
     persistSelectedCategories();
     syncChipActiveState();
     const savedTimerRemaining = Number(saved.timerRemainingMs);
     const savedTimerSavedAt = Number(saved.timerSavedAt);
     let restoredTimerRemaining = 0;
-    if (interviewMode === "timer" && interviewStarted && !interviewFinished) {
+    if ((interviewMode === "timer" || interviewMode === "voice") && interviewStarted && !interviewFinished) {
+      const totalMs = (interviewMode === "voice" ? voiceSeconds : timerSeconds) * 1000;
       if (Number.isFinite(savedTimerRemaining) && savedTimerRemaining >= 0) {
         restoredTimerRemaining = saved.timerPaused
           ? savedTimerRemaining
           : Math.max(0, savedTimerRemaining - Math.max(0, Date.now() - (Number.isFinite(savedTimerSavedAt) ? savedTimerSavedAt : Date.now())));
       } else {
-        restoredTimerRemaining = timerSeconds * 1000;
+        restoredTimerRemaining = totalMs;
       }
-      if (restoredTimerRemaining <= 0) restoredTimerRemaining = timerSeconds * 1000;
-      restoredTimerRemaining = Math.min(restoredTimerRemaining, timerSeconds * 1000);
+      if (restoredTimerRemaining <= 0) restoredTimerRemaining = totalMs;
+      restoredTimerRemaining = Math.min(restoredTimerRemaining, totalMs);
     }
     pendingRestoreAnswerExpanded = !!saved.answerExpanded;
     if (interviewFinished) {
@@ -292,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderCard();
       if (!interviewStarted) {
         openSetupDialog({ allowCancel: false });
-      } else if (interviewMode === "timer") {
+      } else if (interviewMode === "timer" || interviewMode === "voice") {
         pauseTimer();
         timerRemainingMs = restoredTimerRemaining;
         timerPaused = true;
@@ -386,6 +454,586 @@ document.addEventListener("DOMContentLoaded", () => {
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
+  }
+
+  function detectVoiceSupport() {
+    const ua = navigator.userAgent || "";
+    const mobile = /Android|iPhone|iPad|iPod|Mobile|Windows Phone|CriOS|FxiOS|EdgiOS/i.test(ua)
+      || navigator.userAgentData?.mobile === true;
+    const secure = window.isSecureContext !== false;
+    const mediaDevices = !!(navigator.mediaDevices
+      && typeof navigator.mediaDevices.getUserMedia === "function");
+    const mediaRecorder = typeof window.MediaRecorder === "function";
+    return { supported: secure && mediaDevices && mediaRecorder, mobile, secure, mediaDevices, mediaRecorder };
+  }
+
+  function applyVoiceSupportUi() {
+    voiceSupport = detectVoiceSupport();
+    if (voiceSupport.supported) {
+      micIndicator.disabled = false;
+      voiceNote.hidden = true;
+      voiceModeBtn.classList.remove("is-disabled");
+      voiceModeBtn.removeAttribute("aria-disabled");
+      return;
+    }
+    micIndicator.disabled = true;
+    setMicIndicatorError("Микрофон недоступен в этом браузере");
+    voiceNote.hidden = false;
+    voiceNote.textContent = !voiceSupport.secure
+      ? "Для записи голоса откройте сайт по HTTPS."
+      : !voiceSupport.mediaDevices
+        ? "Браузер не даёт доступ к микрофону. Попробуйте Chrome, Safari или Firefox."
+        : "Браузер не поддерживает запись аудио. Обновите браузер.";
+    voiceModeBtn.classList.add("is-disabled");
+    voiceModeBtn.setAttribute("aria-disabled", "true");
+  }
+
+  function setMicButton({ on, ready = false, live = false, error = false, title }) {
+    micIndicator.classList.toggle("is-on", on);
+    micIndicator.classList.toggle("is-off", !on && !ready);
+    micIndicator.classList.toggle("is-ready", !on && ready);
+    micIndicator.classList.toggle("is-live", on && live);
+    micIndicator.classList.toggle("is-error", error);
+    micIndicator.setAttribute("aria-pressed", String(on));
+    micIndicator.removeAttribute("aria-disabled");
+    micIndicator.setAttribute("aria-label", title);
+    if (!on || !live) {
+      micIndicator.style.setProperty("--mic-scale", "1");
+      micIndicator.style.setProperty("--mic-glow", "0");
+    }
+  }
+
+  function showMicHint(text) {
+    if (!text) return;
+    micHint.textContent = text;
+    micHint.hidden = false;
+    window.clearTimeout(micHintTimer);
+    micHintTimer = window.setTimeout(() => {
+      micHint.hidden = true;
+    }, 5000);
+  }
+
+  function hideMicHint() {
+    window.clearTimeout(micHintTimer);
+    micHintTimer = 0;
+    micHint.hidden = true;
+  }
+
+  function setMicIndicatorLive() {
+    hideMicHint();
+    setMicButton({ on: true, live: true, title: "Микрофон включён, идёт запись" });
+  }
+
+  function setMicIndicatorIdle(title = "Микрофон включён") {
+    setMicButton({ on: true, title });
+  }
+
+  function setMicIndicatorError(title) {
+    setMicButton({ on: false, error: true, title });
+  }
+
+  function setMicIndicatorOff(title = "Микрофон выключен") {
+    setMicButton({ on: false, title });
+  }
+
+  function setMicIndicatorReady(title = "Разрешение на микрофон есть. Он понадобится в голосовом собеседовании.") {
+    setMicButton({ on: false, ready: true, title });
+  }
+
+  function hideMicIndicator() {
+    if (micPermissionGranted && voiceSupport.supported) setMicIndicatorReady();
+    else setMicIndicatorOff();
+    hideMicHint();
+    stopVoiceLevelAnimation();
+  }
+
+  async function detectMicPermission() {
+    if (!voiceSupport.supported || !navigator.permissions?.query) return;
+    try {
+      const status = await navigator.permissions.query({ name: "microphone" });
+      const apply = () => {
+        if (voiceRecording || (voiceStream && voiceStream.active)) return;
+        if (status.state === "granted") {
+          micPermissionGranted = true;
+          setMicIndicatorReady();
+        } else if (status.state === "denied") {
+          micPermissionGranted = false;
+          setMicIndicatorError("Доступ к микрофону запрещён");
+        } else {
+          micPermissionGranted = false;
+          setMicIndicatorOff();
+        }
+      };
+      apply();
+      status.onchange = apply;
+    } catch {}
+  }
+
+  const ASR_CREDIT_MARKER = /(редактор\s+субтитров|корректор\s*:?\s*[А-ЯЁA-Z]|субтитры\s+(?:подготовлены|сделаны|созданы|переведены))/i;
+
+  const ASR_ARTIFACT_PATTERNS = [
+    /рекомендуемые\s+данные[^\n]*/gi,
+    /https?:\/\/[^\s]+/gi,
+    /www\.[^\s]+/gi,
+    /продолжение\s+следует[.!…]*/gi,
+    /подписывайтесь\s+на\s+канал[^.!?\n]*/gi,
+    /спасибо\s+за\s+внимание[.!?]*/gi,
+    /до\s+новых\s+встреч[.!?]*/gi
+  ];
+
+  function sanitizeTranscript(value) {
+    let text = String(value || "");
+    const creditIndex = text.search(ASR_CREDIT_MARKER);
+    if (creditIndex >= 0) text = text.slice(0, creditIndex);
+    ASR_ARTIFACT_PATTERNS.forEach((pattern) => {
+      text = text.replace(pattern, " ");
+    });
+    return text.replace(/\s{2,}/g, " ").trim();
+  }
+
+  function isShortTranscript(value) {
+    const text = sanitizeTranscript(value);
+    if (!text) return true;
+    const words = text.split(/\s+/).filter(Boolean);
+    if (words.length < 4 || text.length < 18) return true;
+    const normalized = text.toLowerCase().replace(/[.,!?…]/g, " ").replace(/\s+/g, " ").trim();
+    return /^(не знаю|не помню|не уверен|не уверена|сложно сказать|затрудняюсь ответить|не могу ответить)(?:\s|$)/.test(normalized);
+  }
+
+  function wordsForEcho(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((word) => word.length >= 2);
+  }
+
+  function isQuestionEcho(answer, question) {
+    const answerWords = wordsForEcho(answer);
+    const questionWords = wordsForEcho(question);
+    if (answerWords.length < 3 || questionWords.length < 3) return false;
+    const questionSet = new Set(questionWords);
+    const overlap = answerWords.filter((word) => questionSet.has(word)).length;
+    const ratio = overlap / answerWords.length;
+    return ratio >= 0.75 && answerWords.length <= questionWords.length + 4;
+  }
+
+  function voiceMicErrorMessage(error) {
+    const name = String(error?.name || "");
+    if (name === "NotAllowedError" || name === "SecurityError") {
+      return "Разрешите доступ к микрофону в настройках браузера и попробуйте снова.";
+    }
+    if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+      return "Микрофон не найден. Подключите его и попробуйте снова.";
+    }
+    if (name === "NotReadableError" || name === "TrackStartError") {
+      return "Микрофон занят другим приложением. Освободите его и попробуйте снова.";
+    }
+    return "Не удалось включить микрофон. Проверьте разрешение и попробуйте снова.";
+  }
+
+  function stopVoiceLevelAnimation() {
+    if (voiceLevelFrame) cancelAnimationFrame(voiceLevelFrame);
+    voiceLevelFrame = 0;
+    micIndicator.style.setProperty("--mic-scale", "1");
+    micIndicator.style.setProperty("--mic-glow", "0");
+  }
+
+  function releaseVoiceLevel() {
+    stopVoiceLevelAnimation();
+    try { voiceLevelSource?.disconnect(); } catch {}
+    try { voiceLevelContext?.close(); } catch {}
+    voiceLevelSource = null;
+    voiceLevelContext = null;
+    voiceLevelAnalyser = null;
+    voiceLevelData = null;
+    voiceLevelStream = null;
+  }
+
+  function ensureVoiceLevel(stream) {
+    if (voiceLevelContext && voiceLevelStream === stream && voiceLevelAnalyser) return true;
+    releaseVoiceLevel();
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return false;
+    try {
+      const context = new AudioCtor();
+      const source = context.createMediaStreamSource(stream);
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.72;
+      source.connect(analyser);
+      voiceLevelContext = context;
+      voiceLevelSource = source;
+      voiceLevelAnalyser = analyser;
+      voiceLevelData = new Uint8Array(analyser.fftSize);
+      voiceLevelStream = stream;
+      if (context.state === "suspended") context.resume().catch(() => {});
+      return true;
+    } catch {
+      releaseVoiceLevel();
+      return false;
+    }
+  }
+
+  function tickVoiceLevel() {
+    if (!voiceRecording || !voiceLevelAnalyser || !voiceLevelData) {
+      voiceLevelFrame = 0;
+      return;
+    }
+    voiceLevelAnalyser.getByteTimeDomainData(voiceLevelData);
+    let sum = 0;
+    for (let i = 0; i < voiceLevelData.length; i += 1) {
+      const value = (voiceLevelData[i] - 128) / 128;
+      sum += value * value;
+    }
+    const rms = Math.sqrt(sum / voiceLevelData.length);
+    const now = performance.now();
+    if (voiceLastLevelAt) {
+      const delta = Math.min(100, Math.max(0, now - voiceLastLevelAt));
+      if (rms > VOICED_RMS) voiceVoicedMs += delta;
+    }
+    voiceLastLevelAt = now;
+    voiceLevelFrames += 1;
+    voicePeakRms = Math.max(voicePeakRms, rms);
+    const level = Math.min(1, Math.max(0, (rms - 0.015) * 7));
+    micIndicator.style.setProperty("--mic-scale", String(1 + level * 0.45));
+    micIndicator.style.setProperty("--mic-glow", String(level));
+    voiceLevelFrame = requestAnimationFrame(tickVoiceLevel);
+  }
+
+  function startVoiceLevel(stream) {
+    if (!stream || !ensureVoiceLevel(stream)) return;
+    if (voiceLevelFrame) cancelAnimationFrame(voiceLevelFrame);
+    voiceLastLevelAt = 0;
+    voiceLevelFrame = requestAnimationFrame(tickVoiceLevel);
+  }
+
+  function normalizeVoiceAnalysis(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    const rawScore = raw.score;
+    const score = rawScore === null || rawScore === undefined || rawScore === "" ? NaN : Number(rawScore);
+    const verdicts = new Set(["good", "partial", "weak", "skipped", "unknown"]);
+    const list = (value) => (Array.isArray(value)
+      ? value.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 5)
+      : []);
+    return {
+      score: Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : null,
+      verdict: verdicts.has(raw.verdict) ? raw.verdict : "unknown",
+      summary: String(raw.summary || "").slice(0, 600),
+      strengths: list(raw.strengths),
+      gaps: list(raw.gaps),
+      improvedAnswer: String(raw.improvedAnswer || "").slice(0, 1200),
+      cleanedAnswer: String(raw.cleanedAnswer || "").slice(0, 1200)
+    };
+  }
+
+  function voiceSkippedAnalysis() {
+    return { score: null, verdict: "skipped", summary: "Вопрос пропущен.", strengths: [], gaps: [], improvedAnswer: "" };
+  }
+
+  function voiceFailureAnalysis(message) {
+    return {
+      score: null,
+      verdict: "unknown",
+      summary: String(message || "Не удалось распознать ответ.").slice(0, 600),
+      strengths: [],
+      gaps: [],
+      improvedAnswer: ""
+    };
+  }
+
+  function ensureVoiceStream() {
+    if (voiceStream && voiceStream.active) return Promise.resolve(voiceStream);
+    if (voiceStreamPromise) return voiceStreamPromise;
+    const token = voiceStreamToken;
+    const promise = navigator.mediaDevices.getUserMedia({
+      audio: {
+        channelCount: { ideal: 1 },
+        sampleRate: { ideal: 48000 },
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    }).then((stream) => {
+      if (token !== voiceStreamToken) {
+        stream.getTracks().forEach((track) => {
+          try { track.stop(); } catch {}
+        });
+        throw new Error("voice_stream_released");
+      }
+      voiceStream = stream;
+      return stream;
+    }).finally(() => {
+      if (voiceStreamPromise === promise) voiceStreamPromise = null;
+    });
+    voiceStreamPromise = promise;
+    return promise;
+  }
+
+  function releaseVoiceStream() {
+    voiceStreamToken += 1;
+    voiceStreamPromise = null;
+    voiceRecorderReady = null;
+    releaseVoiceLevel();
+    const stream = voiceStream;
+    voiceStream = null;
+    if (!stream) return;
+    stream.getTracks().forEach((track) => {
+      try { track.stop(); } catch {}
+    });
+  }
+
+  function pickVoiceMimeType() {
+    const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+    if (typeof window.MediaRecorder?.isTypeSupported !== "function") return "";
+    return candidates.find((type) => {
+      try { return window.MediaRecorder.isTypeSupported(type); } catch { return false; }
+    }) || "";
+  }
+
+  function createVoiceRecorder(stream) {
+    const mimeType = pickVoiceMimeType();
+    const recorder = new MediaRecorder(stream, {
+      ...(mimeType ? { mimeType } : {}),
+      // 64 kbps mono Opus/AAC достаточно для речи и вдвое уменьшает upload.
+      audioBitsPerSecond: 64000
+    });
+    const chunks = [];
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event.data && event.data.size) chunks.push(event.data);
+    });
+    recorder.voiceChunks = chunks;
+    recorder.addEventListener("error", (event) => {
+      console.warn("Voice recorder error", event?.error || event);
+      voiceRecording = false;
+      setMicIndicatorError("Ошибка записи");
+      stopVoiceLevelAnimation();
+    });
+    return recorder;
+  }
+
+  async function beginVoiceQuestion() {
+    if (!voiceSupport.supported || interviewMode !== "voice" || interviewFinished) return;
+    const token = ++voiceCaptureToken;
+    voiceRecording = true;
+    voiceAnswerCommitted = false;
+    voiceRecorder = null;
+    voiceQuestionStartedAt = performance.now();
+    voicePeakRms = 0;
+    voiceLevelFrames = 0;
+    voiceVoicedMs = 0;
+    voiceLastLevelAt = 0;
+    if (!(voiceStream && voiceStream.active)) {
+      setMicIndicatorOff("Запрашиваю доступ к микрофону");
+    }
+
+    voiceRecorderReady = (async () => {
+      let stream;
+      try {
+        stream = await ensureVoiceStream();
+      } catch (error) {
+        if (token === voiceCaptureToken) {
+          voiceRecording = false;
+          setMicIndicatorError(voiceMicErrorMessage(error));
+        }
+        return null;
+      }
+      if (token !== voiceCaptureToken || !voiceRecording || interviewFinished) return null;
+      const recorder = createVoiceRecorder(stream);
+      voiceRecorder = recorder;
+      try {
+        recorder.start(1000);
+      } catch (error) {
+        voiceRecorder = null;
+        voiceRecording = false;
+        setMicIndicatorError("Не удалось начать запись");
+        return null;
+      }
+      if (token === voiceCaptureToken) {
+        setMicIndicatorLive();
+        startVoiceLevel(stream);
+      }
+      return recorder;
+    })();
+    return voiceRecorderReady;
+  }
+
+  function pauseVoiceRecording() {
+    if (!voiceRecording) return;
+    voiceRecording = false;
+    try {
+      if (voiceRecorder?.state === "recording") voiceRecorder.pause();
+    } catch {}
+    stopVoiceLevelAnimation();
+    setMicIndicatorIdle("Запись приостановлена");
+  }
+
+  function resumeVoiceRecording() {
+    if (!voiceSupport.supported || interviewMode !== "voice" || !interviewStarted || interviewFinished) return;
+    if (voiceRecording) return;
+    if (!voiceRecorder) return;
+    voiceRecording = true;
+    if (voiceRecorder.state === "paused") {
+      try { voiceRecorder.resume(); } catch {}
+      setMicIndicatorLive();
+      startVoiceLevel(voiceStream);
+      return;
+    }
+    if (voiceRecorder.state === "inactive") beginVoiceQuestion();
+  }
+
+  async function stopVoiceCapture({ discard = false } = {}) {
+    voiceRecording = false;
+    const ready = voiceRecorderReady;
+    let recorder = voiceRecorder;
+    voiceRecorder = null;
+    voiceRecorderReady = null;
+    if (!recorder && ready) {
+      try { recorder = await ready; } catch { recorder = null; }
+    }
+    if (!recorder) return null;
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let fallback = 0;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(fallback);
+        const chunks = recorder.voiceChunks || [];
+        if (discard || !chunks.length) {
+          resolve(null);
+          return;
+        }
+        resolve(new Blob(chunks, { type: recorder.mimeType || chunks[0]?.type || "audio/webm" }));
+      };
+      recorder.addEventListener("stop", finish, { once: true });
+      if (recorder.state === "inactive") {
+        finish();
+        return;
+      }
+      // Страховка на случай, если браузер не пришлёт stop.
+      fallback = window.setTimeout(finish, 3000);
+      try {
+        recorder.stop();
+      } catch {
+        finish();
+      }
+    });
+  }
+
+  function stopVoiceRecording({ discard = false, label = "Запись остановлена", silent = false, release = false } = {}) {
+    const promise = stopVoiceCapture({ discard });
+    if (release) promise.finally(releaseVoiceStream);
+    if (discard) {
+      hideMicIndicator();
+      return promise;
+    }
+    if (!silent) setMicIndicatorIdle(label);
+    return promise;
+  }
+
+  function advanceInterview() {
+    if (interviewIndex >= interviewPool.length - 1) {
+      finishInterview();
+      return;
+    }
+    interviewIndex += 1;
+    renderCard();
+  }
+
+  function finalizeVoiceAnswer(reason) {
+    if (voiceAnswerCommitted || !currentQuestion || interviewMode !== "voice") return;
+    voiceAnswerCommitted = true;
+    const item = currentQuestion;
+    const durationSeconds = Math.max(0, Math.round((performance.now() - voiceQuestionStartedAt) / 1000));
+    const skipped = reason === "skipped";
+    const silentRecording = !skipped
+      && voiceLevelFrames > 0
+      && (voicePeakRms < MIN_SPEECH_RMS || voiceVoicedMs < MIN_SPEECH_MS);
+    const blobPromise = stopVoiceCapture({ discard: skipped || silentRecording });
+    voiceCaptureToken += 1;
+
+    if (skipped) {
+      hideMicIndicator();
+      bumpRoundStat(item, "skipped");
+      recordRoundAnswer(item, "skipped", "", durationSeconds, { analysis: voiceSkippedAnalysis() });
+      skippedCount += 1;
+      advanceInterview();
+      return;
+    }
+
+    bumpRoundStat(item, "accepted");
+    recordRoundAnswer(item, "accepted", "", durationSeconds);
+    acceptedCount += 1;
+    skipBtn.disabled = true;
+    acceptBtn.disabled = true;
+    stopVoiceLevelAnimation();
+    setMicIndicatorIdle("Сохраняю ответ");
+
+    // Переходим к следующему вопросу только после того, как запись
+    // действительно остановлена: иначе быстрый клик может оборвать её.
+    let advanced = false;
+    const advanceOnce = () => {
+      if (advanced) return;
+      advanced = true;
+      advanceInterview();
+    };
+    blobPromise.then(advanceOnce, advanceOnce);
+
+    if (silentRecording) {
+      updateRoundAnswer(item.id, {
+        transcript: "",
+        analysis: null,
+        shortAnswer: true
+      });
+      hideMicIndicator();
+      return;
+    }
+
+    const upload = blobPromise
+      .then((blob) => {
+        if (!blob || blob.size < 512) {
+          return { transcript: "", analysis: null, emptyAudio: true };
+        }
+        return uploadVoiceAnswer(item, blob, durationSeconds);
+      })
+      .then((result) => {
+        const transcript = sanitizeTranscript(result?.transcript || "").slice(0, 3000);
+        const echoQuestion = !!result?.echoQuestion || isQuestionEcho(transcript, item.title);
+        const shortAnswer = !!result?.shortAnswer || isShortTranscript(transcript) || echoQuestion;
+        if (shortAnswer) {
+          updateRoundAnswer(item.id, {
+            transcript,
+            analysis: null,
+            shortAnswer: true,
+            echoQuestion
+          });
+        } else {
+          updateRoundAnswer(item.id, {
+            transcript,
+            shortAnswer: false,
+            echoQuestion: false,
+            ...(result?.analysis ? { analysis: normalizeVoiceAnalysis(result.analysis) } : {})
+          });
+        }
+        writeInterviewSessionState();
+      })
+      .catch((error) => {
+        console.warn("Voice answer upload failed", error);
+        updateRoundAnswer(item.id, {
+          transcript: "",
+          analysis: null,
+          shortAnswer: true,
+          echoQuestion: false
+        });
+        writeInterviewSessionState();
+      });
+
+    voiceUploads.set(item.id, upload);
+    upload.finally(() => {
+      if (voiceUploads.get(item.id) === upload) voiceUploads.delete(item.id);
+    });
   }
 
   function escapeHtml(str) {
@@ -578,7 +1226,7 @@ document.addEventListener("DOMContentLoaded", () => {
       prev.type = "button";
       prev.className = "ai-nav-btn";
       prev.textContent = "‹";
-      prev.title = "Предыдущий ответ";
+      prev.setAttribute("aria-label", "Предыдущий ответ");
       prev.addEventListener("click", () => {
         state.index = (state.index - 1 + rows.length) % rows.length;
         renderAiSupplement(questionId);
@@ -594,7 +1242,7 @@ document.addEventListener("DOMContentLoaded", () => {
       next.type = "button";
       next.className = "ai-nav-btn";
       next.textContent = "›";
-      next.title = "Следующий ответ";
+      next.setAttribute("aria-label", "Следующий ответ");
       next.addEventListener("click", () => {
         state.index = (state.index + 1) % rows.length;
         renderAiSupplement(questionId);
@@ -715,6 +1363,60 @@ document.addEventListener("DOMContentLoaded", () => {
     writePublicAppendAnswersCache(data || []);
   }
 
+  function readPublicAiAnswer(questionId) {
+    const list = publicAiMap.get(questionId) || [];
+    return list.length ? list[list.length - 1] : null;
+  }
+
+  function loadPublicAiSnapshotMap() {
+    if (publicAiSnapshotMap) return Promise.resolve(publicAiSnapshotMap);
+    if (publicAiSnapshotPromise) return publicAiSnapshotPromise;
+    publicAiSnapshotPromise = fetch("over/public_ai_append_snapshot.json")
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        const map = new Map();
+        (Array.isArray(data?.rows) ? data.rows : []).forEach((row) => {
+          if (!row?.question_id || !row?.content) return;
+          if (!map.has(row.question_id)) map.set(row.question_id, row);
+        });
+        publicAiSnapshotMap = map;
+        return map;
+      })
+      .catch(() => new Map())
+      .finally(() => {
+        publicAiSnapshotPromise = null;
+      });
+    return publicAiSnapshotPromise;
+  }
+
+  function renderAiAnswerInto(slot, answer) {
+    if (!slot) return;
+    const raw = typeof answer === "string"
+      ? answer
+      : answer?.answer || answer?.content || "";
+    const content = stripContinuationMarkers(raw);
+    if (!content) return;
+    slot.innerHTML = formatAiText(content);
+    slot.dataset.loaded = "true";
+  }
+
+  async function loadManualAiAnswer(questionId, slot) {
+    if (!slot || slot.dataset.loaded === "true") return;
+    const live = readPublicAiAnswer(questionId);
+    if (live) {
+      renderAiAnswerInto(slot, live);
+      return;
+    }
+    slot.textContent = "Загружаю теорию…";
+    const map = await loadPublicAiSnapshotMap();
+    const row = map.get(questionId);
+    if (!row) {
+      slot.textContent = "Теория для этого вопроса пока не готова.";
+      return;
+    }
+    renderAiAnswerInto(slot, row);
+  }
+
   async function maybeSaveAiAnswerToCloud(questionId, response) {
     const api = window.AppSupabase;
     if (!api?.client || !api?.getUser || !api?.saveAiAnswer) return null;
@@ -745,12 +1447,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return window.QAtoDevAiPrompts.interview.append(item);
   }
 
-  async function getAiProxyHeaders() {
+  async function getFunctionHeaders({ json = true } = {}) {
     const api = window.AppSupabase || null;
     const headers = {
-      apikey: api?.anonKey || SUPABASE_ANON_KEY_DIRECT,
-      "Content-Type": "application/json"
+      apikey: api?.anonKey || SUPABASE_ANON_KEY_DIRECT
     };
+    if (json) headers["Content-Type"] = "application/json";
     try {
       const session = api?.getSession ? await api.getSession() : null;
       if (session?.access_token) {
@@ -758,6 +1460,10 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch {}
     return headers;
+  }
+
+  async function getAiProxyHeaders() {
+    return getFunctionHeaders({ json: true });
   }
 
   async function callInterviewAiProxy(body) {
@@ -780,6 +1486,72 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
     throw lastError || new Error("AI proxy request failed");
+  }
+
+  function voiceMimeFilename(type) {
+    const value = String(type || "").toLowerCase();
+    if (value.includes("mp4")) return "answer.mp4";
+    if (value.includes("ogg")) return "answer.ogg";
+    if (value.includes("wav")) return "answer.wav";
+    return "answer.webm";
+  }
+
+  async function uploadVoiceAnswer(item, blob, durationSeconds) {
+    const api = window.AppSupabase || null;
+    const urls = Array.from(new Set([
+      `${SUPABASE_FUNCTIONS_BASE_DIRECT}/voice-answer`,
+      `${api?.url || SUPABASE_URL_DIRECT}/functions/v1/voice-answer`
+    ]));
+    const buildForm = () => {
+      const form = new FormData();
+      form.append("audio", blob, voiceMimeFilename(blob.type));
+      form.append("questionTitle", String(item.title || "").slice(0, 500));
+      form.append("category", chipLabel(item.category));
+      form.append("referenceAnswer", referenceAnswerText(item));
+      form.append("durationSeconds", String(Math.max(0, Math.round(durationSeconds) || 0)));
+      return form;
+    };
+
+    let lastError = null;
+    for (const url of urls) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 60000);
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: await getFunctionHeaders({ json: false }),
+          body: buildForm(),
+          signal: controller.signal
+        });
+        window.clearTimeout(timeout);
+        if (!response.ok) {
+          let detail = "";
+          try {
+            const payload = await response.json();
+            detail = payload?.error || payload?.detail || "";
+          } catch {}
+          const error = new Error(detail || `voice-answer failed: ${response.status}`);
+          error.status = response.status;
+          throw error;
+        }
+        const payload = await response.json();
+        return {
+          transcript: String(payload?.transcript || "").slice(0, 3000),
+          analysis: normalizeVoiceAnalysis(payload?.analysis),
+          shortAnswer: !!payload?.shortAnswer,
+          echoQuestion: !!payload?.echoQuestion
+        };
+      } catch (error) {
+        window.clearTimeout(timeout);
+        lastError = error;
+        // 400/401/403/413/415/422 не станут успешнее на втором URL.
+        // 404/408/429 и сетевые/5xx ошибки пробуем через резервный адрес.
+        const status = Number(error?.status) || 0;
+        const fatal = status >= 400 && status < 500 && ![404, 408, 429].includes(status);
+        if (fatal) break;
+      }
+    }
+    throw lastError || new Error("voice-answer failed");
   }
 
   async function requestAiAppend(item) {
@@ -806,6 +1578,169 @@ document.addEventListener("DOMContentLoaded", () => {
       answerType: "append",
       arrivedAt: Date.now()
     };
+  }
+
+  function createVoiceResultCard() {
+    const wrap = document.createElement("div");
+    wrap.className = "interview-result__report";
+    return wrap;
+  }
+
+  function appendVoiceResultHint(wrap) {
+    const hint = document.createElement("p");
+    hint.className = "interview-result__history-hint";
+    hint.textContent = "Подробный разбор — в «Истории» собеседований.";
+    wrap.appendChild(hint);
+  }
+
+  function updateVoiceAnalysisProgress(done, total, label = "Анализирую ответы…") {
+    if (interviewMode !== "voice") return;
+    voiceAnalysisDone = Math.max(0, Number(done) || 0);
+    voiceAnalysisTotal = Math.max(0, Number(total) || 0);
+    answerEl.classList.add("interview-result");
+    answerEl.hidden = false;
+    badgeCategory.textContent = "Итог";
+    questionTitleEl.hidden = true;
+    questionTitleEl.textContent = "";
+    answerEl.innerHTML = "";
+
+    const wrap = createVoiceResultCard();
+    const summary = document.createElement("div");
+    summary.className = "interview-history__report-summary";
+    const ring = document.createElement("span");
+    ring.className = "interview-history__score-ring is-loading";
+    const ringValue = document.createElement("span");
+    ringValue.className = "interview-history__score-ring-value";
+    ringValue.textContent = "…";
+    ring.appendChild(ringValue);
+    const copy = document.createElement("div");
+    copy.className = "interview-history__report-copy";
+    const line = document.createElement("p");
+    line.className = "interview-history__report-line";
+    line.textContent = "Отчёт готовится";
+    const text = document.createElement("p");
+    text.className = "interview-history__report-text";
+    text.textContent = voiceAnalysisTotal > 0
+      ? `${label} ${voiceAnalysisDone} из ${voiceAnalysisTotal}.`
+      : "Анализирую ответы. Обычно это занимает до минуты.";
+    copy.append(line, text);
+    summary.append(ring, copy);
+    wrap.appendChild(summary);
+    appendVoiceResultHint(wrap);
+    answerEl.appendChild(wrap);
+  }
+
+  function updateVoiceResultUi({ running = false, report = voiceReport } = {}) {
+    if (interviewMode !== "voice") return;
+    answerEl.classList.add("interview-result");
+    answerEl.hidden = false;
+    badgeCategory.textContent = "Итог";
+    questionTitleEl.hidden = true;
+    questionTitleEl.textContent = "";
+    if (running) {
+      updateVoiceAnalysisProgress(voiceAnalysisDone, voiceAnalysisTotal || roundAnswers.length);
+      return;
+    }
+    answerEl.innerHTML = "";
+    const wrap = createVoiceResultCard();
+    if (report) {
+      renderHistorySummary(wrap, {
+        score: report.overallScore,
+        answered: report.answered,
+        total: report.total,
+        summary: report.summary,
+        recommendations: report.recommendations
+      });
+      counterEl.textContent = `${report.answered} / ${report.total}`;
+      const kind = report.overallScore == null ? "neutral" : report.overallScore >= 70 ? "good" : report.overallScore >= 40 ? "so-so" : "bad";
+      setQuestionPhoto(RESULT_PHOTOS[kind]);
+    } else {
+      renderHistorySummary(wrap, {
+        score: null,
+        answered: acceptedCount,
+        total: interviewPool.length || 0,
+        summary: "Отчёт не сформирован. Попробуйте открыть «Историю» позже.",
+        recommendations: []
+      });
+      counterEl.textContent = `${acceptedCount} / ${interviewPool.length || 0}`;
+      setQuestionPhoto(RESULT_PHOTOS.neutral);
+    }
+    appendVoiceResultHint(wrap);
+    answerEl.appendChild(wrap);
+  }
+
+  function buildVoiceJob() {
+    const history = readInterviewHistory();
+    const number = history.reduce((max, entry) => Math.max(max, Number(entry.number) || 0), 0) + 1;
+    return {
+      id: roundId,
+      ts: Date.now(),
+      mode: "voice",
+      number,
+      categories: Array.from(selectedCategories),
+      answers: roundAnswers.map(answer => ({
+        ...answer,
+        categoryLabel: chipLabel(answer.category),
+        referenceAnswer: referenceAnswerText(answer)
+      }))
+    };
+  }
+
+  async function startVoiceReportAnalysis() {
+    if (interviewMode !== "voice" || !roundAnswers.length || voiceAnalysisRunning) return;
+    const token = ++voiceAnalysisToken;
+    voiceAnalysisRunning = true;
+    voiceReport = null;
+    voiceAnalysisDone = 0;
+    voiceAnalysisTotal = roundAnswers.length;
+    setInterviewNavMode("retry");
+    updateVoiceResultUi({ running: true });
+    writeInterviewSessionState();
+
+    const pendingUploads = [...new Set(voiceUploads.values())];
+    if (pendingUploads.length) {
+      updateVoiceAnalysisProgress(0, roundAnswers.length, "Распознаю ответы…");
+      await Promise.allSettled(pendingUploads);
+      if (token !== voiceAnalysisToken) return;
+    }
+
+    const job = buildVoiceJob();
+    if (!window.QAtoDevVoiceReport) {
+      voiceAnalysisRunning = false;
+      updateVoiceResultUi({});
+      answerEl.innerText = "Не удалось запустить анализ. Откройте отчёт ещё раз.";
+      return;
+    }
+    window.QAtoDevVoiceReport.enqueue(job);
+    window.QAtoDevVoiceReport.processPending({
+      onlyId: job.id,
+      onProgress: (progressJob, done, total) => {
+        if (token !== voiceAnalysisToken || progressJob.id !== roundId) return;
+        updateVoiceAnalysisProgress(done, total);
+      },
+      onComplete: (completedJob, report) => {
+        if (token !== voiceAnalysisToken || completedJob.id !== roundId) return;
+        voiceReport = report;
+        voiceAnalysisRunning = false;
+        updateVoiceResultUi({ report });
+        setInterviewNavMode("retry");
+        writeInterviewSessionState();
+        if (historyDialog.open) renderInterviewHistory();
+      }
+    }).catch(error => {
+      console.warn("Voice report processing failed", error);
+      if (token !== voiceAnalysisToken) return;
+      voiceAnalysisRunning = false;
+      updateVoiceResultUi({});
+      setInterviewNavMode("retry");
+    });
+  }
+
+  function isValidVoiceReport(report) {
+    return !!report
+      && Array.isArray(report.categories)
+      && Number.isFinite(Number(report.total))
+      && Number(report.total) > 0;
   }
 
   async function onAiAppendClick() {
@@ -866,17 +1801,38 @@ document.addEventListener("DOMContentLoaded", () => {
     roundStats.set(item.category, stats);
   }
 
-  function recordRoundAnswer(item, status) {
-    if (!item?.id || !item?.title) return;
+  function referenceAnswerText(item) {
+    const source = allItems.find((question) => question.id === item?.id) || {};
+    return String(source.answer || "")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 1500);
+  }
+
+  function recordRoundAnswer(item, status, transcript = "", durationSeconds = 0, extra = {}) {
+    if (!item?.id || !item?.title) return null;
     const existing = roundAnswers.find((answer) => answer.id === item.id);
     const value = {
       id: item.id,
       title: item.title,
       category: item.category,
-      status: status === "skipped" ? "skipped" : "accepted"
+      status: status === "skipped" ? "skipped" : "accepted",
+      transcript: String(transcript || "").slice(0, 3000),
+      durationSeconds: Math.max(0, Math.round(Number(durationSeconds) || 0)),
+      ...extra
     };
     if (existing) Object.assign(existing, value);
     else roundAnswers.push(value);
+    return existing || value;
+  }
+
+  function updateRoundAnswer(id, patch) {
+    const answer = roundAnswers.find((entry) => entry.id === id);
+    if (!answer) return null;
+    Object.assign(answer, patch || {});
+    return answer;
   }
 
   function getWeakCategories(limit = 2) {
@@ -922,6 +1878,8 @@ document.addEventListener("DOMContentLoaded", () => {
       id: String(row?.id || ""),
       number: Math.max(0, Number(row?.number) || 0),
       ts: Date.parse(row?.created_at) || Number(row?.ts) || 0,
+      mode: row?.mode === "voice" ? "voice" : "manual",
+      report: row?.report && typeof row.report === "object" ? row.report : null,
       categories: [...new Set((Array.isArray(row?.categories) ? row.categories : [])
         .map(canonicalCategory)
         .filter(Boolean))],
@@ -935,7 +1893,10 @@ document.addEventListener("DOMContentLoaded", () => {
           id: String(question.id),
           title: String(question.title),
           category: canonicalCategory(question.category),
-          status: question.status === "skipped" ? "skipped" : "accepted"
+          status: question.status === "skipped" ? "skipped" : "accepted",
+          transcript: String(question.transcript || "").slice(0, 3000),
+          durationSeconds: Math.max(0, Number(question.durationSeconds) || 0),
+          analysis: question.analysis && typeof question.analysis === "object" ? question.analysis : null
         }))
     };
   }
@@ -972,8 +1933,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function updateInterviewLocalNote() {
+    const token = ++historyNoteToken;
     const userId = await getInterviewCloudUserId();
-    historyLocalNote.hidden = !!userId;
+    if (token !== historyNoteToken) return;
+    const signedIn = !!userId;
+    historyHint.hidden = !signedIn;
+    historyLocalNote.hidden = signedIn;
   }
 
   function scheduleInterviewHistorySync(delay = 0) {
@@ -999,13 +1964,24 @@ document.addEventListener("DOMContentLoaded", () => {
         await updateInterviewLocalNote();
         return { ok: false, skipped: "signed-out" };
       }
+      historyHint.hidden = false;
       historyLocalNote.hidden = true;
-      const { data: remoteRows, error } = await client
+      const baseSelect = "user_id,id,number,created_at,categories,accepted,skipped,total,percent,questions";
+      let remoteRows = null;
+      let remoteError = null;
+      ({ data: remoteRows, error: remoteError } = await client
         .from(INTERVIEW_HISTORY_TABLE)
-        .select("user_id,id,number,created_at,categories,accepted,skipped,total,percent,questions")
+        .select(`${baseSelect},mode,report`)
         .eq("user_id", userId)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
+        .order("created_at", { ascending: true }));
+      if (remoteError) {
+        ({ data: remoteRows, error: remoteError } = await client
+          .from(INTERVIEW_HISTORY_TABLE)
+          .select(baseSelect)
+          .eq("user_id", userId)
+          .order("created_at", { ascending: true }));
+      }
+      if (remoteError) throw remoteError;
 
       const local = readInterviewHistory();
       const byId = new Map();
@@ -1029,13 +2005,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const remoteIds = new Set((remoteRows || []).map((row) => String(row.id)));
       const uploadRows = merged
-        .filter((entry) => !remoteIds.has(entry.id))
+        .filter((entry) => !remoteIds.has(entry.id) && entry.mode !== "voice")
         .map((entry) => historyRowFromLocal(entry, userId));
       if (uploadRows.length) {
         const { error: upsertError } = await client
           .from(INTERVIEW_HISTORY_TABLE)
           .upsert(uploadRows, { onConflict: "user_id,id", ignoreDuplicates: true });
         if (upsertError) throw upsertError;
+      }
+
+      const voiceRows = merged
+        .filter((entry) => !remoteIds.has(entry.id) && entry.mode === "voice")
+        .map((entry) => ({
+          ...historyRowFromLocal(entry, userId),
+          mode: "voice",
+          report: entry.report || null
+        }));
+      if (voiceRows.length) {
+        const { error: voiceError } = await client
+          .from(INTERVIEW_HISTORY_TABLE)
+          .upsert(voiceRows, { onConflict: "user_id,id" });
+        if (voiceError) console.warn("Interview voice history sync skipped", voiceError);
       }
 
       try { localStorage.setItem(INTERVIEW_HISTORY_SYNC_TS_KEY, String(Date.now())); } catch {}
@@ -1090,19 +2080,319 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function stripContinuationMarkers(value) {
+    return String(value || "")
+      .replace(/[ \t]*продолжение[ \t]+следует[.!…]*[ \t]*/gi, "")
+      .trim();
+  }
+
+  function formatInlineAiText(value) {
+    let text = escapeHtml(stripContinuationMarkers(value));
+    text = text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    text = text.replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>");
+    text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+    return text;
+  }
+
+  function createHistoryLabel(text, kind = "") {
+    const label = document.createElement("span");
+    label.className = "interview-history__detail-label";
+    if (kind) label.dataset.kind = kind;
+    label.textContent = text;
+    return label;
+  }
+
+  function appendHistoryDetailList(container, title, items, kind = "") {
+    if (!Array.isArray(items) || !items.length) return;
+    const block = document.createElement("div");
+    block.className = "interview-history__detail-block";
+    const list = document.createElement("ul");
+    list.className = "interview-history__detail-list";
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      li.innerHTML = formatInlineAiText(item);
+      list.appendChild(li);
+    });
+    block.append(createHistoryLabel(title, kind), list);
+    container.appendChild(block);
+  }
+
+  function collapseOtherHistoryQuestions(currentDetails) {
+    const roots = new Set([
+      historyList,
+      currentDetails.closest(".interview-history__item")
+    ].filter(Boolean));
+    roots.forEach((root) => {
+      root.querySelectorAll(".interview-history__question-details[open]").forEach((element) => {
+        if (element !== currentDetails) element.open = false;
+      });
+    });
+  }
+
+  function collapseHistoryDetails() {
+    historyList.querySelectorAll("details[open]").forEach((element) => {
+      element.open = false;
+    });
+  }
+
+  function scoreProgressColor(score) {
+    if (score == null || !Number.isFinite(Number(score))) return "var(--muted)";
+    const value = Math.max(0, Math.min(100, Number(score)));
+    const hue = Math.round((value / 100) * 120);
+    return `hsl(${hue} 62% 43%)`;
+  }
+
+  function appendSnapshotAnswers(container, question) {
+    const aiAnswer = document.createElement("div");
+    aiAnswer.className = "interview-history__answer-text ai-rich";
+    container.append(createHistoryLabel("Теория для повторения", "ai"), aiAnswer);
+
+    return () => loadManualAiAnswer(question.id, aiAnswer).catch(() => {
+      if (aiAnswer.dataset.loaded !== "true") {
+        aiAnswer.textContent = "Не удалось загрузить теорию.";
+      }
+    });
+  }
+
+  function createQuestionStatus(passed) {
+    const status = document.createElement("span");
+    status.className = `interview-history__question-status ${passed ? "is-passed" : "is-failed"}`;
+    status.textContent = passed ? "✓" : "✕";
+    status.setAttribute("aria-label", passed ? "Засчитан" : "Не засчитан");
+    return status;
+  }
+
+  function conciseHistorySummary({ summary, recommendations }) {
+    const text = String(summary || "").trim();
+    const sentences = text.match(/[^.!?]+[.!?]?/g)?.map((sentence) => sentence.trim()).filter(Boolean) || [];
+    const meaningful = sentences.filter((sentence) =>
+      !/(получил|получен|ответил|балл|оценк|категор|процент|из \d+)/i.test(sentence)
+    );
+    if (meaningful.length) return meaningful.join(" ");
+    if (Array.isArray(recommendations) && recommendations.length) {
+      return recommendations.map((item) => String(item || "").trim()).filter(Boolean).slice(0, 2).join(" ");
+    }
+    return "";
+  }
+
+  function renderHistorySummary(container, { score: rawScore, answered, total, summary: summaryText, recommendations }) {
+    const summary = document.createElement("div");
+    summary.className = "interview-history__report-summary";
+    const value = rawScore == null ? NaN : Number(rawScore);
+    const scoreValue = Number.isFinite(value) ? Math.max(0, Math.min(100, Math.round(value))) : null;
+    const ring = document.createElement("span");
+    ring.className = "interview-history__score-ring";
+    ring.style.setProperty("--score", String(scoreValue == null ? 0 : scoreValue));
+    ring.style.setProperty("--ring-color", scoreProgressColor(scoreValue));
+    ring.setAttribute("role", "img");
+    ring.setAttribute("aria-label", scoreValue == null ? "Общий результат не сформирован" : `Общий результат: ${scoreValue}%`);
+    const ringValue = document.createElement("span");
+    ringValue.className = "interview-history__score-ring-value";
+    ringValue.textContent = scoreValue == null ? "—" : `${scoreValue}%`;
+    ring.appendChild(ringValue);
+    const copy = document.createElement("div");
+    copy.className = "interview-history__report-copy";
+    const line = document.createElement("p");
+    line.className = "interview-history__report-line";
+    line.textContent = `Отвечено ${Number(answered) || 0} из ${Number(total) || 0}`;
+    copy.append(line);
+    const concise = conciseHistorySummary({ summary: summaryText, recommendations });
+    if (concise) {
+      const text = document.createElement("p");
+      text.className = "interview-history__report-text";
+      text.innerHTML = formatInlineAiText(concise);
+      copy.appendChild(text);
+    }
+    summary.append(ring, copy);
+    container.appendChild(summary);
+  }
+
+  function renderVoiceHistoryQuestion(question) {
+    const details = document.createElement("details");
+    details.className = `interview-history__question-details is-${question.status === "skipped" ? "skipped" : "accepted"}`;
+    details.dataset.questionId = question.id;
+    const summary = document.createElement("summary");
+    summary.className = "interview-history__question-summary";
+
+    const rawScore = question.analysis?.score;
+    const numericScore = rawScore == null ? NaN : Number(rawScore);
+    const passed = Number.isFinite(numericScore) && numericScore >= 70;
+    const status = createQuestionStatus(passed);
+
+    const title = document.createElement("span");
+    title.className = "interview-history__question-title";
+    title.textContent = question.title;
+
+    const categoryLabel = chipLabel(canonicalCategory(question.category));
+    const category = document.createElement("span");
+    category.className = "interview-history__category interview-history__question-category";
+    category.textContent = categoryLabel;
+
+    const main = document.createElement("span");
+    main.className = "interview-history__question-main";
+    main.append(status, title);
+    if (categoryLabel) main.appendChild(category);
+    summary.appendChild(main);
+
+    const body = document.createElement("div");
+    body.className = "interview-history__question-body";
+    const isSkipped = question.status === "skipped" || question.analysis?.verdict === "skipped";
+    const echoQuestion = !isSkipped
+      && (!!question.echoQuestion || isQuestionEcho(question.transcript, question.title));
+    const shortAnswer = !isSkipped
+      && (!!question.shortAnswer || isShortTranscript(question.transcript) || echoQuestion);
+    if (isSkipped) {
+      const note = document.createElement("p");
+      note.className = "interview-history__skipped-note";
+      note.textContent = "Вопрос пропущен — ответа пользователя нет.";
+      body.appendChild(note);
+    } else if (shortAnswer) {
+      const note = document.createElement("p");
+      note.className = "interview-history__skipped-note";
+      const transcript = sanitizeTranscript(question.transcript);
+      note.textContent = echoQuestion
+        ? "Похоже, вы повторили вопрос, а не ответили на него."
+        : transcript
+          ? `Ответ слишком короткий для разбора. Распознано: «${transcript}».`
+          : "Ответ не распознан — вопрос не засчитан.";
+      body.appendChild(note);
+    } else {
+      const answerText = sanitizeTranscript(question.analysis?.cleanedAnswer || "");
+      if (answerText || question.transcript) {
+        const card = document.createElement("div");
+        card.className = "interview-history__answer-card is-user";
+        const label = document.createElement("span");
+        label.className = "interview-history__answer-card-label";
+        label.textContent = "Ваш ответ";
+        card.appendChild(label);
+        if (answerText) {
+          const answer = document.createElement("p");
+          answer.className = "interview-history__answer-card-text";
+          answer.innerHTML = formatInlineAiText(answerText);
+          card.appendChild(answer);
+        } else {
+          const transcript = document.createElement("pre");
+          transcript.className = "interview-history__transcript";
+          transcript.textContent = sanitizeTranscript(question.transcript);
+          card.appendChild(transcript);
+        }
+        body.appendChild(card);
+      }
+      if (question.analysis?.summary) {
+        const card = document.createElement("div");
+        card.className = "interview-history__answer-card is-analysis";
+        const label = document.createElement("span");
+        label.className = "interview-history__answer-card-label";
+        label.textContent = "Разбор ИИ";
+        const analysis = document.createElement("div");
+        analysis.className = "interview-history__answer-card-text ai-rich";
+        analysis.innerHTML = formatAiText(stripContinuationMarkers(question.analysis.summary));
+        card.append(label, analysis);
+        body.appendChild(card);
+      }
+      appendHistoryDetailList(body, "Сильные стороны", question.analysis?.strengths, "strengths");
+      appendHistoryDetailList(body, "Что подтянуть", question.analysis?.gaps, "gaps");
+      if (question.analysis?.improvedAnswer) {
+        const improved = document.createElement("div");
+        improved.className = "interview-history__analysis ai-rich";
+        improved.innerHTML = formatAiText(stripContinuationMarkers(question.analysis.improvedAnswer));
+        body.append(createHistoryLabel("Как можно ответить", "improved"), improved);
+      }
+      if (!answerText && !question.transcript && !question.analysis) {
+        const empty = document.createElement("p");
+        empty.className = "interview-history__analysis is-muted";
+        empty.textContent = "Разбор пока недоступен.";
+        body.appendChild(empty);
+      }
+    }
+    const loadSnapshotAnswer = appendSnapshotAnswers(body, question);
+
+    details.append(summary, body);
+    details.addEventListener("toggle", () => {
+      if (!details.open) return;
+      collapseOtherHistoryQuestions(details);
+      loadSnapshotAnswer();
+    });
+    return details;
+  }
+
+  function renderManualHistoryQuestion(question) {
+    const details = document.createElement("details");
+    details.className = `interview-history__question-details is-${question.status === "skipped" ? "skipped" : "accepted"}`;
+    details.dataset.questionId = question.id;
+    const summary = document.createElement("summary");
+    summary.className = "interview-history__question-summary";
+
+    const passed = question.status !== "skipped";
+    const status = createQuestionStatus(passed);
+
+    const title = document.createElement("span");
+    title.className = "interview-history__question-title";
+    title.textContent = question.title;
+
+    const categoryLabel = chipLabel(canonicalCategory(question.category));
+    const category = document.createElement("span");
+    category.className = "interview-history__category interview-history__question-category";
+    category.textContent = categoryLabel;
+
+    const main = document.createElement("span");
+    main.className = "interview-history__question-main";
+    main.append(status, title);
+    if (categoryLabel) main.appendChild(category);
+    summary.appendChild(main);
+
+    const body = document.createElement("div");
+    body.className = "interview-history__question-body";
+    const loadSnapshotAnswer = appendSnapshotAnswers(body, question);
+
+    details.append(summary, body);
+    details.addEventListener("toggle", () => {
+      if (!details.open) return;
+      collapseOtherHistoryQuestions(details);
+      loadSnapshotAnswer();
+    });
+    return details;
+  }
+
   function renderInterviewHistory() {
+    const openHistoryIds = new Set(
+      [...historyList.querySelectorAll(".interview-history__item[open]")]
+        .map((element) => element.dataset.historyId || "")
+        .filter(Boolean)
+    );
+    const openQuestionKeys = new Set(
+      [...historyList.querySelectorAll(".interview-history__question-details[open]")]
+        .map((element) => {
+          const historyId = element.closest(".interview-history__item")?.dataset.historyId || "";
+          const questionId = element.dataset.questionId || "";
+          return historyId && questionId ? `${historyId}::${questionId}` : "";
+        })
+        .filter(Boolean)
+    );
+    const savedScrollTop = historyList.scrollTop;
     historyList.innerHTML = "";
     const history = readInterviewHistory();
     if (!history.length) {
       const empty = document.createElement("p");
       empty.className = "interview-history__empty";
-      empty.textContent = "Пока нет завершённых ручных собеседований.";
+      empty.textContent = "Пока нет завершённых собеседований.";
       historyList.appendChild(empty);
       return;
     }
     history.forEach((entry, index) => {
       const details = document.createElement("details");
-      details.className = "interview-history__item";
+      const rawScore = entry.mode === "voice" ? entry.report?.overallScore : entry.percent;
+      const scoreValue = rawScore == null ? NaN : Number(rawScore);
+      const hasResult = Number(entry.total) > 0 && Number.isFinite(scoreValue);
+      const resultKind = !hasResult ? "neutral" : scoreValue >= 70 ? "good" : scoreValue >= 40 ? "so-so" : "bad";
+      details.className = `interview-history__item is-${resultKind}`;
+      details.dataset.historyId = entry.id;
+      details.addEventListener("toggle", () => {
+        if (details.open) return;
+        details.querySelectorAll(".interview-history__question-details[open]").forEach((question) => {
+          question.open = false;
+        });
+      });
 
       const summary = document.createElement("summary");
       const summaryTop = document.createElement("div");
@@ -1112,69 +2402,74 @@ document.addEventListener("DOMContentLoaded", () => {
       name.className = "interview-history__name";
       name.textContent = `Собеседование ${history.length - index}`;
 
-      const score = document.createElement("span");
-      score.className = "interview-history__score";
-      score.textContent = `${entry.accepted || 0} из ${entry.total || 0} · ${entry.percent || 0}%`;
-      summaryTop.append(name, score);
-
       const date = document.createElement("span");
       date.className = "interview-history__date";
       date.textContent = formatHistoryDate(entry.ts);
 
-      const link = document.createElement("a");
-      link.className = "interview-history__link";
-      link.href = "questions.html";
-      link.setAttribute("aria-label", "Перейти на страницу вопросов");
-      link.innerHTML = '<span>К вопросам</span><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"></path><path d="M21 3l-9 9"></path><path d="M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"></path></svg>';
-      link.addEventListener("click", (event) => event.stopPropagation());
+      const badges = document.createElement("div");
+      badges.className = "interview-history__badges";
+      if (entry.mode === "voice") {
+        const mode = document.createElement("span");
+        mode.className = "interview-history__mode";
+        mode.setAttribute("role", "img");
+        mode.setAttribute("aria-label", "Голосовое собеседование");
+        mode.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5 11a7 7 0 0 0 14 0"></path><path d="M12 18v3"></path></svg>';
+        badges.appendChild(mode);
+      }
+      summaryTop.append(name, date);
+      if (badges.childElementCount) summaryTop.appendChild(badges);
 
-      const metaLeft = document.createElement("div");
-      metaLeft.className = "interview-history__meta-left";
-      metaLeft.append(date);
-
-      const categories = document.createElement("div");
-      categories.className = "interview-history__categories";
-      (entry.categories || []).forEach((category) => {
-        const chip = document.createElement("span");
-        chip.className = "interview-history__category";
-        chip.textContent = chipLabel(canonicalCategory(category));
-        categories.appendChild(chip);
-      });
-
-      const meta = document.createElement("div");
-      meta.className = "interview-history__meta";
-      meta.append(metaLeft, categories);
-
-      const summaryAction = document.createElement("div");
-      summaryAction.className = "interview-history__summary-action";
-      summaryAction.appendChild(link);
-
-      summary.append(summaryTop, meta, summaryAction);
+      summary.append(summaryTop);
 
       const body = document.createElement("div");
       body.className = "interview-history__questions";
-      (entry.questions || []).forEach((question) => {
-        const row = document.createElement("div");
-        row.className = `interview-history__question is-${question.status === "skipped" ? "skipped" : "accepted"}`;
-
-        const title = document.createElement("span");
-        title.className = "interview-history__question-title";
-        title.textContent = question.title;
-        row.appendChild(title);
-
-        const categoryLabel = chipLabel(canonicalCategory(question.category));
-        if (categoryLabel) {
-          const category = document.createElement("span");
-          category.className = "interview-history__category interview-history__question-category";
-          category.textContent = categoryLabel;
-          row.appendChild(category);
+      const appendQuestion = (question, element) => {
+        body.appendChild(element);
+        if (openQuestionKeys.has(`${entry.id}::${question.id}`)) {
+          element.open = true;
         }
+      };
+      const hasVoiceReport = entry.mode === "voice" && isValidVoiceReport(entry.report);
+      if (hasVoiceReport) {
+        renderHistorySummary(body, {
+          score: entry.report.overallScore,
+          answered: entry.report.answered,
+          total: entry.report.total,
+          summary: entry.report.summary,
+          recommendations: entry.report.recommendations
+        });
+        const reportQuestions = entry.report.categories.flatMap((category) =>
+          Array.isArray(category.questions) ? category.questions : []
+        );
+        const questions = reportQuestions.length ? reportQuestions : (entry.questions || []);
+        questions.forEach((question) => {
+          appendQuestion(question, renderVoiceHistoryQuestion(question));
+        });
+      } else if (entry.mode !== "voice") {
+        renderHistorySummary(body, {
+          score: entry.percent,
+          answered: entry.accepted,
+          total: entry.total,
+          summary: "",
+          recommendations: []
+        });
+        (entry.questions || []).forEach((question) => {
+          appendQuestion(question, renderManualHistoryQuestion(question));
+        });
+      } else {
+        (entry.questions || []).forEach((question) => {
+          appendQuestion(question, question.analysis
+            ? renderVoiceHistoryQuestion(question)
+            : renderManualHistoryQuestion(question));
+        });
+      }
 
-        body.appendChild(row);
-      });
-
+      details.open = openHistoryIds.has(entry.id);
       details.append(summary, body);
       historyList.appendChild(details);
+    });
+    requestAnimationFrame(() => {
+      historyList.scrollTop = savedScrollTop;
     });
   }
 
@@ -1184,7 +2479,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function buildInterviewPool() {
     const pool = shuffleInPlace(getSelectedItemsFlat());
-    return pool.slice(0, Math.min(pool.length, INTERVIEW_POOL_LIMIT));
+    const limit = interviewMode === "voice" ? VOICE_POOL_LIMIT : INTERVIEW_POOL_LIMIT;
+    return pool.slice(0, Math.min(pool.length, limit));
   }
 
   function updateCounter() {
@@ -1198,17 +2494,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function setInterviewNavMode(mode) {
-    stageEl.classList.toggle("is-running", mode === "normal" || mode === "timer");
+    stageEl.classList.toggle("is-running", mode === "normal" || mode === "timer" || mode === "voice");
     stageEl.classList.toggle("is-timer", mode === "timer");
+    stageEl.classList.toggle("is-voice", mode === "voice");
     stageEl.classList.toggle("is-retry", mode === "retry");
     toggleAnswerBtn.hidden = mode !== "normal";
     toggleAnswerBtn.disabled = mode !== "normal";
-    const showSettings = mode === "normal" || mode === "timer" || mode === "retry";
+    const showSettings = mode === "normal" || mode === "timer" || mode === "voice" || mode === "retry";
     settingsWrap.hidden = !showSettings;
     historyBtn.hidden = !showSettings;
     settingsBtn.hidden = !showSettings;
     if (showSettings) {
-      const timerMode = mode === "timer";
+      const timerMode = mode === "timer" || mode === "voice";
       const retryMode = mode === "retry";
       settingsBtnLabel.textContent = retryMode ? "Заново" : timerMode ? "Пауза" : "Настройки";
       settingsBtn.setAttribute("aria-label", retryMode
@@ -1226,6 +2523,16 @@ document.addEventListener("DOMContentLoaded", () => {
       timerEl.hidden = false;
       return;
     }
+    if (mode === "voice") {
+      skipBtn.disabled = false;
+      skipBtn.style.visibility = "";
+      skipBtn.textContent = "Пропустить вопрос";
+      acceptBtn.disabled = false;
+      acceptBtn.style.visibility = "";
+      acceptBtn.textContent = "Закончить ответ";
+      timerEl.hidden = false;
+      return;
+    }
     timerEl.hidden = true;
     if (mode === "start") {
       skipBtn.disabled = true;
@@ -1233,7 +2540,6 @@ document.addEventListener("DOMContentLoaded", () => {
       acceptBtn.disabled = false;
       acceptBtn.style.visibility = "";
       acceptBtn.textContent = "Начать собеседование";
-      acceptBtn.title = "Начать собеседование (Enter)";
       return;
     }
     if (mode === "retry") {
@@ -1246,15 +2552,16 @@ document.addEventListener("DOMContentLoaded", () => {
     skipBtn.disabled = false;
     skipBtn.style.visibility = "";
     skipBtn.textContent = "Пропустить вопрос";
-    skipBtn.title = "Пропустить вопрос (→)";
     acceptBtn.disabled = false;
     acceptBtn.style.visibility = "";
     acceptBtn.textContent = "Засчитать ответ";
-    acceptBtn.title = "Засчитать ответ (Enter)";
   }
 
   function finishInterview() {
     stopTimer();
+    if (voiceRecording) stopVoiceRecording({ discard: true, silent: true });
+    releaseVoiceStream();
+    hideMicIndicator();
     interviewFinished = true;
     interviewStarted = false;
     currentQuestion = null;
@@ -1263,7 +2570,17 @@ document.addEventListener("DOMContentLoaded", () => {
     answerEl.classList.add("interview-result");
     answerEl.hidden = false;
 
-    if (interviewMode === "timer") {
+    if (interviewMode === "voice") {
+      badgeCategory.textContent = "Итог";
+      questionTitleEl.hidden = true;
+      questionTitleEl.textContent = "";
+      if (voiceReport) {
+        updateVoiceResultUi({ report: voiceReport });
+      } else {
+        updateVoiceResultUi({});
+        startVoiceReportAnalysis();
+      }
+    } else if (interviewMode === "timer") {
       badgeCategory.textContent = "Итог";
       questionTitleEl.textContent = "Раунд завершён";
       answerEl.innerHTML = `<p class="interview-result__line">Просмотрено вопросов: <strong>${total}</strong>. Без оценки — режим по таймеру.</p>`;
@@ -1292,9 +2609,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderCard() {
     answerEl.classList.remove("interview-result");
+    questionTitleEl.hidden = false;
+    if (interviewMode !== "voice") {
+      if (voiceRecording) stopVoiceRecording({ discard: true, silent: true });
+      hideMicIndicator();
+      releaseVoiceStream();
+    }
     const item = currentPoolItem();
     if (!item) {
       stopTimer();
+      if (voiceRecording) stopVoiceRecording({ discard: true, silent: true });
+      hideMicIndicator();
+      releaseVoiceStream();
       currentQuestion = null;
       questionTitleEl.textContent = "Не удалось загрузить вопросы";
       badgeCategory.textContent = "—";
@@ -1309,6 +2635,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!interviewStarted) {
       stopTimer();
+      if (voiceRecording) stopVoiceRecording({ discard: true, silent: true });
+      hideMicIndicator();
+      releaseVoiceStream();
       currentQuestion = null;
       badgeCategory.textContent = "—";
       questionTitleEl.textContent = "Настройте собеседование, чтобы начать";
@@ -1330,7 +2659,11 @@ document.addEventListener("DOMContentLoaded", () => {
     questionTitleEl.style.color = "";
     renderAnswer(item);
     toggleAnswerBtn.disabled = false;
-    if (interviewMode === "timer") {
+    if (interviewMode === "voice") {
+      setInterviewNavMode("voice");
+      startTimer();
+      beginVoiceQuestion();
+    } else if (interviewMode === "timer") {
       setInterviewNavMode("timer");
       startTimer();
     } else {
@@ -1342,6 +2675,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function rebuildInterviewPool({ deferStart = false } = {}) {
+    releaseVoiceStream();
     interviewPool = buildInterviewPool();
     interviewIndex = 0;
     interviewStarted = !deferStart;
@@ -1350,7 +2684,11 @@ document.addEventListener("DOMContentLoaded", () => {
     skippedCount = 0;
     roundStats = new Map();
     roundAnswers = [];
+    voiceUploads = new Map();
     roundId = newRoundId();
+    voiceAnalysisToken += 1;
+    voiceReport = null;
+    voiceAnalysisRunning = false;
     pendingRestoreAnswerExpanded = false;
     setQuestionPhoto(DEFAULT_PHOTO);
     renderCard();
@@ -1364,22 +2702,31 @@ document.addEventListener("DOMContentLoaded", () => {
   function readInterviewSettings() {
     try {
       const mode = localStorage.getItem(INTERVIEW_MODE_KEY);
-      if (mode === "manual" || mode === "timer") interviewMode = mode;
+      if (mode === "manual" || (mode === "voice" && voiceSupport.supported)) {
+        interviewMode = mode;
+      }
       const seconds = Number(localStorage.getItem(INTERVIEW_TIMER_SECONDS_KEY));
       if (INTERVIEW_TIMER_STEPS.includes(seconds)) timerSeconds = seconds;
+      const voice = Number(localStorage.getItem(INTERVIEW_VOICE_SECONDS_KEY));
+      if (VOICE_TIMER_STEPS.includes(voice)) voiceSeconds = voice;
     } catch {}
     setupMode = interviewMode;
     setupTimerSeconds = timerSeconds;
+    setupVoiceSeconds = voiceSeconds;
   }
 
   function persistInterviewSettings() {
     try {
       localStorage.setItem(INTERVIEW_MODE_KEY, interviewMode);
       localStorage.setItem(INTERVIEW_TIMER_SECONDS_KEY, String(timerSeconds));
+      localStorage.setItem(INTERVIEW_VOICE_SECONDS_KEY, String(voiceSeconds));
     } catch {}
   }
 
   function updateSetupStartLabel() {
+    const noCategories = setupCategories.size === 0;
+    setupStartBtn.disabled = noCategories;
+    setupCategoryNote.hidden = !noCategories;
     if (interviewFinished) {
       setupStartBtn.textContent = "Начать сначала";
       return;
@@ -1387,9 +2734,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (interviewStarted) {
       const sameCategories = setupCategories.size === selectedCategories.size
         && [...setupCategories].every((category) => selectedCategories.has(category));
+      const sameTime = setupMode === "voice" ? setupVoiceSeconds === voiceSeconds : true;
       const unchanged = sameCategories
         && setupMode === interviewMode
-        && setupTimerSeconds === timerSeconds;
+        && sameTime;
       setupStartBtn.textContent = unchanged ? "Продолжить" : "Начать заново";
       return;
     }
@@ -1397,14 +2745,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function syncSetupUi() {
+    setupDialog.dataset.setupMode = setupMode;
     setupModeButtons.forEach((button) => {
       const active = button.dataset.interviewMode === setupMode;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
     });
-    setupTimerOptions.hidden = setupMode !== "timer";
-    setupTimerButtons.forEach((button) => {
-      const active = Number(button.dataset.timerSeconds) === setupTimerSeconds;
+    setupVoiceOptions.classList.toggle("is-open", setupMode === "voice");
+    setupVoiceOptions.inert = setupMode !== "voice";
+    setupVoiceButtons.forEach((button) => {
+      const active = Number(button.dataset.voiceSeconds) === setupVoiceSeconds;
       button.classList.toggle("is-active", active);
       button.setAttribute("aria-pressed", String(active));
     });
@@ -1414,6 +2764,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function openSetupDialog({ allowCancel = false } = {}) {
     setupMode = interviewMode;
     setupTimerSeconds = timerSeconds;
+    setupVoiceSeconds = voiceSeconds;
     setupCategories = new Set(selectedCategories);
     syncChipActiveState();
     pauseTimer();
@@ -1434,16 +2785,20 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function openHistoryDialog() {
-    historyResumeTimer = interviewMode === "timer" && interviewStarted && !interviewFinished && !timerPaused;
+    historyResumeTimer = (interviewMode === "timer" || interviewMode === "voice")
+      && interviewStarted && !interviewFinished && !timerPaused;
     pauseTimer();
     writeInterviewSessionState();
     updateInterviewLocalNote();
     scheduleInterviewHistorySync(0);
+    collapseHistoryDetails();
+    historyList.scrollTop = 0;
     renderInterviewHistory();
     if (!historyDialog.open) historyDialog.showModal();
   }
 
   function closeHistoryDialog() {
+    collapseHistoryDetails();
     if (historyDialog.open) historyDialog.close();
     if (historyResumeTimer) {
       historyResumeTimer = false;
@@ -1453,10 +2808,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function applySetupOrContinue() {
+    if (!setupCategories.size) {
+      setupStartBtn.focus();
+      return;
+    }
     const sameCategories = setupCategories.size === selectedCategories.size
       && [...setupCategories].every((category) => selectedCategories.has(category));
+    const sameTime = setupMode === "timer"
+      ? setupTimerSeconds === timerSeconds
+      : setupMode === "voice" ? setupVoiceSeconds === voiceSeconds : true;
     const unchanged = interviewStarted && !interviewFinished
-      && sameCategories && setupMode === interviewMode && setupTimerSeconds === timerSeconds;
+      && sameCategories && setupMode === interviewMode && sameTime;
     if (unchanged) {
       closeSetupDialog({ resume: true });
       return;
@@ -1467,27 +2829,40 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function startInterviewFromSetup() {
+    if (!setupCategories.size) return;
     interviewMode = setupMode;
     timerSeconds = setupTimerSeconds;
+    voiceSeconds = setupVoiceSeconds;
     persistInterviewSettings();
     closeSetupDialog({ resume: false });
     stopTimer();
+    stopVoiceRecording({ discard: true, silent: true });
     rebuildInterviewPool({ deferStart: false });
+  }
+
+  function isTimedMode() {
+    return interviewMode === "timer" || interviewMode === "voice";
+  }
+
+  function activeTimerSeconds() {
+    return interviewMode === "voice" ? voiceSeconds : timerSeconds;
   }
 
   function stopTimer() {
     cancelAnimationFrame(timerFrame);
     timerFrame = 0;
     timerPaused = false;
+    timerPausedByVisibility = false;
     timerRemainingMs = 0;
     timerLabelValue = "";
     timerEl.hidden = true;
+    timerEl.classList.remove("is-expired");
     timerFill.style.width = "0%";
-    timerLabel.textContent = `${timerSeconds} с`;
+    timerLabel.textContent = `${activeTimerSeconds()} с`;
   }
 
   function setTimerVisual(remaining) {
-    const total = Math.max(1, timerSeconds * 1000);
+    const total = Math.max(1, activeTimerSeconds() * 1000);
     const safeRemaining = Math.max(0, Math.min(total, remaining));
     timerFill.style.width = `${(safeRemaining / total) * 100}%`;
     const secondsLeft = Math.max(0, Math.ceil(safeRemaining / 1000));
@@ -1499,21 +2874,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function startTimer() {
     stopTimer();
-    if (interviewMode !== "timer" || !interviewStarted || interviewFinished) return;
-    timerRemainingMs = timerSeconds * 1000;
+    if (!isTimedMode() || !interviewStarted || interviewFinished) return;
+    timerRemainingMs = activeTimerSeconds() * 1000;
     timerDeadline = performance.now() + timerRemainingMs;
     timerPaused = false;
     timerEl.hidden = false;
+    timerEl.classList.remove("is-expired");
     setTimerVisual(timerRemainingMs);
     tickTimer();
   }
 
   function tickTimer() {
-    if (timerPaused || interviewMode !== "timer" || !interviewStarted || interviewFinished) return;
+    if (timerPaused || !isTimedMode() || !interviewStarted || interviewFinished) return;
     const remaining = Math.max(0, timerDeadline - performance.now());
     setTimerVisual(remaining);
     if (remaining <= 0) {
       timerFrame = 0;
+      if (interviewMode === "voice") {
+        timerEl.classList.add("is-expired");
+        if (voiceRecording) {
+          micIndicator.setAttribute("aria-label", "Время вышло — можно ещё говорить");
+        }
+        return;
+      }
       advanceByTimer();
       return;
     }
@@ -1521,21 +2904,28 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function pauseTimer() {
-    if (interviewMode !== "timer" || !interviewStarted || interviewFinished || timerPaused) return;
+    if (!isTimedMode() || !interviewStarted || interviewFinished || timerPaused) return;
     if (timerFrame) cancelAnimationFrame(timerFrame);
     timerFrame = 0;
     timerRemainingMs = Math.max(0, timerDeadline - performance.now());
     timerPaused = true;
     setTimerVisual(timerRemainingMs);
+    if (interviewMode === "voice") pauseVoiceRecording();
   }
 
   function resumeTimer() {
-    if (interviewMode !== "timer" || !interviewStarted || interviewFinished || !timerPaused) return;
-    if (timerRemainingMs <= 0) timerRemainingMs = timerSeconds * 1000;
+    timerPausedByVisibility = false;
+    if (!isTimedMode() || !interviewStarted || interviewFinished || !timerPaused) return;
+    if (timerRemainingMs <= 0) {
+      timerRemainingMs = interviewMode === "voice" ? 0 : activeTimerSeconds() * 1000;
+    }
     timerPaused = false;
     timerDeadline = performance.now() + timerRemainingMs;
     timerEl.hidden = false;
+    if (timerRemainingMs <= 0) timerEl.classList.add("is-expired");
+    else timerEl.classList.remove("is-expired");
     setTimerVisual(timerRemainingMs);
+    if (interviewMode === "voice") resumeVoiceRecording();
     if (!timerFrame) tickTimer();
   }
 
@@ -1572,7 +2962,7 @@ document.addEventListener("DOMContentLoaded", () => {
       chip.dataset.category = category;
       chip.textContent = chipLabel(category);
       chip.addEventListener("click", () => {
-        if (setupCategories.has(category) && setupCategories.size > 1) {
+        if (setupCategories.has(category)) {
           setupCategories.delete(category);
         } else {
           setupCategories.add(category);
@@ -1666,6 +3056,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   skipBtn.addEventListener("click", () => {
     if (!interviewPool.length || interviewFinished || !interviewStarted) return;
+    if (interviewMode === "voice") {
+      finalizeVoiceAnswer("skipped");
+      return;
+    }
     if (currentQuestion) bumpRoundStat(currentQuestion, "skipped");
     if (currentQuestion) recordRoundAnswer(currentQuestion, "skipped");
     skippedCount += 1;
@@ -1690,6 +3084,10 @@ document.addEventListener("DOMContentLoaded", () => {
       openSetupDialog({ allowCancel: false });
       return;
     }
+    if (interviewMode === "voice") {
+      finalizeVoiceAnswer("answered");
+      return;
+    }
     if (currentQuestion) setProgressMark(currentQuestion, "studied");
     if (currentQuestion) bumpRoundStat(currentQuestion, "accepted");
     if (currentQuestion) recordRoundAnswer(currentQuestion, "accepted");
@@ -1704,15 +3102,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setupModeButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      setupMode = button.dataset.interviewMode === "timer" ? "timer" : "manual";
+      const mode = button.dataset.interviewMode;
+      if (mode === "voice" && !voiceSupport.supported) {
+        voiceNote.hidden = false;
+        voiceNote.classList.add("is-highlight");
+        window.setTimeout(() => voiceNote.classList.remove("is-highlight"), 900);
+        return;
+      }
+      setupMode = mode === "voice" ? "voice" : "manual";
       syncSetupUi();
     });
   });
-  setupTimerButtons.forEach((button) => {
+  setupVoiceButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      const seconds = Number(button.dataset.timerSeconds);
-      if (INTERVIEW_TIMER_STEPS.includes(seconds)) {
-        setupTimerSeconds = seconds;
+      const seconds = Number(button.dataset.voiceSeconds);
+      if (VOICE_TIMER_STEPS.includes(seconds)) {
+        setupVoiceSeconds = seconds;
         syncSetupUi();
       }
     });
@@ -1720,6 +3125,35 @@ document.addEventListener("DOMContentLoaded", () => {
   setupStartBtn.addEventListener("click", applySetupOrContinue);
   setupCancelBtn.addEventListener("click", () => closeSetupDialog({ resume: true }));
   setupCloseBtn.addEventListener("click", () => closeSetupDialog({ resume: true }));
+  micIndicator.addEventListener("click", async () => {
+    if (!voiceSupport.supported) return;
+    const voiceRoundActive = interviewStarted && interviewMode === "voice" && !interviewFinished;
+    if (micPermissionGranted || (voiceStream && voiceStream.active)) {
+      showMicHint(voiceRoundActive
+        ? "Микрофон включён. Идёт запись ответа."
+        : "Разрешение на микрофон уже есть. Он включится, когда вы начнёте голосовое собеседование.");
+      return;
+    }
+    setMicIndicatorOff("Запрашиваю доступ к микрофону");
+    try {
+      await ensureVoiceStream();
+      micPermissionGranted = true;
+      if (voiceRoundActive) {
+        setMicIndicatorIdle("Микрофон включён");
+        showMicHint("Микрофон включён. Идёт запись ответа.");
+        if (!voiceRecorder && !voiceAnswerCommitted) beginVoiceQuestion();
+      } else {
+        releaseVoiceStream();
+        setMicIndicatorReady();
+        showMicHint("Разрешение на микрофон получено. Он включится, когда вы начнёте голосовое собеседование.");
+      }
+    } catch (error) {
+      micPermissionGranted = false;
+      const message = voiceMicErrorMessage(error);
+      setMicIndicatorError(message);
+      showMicHint(message);
+    }
+  });
   historyBtn.addEventListener("click", openHistoryDialog);
   historyCloseBtn.addEventListener("click", closeHistoryDialog);
   historyDialog.addEventListener("cancel", (event) => {
@@ -1744,15 +3178,37 @@ document.addEventListener("DOMContentLoaded", () => {
 
   aiAppendBtn.addEventListener("click", onAiAppendClick);
 
+  window.addEventListener("qatodev:voice-report-ready", (event) => {
+    const detail = event?.detail || {};
+    if (!detail.report || detail.jobId !== roundId) return;
+    voiceReport = detail.report;
+    voiceAnalysisRunning = false;
+    updateVoiceResultUi({ report: detail.report });
+    setInterviewNavMode("retry");
+    writeInterviewSessionState();
+    if (historyDialog.open) renderInterviewHistory();
+  });
+
   document.addEventListener("shared-auth:ready", () => {
     updateInterviewLocalNote();
     scheduleInterviewHistorySync(0);
   });
   window.addEventListener("online", () => scheduleInterviewHistorySync(0));
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState !== "visible") return;
+    if (document.visibilityState !== "visible") {
+      // Скрытая вкладка: останавливаем таймер и распознавание речи,
+      // чтобы фоновая вкладка не жгла CPU и не держала микрофон.
+      if (isTimedMode() && interviewStarted && !interviewFinished && !timerPaused) {
+        pauseTimer();
+        timerPausedByVisibility = true;
+      }
+      return;
+    }
     updateInterviewLocalNote();
     scheduleInterviewHistorySync(0);
+    if (timerPausedByVisibility) {
+      resumeTimer();
+    }
   });
   window.setTimeout(() => scheduleInterviewHistorySync(0), 1200);
   window.setInterval(() => {
@@ -1772,7 +3228,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!interviewStarted && !interviewFinished && e.key !== "Enter") return;
     if (e.key === " ") {
       e.preventDefault();
-      if (interviewMode === "timer" && interviewStarted && !interviewFinished) {
+      if ((interviewMode === "timer" || interviewMode === "voice") && interviewStarted && !interviewFinished) {
         openSetupDialog({ allowCancel: true });
       } else if (!toggleAnswerBtn.disabled) {
         toggleAnswerBtn.click();
@@ -1787,6 +3243,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  applyVoiceSupportUi();
+  detectMicPermission();
   bootstrap().catch((e) => {
     console.error("Interview bootstrap failed", e);
     questionTitleEl.textContent = "Не удалось загрузить вопросы";

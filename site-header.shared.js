@@ -12,6 +12,7 @@
     'questions-map.html': 'questions.html',
     'resume.html': 'resume.html',
     'practice.html': 'practice.html',
+    'code-lab.html': 'practice.html',
     'testing-types-map.html': 'practice.html'
   }[page];
   const glassAlways = new Set(['course.html', 'questions-map.html', 'testing-types-map.html']).has(page);
@@ -44,7 +45,7 @@
 </header>
 <!-- выносим кнопку -->
 <div class="theme-switcher">
-    <button id="auth-open-btn" class="clean-btn toggleButton_gllP auth-open-btn" type="button" title="Войти и сохранить прогресс" aria-label="Войти и сохранить прогресс">
+    <button id="auth-open-btn" class="clean-btn toggleButton_gllP auth-open-btn" type="button" aria-label="Войти и сохранить прогресс">
         <span class="auth-open-btn__icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false" aria-hidden="true"><path fill="currentColor" d="M12 12c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v1h20v-1c0-3.33-6.67-5-10-5z"/></svg></span>
         <span class="auth-open-btn__label">Войти</span>
     </button>
@@ -52,7 +53,6 @@
             id="theme-toggle"
             class="clean-btn toggleButton_gllP"
             type="button"
-            title="Переключить тему"
             aria-label="Переключить тему"
             aria-live="polite"
     >
