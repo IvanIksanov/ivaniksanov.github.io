@@ -35,7 +35,7 @@
     <script src="favicon.shared.js?v=1"></script>
   <script src="auth.bootstrap.shared.js?v=8.9.7"></script>
   <link rel="stylesheet" href="header.css?v=8.9.48">
-    <link rel="stylesheet" href="interview.css?v=20261102-73">
+    <link rel="stylesheet" href="interview.css?v=20261102-85">
     <script src="metrika.shared.js?v=20261027-1"></script>
     <link rel="canonical" href="https://qatodev.ru/interview.html">
     <meta name="robots" content="noindex">
@@ -72,18 +72,18 @@
         <img src="img/cover/call_mock.png" alt="Окно тренировочного созвона">
     </figure>
     <section id="stage" class="stage" aria-live="polite" aria-atomic="true">
-        <div class="stage-header">
-            <span id="badge-category" class="badge">—</span>
-            <div class="stage-header__tools">
-                <span id="counter" class="counter">0 / 0</span>
-            </div>
-        </div>
         <div class="interview-timer" id="interview-timer" hidden aria-hidden="true">
             <span class="interview-timer__label" id="interview-timer-label">15 с</span>
             <span class="interview-timer__track"><span class="interview-timer__fill" id="interview-timer-fill"></span></span>
         </div>
         <article class="card" role="group" aria-labelledby="question-title">
-            <h2 id="question-title" class="question-title">Загружаю вопросы…</h2>
+            <div class="question-card__head">
+                <div class="question-card__heading">
+                    <span id="badge-category" class="badge">—</span>
+                    <h2 id="question-title" class="question-title">Загружаю вопросы…</h2>
+                </div>
+                <span id="counter" class="counter">0 / 0</span>
+            </div>
             <button id="toggle-answer" class="btn btn-outline" type="button" aria-expanded="false" aria-controls="answer">Посмотреть ответ</button>
             <div id="answer" class="answer" hidden></div>
         </article>
@@ -154,6 +154,10 @@
                 <button type="button" class="interview-timer-choice" data-voice-seconds="60" aria-pressed="false">1 мин</button>
             </div>
         </div>
+        <div id="interview-voice-check-row" class="interview-setup__voice-check-row" hidden>
+            <p id="interview-voice-check" class="interview-setup__note" aria-live="polite"></p>
+            <button type="button" id="interview-voice-check-btn" class="interview-setup__voice-check-btn">Проверить микрофон</button>
+        </div>
         <p id="interview-setup-category-note" class="interview-setup__note" hidden>Выберите хотя бы одну категорию</p>
         <div class="interview-setup__actions">
             <button type="button" id="interview-setup-cancel" class="btn btn-outline" hidden>Отмена</button>
@@ -187,7 +191,7 @@
 <script src="ai-table-scroll.shared.js?v=1.0.0"></script>
 <script src="theme-toggle.shared.js?v=1"></script>
 <script src="voice-report.shared.js?v=19" data-voice-report-worker="true"></script>
-<script src="interview.js?v=8.9.90"></script>
+<script src="interview.js?v=8.10.0"></script>
   <script src="header.js?v=8.9.45"></script>
 </body>
 </html>
